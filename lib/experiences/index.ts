@@ -12,6 +12,7 @@ export {
   useExamplePostSlug,
   useExampleProductSlug,
   useExampleServiceSlug,
+  useExampleCourseSlug,
   useExamplePostCategorySlug,
 } from './useExampleSlugs';
 export {
@@ -24,6 +25,8 @@ export {
   useOrderStatuses,
   usePostsListConfig,
   useProductsListConfig,
+  useCoursesListConfig,
+  useCoursesDetailConfig,
   useSearchFilterConfig,
   useServicesListConfig,
   useWishlistConfig,

@@ -3,6 +3,7 @@ import { bookingsModule } from '../configs/bookings.config';
 import { cartModule } from '../configs/cart.config';
 import { commentsModule } from '../configs/comments.config';
 import { contactInboxModule } from '../configs/contact-inbox.config';
+import { coursesModule } from '../configs/courses.config';
 import { customersModule } from '../configs/customers.config';
 import { homepageModule } from '../configs/homepage.config';
 import { kanbanModule } from '../configs/kanban.config';
@@ -58,6 +59,17 @@ const CATEGORY_RUNTIME_DEFINITIONS: RuntimeModuleDefinition[] = [
       { enabled: false, fieldKey: 'thumbnail', isSystem: false, name: 'Ảnh đại diện', order: 5, required: false, type: 'image' },
     ],
   },
+  {
+    moduleKey: 'courseCategories',
+    fields: [
+      { enabled: true, fieldKey: 'name', isSystem: true, name: 'Tên', order: 0, required: true, type: 'text' },
+      { enabled: true, fieldKey: 'slug', isSystem: true, name: 'Slug', order: 1, required: true, type: 'text' },
+      { enabled: true, fieldKey: 'order', isSystem: true, name: 'Thứ tự', order: 2, required: true, type: 'number' },
+      { enabled: true, fieldKey: 'active', isSystem: true, name: 'Trạng thái', order: 3, required: true, type: 'boolean' },
+      { enabled: true, fieldKey: 'description', isSystem: false, name: 'Mô tả', order: 4, required: false, type: 'textarea' },
+      { enabled: false, fieldKey: 'thumbnail', isSystem: false, name: 'Ảnh đại diện', order: 5, required: false, type: 'image' },
+    ],
+  },
 ];
 
 const moduleDefinitions = [
@@ -66,6 +78,7 @@ const moduleDefinitions = [
   cartModule,
   commentsModule,
   contactInboxModule,
+  coursesModule,
   customersModule,
   homepageModule,
   kanbanModule,

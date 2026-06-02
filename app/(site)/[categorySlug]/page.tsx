@@ -7,6 +7,7 @@ import { buildSeoMetadata } from '@/lib/seo/metadata';
 import ProductsPage from '@/app/(site)/products/page';
 import PostsPage from '@/app/(site)/posts/page';
 import ServicesPage from '@/app/(site)/services/page';
+import CoursesPage from '@/app/(site)/khoa-hoc/page';
 
 interface Props {
   params: Promise<{ categorySlug: string }>;
@@ -70,6 +71,9 @@ export default async function UnifiedCategoryPage({ params }: Props) {
   }
   if (resolvedCategory.moduleKey === 'posts') {
     return <PostsPage />;
+  }
+  if (resolvedCategory.moduleKey === 'courses') {
+    return <CoursesPage />;
   }
 
   notFound();

@@ -4,6 +4,7 @@ export { contactInboxModule } from './contact-inbox.config';
 export { subscriptionsModule } from './subscriptions.config';
 export { cartModule } from './cart.config';
  export { commentsModule } from './comments.config';
+export { coursesModule } from './courses.config';
  export { customersModule } from './customers.config';
  export { homepageModule } from './homepage.config';
  export { kanbanModule } from './kanban.config';

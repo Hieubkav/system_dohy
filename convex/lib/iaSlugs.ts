@@ -19,10 +19,12 @@ const RESERVED_SLUGS = new Set([
   "features",
   "guides",
   "integrations",
+  "khoa-hoc",
   "login",
   "logout",
   "payment",
   "privacy",
+  "courses",
   "products",
   "promotions",
   "posts",
@@ -38,9 +40,12 @@ const RESERVED_SLUGS = new Set([
   "wishlist",
 ]);
 
-const TABLES_BY_SCOPE: Record<SlugScope, Array<"posts" | "products" | "services" | "postCategories" | "productCategories" | "serviceCategories">> = {
-  record: ["posts", "products", "services"],
-  category: ["postCategories", "productCategories", "serviceCategories"],
+type SlugTable = "posts" | "products" | "services" | "courses" | "postCategories" | "productCategories" | "serviceCategories" | "courseCategories";
+type SlugId = Id<"posts"> | Id<"products"> | Id<"services"> | Id<"courses"> | Id<"postCategories"> | Id<"productCategories"> | Id<"serviceCategories"> | Id<"courseCategories">;
+
+const TABLES_BY_SCOPE: Record<SlugScope, SlugTable[]> = {
+  record: ["posts", "products", "services", "courses"],
+  category: ["postCategories", "productCategories", "serviceCategories", "courseCategories"],
 };
 
 const normalizeSlug = (value: string) => value.trim().toLowerCase();
@@ -122,13 +127,13 @@ export const listSlugConflicts = async (ctx: QueryCtx | MutationCtx, scope: Slug
   type SlugEntry = {
     slug: string;
     scope: SlugScope;
-    table: "posts" | "products" | "services" | "postCategories" | "productCategories" | "serviceCategories";
-    id: Id<"posts"> | Id<"products"> | Id<"services"> | Id<"postCategories"> | Id<"productCategories"> | Id<"serviceCategories">;
+    table: SlugTable;
+    id: SlugId;
     label: string;
   };
   const entries: SlugEntry[] = [];
 
-  const addEntries = async (table: "posts" | "products" | "services" | "postCategories" | "productCategories" | "serviceCategories", scopeKey: SlugScope) => {
+  const addEntries = async (table: SlugTable, scopeKey: SlugScope) => {
     const docs = await ctx.db.query(table).take(1000);
     docs.forEach((doc) => {
       const normalizedDoc = doc as { _id: SlugEntry['id']; slug: string; title?: string; name?: string };

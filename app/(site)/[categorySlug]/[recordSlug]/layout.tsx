@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
 import { getConvexClient } from '@/lib/convex';
 import { getContactSettings, getSEOSettings, getSiteSettings, getSocialSettings } from '@/lib/get-settings';
 import { buildSeoMetadata } from '@/lib/seo/metadata';
@@ -121,6 +122,42 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       site,
       social,
       titleOverride: service.metaTitle ?? service.title,
+    });
+  }
+
+  if (resolvedDetail.moduleKey === 'courses') {
+    const course = await client.query(api.courses.getById, { id: resolvedDetail.recordId as Id<'courses'> });
+    if (!course) {
+      return buildSeoMetadata({
+        contact,
+        descriptionOverride: 'Khóa học không tồn tại hoặc đã bị xóa.',
+        entityExists: false,
+        pathname: canonicalPath,
+        routeType: 'detail',
+        seo,
+        site,
+        social,
+        titleOverride: 'Không tìm thấy khóa học',
+      });
+    }
+
+    return buildSeoMetadata({
+      contact,
+      entity: {
+        content: course.content,
+        excerpt: course.excerpt,
+        metaDescription: course.metaDescription,
+        metaTitle: course.metaTitle,
+        thumbnail: course.thumbnail,
+        title: course.title,
+      },
+      entityExists: true,
+      pathname: canonicalPath,
+      routeType: 'detail',
+      seo,
+      site,
+      social,
+      titleOverride: course.metaTitle ?? course.title,
     });
   }
 
@@ -277,6 +314,28 @@ export default async function UnifiedDetailLayout({ params, children }: Props) {
     return (
       <>
         <JsonLd data={serviceSchema} />
+        <JsonLd data={breadcrumbSchema} />
+        {children}
+      </>
+    );
+  }
+
+  if (resolvedDetail.moduleKey === 'courses') {
+    const [course, category] = await Promise.all([
+      client.query(api.courses.getById, { id: resolvedDetail.recordId as Id<'courses'> }),
+      client.query(api.courseCategories.getById, { id: resolvedDetail.categoryId as Id<'courseCategories'> }),
+    ]);
+    if (!course) {return children;}
+
+    const courseUrl = `${baseUrl}${canonicalPath}`;
+    const breadcrumbSchema = generateBreadcrumbSchema([
+      { name: 'Trang chủ', url: baseUrl },
+      { name: category?.name ?? 'Khóa học', url: `${baseUrl}/${resolvedDetail.categorySlug}` },
+      { name: course.title, url: courseUrl },
+    ]);
+
+    return (
+      <>
         <JsonLd data={breadcrumbSchema} />
         {children}
       </>

@@ -21,17 +21,6 @@ export class AdminModulesSeeder extends BaseSeeder<AdminModuleData> {
       await this.clear();
     }
 
-    const existing = await this.ctx.db.query('adminModules').first();
-    if (existing) {
-      return {
-        created: 0,
-        dependencies: [],
-        duration: Date.now() - startTime,
-        module: this.moduleName,
-        skipped: 1,
-      };
-    }
-
     const modules: AdminModuleData[] = [
       { category: 'content', description: 'Quản lý bài viết, tin tức, blog và danh mục bài viết', enabled: true, icon: 'FileText', isCore: false, key: 'posts', name: 'Bài viết & Danh mục', order: 1 },
       { category: 'content', dependencies: ['posts', 'products'], dependencyType: 'any', description: 'Bình luận và đánh giá cho bài viết, sản phẩm', enabled: true, icon: 'MessageSquare', isCore: false, key: 'comments', name: 'Bình luận và đánh giá', order: 2 },
@@ -51,18 +40,23 @@ export class AdminModulesSeeder extends BaseSeeder<AdminModuleData> {
       { category: 'marketing', dependencies: ['products', 'orders'], dependencyType: 'all', description: 'Quản lý mã giảm giá, voucher', enabled: false, icon: 'Megaphone', isCore: false, key: 'promotions', name: 'Khuyến mãi', order: 16 },
       { category: 'marketing', description: 'Báo cáo và phân tích dữ liệu', enabled: true, icon: 'BarChart3', isCore: false, key: 'analytics', name: 'Thống kê', order: 17 },
       { category: 'content', description: 'Quản lý dịch vụ và danh mục dịch vụ', enabled: true, icon: 'Briefcase', isCore: false, key: 'services', name: 'Dịch vụ', order: 18 },
-      { category: 'system', description: 'Bảng Kanban quản lý công việc nội bộ', enabled: true, icon: 'LayoutGrid', isCore: false, key: 'kanban', name: 'Kanban Board', order: 19 },
-      { category: 'system', description: 'Quản lý gia hạn subscription khách hàng', enabled: true, icon: 'CalendarDays', isCore: false, key: 'subscriptions', name: 'Subscriptions', order: 20 },
+      { category: 'content', description: 'Quản lý khóa học, danh mục và curriculum', enabled: true, icon: 'GraduationCap', isCore: false, key: 'courses', name: 'Khóa học', order: 19 },
+      { category: 'system', description: 'Bảng Kanban quản lý công việc nội bộ', enabled: true, icon: 'LayoutGrid', isCore: false, key: 'kanban', name: 'Kanban Board', order: 20 },
+      { category: 'system', description: 'Quản lý gia hạn subscription khách hàng', enabled: true, icon: 'CalendarDays', isCore: false, key: 'subscriptions', name: 'Subscriptions', order: 21 },
     ];
 
-    await Promise.all(modules.map(module => this.ctx.db.insert('adminModules', module)));
+    const existingModules = await this.ctx.db.query('adminModules').take(1000);
+    const existingKeys = new Set(existingModules.map((module) => module.key));
+    const missingModules = modules.filter((module) => !existingKeys.has(module.key));
+
+    await Promise.all(missingModules.map(module => this.ctx.db.insert('adminModules', module)));
 
     return {
-      created: modules.length,
+      created: missingModules.length,
       dependencies: [],
       duration: Date.now() - startTime,
       module: this.moduleName,
-      skipped: 0,
+      skipped: modules.length - missingModules.length,
     };
   }
 

@@ -6,7 +6,7 @@ import { AdminImage as Image } from '@/app/admin/components/AdminImage';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { 
-  Bell, Briefcase, CalendarDays, ChevronRight, ChevronsLeft, 
+  Bell, Briefcase, CalendarDays, ChevronRight, ChevronsLeft, GraduationCap,
   ChevronsRight, FileText, Globe, Image as ImageIcon, Inbox, LayoutDashboard, LayoutGrid, Loader2,
   LogOut, Settings, ShoppingCart, Ticket, User, Users, X
 } from 'lucide-react';
@@ -152,6 +152,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
     if (pathname.startsWith('/admin/posts') || pathname.startsWith('/admin/post-categories') || pathname.startsWith('/admin/comments')) {
       return 'Quản lý bài viết';
     }
+    if (pathname.startsWith('/admin/courses') || pathname.startsWith('/admin/course-categories')) {
+      return 'Khóa học';
+    }
     if (
       pathname.startsWith('/admin/products') ||
       pathname.startsWith('/admin/categories') ||
@@ -195,6 +198,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   // Comments trong posts section chỉ hiện khi cả posts VÀ comments đều bật
   const showPostComments = isModuleEnabled('posts') && isModuleEnabled('comments');
   // Services section
+  const showCoursesSection = isModuleEnabled('courses');
   const showServicesSection = isModuleEnabled('services');
   const showBookingsSection = isModuleEnabled('bookings');
   const showCommerceSection = isModuleEnabled('products') || isModuleEnabled('customers') || isModuleEnabled('orders') || isModuleEnabled('wishlist');
@@ -213,7 +217,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   const productTypesEnabled = Boolean(productSettings?.find(setting => setting.settingKey === 'enableProductTypes')?.value);
 
   const analyticsSectionItemCount = showAnalyticsSection ? 1 : 0;
-  const contentSectionItemCount = Number(showPostsSection) + Number(showServicesSection);
+  const contentSectionItemCount = Number(showPostsSection) + Number(showCoursesSection) + Number(showServicesSection);
   const commerceSectionItemCount = showCommerceSection ? 1 : 0;
   const mediaSectionItemCount = showMediaSection ? 1 : 0;
   const marketingSectionItemCount = Number(showNotificationsSection) + Number(showPromotionsSection);
@@ -360,10 +364,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
               </div>
             )}
 
+            {/* Courses Section */}
+            {showCoursesSection && (
+              <div className={getSectionClassName(showContentTitle)}>
+                {!showPostsSection && showContentTitle && <div className="px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Nội dung</div>}
+                <SidebarItem
+                  icon={GraduationCap}
+                  label="Khóa học"
+                  href="/admin/courses"
+                  active={isActive('/admin/courses') || isActive('/admin/course-categories')}
+                  isCollapsed={isSidebarCollapsed}
+                  isExpanded={currentExpandedMenu === 'Khóa học'}
+                  onToggle={() =>{  handleMenuToggle('Khóa học'); }}
+                  pathname={pathname}
+                  isModuleEnabled={isModuleEnabled}
+                  subItems={[
+                    { href: '/admin/courses', label: 'Tất cả khóa học', moduleKey: 'courses' },
+                    { href: '/admin/course-categories', label: 'Danh mục khóa học', moduleKey: 'courses' },
+                  ]}
+                />
+              </div>
+            )}
+
             {/* Services Section */}
             {showServicesSection && (
               <div className={getSectionClassName(showContentTitle)}>
-                {!showPostsSection && showContentTitle && <div className="px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Nội dung</div>}
+                {!showPostsSection && !showCoursesSection && showContentTitle && <div className="px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Nội dung</div>}
                 <SidebarItem 
                   icon={Briefcase} 
                   label="Dịch vụ" 

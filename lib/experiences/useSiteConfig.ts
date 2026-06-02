@@ -333,6 +333,67 @@ export function useServicesListConfig(): ServicesListConfig {
   }, [experienceSetting?.value]);
 }
 
+type CoursesListConfig = {
+  layoutStyle: 'grid' | 'sidebar' | 'masonry';
+  paginationType: PaginationType;
+  showSearch: boolean;
+  showCategories: boolean;
+  showLevelFilter: boolean;
+  hideEmptyCategories: boolean;
+  postsPerPage: number;
+};
+
+export function useCoursesListConfig(): CoursesListConfig {
+  const experienceSetting = useQuery(api.settings.getByKey, { key: 'courses_list_ui' });
+
+  return useMemo(() => {
+    const raw = experienceSetting?.value as {
+      layoutStyle?: CoursesListConfig['layoutStyle'];
+      layouts?: Partial<Record<CoursesListConfig['layoutStyle'], Partial<Omit<CoursesListConfig, 'layoutStyle'>>>>;
+      paginationType?: PaginationType;
+      showSearch?: boolean;
+      showCategories?: boolean;
+      showLevelFilter?: boolean;
+      hideEmptyCategories?: boolean;
+      postsPerPage?: number;
+    } | undefined;
+    const layoutStyle: CoursesListConfig['layoutStyle'] = raw?.layoutStyle ?? 'grid';
+    const layoutConfig = raw?.layouts?.[layoutStyle];
+    return {
+      layoutStyle,
+      paginationType: normalizePaginationType(layoutConfig?.paginationType ?? raw?.paginationType),
+      showSearch: layoutConfig?.showSearch ?? raw?.showSearch ?? true,
+      showCategories: layoutConfig?.showCategories ?? raw?.showCategories ?? true,
+      showLevelFilter: layoutConfig?.showLevelFilter ?? raw?.showLevelFilter ?? true,
+      hideEmptyCategories: raw?.hideEmptyCategories ?? true,
+      postsPerPage: layoutConfig?.postsPerPage ?? raw?.postsPerPage ?? 12,
+    };
+  }, [experienceSetting?.value]);
+}
+
+type CoursesDetailConfig = {
+  layoutStyle: 'classic' | 'modern' | 'minimal';
+  showCurriculum: boolean;
+  showInstructor: boolean;
+  showRelated: boolean;
+  showStickyCta: boolean;
+};
+
+export function useCoursesDetailConfig(): CoursesDetailConfig {
+  const experienceSetting = useQuery(api.settings.getByKey, { key: 'courses_detail_ui' });
+
+  return useMemo(() => {
+    const raw = experienceSetting?.value as Partial<CoursesDetailConfig> | undefined;
+    return {
+      layoutStyle: raw?.layoutStyle ?? 'classic',
+      showCurriculum: raw?.showCurriculum ?? true,
+      showInstructor: raw?.showInstructor ?? true,
+      showRelated: raw?.showRelated ?? true,
+      showStickyCta: raw?.showStickyCta ?? true,
+    };
+  }, [experienceSetting?.value]);
+}
+
 type CartConfig = {
   layoutStyle: 'drawer' | 'page' | 'table';
   showExpiry: boolean;

@@ -56,6 +56,10 @@ export const SEED_DEPENDENCIES: Record<string, ModuleDependency> = {
     deps: [],
     type: 'all',
   },
+  courseCategories: {
+    deps: [],
+    type: 'all',
+  },
   
   // Level 1: Basic entities
   users: {
@@ -81,6 +85,11 @@ export const SEED_DEPENDENCIES: Record<string, ModuleDependency> = {
   },
   services: {
     deps: ['serviceCategories'],
+    minRecords: 1,
+    type: 'all',
+  },
+  courses: {
+    deps: ['courseCategories'],
     minRecords: 1,
     type: 'all',
   },
@@ -379,7 +388,9 @@ export const SEED_PRESETS: Record<PresetType, PresetConfig> = {
       promotions: 5,
       roles: 4,
       serviceCategories: 3,
+      courseCategories: 3,
       services: 5,
+      courses: 5,
       settings: 15,
       users: 5,
       wishlist: 5,
@@ -403,7 +414,9 @@ export const SEED_PRESETS: Record<PresetType, PresetConfig> = {
       promotions: 10,
       roles: 4,
       serviceCategories: 5,
+      courseCategories: 5,
       services: 15,
+      courses: 15,
       settings: 15,
       users: 10,
       wishlist: 20,
@@ -427,7 +440,9 @@ export const SEED_PRESETS: Record<PresetType, PresetConfig> = {
       promotions: 30,
       roles: 4,
       serviceCategories: 8,
+      courseCategories: 8,
       services: 50,
+      courses: 50,
       settings: 15,
       users: 20,
       wishlist: 100,
@@ -451,7 +466,9 @@ export const SEED_PRESETS: Record<PresetType, PresetConfig> = {
       promotions: 15,
       roles: 4,
       serviceCategories: 6,
+      courseCategories: 6,
       services: 25,
+      courses: 25,
       settings: 15,
       users: 12,
       wishlist: 30,

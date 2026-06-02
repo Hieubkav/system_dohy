@@ -24,6 +24,9 @@ const EXTRA_TABLES: TableNames[] = [
   "menuItems",
   "homeComponents",
   "images",
+  "courseCategoryAssignments",
+  "courseChapters",
+  "courseLessons",
 ] as TableNames[];
 
 // Danh sách các bảng trong hệ thống
@@ -260,6 +263,51 @@ const DATA_CONTRACTS: DataContract[] = [
     table: "services",
   },
   {
+    label: "Course categories",
+    optional: ["description", "parentId", "thumbnail"],
+    required: ["active", "name", "order", "slug"],
+    table: "courseCategories",
+  },
+  {
+    label: "Courses",
+    optional: [
+      "comparePriceAmount",
+      "durationSeconds",
+      "durationText",
+      "excerpt",
+      "featured",
+      "htmlRender",
+      "instructorName",
+      "introVideoType",
+      "introVideoUrl",
+      "isPriceVisible",
+      "level",
+      "markdownRender",
+      "metaDescription",
+      "metaTitle",
+      "priceAmount",
+      "priceNote",
+      "publishedAt",
+      "renderType",
+      "thumbnail",
+      "thumbnailStorageId",
+    ],
+    required: ["categoryId", "chapterCount", "content", "lessonCount", "order", "pricingType", "slug", "status", "title", "views"],
+    table: "courses",
+  },
+  {
+    label: "Course chapters",
+    optional: ["summary"],
+    required: ["active", "courseId", "createdAt", "order", "title", "updatedAt"],
+    table: "courseChapters",
+  },
+  {
+    label: "Course lessons",
+    optional: ["description", "durationSeconds", "exerciseLink", "videoUrl"],
+    required: ["active", "chapterId", "courseId", "createdAt", "isPreview", "order", "title", "updatedAt", "videoType"],
+    table: "courseLessons",
+  },
+  {
     label: "Orders",
     optional: ["discountAmount", "isDigitalOrder", "note", "paymentMethod", "paymentStatus", "promotionCode", "promotionId", "shippingAddress", "shippingMethodId", "shippingMethodLabel", "trackingNumber"],
     required: ["customerId", "items", "orderNumber", "shippingFee", "status", "subtotal", "totalAmount"],
@@ -350,6 +398,9 @@ const TABLE_CATEGORIES: Record<string, string> = {
   moduleFeatures: "system",
   moduleFields: "system",
   moduleSettings: "system",
+  courseCategoryAssignments: "content",
+  courseChapters: "content",
+  courseLessons: "content",
 };
 
 const SYSTEM_TABLES = new Set([

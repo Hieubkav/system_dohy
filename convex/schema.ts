@@ -652,7 +652,7 @@ export default defineSchema({
       v.literal("Spam")
     ),
     targetId: v.string(),
-    targetType: v.union(v.literal("post"), v.literal("product"), v.literal("service")),
+    targetType: v.union(v.literal("post"), v.literal("product"), v.literal("service"), v.literal("course")),
   })
     .index("by_target_status", ["targetType", "targetId", "status"])
     .index("by_status", ["status"])
@@ -1161,6 +1161,130 @@ export default defineSchema({
     .index("by_service", ["serviceId"])
     .index("by_category", ["categoryId"])
     .index("by_service_category", ["serviceId", "categoryId"]),
+
+  // 27-course. courseCategories - Danh mục khóa học (Hierarchical)
+  courseCategories: defineTable({
+    active: v.boolean(),
+    description: v.optional(v.string()),
+    name: v.string(),
+    order: v.number(),
+    parentId: v.optional(v.id("courseCategories")),
+    slug: v.string(),
+    thumbnail: v.optional(v.string()),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_parent", ["parentId"])
+    .index("by_parent_order", ["parentId", "order"])
+    .index("by_active", ["active"]),
+
+  // 27-course. courses - Khóa học
+  courses: defineTable({
+    title: v.string(),
+    slug: v.string(),
+    content: v.string(),
+    renderType: v.optional(v.union(
+      v.literal("content"),
+      v.literal("markdown"),
+      v.literal("html")
+    )),
+    markdownRender: v.optional(v.string()),
+    htmlRender: v.optional(v.string()),
+    excerpt: v.optional(v.string()),
+    thumbnail: v.optional(v.string()),
+    thumbnailStorageId: v.optional(v.union(v.id("_storage"), v.null())),
+    categoryId: v.id("courseCategories"),
+    introVideoType: v.optional(v.union(
+      v.literal("none"),
+      v.literal("youtube"),
+      v.literal("drive"),
+      v.literal("external")
+    )),
+    introVideoUrl: v.optional(v.string()),
+    pricingType: v.union(
+      v.literal("free"),
+      v.literal("paid"),
+      v.literal("contact")
+    ),
+    priceAmount: v.optional(v.number()),
+    comparePriceAmount: v.optional(v.number()),
+    priceNote: v.optional(v.string()),
+    isPriceVisible: v.optional(v.boolean()),
+    durationText: v.optional(v.string()),
+    durationSeconds: v.optional(v.number()),
+    instructorName: v.optional(v.string()),
+    level: v.optional(v.union(
+      v.literal("Beginner"),
+      v.literal("Intermediate"),
+      v.literal("Advanced")
+    )),
+    status: v.union(
+      v.literal("Published"),
+      v.literal("Draft"),
+      v.literal("Archived")
+    ),
+    views: v.number(),
+    publishedAt: v.optional(v.number()),
+    order: v.number(),
+    featured: v.optional(v.boolean()),
+    chapterCount: v.number(),
+    lessonCount: v.number(),
+    metaTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_category_status", ["categoryId", "status"])
+    .index("by_status_publishedAt", ["status", "publishedAt"])
+    .index("by_status_views", ["status", "views"])
+    .index("by_status_order", ["status", "order"])
+    .index("by_status_featured", ["status", "featured"])
+    .index("by_status_level", ["status", "level"])
+    .searchIndex("search_title", { filterFields: ["status", "categoryId"], searchField: "title" }),
+
+  courseCategoryAssignments: defineTable({
+    categoryId: v.id("courseCategories"),
+    courseId: v.id("courses"),
+    createdAt: v.number(),
+  })
+    .index("by_course", ["courseId"])
+    .index("by_category", ["categoryId"])
+    .index("by_course_category", ["courseId", "categoryId"]),
+
+  courseChapters: defineTable({
+    active: v.boolean(),
+    courseId: v.id("courses"),
+    createdAt: v.number(),
+    order: v.number(),
+    summary: v.optional(v.string()),
+    title: v.string(),
+    updatedAt: v.number(),
+  })
+    .index("by_course", ["courseId"])
+    .index("by_course_order", ["courseId", "order"])
+    .index("by_course_active_order", ["courseId", "active", "order"]),
+
+  courseLessons: defineTable({
+    active: v.boolean(),
+    chapterId: v.id("courseChapters"),
+    courseId: v.id("courses"),
+    createdAt: v.number(),
+    description: v.optional(v.string()),
+    durationSeconds: v.optional(v.number()),
+    exerciseLink: v.optional(v.string()),
+    isPreview: v.boolean(),
+    order: v.number(),
+    title: v.string(),
+    updatedAt: v.number(),
+    videoType: v.union(
+      v.literal("none"),
+      v.literal("youtube"),
+      v.literal("drive"),
+      v.literal("external")
+    ),
+    videoUrl: v.optional(v.string()),
+  })
+    .index("by_course", ["courseId"])
+    .index("by_chapter_order", ["chapterId", "order"])
+    .index("by_course_active_order", ["courseId", "active", "order"]),
 
   // 27a. bookings - Đặt lịch
   bookings: defineTable({

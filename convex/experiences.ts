@@ -40,6 +40,18 @@ export const systemExperiences: SystemExperience[] = [
     title: "Chi tiết dịch vụ",
   },
   {
+    description: "Layout, filters, search cho danh sách khóa học.",
+    href: "/system/experiences/courses-list",
+    icon: "BookOpen",
+    title: "Danh sách khóa học",
+  },
+  {
+    description: "Hero, curriculum, giảng viên và CTA chi tiết khóa học.",
+    href: "/system/experiences/courses-detail",
+    icon: "BookOpen",
+    title: "Chi tiết khóa học",
+  },
+  {
     description: "Layout, filters, search cho danh sách sản phẩm.",
     href: "/system/experiences/products-list",
     icon: "Package",

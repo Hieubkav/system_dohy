@@ -56,6 +56,18 @@ export const SEED_MODULE_METADATA: Record<string, SeedModuleMetadata> = {
     description: 'Tin nhắn liên hệ từ website',
     name: 'Tin nhắn liên hệ',
   },
+  courseCategories: {
+    category: 'content',
+    defaultQuantity: 5,
+    description: 'Danh mục khóa học',
+    name: 'Course Categories',
+  },
+  courses: {
+    category: 'content',
+    defaultQuantity: 15,
+    description: 'Khóa học và chương/bài học',
+    name: 'Courses',
+  },
   customers: {
     category: 'user',
     defaultQuantity: 20,
