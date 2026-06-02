@@ -621,10 +621,10 @@ export function HeaderMenuPreview({
           <div className="flex items-center justify-between gap-4 min-w-0">
             <div className="flex items-center gap-4">
               {showTopbarHotline && (
-                <span className="flex items-center gap-1"><Phone size={12} /><span>{displayTopbar.hotline}</span></span>
+                <a href={`tel:${displayTopbar.hotline}`} className="flex items-center gap-1" style={{ color: layerColors.topnav.text }}><Phone size={12} /><span>{displayTopbar.hotline}</span></a>
               )}
               {device !== 'mobile' && showTopbarEmail && (
-                <span className="flex items-center gap-1"><Mail size={12} /><span>{displayTopbar.email}</span></span>
+                <a href={`mailto:${displayTopbar.email}`} className="flex items-center gap-1" style={{ color: layerColors.topnav.text }}><Mail size={12} /><span>{displayTopbar.email}</span></a>
               )}
             </div>
             {showSlogan && (
@@ -635,13 +635,13 @@ export function HeaderMenuPreview({
             <div className="flex items-center gap-3">
               {device !== 'mobile' && (
                 <>
-                  {showTrackOrder && <a href={defaultLinks.trackOrder} className="hover:underline">Theo dõi đơn hàng</a>}
+                  {showTrackOrder && <a href={defaultLinks.trackOrder} className="hover:underline" style={{ color: layerColors.topnav.text }}>Theo dõi đơn hàng</a>}
                   {showTrackOrder && showLoginLink && <span style={{ color: layerColors.topnav.text }}>|</span>}
                 </>
               )}
               {showUserMenu && renderUserMenu('text')}
               {showLoginLink && (
-                <a href={defaultLinks.login} className="hover:underline flex items-center gap-1">
+                <a href={defaultLinks.login} className="hover:underline flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
                   <User size={12} />
                   {loginLabel}
                 </a>
@@ -1024,10 +1024,10 @@ export function HeaderMenuPreview({
           <div className="flex items-center justify-between gap-4 min-w-0">
             <div className="flex items-center gap-4">
               {showTopbarHotline && (
-                <span className="flex items-center gap-1"><Phone size={12} /><span>{displayTopbar.hotline}</span></span>
+                <a href={`tel:${displayTopbar.hotline}`} className="flex items-center gap-1" style={{ color: layerColors.topnav.text }}><Phone size={12} /><span>{displayTopbar.hotline}</span></a>
               )}
               {device !== 'mobile' && showTopbarEmail && (
-                <span className="flex items-center gap-1"><Mail size={12} /><span>{displayTopbar.email}</span></span>
+                <a href={`mailto:${displayTopbar.email}`} className="flex items-center gap-1" style={{ color: layerColors.topnav.text }}><Mail size={12} /><span>{displayTopbar.email}</span></a>
               )}
             </div>
             {showSlogan && (
@@ -1038,13 +1038,13 @@ export function HeaderMenuPreview({
             <div className="flex items-center gap-3">
               {device !== 'mobile' && (
                 <>
-                  {showTrackOrder && <a href={defaultLinks.trackOrder} className="hover:underline">Theo dõi đơn hàng</a>}
+                  {showTrackOrder && <a href={defaultLinks.trackOrder} className="hover:underline" style={{ color: layerColors.topnav.text }}>Theo dõi đơn hàng</a>}
                   {showTrackOrder && showLoginLink && <span style={{ color: layerColors.topnav.text }}>|</span>}
                 </>
               )}
               {showUserMenu && renderUserMenu('text')}
               {showLoginLink && (
-                <a href={defaultLinks.login} className="hover:underline flex items-center gap-1">
+                <a href={defaultLinks.login} className="hover:underline flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
                   <User size={12} />
                   {loginLabel}
                 </a>
@@ -1315,10 +1315,10 @@ export function HeaderMenuPreview({
           <div className="flex items-center justify-between gap-4 min-w-0">
             <div className="flex items-center gap-4">
               {showTopbarHotline && (
-                <span className="flex items-center gap-1"><Phone size={12} /><span>{displayTopbar.hotline}</span></span>
+                <a href={`tel:${displayTopbar.hotline}`} className="flex items-center gap-1" style={{ color: layerColors.topnav.text }}><Phone size={12} /><span>{displayTopbar.hotline}</span></a>
               )}
               {device !== 'mobile' && showTopbarEmail && (
-                <span className="flex items-center gap-1"><Mail size={12} /><span>{displayTopbar.email}</span></span>
+                <a href={`mailto:${displayTopbar.email}`} className="flex items-center gap-1" style={{ color: layerColors.topnav.text }}><Mail size={12} /><span>{displayTopbar.email}</span></a>
               )}
             </div>
             {showSlogan && (
@@ -1329,13 +1329,13 @@ export function HeaderMenuPreview({
             <div className="flex items-center gap-3">
               {device !== 'mobile' && (
                 <>
-                  {showTrackOrder && <a href={defaultLinks.trackOrder} className="hover:underline">Theo dõi đơn hàng</a>}
+                  {showTrackOrder && <a href={defaultLinks.trackOrder} className="hover:underline" style={{ color: layerColors.topnav.text }}>Theo dõi đơn hàng</a>}
                   {showTrackOrder && showLoginLink && <span style={{ color: layerColors.topnav.text }}>|</span>}
                 </>
               )}
               {showUserMenu && renderUserMenu('text')}
               {showLoginLink && (
-                <a href={defaultLinks.login} className="hover:underline flex items-center gap-1">
+                <a href={defaultLinks.login} className="hover:underline flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
                   <User size={12} />
                   {loginLabel}
                 </a>

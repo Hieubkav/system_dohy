@@ -669,7 +669,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
             ? `hover:underline flex items-center gap-1 ${textClassName}`
             : 'p-2 transition-colors hover:text-[var(--menu-icon-hover)]',
         )}
-        style={variant === 'icon' ? { color: layerColors.navbar.text, ...menuVars } : undefined}
+        style={variant === 'icon' ? { color: layerColors.navbar.text, ...menuVars } : { color: layerColors.topnav.text }}
       >
         <User size={variant === 'text' ? 12 : 18} />
         {variant === 'text' && <span>{customer?.name || (config.login?.text ?? 'Tài khoản')}</span>}
@@ -971,13 +971,13 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 min-w-0">
               <div className="flex items-center gap-4">
                 {showTopbarHotline && (
-                  <a href={`tel:${topbarConfig.hotline}`} className="flex items-center gap-1">
+                  <a href={`tel:${topbarConfig.hotline}`} className="flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
                     <Phone size={12} />
                     <span>{topbarConfig.hotline}</span>
                   </a>
                 )}
                 {showTopbarEmail && (
-                  <a href={`mailto:${topbarConfig.email}`} className="hidden sm:flex items-center gap-1">
+                  <a href={`mailto:${topbarConfig.email}`} className="hidden sm:flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
                     <Mail size={12} />
                     <span>{topbarConfig.email}</span>
                   </a>
@@ -991,13 +991,13 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
               <div className="flex items-center gap-3">
                 {showTrackOrder && (
                   <>
-                    <Link href={DEFAULT_LINKS.trackOrder} className="hover:underline hidden sm:inline">Theo dõi đơn hàng</Link>
+                    <Link href={DEFAULT_LINKS.trackOrder} className="hover:underline hidden sm:inline" style={{ color: layerColors.topnav.text }}>Theo dõi đơn hàng</Link>
                   </>
                 )}
                 {showTrackOrder && showLogin && <span className="hidden sm:inline" style={{ color: layerColors.topnav.text }}>|</span>}
                 {showUserMenu && renderUserMenu('text', '')}
                 {showLoginLink && (
-                  <Link href={DEFAULT_LINKS.login} className="hover:underline flex items-center gap-1">
+                  <Link href={DEFAULT_LINKS.login} className="hover:underline flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
                     <User size={12} />
                     {config.login?.text ?? 'Đăng nhập'}
                   </Link>
@@ -1472,13 +1472,13 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 min-w-0">
               <div className="flex items-center gap-4">
                 {showTopbarHotline && (
-                  <a href={`tel:${topbarConfig.hotline}`} className="flex items-center gap-1">
+                  <a href={`tel:${topbarConfig.hotline}`} className="flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
                     <Phone size={12} />
                     <span>{topbarConfig.hotline}</span>
                   </a>
                 )}
                 {showTopbarEmail && (
-                  <a href={`mailto:${topbarConfig.email}`} className="hidden sm:flex items-center gap-1">
+                  <a href={`mailto:${topbarConfig.email}`} className="hidden sm:flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
                     <Mail size={12} />
                     <span>{topbarConfig.email}</span>
                   </a>
@@ -1492,13 +1492,13 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
               <div className="flex items-center gap-3">
                 {showTrackOrder && (
                   <>
-                    <Link href={DEFAULT_LINKS.trackOrder} className="hover:underline hidden sm:inline">Theo dõi đơn hàng</Link>
+                    <Link href={DEFAULT_LINKS.trackOrder} className="hover:underline hidden sm:inline" style={{ color: layerColors.topnav.text }}>Theo dõi đơn hàng</Link>
                   </>
                 )}
                 {showTrackOrder && showLogin && <span className="hidden sm:inline" style={{ color: layerColors.topnav.text }}>|</span>}
                 {showUserMenu && renderUserMenu('text', '')}
                 {showLoginLink && (
-                  <Link href={DEFAULT_LINKS.login} className="hover:underline flex items-center gap-1">
+                  <Link href={DEFAULT_LINKS.login} className="hover:underline flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
                     <User size={12} />
                     {config.login?.text ?? 'Đăng nhập'}
                   </Link>
@@ -1838,13 +1838,13 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 min-w-0">
               <div className="flex items-center gap-4">
                 {showTopbarHotline && (
-                  <a href={`tel:${topbarConfig.hotline}`} className="flex items-center gap-1">
+                  <a href={`tel:${topbarConfig.hotline}`} className="flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
                     <Phone size={12} />
                     <span>{topbarConfig.hotline}</span>
                   </a>
                 )}
                 {showTopbarEmail && (
-                  <a href={`mailto:${topbarConfig.email}`} className="hidden sm:flex items-center gap-1">
+                  <a href={`mailto:${topbarConfig.email}`} className="hidden sm:flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
                     <Mail size={12} />
                     <span>{topbarConfig.email}</span>
                   </a>
@@ -1858,13 +1858,13 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
               <div className="flex items-center gap-3">
                 {showTrackOrder && (
                   <>
-                    <Link href={DEFAULT_LINKS.trackOrder} className="hover:underline hidden sm:inline">Theo dõi đơn hàng</Link>
+                    <Link href={DEFAULT_LINKS.trackOrder} className="hover:underline hidden sm:inline" style={{ color: layerColors.topnav.text }}>Theo dõi đơn hàng</Link>
                   </>
                 )}
                 {showTrackOrder && showLogin && <span className="hidden sm:inline" style={{ color: layerColors.topnav.text }}>|</span>}
                 {showUserMenu && renderUserMenu('text', '')}
                 {showLoginLink && (
-                  <Link href={DEFAULT_LINKS.login} className="hover:underline flex items-center gap-1">
+                  <Link href={DEFAULT_LINKS.login} className="hover:underline flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
                     <User size={12} />
                     {config.login?.text ?? 'Đăng nhập'}
                   </Link>
