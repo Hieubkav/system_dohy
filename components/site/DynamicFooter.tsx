@@ -109,6 +109,8 @@ export function DynamicFooter() {
     if (socialLinks.youtube) {settingSocials.push({ icon: 'youtube', id: 3, platform: 'youtube', url: socialLinks.youtube });}
     if (socialLinks.tiktok) {settingSocials.push({ icon: 'tiktok', id: 4, platform: 'tiktok', url: socialLinks.tiktok });}
     if (socialLinks.zalo) {settingSocials.push({ icon: 'zalo', id: 5, platform: 'zalo', url: socialLinks.zalo });}
+    if (socialLinks.twitter) {settingSocials.push({ icon: 'x', id: 6, platform: 'x', url: socialLinks.twitter });}
+    if (socialLinks.pinterest) {settingSocials.push({ icon: 'pinterest', id: 7, platform: 'pinterest', url: socialLinks.pinterest });}
     return settingSocials.length > 0 ? settingSocials : [
       { icon: 'facebook', id: 1, platform: 'facebook', url: '#' },
       { icon: 'instagram', id: 2, platform: 'instagram', url: '#' },

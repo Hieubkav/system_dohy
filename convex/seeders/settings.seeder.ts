@@ -87,6 +87,8 @@ export class SettingsSeeder extends BaseSeeder<SettingData> {
       { group: 'social', key: 'social_instagram', value: '' },
       { group: 'social', key: 'social_youtube', value: '' },
       { group: 'social', key: 'social_tiktok', value: '' },
+      { group: 'social', key: 'social_pinterest', value: '' },
+      { group: 'social', key: 'social_twitter', value: '' },
       { group: 'mail', key: 'mail_from_name', value: 'Website' },
       { group: 'mail', key: 'mail_from_email', value: '' },
       { group: 'mail', key: 'mail_driver', value: 'smtp' },

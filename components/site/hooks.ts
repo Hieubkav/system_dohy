@@ -174,7 +174,7 @@ export function useSocialLinks() {
 
   const enabledKeys = new Set(
     skipSocial && skipContact
-      ? ['social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok', 'social_twitter', 'social_youtube', 'contact_zalo']
+      ? ['social_facebook', 'social_instagram', 'social_linkedin', 'social_tiktok', 'social_twitter', 'social_youtube', 'contact_zalo', 'social_pinterest']
       : (enabledFields?.map(f => f.fieldKey) ?? [])
   );
   
@@ -183,6 +183,7 @@ export function useSocialLinks() {
     instagram: enabledKeys.has('social_instagram') ? (settingsMap.social_instagram || '') : '',
     isLoading: false,
     linkedin: enabledKeys.has('social_linkedin') ? (settingsMap.social_linkedin || '') : '',
+    pinterest: enabledKeys.has('social_pinterest') ? (settingsMap.social_pinterest || '') : '',
     tiktok: enabledKeys.has('social_tiktok') ? (settingsMap.social_tiktok || '') : '',
     twitter: enabledKeys.has('social_twitter') ? (settingsMap.social_twitter || '') : '',
     youtube: enabledKeys.has('social_youtube') ? (settingsMap.social_youtube || '') : '',

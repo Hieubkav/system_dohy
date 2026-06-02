@@ -1824,6 +1824,8 @@ export const seedSettingsModule = mutation({
         { group: "social", key: "social_instagram", value: "" },
         { group: "social", key: "social_youtube", value: "" },
         { group: "social", key: "social_tiktok", value: "" },
+        { group: "social", key: "social_pinterest", value: "" },
+        { group: "social", key: "social_twitter", value: "" },
         
         // Mail settings
         { group: "mail", key: "mail_from_name", value: "Website" },
@@ -1954,6 +1956,8 @@ export const seedSettingsModule = mutation({
         { enabled: true, fieldKey: "social_instagram", group: "social", isSystem: false, linkedFeature: "enableSocial", moduleKey: "settings", name: "Instagram", order: 17, required: false, type: "text" as const },
         { enabled: true, fieldKey: "social_youtube", group: "social", isSystem: false, linkedFeature: "enableSocial", moduleKey: "settings", name: "Youtube", order: 18, required: false, type: "text" as const },
         { enabled: false, fieldKey: "social_tiktok", group: "social", isSystem: false, linkedFeature: "enableSocial", moduleKey: "settings", name: "TikTok", order: 19, required: false, type: "text" as const },
+        { enabled: true, fieldKey: "social_pinterest", group: "social", isSystem: false, linkedFeature: "enableSocial", moduleKey: "settings", name: "Pinterest", order: 20, required: false, type: "text" as const },
+        { enabled: true, fieldKey: "social_twitter", group: "social", isSystem: false, linkedFeature: "enableSocial", moduleKey: "settings", name: "X (Twitter)", order: 21, required: false, type: "text" as const },
         // Mail fields
       ];
       for (const field of fields) {

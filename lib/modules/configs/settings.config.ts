@@ -67,6 +67,8 @@ export const settingsModule = defineModuleWithRuntime({
       { enabled: true, fieldKey: 'social_instagram', group: 'social', linkedFeature: 'enableSocial', isSystem: false, name: 'Instagram', order: 17, required: false, type: 'text' },
       { enabled: true, fieldKey: 'social_youtube', group: 'social', linkedFeature: 'enableSocial', isSystem: false, name: 'Youtube', order: 18, required: false, type: 'text' },
       { enabled: false, fieldKey: 'social_tiktok', group: 'social', linkedFeature: 'enableSocial', isSystem: false, name: 'TikTok', order: 19, required: false, type: 'text' },
+      { enabled: true, fieldKey: 'social_pinterest', group: 'social', linkedFeature: 'enableSocial', isSystem: false, name: 'Pinterest', order: 20, required: false, type: 'text' },
+      { enabled: true, fieldKey: 'social_twitter', group: 'social', linkedFeature: 'enableSocial', isSystem: false, name: 'X (Twitter)', order: 21, required: false, type: 'text' },
     ],
   },
 
