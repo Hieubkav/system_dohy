@@ -12,6 +12,8 @@ type CoursesListPreviewProps = {
   showSearch?: boolean;
   showCategories?: boolean;
   showLevelFilter?: boolean;
+  hideEmptyCategories?: boolean;
+  postsPerPage?: number;
   brandColor?: string;
   secondaryColor?: string;
   colorMode?: 'single' | 'dual';
@@ -37,14 +39,30 @@ const MOCK_COURSES = [
   { title: 'TypeScript nâng cao', category: 'Frontend', level: 'Nâng cao', lessons: 31, duration: '14 giờ', price: '1.900.000đ' },
 ];
 
-const MOCK_CATEGORIES = ['Tất cả', 'Cơ bản', 'Frontend', 'Chuyên sâu', 'Doanh nghiệp'];
+const MOCK_CATEGORIES = [
+  { label: 'Tất cả' },
+  { label: 'Cơ bản' },
+  { label: 'Frontend' },
+  { label: 'Chuyên sâu' },
+  { empty: true, label: 'Doanh nghiệp' },
+];
 
 const resolveSecondary = (primary: string, secondary?: string, mode?: 'single' | 'dual') =>
   mode === 'dual' && secondary ? secondary : primary;
 
-function CourseCard({ course, brandColor, secondaryColor }: { course: typeof MOCK_COURSES[number]; brandColor: string; secondaryColor: string }) {
+function CourseCard({
+  brandColor,
+  className = '',
+  course,
+  secondaryColor,
+}: {
+  brandColor: string;
+  className?: string;
+  course: typeof MOCK_COURSES[number];
+  secondaryColor: string;
+}) {
   return (
-    <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <article className={`overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm ${className}`}>
       <div className="relative flex aspect-video items-center justify-center bg-slate-100" style={{ background: `linear-gradient(135deg, ${brandColor}22, ${secondaryColor}22)` }}>
         <GraduationCap size={40} style={{ color: brandColor }} />
         {course.featured && (
@@ -78,6 +96,8 @@ export function CoursesListPreview({
   showSearch = true,
   showCategories = true,
   showLevelFilter = true,
+  hideEmptyCategories = true,
+  postsPerPage = 12,
   brandColor = '#4f46e5',
   secondaryColor,
   colorMode = 'single',
@@ -86,6 +106,35 @@ export function CoursesListPreview({
   const accent = resolveSecondary(brandColor, secondaryColor, colorMode);
   const isMobile = device === 'mobile';
   const courses = layoutStyle === 'masonry' ? MOCK_COURSES : MOCK_COURSES.slice(0, isMobile ? 2 : 4);
+  const visibleCategories = hideEmptyCategories ? MOCK_CATEGORIES.filter((category) => !category.empty) : MOCK_CATEGORIES;
+  const filterPanel = (showSearch || showCategories || showLevelFilter) ? (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      {showSearch && (
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input disabled className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm" placeholder="Tìm khóa học..." />
+        </div>
+      )}
+      {showCategories && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {visibleCategories.map((category, index) => (
+            <span
+              key={category.label}
+              className="rounded-full px-3 py-1 text-xs font-medium"
+              style={index === 0 ? { backgroundColor: brandColor, color: '#fff' } : { backgroundColor: '#f1f5f9', color: '#475569' }}
+            >
+              {category.label}
+            </span>
+          ))}
+        </div>
+      )}
+      {showLevelFilter && (
+        <div className="flex flex-wrap gap-2 text-xs text-slate-500">
+          <span>Cơ bản</span><span>Trung cấp</span><span>Nâng cao</span>
+        </div>
+      )}
+    </div>
+  ) : null;
 
   return (
     <div className="bg-slate-50 px-4 py-8">
@@ -95,41 +144,28 @@ export function CoursesListPreview({
           <p className="mt-2 text-sm text-slate-500">Học theo lộ trình rõ ràng, dễ theo dõi.</p>
         </div>
 
-        {(showSearch || showCategories || showLevelFilter) && (
-          <div className={`rounded-xl border border-slate-200 bg-white p-4 shadow-sm ${layoutStyle === 'sidebar' ? 'lg:max-w-xs' : ''}`}>
-            {showSearch && (
-              <div className="relative mb-3">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input disabled className="w-full rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm" placeholder="Tìm khóa học..." />
-              </div>
-            )}
-            {showCategories && (
-              <div className="mb-3 flex flex-wrap gap-2">
-                {MOCK_CATEGORIES.map((category, index) => (
-                  <span key={category} className="rounded-full px-3 py-1 text-xs font-medium" style={index === 0 ? { backgroundColor: brandColor, color: '#fff' } : { backgroundColor: '#f1f5f9', color: '#475569' }}>
-                    {category}
-                  </span>
-                ))}
-              </div>
-            )}
-            {showLevelFilter && (
-              <div className="flex gap-2 text-xs text-slate-500">
-                <span>Cơ bản</span><span>Trung cấp</span><span>Nâng cao</span>
-              </div>
-            )}
-          </div>
-        )}
+        {layoutStyle !== 'sidebar' && filterPanel}
 
-        <div className={layoutStyle === 'sidebar' ? 'grid gap-5 lg:grid-cols-[280px_1fr]' : ''}>
-          {layoutStyle === 'sidebar' && <div className="hidden lg:block" />}
-          <div className={layoutStyle === 'masonry' ? 'grid gap-5 md:grid-cols-2' : 'grid gap-5 sm:grid-cols-2 lg:grid-cols-4'}>
-            {courses.map((course) => <CourseCard key={course.title} course={course} brandColor={brandColor} secondaryColor={accent} />)}
+        <div className={layoutStyle === 'sidebar' ? 'grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]' : ''}>
+          {layoutStyle === 'sidebar' && filterPanel}
+          <div className={layoutStyle === 'masonry' ? 'grid gap-5 md:grid-cols-2' : 'grid gap-5 sm:grid-cols-2 lg:grid-cols-3'}>
+            {courses.map((course, index) => (
+              <CourseCard
+                key={course.title}
+                course={course}
+                brandColor={brandColor}
+                secondaryColor={accent}
+                className={layoutStyle === 'masonry' && index === 0 ? 'md:col-span-2' : ''}
+              />
+            ))}
           </div>
         </div>
 
         <div className="text-center">
           {paginationType === 'pagination' ? (
-            <span className="inline-flex rounded-lg px-5 py-2 text-sm font-medium text-white" style={{ backgroundColor: brandColor }}>1&nbsp;&nbsp;2&nbsp;&nbsp;3&nbsp;&nbsp;...</span>
+            <span className="inline-flex rounded-lg px-5 py-2 text-sm font-medium text-white" style={{ backgroundColor: brandColor }}>
+              {postsPerPage} khóa học/trang · 1&nbsp;&nbsp;2&nbsp;&nbsp;3&nbsp;&nbsp;...
+            </span>
           ) : (
             <span className="text-sm text-slate-500">Cuộn để xem thêm khóa học...</span>
           )}

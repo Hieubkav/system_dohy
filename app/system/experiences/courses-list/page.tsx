@@ -25,44 +25,49 @@ import { EXPERIENCE_NAMES, MESSAGES, useExperienceConfig, useExperienceSave } fr
 type ListLayoutStyle = 'grid' | 'sidebar' | 'masonry';
 type PaginationType = 'pagination' | 'infiniteScroll';
 
-type LayoutConfig = {
+type CoursesListExperienceConfig = {
+  layoutStyle: ListLayoutStyle;
   showSearch: boolean;
   showCategories: boolean;
   showLevelFilter: boolean;
+  hideEmptyCategories: boolean;
   paginationType: PaginationType;
   postsPerPage: number;
-};
-
-type CoursesListExperienceConfig = {
-  layoutStyle: ListLayoutStyle;
-  layouts: Record<ListLayoutStyle, LayoutConfig>;
-  hideEmptyCategories: boolean;
 };
 
 const EXPERIENCE_KEY = 'courses_list_ui';
 
 const LAYOUTS: LayoutOption<ListLayoutStyle>[] = [
-  { id: 'grid', label: 'Dạng lưới', description: 'Thẻ khóa học dạng lưới' },
-  { id: 'sidebar', label: 'Bộ lọc bên trái', description: 'Danh mục và trình độ nằm bên trái' },
-  { id: 'masonry', label: 'Nổi bật', description: 'Nhấn mạnh khóa học nổi bật' },
+  { id: 'grid', label: 'Lưới', description: 'Bộ lọc gọn phía trên, thẻ khóa học rõ ràng' },
+  { id: 'sidebar', label: 'Bộ lọc trái', description: 'Bộ lọc cố định bên trái, phù hợp nhiều danh mục' },
+  { id: 'masonry', label: 'Nổi bật', description: 'Nhấn khóa học chính, hợp trang giới thiệu cao cấp' },
 ];
 
-const DEFAULT_LAYOUT: LayoutConfig = {
+const DEFAULT_CONFIG: CoursesListExperienceConfig = {
+  layoutStyle: 'grid',
   showSearch: true,
   showCategories: true,
   showLevelFilter: true,
+  hideEmptyCategories: true,
   paginationType: 'pagination',
   postsPerPage: 12,
 };
 
-const DEFAULT_CONFIG: CoursesListExperienceConfig = {
-  layoutStyle: 'grid',
-  layouts: {
-    grid: { ...DEFAULT_LAYOUT },
-    sidebar: { ...DEFAULT_LAYOUT },
-    masonry: { ...DEFAULT_LAYOUT },
-  },
-  hideEmptyCategories: true,
+const HINTS = [
+  'Lưới phù hợp trang có nhiều khóa học và cần xem nhanh.',
+  'Bộ lọc trái phù hợp khi có nhiều danh mục hoặc trình độ học.',
+  'Nổi bật phù hợp trang giới thiệu cao cấp, cần nhấn khóa học chính.',
+  'Phân trang tốt cho Google; cuộn vô hạn hợp trải nghiệm trên điện thoại.',
+];
+
+const normalizeLayoutStyle = (value?: string): ListLayoutStyle => {
+  if (value === 'grid' || value === 'sidebar' || value === 'masonry') {return value;}
+  return DEFAULT_CONFIG.layoutStyle;
+};
+
+const normalizePaginationType = (value?: string): PaginationType => {
+  if (value === 'infiniteScroll') {return 'infiniteScroll';}
+  return 'pagination';
 };
 
 export default function CoursesListExperiencePage() {
@@ -81,22 +86,20 @@ export default function CoursesListExperiencePage() {
   }, [brandColors.primary, brandColors.secondary, brandColors.mode]);
 
   const serverConfig = useMemo<CoursesListExperienceConfig>(() => {
-    const raw = experienceSetting?.value as Partial<CoursesListExperienceConfig> | undefined;
-    const normalizeLayout = (layout?: Partial<LayoutConfig>): LayoutConfig => ({
-      showSearch: layout?.showSearch ?? true,
-      showCategories: layout?.showCategories ?? true,
-      showLevelFilter: layout?.showLevelFilter ?? true,
-      paginationType: layout?.paginationType === 'infiniteScroll' ? 'infiniteScroll' : 'pagination',
-      postsPerPage: layout?.postsPerPage ?? 12,
-    });
+    const raw = experienceSetting?.value as (Partial<CoursesListExperienceConfig> & {
+      layouts?: Partial<Record<ListLayoutStyle, Partial<Omit<CoursesListExperienceConfig, 'layoutStyle'>>>>;
+    }) | undefined;
+    const layoutStyle = normalizeLayoutStyle(raw?.layoutStyle);
+    const legacyLayout = raw?.layouts?.[layoutStyle];
+
     return {
-      layoutStyle: raw?.layoutStyle ?? 'grid',
-      layouts: {
-        grid: normalizeLayout(raw?.layouts?.grid),
-        sidebar: normalizeLayout(raw?.layouts?.sidebar),
-        masonry: normalizeLayout(raw?.layouts?.masonry),
-      },
+      layoutStyle,
+      showSearch: legacyLayout?.showSearch ?? raw?.showSearch ?? true,
+      showCategories: legacyLayout?.showCategories ?? raw?.showCategories ?? true,
+      showLevelFilter: legacyLayout?.showLevelFilter ?? raw?.showLevelFilter ?? true,
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
+      paginationType: normalizePaginationType(legacyLayout?.paginationType ?? raw?.paginationType),
+      postsPerPage: legacyLayout?.postsPerPage ?? raw?.postsPerPage ?? 12,
     };
   }, [experienceSetting?.value]);
 
@@ -107,17 +110,8 @@ export default function CoursesListExperiencePage() {
     config,
     MESSAGES.saveSuccess(EXPERIENCE_NAMES[EXPERIENCE_KEY])
   );
-  const currentLayout = config.layouts[config.layoutStyle];
-
-  const updateLayout = <K extends keyof LayoutConfig>(key: K, value: LayoutConfig[K]) => {
-    setConfig((prev) => ({
-      ...prev,
-      layouts: {
-        ...prev.layouts,
-        [prev.layoutStyle]: { ...prev.layouts[prev.layoutStyle], [key]: value },
-      },
-    }));
-  };
+  const layoutLabel = LAYOUTS.find((layout) => layout.id === config.layoutStyle)?.label ?? 'Lưới';
+  const deviceLabel = previewDevice === 'desktop' ? 'Desktop (1920px)' : previewDevice === 'tablet' ? 'Tablet (768px)' : 'Mobile (375px)';
 
   if (isLoading) {
     return <div className="flex h-64 items-center justify-center text-slate-500">{MESSAGES.loading}</div>;
@@ -146,29 +140,29 @@ export default function CoursesListExperiencePage() {
             <ColorConfigCard primary={brandColor} secondary={secondaryColor} mode={colorMode} onPrimaryChange={setBrandColor} onSecondaryChange={setSecondaryColor} onModeChange={setColorMode} />
           </ControlCard>
           <ControlCard title="Khối hiển thị">
-            <ToggleRow label="Tìm kiếm" checked={currentLayout.showSearch} onChange={(value) => updateLayout('showSearch', value)} accentColor={brandColor} />
-            <ToggleRow label="Danh mục" checked={currentLayout.showCategories} onChange={(value) => updateLayout('showCategories', value)} accentColor={brandColor} />
-            <ToggleRow label="Lọc theo trình độ" checked={currentLayout.showLevelFilter} onChange={(value) => updateLayout('showLevelFilter', value)} accentColor={brandColor} />
+            <ToggleRow label="Tìm kiếm" checked={config.showSearch} onChange={(value) => setConfig((prev) => ({ ...prev, showSearch: value }))} accentColor={brandColor} />
+            <ToggleRow label="Danh mục" checked={config.showCategories} onChange={(value) => setConfig((prev) => ({ ...prev, showCategories: value }))} accentColor={brandColor} />
+            <ToggleRow label="Lọc theo trình độ" checked={config.showLevelFilter} onChange={(value) => setConfig((prev) => ({ ...prev, showLevelFilter: value }))} accentColor={brandColor} />
             <ToggleRow label="Ẩn danh mục rỗng" checked={config.hideEmptyCategories} onChange={(value) => setConfig((prev) => ({ ...prev, hideEmptyCategories: value }))} accentColor={brandColor} />
           </ControlCard>
-          <ControlCard title="Phân trang">
-            <SelectRow label="Kiểu" value={currentLayout.paginationType} options={[{ value: 'pagination', label: 'Phân trang' }, { value: 'infiniteScroll', label: 'Cuộn vô hạn' }]} onChange={(value) => updateLayout('paginationType', value as PaginationType)} />
-            <SelectRow label="Khóa học/trang" value={String(currentLayout.postsPerPage)} options={[12, 20, 24, 48].map((value) => ({ value: String(value), label: String(value) }))} onChange={(value) => updateLayout('postsPerPage', Number(value))} />
-          </ControlCard>
-          <ControlCard title="Module liên quan">
-            <ExperienceModuleLink enabled={coursesModule?.enabled ?? false} href="/system/modules/courses" icon={BookOpen} title="Khóa học" colorScheme="purple" />
+          <ControlCard title="Danh sách">
+            <SelectRow label="Kiểu tải" value={config.paginationType} options={[{ value: 'pagination', label: 'Phân trang' }, { value: 'infiniteScroll', label: 'Cuộn vô hạn' }]} onChange={(value) => setConfig((prev) => ({ ...prev, paginationType: value as PaginationType }))} />
+            <SelectRow label="Khóa học/trang" value={String(config.postsPerPage)} options={[12, 20, 24, 48].map((value) => ({ value: String(value), label: String(value) }))} onChange={(value) => setConfig((prev) => ({ ...prev, postsPerPage: Number(value) }))} />
           </ControlCard>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Liên kết & ghi chú</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Module & liên kết</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <ControlCard title="Module liên quan">
+            <ExperienceModuleLink enabled={coursesModule?.enabled ?? false} href="/system/modules/courses" icon={BookOpen} title="Khóa học" colorScheme="purple" />
+          </ControlCard>
           <ControlCard title="Link xem thử">
             <ExampleLinks links={[{ label: 'Trang khóa học', url: '/khoa-hoc' }]} color={brandColor} compact />
           </ControlCard>
           <Card className="p-2">
-            <ExperienceHintCard hints={['Dạng lưới phù hợp trang có nhiều khóa học.', 'Bộ lọc bên trái phù hợp khi có nhiều danh mục/trình độ.', 'Dạng nổi bật phù hợp trang khóa học cao cấp.']} />
+            <ExperienceHintCard hints={HINTS} />
           </Card>
         </CardContent>
       </Card>
@@ -188,16 +182,23 @@ export default function CoursesListExperiencePage() {
             <BrowserFrame url="yoursite.com/khoa-hoc">
               <CoursesListPreview
                 layoutStyle={config.layoutStyle}
-                showSearch={currentLayout.showSearch}
-                showCategories={currentLayout.showCategories}
-                showLevelFilter={currentLayout.showLevelFilter}
-                paginationType={currentLayout.paginationType}
+                showSearch={config.showSearch}
+                showCategories={config.showCategories}
+                showLevelFilter={config.showLevelFilter}
+                hideEmptyCategories={config.hideEmptyCategories}
+                paginationType={config.paginationType}
+                postsPerPage={config.postsPerPage}
                 brandColor={brandColor}
                 secondaryColor={secondaryColor}
                 colorMode={colorMode}
                 device={previewDevice}
               />
             </BrowserFrame>
+          </div>
+          <div className="mt-3 text-xs text-slate-500">
+            Bố cục: <strong className="text-slate-700 dark:text-slate-300">{layoutLabel}</strong>
+            {' • '}{deviceLabel}
+            {' • '}Hiển thị {config.postsPerPage} khóa học/trang
           </div>
         </CardContent>
       </Card>

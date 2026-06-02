@@ -343,6 +343,11 @@ type CoursesListConfig = {
   postsPerPage: number;
 };
 
+const normalizeCoursesListLayoutStyle = (value?: string): CoursesListConfig['layoutStyle'] => {
+  if (value === 'grid' || value === 'sidebar' || value === 'masonry') {return value;}
+  return 'grid';
+};
+
 export function useCoursesListConfig(): CoursesListConfig {
   const experienceSetting = useQuery(api.settings.getByKey, { key: 'courses_list_ui' });
 
@@ -357,7 +362,7 @@ export function useCoursesListConfig(): CoursesListConfig {
       hideEmptyCategories?: boolean;
       postsPerPage?: number;
     } | undefined;
-    const layoutStyle: CoursesListConfig['layoutStyle'] = raw?.layoutStyle ?? 'grid';
+    const layoutStyle = normalizeCoursesListLayoutStyle(raw?.layoutStyle);
     const layoutConfig = raw?.layouts?.[layoutStyle];
     return {
       layoutStyle,
