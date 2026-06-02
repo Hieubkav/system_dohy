@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
+import { getCourseLevelLabel } from '@/lib/courses/labels';
 import { BookOpen, ChevronDown, Edit, ExternalLink, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminEntityImage } from '../components/AdminEntityImage';
@@ -154,7 +155,7 @@ function CoursesContent() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Quản lý khóa học</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Khóa học, giá, giảng viên và curriculum</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Khóa học, giá, giảng viên và nội dung học</p>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -200,7 +201,7 @@ function CoursesContent() {
               <TableHead>Khóa học</TableHead>
               <TableHead>Danh mục</TableHead>
               <TableHead>Giá</TableHead>
-              <TableHead>Curriculum</TableHead>
+              <TableHead>Nội dung học</TableHead>
               <TableHead>Trạng thái</TableHead>
               <TableHead className="text-right">Hành động</TableHead>
             </TableRow>
@@ -232,7 +233,7 @@ function CoursesContent() {
                 </TableCell>
                 <TableCell>
                   <div className="font-medium text-slate-900 dark:text-slate-100">{course.title}</div>
-                  <div className="text-xs text-slate-500">{course.instructorName || 'Chưa có giảng viên'}{course.level ? ` · ${course.level}` : ''}</div>
+                  <div className="text-xs text-slate-500">{course.instructorName || 'Chưa có giảng viên'}{course.level ? ` · ${getCourseLevelLabel(course.level)}` : ''}</div>
                 </TableCell>
                 <TableCell>{categoryMap[course.categoryId]?.name ?? 'Không có'}</TableCell>
                 <TableCell className="text-slate-600 dark:text-slate-300">{formatPrice(course.pricingType, course.priceAmount)}</TableCell>

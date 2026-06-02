@@ -42,9 +42,9 @@ type CoursesListExperienceConfig = {
 const EXPERIENCE_KEY = 'courses_list_ui';
 
 const LAYOUTS: LayoutOption<ListLayoutStyle>[] = [
-  { id: 'grid', label: 'Grid', description: 'Cards khóa học dạng lưới' },
-  { id: 'sidebar', label: 'Sidebar', description: 'Filter bên trái' },
-  { id: 'masonry', label: 'Magazine', description: 'Nổi bật khóa học hero/magazine' },
+  { id: 'grid', label: 'Dạng lưới', description: 'Thẻ khóa học dạng lưới' },
+  { id: 'sidebar', label: 'Bộ lọc bên trái', description: 'Danh mục và trình độ nằm bên trái' },
+  { id: 'masonry', label: 'Nổi bật', description: 'Nhấn mạnh khóa học nổi bật' },
 ];
 
 const DEFAULT_LAYOUT: LayoutConfig = {
@@ -148,7 +148,7 @@ export default function CoursesListExperiencePage() {
           <ControlCard title="Khối hiển thị">
             <ToggleRow label="Tìm kiếm" checked={currentLayout.showSearch} onChange={(value) => updateLayout('showSearch', value)} accentColor={brandColor} />
             <ToggleRow label="Danh mục" checked={currentLayout.showCategories} onChange={(value) => updateLayout('showCategories', value)} accentColor={brandColor} />
-            <ToggleRow label="Filter cấp độ" checked={currentLayout.showLevelFilter} onChange={(value) => updateLayout('showLevelFilter', value)} accentColor={brandColor} />
+            <ToggleRow label="Lọc theo trình độ" checked={currentLayout.showLevelFilter} onChange={(value) => updateLayout('showLevelFilter', value)} accentColor={brandColor} />
             <ToggleRow label="Ẩn danh mục rỗng" checked={config.hideEmptyCategories} onChange={(value) => setConfig((prev) => ({ ...prev, hideEmptyCategories: value }))} accentColor={brandColor} />
           </ControlCard>
           <ControlCard title="Phân trang">
@@ -168,7 +168,7 @@ export default function CoursesListExperiencePage() {
             <ExampleLinks links={[{ label: 'Trang khóa học', url: '/khoa-hoc' }]} color={brandColor} compact />
           </ControlCard>
           <Card className="p-2">
-            <ExperienceHintCard hints={['Grid phù hợp catalog khóa học.', 'Sidebar phù hợp khi có nhiều danh mục/cấp độ.', 'Magazine dùng cho landing khóa học cao cấp.']} />
+            <ExperienceHintCard hints={['Dạng lưới phù hợp trang có nhiều khóa học.', 'Bộ lọc bên trái phù hợp khi có nhiều danh mục/trình độ.', 'Dạng nổi bật phù hợp trang khóa học cao cấp.']} />
           </Card>
         </CardContent>
       </Card>
@@ -176,7 +176,7 @@ export default function CoursesListExperiencePage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle className="flex items-center gap-2 text-base"><Eye size={18} /> Preview</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base"><Eye size={18} /> Xem trước</CardTitle>
             <div className="flex items-center gap-3">
               <LayoutTabs layouts={LAYOUTS} activeLayout={config.layoutStyle} onChange={(layout) => setConfig((prev) => ({ ...prev, layoutStyle: layout }))} accentColor={brandColor} />
               <DeviceToggle value={previewDevice} onChange={setPreviewDevice} size="sm" />

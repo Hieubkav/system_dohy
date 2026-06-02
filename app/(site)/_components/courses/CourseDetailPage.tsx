@@ -7,6 +7,7 @@ import { api } from '@/convex/_generated/api';
 import { ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap, PlayCircle, Star, UserRound } from 'lucide-react';
 import { RichContent, withFormatMarker } from '@/components/common/RichContent';
 import { useBrandColors } from '@/components/site/hooks';
+import { getCourseLevelLabel } from '@/lib/courses/labels';
 import { useCoursesDetailConfig } from '@/lib/experiences';
 
 type CourseDetailPageProps = {
@@ -105,7 +106,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         </>
       )}
       {showPrice && course.comparePriceAmount && course.pricingType === 'paid' && (
-        <p className="text-sm text-slate-400 line-through">{formatPrice('paid', course.comparePriceAmount)}</p>
+        <p className="text-sm text-slate-400">
+          Giá gốc: <span className="line-through">{formatPrice('paid', course.comparePriceAmount)}</span>
+        </p>
       )}
       <button type="button" className="mt-4 w-full rounded-xl px-5 py-3 font-semibold text-white" style={{ backgroundColor: brandColors.primary }}>
         {!showPrice || course.pricingType === 'contact' ? 'Liên hệ tư vấn' : 'Đăng ký học'}
@@ -128,7 +131,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                 </span>
               )}
               <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: isModern ? 'rgba(255,255,255,.18)' : `${brandColors.primary}18`, color: isModern ? '#fff' : brandColors.primary }}>
-                {category?.name ?? 'Khóa học'}{course.level ? ` · ${course.level}` : ''}
+                {category?.name ?? 'Khóa học'}{course.level ? ` · ${getCourseLevelLabel(course.level)}` : ''}
               </span>
             </div>
             <h1 className={`max-w-4xl text-4xl font-bold leading-tight md:text-5xl ${isModern ? 'text-white' : 'text-slate-900'}`}>{course.title}</h1>
@@ -176,7 +179,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                           {chapterLessons.map((lesson) => (
                             <div key={lesson._id} className="flex items-center justify-between gap-3 py-2 text-sm">
                               <span className="text-slate-700">{lesson.order + 1}. {lesson.title}</span>
-                              {lesson.isPreview && <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-700">Preview</span>}
+                              {lesson.isPreview && <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs text-emerald-700">Xem thử</span>}
                             </div>
                           ))}
                         </div>
@@ -184,7 +187,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                     </div>
                   );
                 })}
-                {chapters?.length === 0 && <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-500">Curriculum đang được cập nhật.</div>}
+                {chapters?.length === 0 && <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-500">Nội dung khóa học đang được cập nhật.</div>}
               </div>
             </section>
           )}

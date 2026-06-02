@@ -39,7 +39,6 @@ export type AiEntityImportPayload = {
   stock?: number;
   duration?: string;
   durationText?: string;
-  durationSeconds?: number;
   authorName?: string;
   instructorName?: string;
   level?: string;
@@ -128,9 +127,8 @@ const ENTITY_COPY: Record<AiEntityImportKind, {
     "comparePriceAmount": 3500000,
     "priceNote": "Học trọn đời",
     "instructorName": "Dohy Academy",
-    "level": "Intermediate",
-    "duration": "12 giờ học",
-    "durationSeconds": 43200,
+    "level": "Trung cấp",
+    "durationText": "12 giờ học",
     "introVideoType": "youtube",
     "introVideoUrl": "https://youtube.com/watch?v=example"
   }
@@ -196,12 +194,11 @@ const FIELD_SPECS: Record<AiEntityImportKind, Record<string, string>> = {
     thumbnail: '"thumbnail": "URL http/https hoặc path bắt đầu /, optional, không dùng base64"',
     pricingType: '"pricingType": "free | paid | contact"',
     price: '"price": "number optional, giá bán khi pricingType là paid"',
-    comparePriceAmount: '"comparePriceAmount": "number optional, giá gạch nếu có, phải lớn hơn price"',
+    comparePriceAmount: '"comparePriceAmount": "number optional, giá gốc để hiển thị gạch ngang nếu có, phải lớn hơn price"',
     priceNote: '"priceNote": "string optional, ví dụ Học trọn đời / Bao gồm tài liệu"',
     instructorName: '"instructorName": "string optional, tên giảng viên/đơn vị đào tạo"',
-    level: '"level": "Beginner | Intermediate | Advanced"',
-    duration: '"duration": "string optional, thời lượng hiển thị, ví dụ 12 giờ học / 6 tuần"',
-    durationSeconds: '"durationSeconds": "number optional, tổng thời lượng tính bằng giây nếu biết"',
+    level: '"level": "Cơ bản | Trung cấp | Nâng cao"',
+    durationText: '"durationText": "string optional, thời lượng hiển thị, ví dụ 12 giờ học / 6 tuần"',
     introVideoType: '"introVideoType": "none | youtube | drive | external"',
     introVideoUrl: '"introVideoUrl": "URL video giới thiệu optional, chỉ dùng khi introVideoType khác none"',
   },
@@ -263,8 +260,7 @@ const OPTIONAL_FIELD_MAP: Record<AiEntityImportKind, Record<string, string[]>> =
     priceNote: ['priceNote'],
     instructorName: ['instructorName'],
     level: ['level'],
-    durationText: ['duration'],
-    durationSeconds: ['durationSeconds'],
+    durationText: ['durationText'],
     introVideoType: ['introVideoType'],
     introVideoUrl: ['introVideoUrl'],
   },
@@ -723,7 +719,6 @@ const parseAiEntity = (raw: string, kind: AiEntityImportKind): ParseResult => {
     description: trimText(record.description, 2_000),
     duration: trimText(record.duration, 80),
     durationText: trimText(record.durationText, 80),
-    durationSeconds: parseNumber(record.durationSeconds),
     excerpt: trimText(record.excerpt, 300),
     featured: parseBoolean(record.featured),
     htmlRender: trimText(record.htmlRender, 40_000),
@@ -947,7 +942,7 @@ export function AiEntityImportDialog({
   return (
     <>
       <Button type="button" variant="outline" className={cn('gap-2', buttonClassName)} onClick={() => setOpen(true)}>
-        <Bot size={16} /> Import AI
+        <Bot size={16} /> Nhập bằng AI
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -1081,7 +1076,7 @@ export function AiEntityImportDialog({
 
               {result.item && (
                 <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preview</div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Xem trước</div>
                   <div className="mt-2 space-y-1 text-sm">
                     <div className="font-semibold text-slate-900 dark:text-slate-100">{result.item.name || result.item.title}</div>
                     {(result.item.excerpt || result.item.description || result.item.metaDescription) && (

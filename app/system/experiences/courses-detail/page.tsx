@@ -34,9 +34,9 @@ type CoursesDetailExperienceConfig = {
 const EXPERIENCE_KEY = 'courses_detail_ui';
 
 const LAYOUTS: LayoutOption<DetailLayoutStyle>[] = [
-  { id: 'classic', label: 'Classic', description: 'Hero + sidebar đăng ký' },
-  { id: 'modern', label: 'Modern', description: 'Hero gradient cao cấp' },
-  { id: 'minimal', label: 'Minimal', description: 'Tập trung nội dung học' },
+  { id: 'classic', label: 'Cổ điển', description: 'Banner đầu trang + khung đăng ký' },
+  { id: 'modern', label: 'Hiện đại', description: 'Banner màu chuyển cao cấp' },
+  { id: 'minimal', label: 'Tối giản', description: 'Tập trung nội dung học' },
 ];
 
 const DEFAULT_CONFIG: CoursesDetailExperienceConfig = {
@@ -109,10 +109,10 @@ export default function CoursesDetailExperiencePage() {
             <ColorConfigCard primary={brandColor} secondary={secondaryColor} mode={colorMode} onPrimaryChange={setBrandColor} onSecondaryChange={setSecondaryColor} onModeChange={setColorMode} />
           </ControlCard>
           <ControlCard title="Khối hiển thị">
-            <ToggleRow label="Curriculum" description="Danh sách chương/bài học" checked={config.showCurriculum} onChange={(value) => updateConfig('showCurriculum', value)} accentColor={brandColor} />
+            <ToggleRow label="Lộ trình học" description="Danh sách chương/bài học" checked={config.showCurriculum} onChange={(value) => updateConfig('showCurriculum', value)} accentColor={brandColor} />
             <ToggleRow label="Giảng viên" checked={config.showInstructor} onChange={(value) => updateConfig('showInstructor', value)} accentColor={brandColor} />
             <ToggleRow label="Khóa liên quan" checked={config.showRelated} onChange={(value) => updateConfig('showRelated', value)} accentColor={brandColor} />
-            <ToggleRow label="CTA đăng ký sticky" checked={config.showStickyCta} onChange={(value) => updateConfig('showStickyCta', value)} accentColor={brandColor} />
+            <ToggleRow label="Nút đăng ký cố định" checked={config.showStickyCta} onChange={(value) => updateConfig('showStickyCta', value)} accentColor={brandColor} />
           </ControlCard>
           <ControlCard title="Module liên quan">
             <ExperienceModuleLink enabled={coursesModule?.enabled ?? false} href="/system/modules/courses" icon={BookOpen} title="Khóa học" colorScheme="purple" />
@@ -127,7 +127,7 @@ export default function CoursesDetailExperiencePage() {
             <ExampleLinks links={[{ label: 'Xem khóa học mẫu', url: previewUrl }]} color={brandColor} compact />
           </ControlCard>
           <Card className="p-2">
-            <ExperienceHintCard hints={['Classic phù hợp khóa học có nhiều thông tin.', 'Modern phù hợp landing khóa học cao cấp.', 'Minimal phù hợp content-first và học liệu dài.']} />
+            <ExperienceHintCard hints={['Cổ điển phù hợp khóa học có nhiều thông tin.', 'Hiện đại phù hợp trang khóa học cao cấp.', 'Tối giản phù hợp nội dung học dài.']} />
           </Card>
         </CardContent>
       </Card>
@@ -135,7 +135,7 @@ export default function CoursesDetailExperiencePage() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle className="flex items-center gap-2 text-base"><Eye size={18} /> Preview</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base"><Eye size={18} /> Xem trước</CardTitle>
             <div className="flex items-center gap-3">
               <LayoutTabs layouts={LAYOUTS} activeLayout={config.layoutStyle} onChange={(layout) => setConfig((prev) => ({ ...prev, layoutStyle: layout }))} accentColor={brandColor} />
               <DeviceToggle value={previewDevice} onChange={setPreviewDevice} size="sm" />

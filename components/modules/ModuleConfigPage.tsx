@@ -35,6 +35,18 @@ const REMOVED_SETTINGS_FIELDS = new Set([
   'seo_geo_lng',
   'seo_hreflang',
 ]);
+
+const HIDDEN_COURSES_FIELDS = new Set(['durationSeconds']);
+
+const COURSE_FIELD_NAME_OVERRIDES: Record<string, string> = {
+  comparePriceAmount: 'Giá gốc',
+  htmlRender: 'Nội dung HTML',
+  level: 'Trình độ',
+  markdownRender: 'Nội dung Markdown',
+  metaDescription: 'Mô tả SEO',
+  metaTitle: 'Tiêu đề SEO',
+  renderType: 'Kiểu nội dung',
+};
  
 export interface ModuleConfigPageRenderProps {
   config: ModuleDefinition;
@@ -351,10 +363,19 @@ export function ConfigTab({ config, moduleData, isReadOnly, localFeatures, local
     if (isSettingsModule && REMOVED_SETTINGS_FIELDS.has(field.key)) {
       return false;
     }
+    if (config.key === 'courses' && HIDDEN_COURSES_FIELDS.has(field.key)) {
+      return false;
+    }
     if (config.key === 'subscriptions' && (field.key === 'timezone' || field.key === 'notes')) {
       return false;
     }
     return true;
+  }).map((field) => {
+    if (config.key !== 'courses') {
+      return field;
+    }
+    const name = COURSE_FIELD_NAME_OVERRIDES[field.key];
+    return name ? { ...field, name } : field;
   });
   const handleFieldToggle = (key: string) => {
     if (isSingleBrandMode && key === 'site_brand_secondary') {return;}

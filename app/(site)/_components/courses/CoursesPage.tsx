@@ -8,6 +8,7 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { BookOpen, Clock, GraduationCap, Search, Star, UserRound } from 'lucide-react';
 import { useBrandColors } from '@/components/site/hooks';
+import { COURSE_LEVEL_OPTIONS, getCourseLevelLabel } from '@/lib/courses/labels';
 import { useCoursesListConfig } from '@/lib/experiences';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 
@@ -200,10 +201,10 @@ function CoursesContent() {
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                   {config.showLevelFilter && (
                     <select value={level} onChange={(event) => { setLevel(event.target.value); }} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm">
-                      <option value="">Mọi cấp độ</option>
-                      <option value="Beginner">Beginner</option>
-                      <option value="Intermediate">Intermediate</option>
-                      <option value="Advanced">Advanced</option>
+                      <option value="">Tất cả trình độ</option>
+                      {COURSE_LEVEL_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
                     </select>
                   )}
                   <select value={sortBy} onChange={(event) => { setSortBy(event.target.value as typeof sortBy); }} className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm">
@@ -252,7 +253,7 @@ function CoursesContent() {
                           <div className="space-y-3 p-5">
                             <div className="flex flex-wrap items-center gap-2 text-xs">
                               <span className="rounded-full px-2 py-1 font-medium" style={{ backgroundColor: `${brandColors.primary}18`, color: brandColors.primary }}>{category?.name ?? 'Khóa học'}</span>
-                              {course.level && <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">{course.level}</span>}
+                              {course.level && <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">{getCourseLevelLabel(course.level)}</span>}
                             </div>
                             <h2 className="line-clamp-2 text-lg font-semibold text-slate-900 group-hover:text-slate-700">{course.title}</h2>
                             <p className="line-clamp-2 text-sm text-slate-500">{course.excerpt}</p>

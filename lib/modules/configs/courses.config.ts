@@ -4,7 +4,7 @@ import { defineModuleWithRuntime } from '../define-module';
 export const coursesModule = defineModuleWithRuntime({
   key: 'courses',
   name: 'Khóa học',
-  description: 'Cấu hình khóa học, danh mục và curriculum',
+  description: 'Cấu hình khóa học, danh mục và nội dung học',
   icon: GraduationCap,
   color: 'indigo',
   categoryModuleKey: 'courseCategories',
@@ -12,11 +12,11 @@ export const coursesModule = defineModuleWithRuntime({
   features: [
     { key: 'enablePricing', label: 'Giá khóa học', icon: BadgeDollarSign, linkedField: 'priceAmount' },
     { key: 'enableInstructor', label: 'Giảng viên', icon: UserRound, linkedField: 'instructorName' },
-    { key: 'enableLevel', label: 'Cấp độ', icon: BookOpen, linkedField: 'level' },
+    { key: 'enableLevel', label: 'Trình độ học', icon: BookOpen, linkedField: 'level' },
     { key: 'enableIntroVideo', label: 'Video giới thiệu', icon: PlayCircle, linkedField: 'introVideoUrl' },
     { key: 'enableFeatured', label: 'Nổi bật', icon: Star, linkedField: 'featured', enabled: false },
-    { key: 'enableMarkdownRender', label: 'Markdown render', icon: FileText, linkedField: 'markdownRender', enabled: false },
-    { key: 'enableHtmlRender', label: 'HTML render', icon: Code, linkedField: 'htmlRender', enabled: false },
+    { key: 'enableMarkdownRender', label: 'Nội dung Markdown', icon: FileText, linkedField: 'markdownRender', enabled: false },
+    { key: 'enableHtmlRender', label: 'Nội dung HTML', icon: Code, linkedField: 'htmlRender', enabled: false },
   ],
 
   settings: [
@@ -50,7 +50,7 @@ export const coursesModule = defineModuleWithRuntime({
     },
   ],
 
-  conventionNote: 'Course dùng table riêng cho chapters/lessons; không nhét curriculum vào mảng trong document course.',
+  conventionNote: 'Khóa học dùng table riêng cho chương/bài học; không nhét nội dung học vào mảng trong document course.',
 
   runtimeConfig: {
     fields: [
@@ -64,19 +64,18 @@ export const coursesModule = defineModuleWithRuntime({
       { enabled: true, fieldKey: 'categoryId', isSystem: true, name: 'Danh mục', order: 7, required: true, type: 'select' },
       { enabled: true, fieldKey: 'pricingType', isSystem: false, linkedFeature: 'enablePricing', name: 'Kiểu giá', order: 8, required: true, type: 'select' },
       { enabled: true, fieldKey: 'priceAmount', isSystem: false, linkedFeature: 'enablePricing', name: 'Giá bán', order: 9, required: false, type: 'price' },
-      { enabled: true, fieldKey: 'comparePriceAmount', isSystem: false, linkedFeature: 'enablePricing', name: 'Giá gạch', order: 10, required: false, type: 'price' },
+      { enabled: true, fieldKey: 'comparePriceAmount', isSystem: false, linkedFeature: 'enablePricing', name: 'Giá gốc', order: 10, required: false, type: 'price' },
       { enabled: true, fieldKey: 'priceNote', isSystem: false, linkedFeature: 'enablePricing', name: 'Ghi chú giá', order: 11, required: false, type: 'text' },
       { enabled: true, fieldKey: 'durationText', isSystem: false, name: 'Thời lượng hiển thị', order: 12, required: false, type: 'text' },
-      { enabled: true, fieldKey: 'durationSeconds', isSystem: false, name: 'Thời lượng (giây)', order: 13, required: false, type: 'number' },
       { enabled: true, fieldKey: 'instructorName', isSystem: false, linkedFeature: 'enableInstructor', name: 'Giảng viên', order: 14, required: false, type: 'text' },
-      { enabled: true, fieldKey: 'level', isSystem: false, linkedFeature: 'enableLevel', name: 'Cấp độ', order: 15, required: false, type: 'select' },
+      { enabled: true, fieldKey: 'level', isSystem: false, linkedFeature: 'enableLevel', name: 'Trình độ', order: 15, required: false, type: 'select' },
       { enabled: true, fieldKey: 'introVideoUrl', isSystem: false, linkedFeature: 'enableIntroVideo', name: 'Video giới thiệu', order: 16, required: false, type: 'text' },
       { enabled: false, fieldKey: 'featured', isSystem: false, linkedFeature: 'enableFeatured', name: 'Nổi bật', order: 17, required: false, type: 'boolean' },
-      { enabled: true, fieldKey: 'metaTitle', group: 'seo', isSystem: false, name: 'Meta Title', order: 18, required: false, type: 'text' },
-      { enabled: true, fieldKey: 'metaDescription', group: 'seo', isSystem: false, name: 'Meta Description', order: 19, required: false, type: 'textarea' },
-      { enabled: true, fieldKey: 'renderType', isSystem: false, name: 'Kiểu render', order: 20, required: false, type: 'select' },
-      { enabled: false, fieldKey: 'markdownRender', isSystem: false, linkedFeature: 'enableMarkdownRender', name: 'Markdown render', order: 21, required: false, type: 'textarea' },
-      { enabled: false, fieldKey: 'htmlRender', isSystem: false, linkedFeature: 'enableHtmlRender', name: 'HTML render', order: 22, required: false, type: 'textarea' },
+      { enabled: true, fieldKey: 'metaTitle', group: 'seo', isSystem: false, name: 'Tiêu đề SEO', order: 18, required: false, type: 'text' },
+      { enabled: true, fieldKey: 'metaDescription', group: 'seo', isSystem: false, name: 'Mô tả SEO', order: 19, required: false, type: 'textarea' },
+      { enabled: true, fieldKey: 'renderType', isSystem: false, name: 'Kiểu nội dung', order: 20, required: false, type: 'select' },
+      { enabled: false, fieldKey: 'markdownRender', isSystem: false, linkedFeature: 'enableMarkdownRender', name: 'Nội dung Markdown', order: 21, required: false, type: 'textarea' },
+      { enabled: false, fieldKey: 'htmlRender', isSystem: false, linkedFeature: 'enableHtmlRender', name: 'Nội dung HTML', order: 22, required: false, type: 'textarea' },
     ],
   },
 

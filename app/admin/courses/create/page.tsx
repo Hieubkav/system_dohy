@@ -12,6 +12,7 @@ import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/c
 import { CategoryTagsInput } from '@/app/admin/components/AdditionalCategoriesSelect';
 import { QuickCreateCourseCategoryModal } from '@/app/admin/components/QuickCreateCourseCategoryModal';
 import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
+import { COURSE_LEVEL_OPTIONS, parseCourseLevel, type CourseLevel } from '@/lib/courses/labels';
 import { stripHtml, truncateText } from '@/lib/seo';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../components/ui';
 import { ImageUploader } from '../../components/ImageUploader';
@@ -26,7 +27,6 @@ const generateSlug = (value: string) => value.toLowerCase()
   .replaceAll(/\s+/g, '-');
 
 type CourseStatus = 'Draft' | 'Published';
-type CourseLevel = 'Beginner' | 'Intermediate' | 'Advanced';
 type PricingType = 'free' | 'paid' | 'contact';
 type RenderType = 'content' | 'markdown' | 'html';
 type VideoType = 'none' | 'youtube' | 'drive' | 'external';
@@ -55,7 +55,6 @@ export default function CourseCreatePage() {
   const [instructorName, setInstructorName] = useState('');
   const [level, setLevel] = useState<CourseLevel | ''>('');
   const [durationText, setDurationText] = useState('');
-  const [durationSeconds, setDurationSeconds] = useState<number | undefined>();
   const [introVideoType, setIntroVideoType] = useState<VideoType>('none');
   const [introVideoUrl, setIntroVideoUrl] = useState('');
   const [featured, setFeatured] = useState(false);
@@ -103,9 +102,7 @@ export default function CourseCreatePage() {
     const nextPricingType: PricingType = item.pricingType === 'free' || item.pricingType === 'paid' || item.pricingType === 'contact'
       ? item.pricingType
       : (typeof nextPrice === 'number' ? 'paid' : pricingType);
-    const nextLevel = item.level === 'Beginner' || item.level === 'Intermediate' || item.level === 'Advanced'
-      ? item.level
-      : '';
+    const nextLevel = parseCourseLevel(item.level);
     const nextIntroVideoType: VideoType = item.introVideoType === 'youtube' || item.introVideoType === 'drive' || item.introVideoType === 'external' || item.introVideoType === 'none'
       ? item.introVideoType
       : introVideoType;
@@ -141,7 +138,6 @@ export default function CourseCreatePage() {
     if (item.instructorName) {setInstructorName(item.instructorName);}
     if (nextLevel) {setLevel(nextLevel);}
     if (item.durationText || item.duration) {setDurationText(item.durationText || item.duration || '');}
-    if (typeof item.durationSeconds === 'number') {setDurationSeconds(item.durationSeconds);}
     setIntroVideoType(nextIntroVideoType);
     if (item.introVideoUrl) {setIntroVideoUrl(item.introVideoUrl);}
     if (typeof item.featured === 'boolean') {setFeatured(item.featured);}
@@ -163,7 +159,6 @@ export default function CourseCreatePage() {
         categoryId: categoryId as Id<'courseCategories'>,
         comparePriceAmount: pricingType === 'paid' ? comparePriceAmount : undefined,
         content,
-        durationSeconds,
         durationText: durationText.trim() || undefined,
         excerpt: excerpt.trim() || undefined,
         featured,
@@ -240,29 +235,29 @@ export default function CourseCreatePage() {
 
             {showAdvancedRender && (
               <Card>
-                <CardHeader><CardTitle className="text-base">Render nâng cao</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="text-base">Nội dung nâng cao</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Kiểu render</Label>
+                    <Label>Kiểu nội dung</Label>
                     <select
                       value={renderType}
                       onChange={(e) => { setRenderType(e.target.value as RenderType); }}
                       className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
                     >
-                      <option value="content">Content</option>
+                      <option value="content">Nội dung thường</option>
                       {hasMarkdownRender && <option value="markdown">Markdown</option>}
                       {hasHtmlRender && <option value="html">HTML</option>}
                     </select>
                   </div>
                   {hasMarkdownRender && (
                     <div className="space-y-2">
-                      <Label>Markdown render</Label>
+                      <Label>Nội dung Markdown</Label>
                       <textarea value={markdownRender} onChange={(e) => { setMarkdownRender(e.target.value); }} className="min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-sm dark:border-slate-700 dark:bg-slate-800" />
                     </div>
                   )}
                   {hasHtmlRender && (
                     <div className="space-y-2">
-                      <Label>HTML render</Label>
+                      <Label>Nội dung HTML</Label>
                       <textarea value={htmlRender} onChange={(e) => { setHtmlRender(e.target.value); }} className="min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-sm dark:border-slate-700 dark:bg-slate-800" />
                     </div>
                   )}
@@ -277,7 +272,7 @@ export default function CourseCreatePage() {
                   {enabledFields.has('metaTitle') && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label>Meta Title</Label>
+                        <Label>Tiêu đề SEO</Label>
                         <span className={`text-xs ${metaTitle.length > 60 ? 'text-red-500' : 'text-slate-400'}`}>{metaTitle.length}/60</span>
                       </div>
                       <Input value={metaTitle} onChange={(e) => { setMetaTitle(e.target.value); }} placeholder="Lấy theo tiêu đề nếu để trống" />
@@ -286,7 +281,7 @@ export default function CourseCreatePage() {
                   {enabledFields.has('metaDescription') && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label>Meta Description</Label>
+                        <Label>Mô tả SEO</Label>
                         <span className={`text-xs ${metaDescription.length > 160 ? 'text-red-500' : 'text-slate-400'}`}>{metaDescription.length}/160</span>
                       </div>
                       <textarea value={metaDescription} onChange={(e) => { setMetaDescription(e.target.value); }} className="min-h-[90px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800" />
@@ -360,22 +355,18 @@ export default function CourseCreatePage() {
                 )}
                 {enabledFields.has('level') && (
                   <div className="space-y-2">
-                    <Label>Cấp độ</Label>
+                    <Label>Trình độ</Label>
                     <select value={level} onChange={(e) => { setLevel(e.target.value as CourseLevel | ''); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
-                      <option value="">-- Chọn cấp độ --</option>
-                      <option value="Beginner">Beginner</option>
-                      <option value="Intermediate">Intermediate</option>
-                      <option value="Advanced">Advanced</option>
+                      <option value="">Chọn trình độ</option>
+                      {COURSE_LEVEL_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
                     </select>
                   </div>
                 )}
                 <div className="space-y-2">
                   <Label>Thời lượng hiển thị</Label>
                   <Input value={durationText} onChange={(e) => { setDurationText(e.target.value); }} placeholder="VD: 12 giờ học" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Thời lượng (giây)</Label>
-                  <Input type="number" value={durationSeconds ?? ''} onChange={(e) => { setDurationSeconds(e.target.value ? Number(e.target.value) : undefined); }} placeholder="0" />
                 </div>
               </CardContent>
             </Card>
@@ -398,7 +389,7 @@ export default function CourseCreatePage() {
                       <Input type="number" value={priceAmount ?? ''} onChange={(e) => { setPriceAmount(e.target.value ? Number(e.target.value) : undefined); }} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Giá gạch (VND)</Label>
+                      <Label>Giá gốc (VND)</Label>
                       <Input type="number" value={comparePriceAmount ?? ''} onChange={(e) => { setComparePriceAmount(e.target.value ? Number(e.target.value) : undefined); }} />
                     </div>
                   </>
@@ -423,7 +414,7 @@ export default function CourseCreatePage() {
                     <option value="none">Không có</option>
                     <option value="youtube">YouTube</option>
                     <option value="drive">Google Drive</option>
-                    <option value="external">External</option>
+                    <option value="external">Link ngoài</option>
                   </select>
                 </div>
                 {introVideoType !== 'none' && (

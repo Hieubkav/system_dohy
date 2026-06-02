@@ -46,7 +46,7 @@ export const systemExperiences: SystemExperience[] = [
     title: "Danh sách khóa học",
   },
   {
-    description: "Hero, curriculum, giảng viên và CTA chi tiết khóa học.",
+    description: "Banner đầu trang, lộ trình học, giảng viên và nút đăng ký chi tiết khóa học.",
     href: "/system/experiences/courses-detail",
     icon: "BookOpen",
     title: "Chi tiết khóa học",

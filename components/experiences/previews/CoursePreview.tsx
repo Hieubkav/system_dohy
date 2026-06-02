@@ -31,10 +31,10 @@ type CourseDetailPreviewProps = {
 };
 
 const MOCK_COURSES = [
-  { title: 'Lộ trình Next.js thực chiến', category: 'Frontend', level: 'Intermediate', lessons: 42, duration: '18 giờ', price: '2.900.000đ', featured: true },
-  { title: 'React căn bản cho người mới', category: 'Cơ bản', level: 'Beginner', lessons: 28, duration: '10 giờ', price: 'Miễn phí' },
-  { title: 'Thiết kế hệ thống SaaS', category: 'Chuyên sâu', level: 'Advanced', lessons: 36, duration: '24 giờ', price: '4.500.000đ' },
-  { title: 'TypeScript nâng cao', category: 'Frontend', level: 'Advanced', lessons: 31, duration: '14 giờ', price: '1.900.000đ' },
+  { title: 'Lộ trình Next.js thực chiến', category: 'Frontend', level: 'Trung cấp', lessons: 42, duration: '18 giờ', price: '2.900.000đ', featured: true },
+  { title: 'React căn bản cho người mới', category: 'Cơ bản', level: 'Cơ bản', lessons: 28, duration: '10 giờ', price: 'Miễn phí' },
+  { title: 'Thiết kế hệ thống SaaS', category: 'Chuyên sâu', level: 'Nâng cao', lessons: 36, duration: '24 giờ', price: '4.500.000đ' },
+  { title: 'TypeScript nâng cao', category: 'Frontend', level: 'Nâng cao', lessons: 31, duration: '14 giờ', price: '1.900.000đ' },
 ];
 
 const MOCK_CATEGORIES = ['Tất cả', 'Cơ bản', 'Frontend', 'Chuyên sâu', 'Doanh nghiệp'];
@@ -92,7 +92,7 @@ export function CoursesListPreview({
       <div className="mx-auto max-w-6xl space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-slate-900">Khóa học nổi bật</h1>
-          <p className="mt-2 text-sm text-slate-500">Học theo lộ trình, có curriculum rõ ràng.</p>
+          <p className="mt-2 text-sm text-slate-500">Học theo lộ trình rõ ràng, dễ theo dõi.</p>
         </div>
 
         {(showSearch || showCategories || showLevelFilter) && (
@@ -114,7 +114,7 @@ export function CoursesListPreview({
             )}
             {showLevelFilter && (
               <div className="flex gap-2 text-xs text-slate-500">
-                <span>Beginner</span><span>Intermediate</span><span>Advanced</span>
+                <span>Cơ bản</span><span>Trung cấp</span><span>Nâng cao</span>
               </div>
             )}
           </div>
@@ -161,7 +161,7 @@ export function CourseDetailPreview({
         <div className={`mx-auto max-w-6xl ${isModern ? '' : 'grid gap-8 lg:grid-cols-[1fr_360px]'}`}>
           <div className="space-y-4">
             <span className="inline-flex rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: isModern ? 'rgba(255,255,255,.18)' : `${brandColor}18`, color: isModern ? '#fff' : brandColor }}>
-              Frontend · Intermediate
+              Frontend · Trung cấp
             </span>
             <h1 className={`${isMobile ? 'text-3xl' : 'text-5xl'} font-bold leading-tight ${isModern ? 'text-white' : 'text-slate-900'}`}>Lộ trình Next.js thực chiến</h1>
             <p className={`max-w-2xl text-base ${isModern ? 'text-white/80' : 'text-slate-600'}`}>Xây dựng sản phẩm thực tế với App Router, Convex, auth, SEO và deployment.</p>
