@@ -11,6 +11,7 @@ import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 import { CategoryTagsInput } from '@/app/admin/components/AdditionalCategoriesSelect';
 import { QuickCreateCourseCategoryModal } from '@/app/admin/components/QuickCreateCourseCategoryModal';
+import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
 import { stripHtml, truncateText } from '@/lib/seo';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../components/ui';
 import { ImageUploader } from '../../components/ImageUploader';
@@ -65,7 +66,7 @@ export default function CourseCreatePage() {
   const [metaDescription, setMetaDescription] = useState('');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editorResetKey] = useState(0);
+  const [editorResetKey, setEditorResetKey] = useState(0);
 
   const enabledFields = useMemo(() => new Set(fieldsData?.map((field) => field.fieldKey) ?? []), [fieldsData]);
   const multiCategoryEnabled = Boolean(settingsData?.find((setting) => setting.settingKey === 'enableMultipleCategories')?.value);
@@ -88,6 +89,63 @@ export default function CourseCreatePage() {
     const value = e.target.value;
     setTitle(value);
     setSlug(generateSlug(value));
+  };
+
+  const handleApplyAiCourse = (item: AiEntityImportPayload) => {
+    const nextTitle = item.title?.trim() || item.name?.trim() || '';
+    if (!nextTitle) {return;}
+
+    const nextContent = item.content || item.description || item.htmlRender || item.markdownRender || '';
+    const nextPrice = typeof item.price === 'number' ? item.price : undefined;
+    const nextComparePrice = typeof item.comparePriceAmount === 'number'
+      ? item.comparePriceAmount
+      : item.salePrice;
+    const nextPricingType: PricingType = item.pricingType === 'free' || item.pricingType === 'paid' || item.pricingType === 'contact'
+      ? item.pricingType
+      : (typeof nextPrice === 'number' ? 'paid' : pricingType);
+    const nextLevel = item.level === 'Beginner' || item.level === 'Intermediate' || item.level === 'Advanced'
+      ? item.level
+      : '';
+    const nextIntroVideoType: VideoType = item.introVideoType === 'youtube' || item.introVideoType === 'drive' || item.introVideoType === 'external' || item.introVideoType === 'none'
+      ? item.introVideoType
+      : introVideoType;
+
+    setTitle(nextTitle);
+    setSlug(item.slug?.trim() || generateSlug(nextTitle));
+    setContent(nextContent);
+    if (item.content) {
+      setRenderType('content');
+      setHtmlRender(item.htmlRender || '');
+      setMarkdownRender(item.markdownRender || '');
+    } else if (item.htmlRender) {
+      setRenderType('html');
+      setHtmlRender(item.htmlRender);
+      setMarkdownRender(item.markdownRender || '');
+    } else if (item.markdownRender) {
+      setRenderType('markdown');
+      setMarkdownRender(item.markdownRender);
+      setHtmlRender('');
+    }
+    setExcerpt(item.excerpt || item.description || truncateText(stripHtml(nextContent), 180));
+    setMetaTitle(item.metaTitle || truncateText(nextTitle, 60));
+    setMetaDescription(item.metaDescription || truncateText(stripHtml(item.excerpt || nextContent), 160));
+    if (item.thumbnail || item.image) {
+      setThumbnail(item.thumbnail || item.image);
+      setThumbnailStorageId(undefined);
+    }
+    setPricingType(nextPricingType);
+    if (typeof nextPrice === 'number') {setPriceAmount(nextPrice);}
+    if (typeof nextComparePrice === 'number') {setComparePriceAmount(nextComparePrice);}
+    if (item.priceNote) {setPriceNote(item.priceNote);}
+    if (typeof item.isPriceVisible === 'boolean') {setIsPriceVisible(item.isPriceVisible);}
+    if (item.instructorName) {setInstructorName(item.instructorName);}
+    if (nextLevel) {setLevel(nextLevel);}
+    if (item.durationText || item.duration) {setDurationText(item.durationText || item.duration || '');}
+    if (typeof item.durationSeconds === 'number') {setDurationSeconds(item.durationSeconds);}
+    setIntroVideoType(nextIntroVideoType);
+    if (item.introVideoUrl) {setIntroVideoUrl(item.introVideoUrl);}
+    if (typeof item.featured === 'boolean') {setFeatured(item.featured);}
+    setEditorResetKey((prev) => prev + 1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -406,10 +464,13 @@ export default function CourseCreatePage() {
         >
           <>
             <Button type="button" variant="ghost" onClick={() => { router.push('/admin/courses'); }}>Hủy bỏ</Button>
-            <Button type="submit" variant="accent" disabled={isSubmitting || !title.trim() || !categoryId} className="bg-indigo-600 hover:bg-indigo-500">
-              {isSubmitting && <Loader2 size={16} className="mr-2 animate-spin" />}
-              Tạo khóa học
-            </Button>
+            <div className="flex flex-wrap justify-end gap-2">
+              <AiEntityImportDialog kind="course" enabledFields={enabledFields} onApply={handleApplyAiCourse} />
+              <Button type="submit" variant="accent" disabled={isSubmitting || !title.trim() || !categoryId} className="bg-indigo-600 hover:bg-indigo-500">
+                {isSubmitting && <Loader2 size={16} className="mr-2 animate-spin" />}
+                Tạo khóa học
+              </Button>
+            </div>
           </>
         </HomeComponentStickyFooter>
       </form>
