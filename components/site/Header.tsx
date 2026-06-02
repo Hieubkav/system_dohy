@@ -1387,7 +1387,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                 </div>
               )}
               {showCart && (
-                <CartIcon variant="mobile" className="hidden lg:flex" tokens={tokens} />
+                <CartIcon variant="mobile" className="hidden lg:flex" tokens={navbarActionTokens} />
               )}
               {config.cta?.show && (
                 <Link
@@ -1410,7 +1410,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                 </button>
               )}
               {showCart && (
-                <CartIcon variant="mobile" tokens={tokens} />
+                <CartIcon variant="mobile" tokens={navbarActionTokens} />
               )}
               {renderMobileMenuButton(false)}
             </div>
@@ -1567,7 +1567,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                   </button>
                 )}
                 {showCart && (
-                  <CartIcon variant="mobile" tokens={tokens} />
+                  <CartIcon variant="mobile" tokens={navbarActionTokens} />
                 )}
                 {renderMobileMenuButton(false)}
               </div>
@@ -1585,7 +1585,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                   </Link>
                 )}
                 {showCart && (
-                  <CartIcon tokens={tokens} />
+                  <CartIcon tokens={navbarActionTokens} />
                 )}
                 {config.cta?.show && (
                   <Link
