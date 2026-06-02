@@ -118,9 +118,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
 
   return (
     <main className="min-h-screen bg-white">
-      <section className={`px-4 ${isModern ? 'py-14 text-white' : 'py-10'}`} style={isModern ? { background: `linear-gradient(135deg, ${brandColors.primary}, ${brandColors.secondary || brandColors.primary})` } : undefined}>
-        <div className={`mx-auto max-w-7xl ${isMinimal ? '' : 'grid gap-8 lg:grid-cols-[1fr_360px]'}`}>
-          <div className="space-y-5">
+      <section className={`border-b border-slate-100 px-4 ${isModern ? 'py-10 text-white' : 'py-8'}`} style={isModern ? { background: `linear-gradient(135deg, ${brandColors.primary}, ${brandColors.secondary || brandColors.primary})` } : undefined}>
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-4xl space-y-4">
             <Link href="/khoa-hoc" className={`inline-flex items-center gap-2 text-sm ${isModern ? 'text-white/80' : 'text-slate-500'}`}>
               <ArrowLeft size={16} /> Tất cả khóa học
             </Link>
@@ -142,12 +142,11 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
               {config.showInstructor && course.instructorName && <span className="inline-flex items-center gap-1"><UserRound size={16} />{course.instructorName}</span>}
             </div>
           </div>
-          {!isMinimal && <CtaCard />}
         </div>
       </section>
 
-      <section className={`mx-auto grid max-w-7xl gap-8 px-4 py-10 ${isMinimal ? '' : 'lg:grid-cols-[1fr_320px]'}`}>
-        <div className="space-y-10">
+      <section className={`mx-auto grid max-w-7xl gap-6 px-4 py-8 ${isMinimal ? '' : 'lg:grid-cols-[minmax(0,1fr)_320px]'}`}>
+        <div className="space-y-8">
           <article className="prose prose-slate max-w-none prose-headings:text-slate-900 prose-p:text-slate-600">
             <RichContent content={courseContent} />
           </article>
@@ -155,7 +154,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           <section>
             <h2 className="mb-4 text-2xl font-bold text-slate-900">Bạn sẽ nhận được</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              {['Lộ trình học rõ ràng theo chương', 'Bài học video dễ theo dõi', 'Bài preview trước khi đăng ký', 'Nội dung thực chiến có thể áp dụng'].map((item) => (
+              {['Lộ trình học rõ ràng theo chương', 'Bài học video dễ theo dõi', 'Bài xem thử trước khi đăng ký', 'Nội dung thực tế có thể áp dụng'].map((item) => (
                 <div key={item} className="flex items-start gap-2 rounded-xl border border-slate-200 p-3 text-sm text-slate-700">
                   <CheckCircle2 size={16} style={{ color: brandColors.primary }} />
                   <span>{item}</span>
@@ -194,7 +193,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         </div>
 
         {!isMinimal && (
-          <aside className="space-y-4">
+          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
             {config.showStickyCta && <CtaCard />}
             {related.length > 0 && (
               <div className="rounded-2xl border border-slate-200 bg-white p-5">

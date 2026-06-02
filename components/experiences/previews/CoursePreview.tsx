@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Clock, GraduationCap, PlayCircle, Search, Star, UserRound } from 'lucide-react';
+import { BookOpen, Clock, GraduationCap, Search, Star, UserRound } from 'lucide-react';
 
 type DeviceType = 'desktop' | 'tablet' | 'mobile';
 type CoursesListLayoutStyle = 'grid' | 'sidebar' | 'masonry';
@@ -157,38 +157,29 @@ export function CourseDetailPreview({
 
   return (
     <div className="bg-white">
-      <section className={`px-4 ${isModern ? 'py-10 text-white' : 'py-8'}`} style={isModern ? { background: `linear-gradient(135deg, ${brandColor}, ${accent})` } : undefined}>
-        <div className={`mx-auto max-w-6xl ${isModern ? '' : 'grid gap-8 lg:grid-cols-[1fr_360px]'}`}>
-          <div className="space-y-4">
+      <section className={`border-b border-slate-100 px-4 ${isModern ? 'py-10 text-white' : 'py-8'}`} style={isModern ? { background: `linear-gradient(135deg, ${brandColor}, ${accent})` } : undefined}>
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-4xl space-y-4">
             <span className="inline-flex rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: isModern ? 'rgba(255,255,255,.18)' : `${brandColor}18`, color: isModern ? '#fff' : brandColor }}>
               Frontend · Trung cấp
             </span>
             <h1 className={`${isMobile ? 'text-3xl' : 'text-5xl'} font-bold leading-tight ${isModern ? 'text-white' : 'text-slate-900'}`}>Lộ trình Next.js thực chiến</h1>
-            <p className={`max-w-2xl text-base ${isModern ? 'text-white/80' : 'text-slate-600'}`}>Xây dựng sản phẩm thực tế với App Router, Convex, auth, SEO và deployment.</p>
+            <p className={`max-w-2xl text-base ${isModern ? 'text-white/80' : 'text-slate-600'}`}>Xây dựng website thực tế, biết cách tổ chức dữ liệu, tối ưu SEO và đưa sản phẩm lên online.</p>
             <div className={`flex flex-wrap gap-4 text-sm ${isModern ? 'text-white/80' : 'text-slate-500'}`}>
               <span className="inline-flex items-center gap-1"><BookOpen size={16} />42 bài học</span>
               <span className="inline-flex items-center gap-1"><Clock size={16} />18 giờ</span>
               {showInstructor && <span className="inline-flex items-center gap-1"><UserRound size={16} />Nguyễn Minh Đức</span>}
             </div>
           </div>
-          {!isModern && (
-            <aside className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <div className="mb-4 flex aspect-video items-center justify-center rounded-xl" style={{ background: `linear-gradient(135deg, ${brandColor}22, ${accent}22)` }}>
-                <PlayCircle size={46} style={{ color: brandColor }} />
-              </div>
-              <p className="text-3xl font-bold" style={{ color: accent }}>2.900.000đ</p>
-              <button className="mt-4 w-full rounded-xl px-5 py-3 font-semibold text-white" style={{ backgroundColor: brandColor }}>Đăng ký học</button>
-            </aside>
-          )}
         </div>
       </section>
 
-      <main className={`mx-auto grid max-w-6xl gap-8 px-4 py-8 ${isMinimal ? '' : 'lg:grid-cols-[1fr_320px]'}`}>
+      <main className={`mx-auto grid max-w-6xl gap-6 px-4 py-8 ${isMinimal ? '' : 'lg:grid-cols-[minmax(0,1fr)_320px]'}`}>
         <div className="space-y-8">
           <section>
             <h2 className="mb-3 text-2xl font-bold text-slate-900">Bạn sẽ học được gì?</h2>
             <div className="grid gap-3 sm:grid-cols-2">
-              {['Thiết kế kiến trúc Next.js', 'Tối ưu SEO và performance', 'Tích hợp Convex backend', 'Deploy production-ready'].map((item) => (
+              {['Biết cách tổ chức dự án rõ ràng', 'Tối ưu SEO cho trang học', 'Kết nối dữ liệu động', 'Đưa website lên online'].map((item) => (
                 <div key={item} className="rounded-lg border border-slate-200 p-3 text-sm text-slate-700">{item}</div>
               ))}
             </div>
@@ -198,7 +189,7 @@ export function CourseDetailPreview({
             <section>
               <h2 className="mb-3 text-2xl font-bold text-slate-900">Nội dung khóa học</h2>
               <div className="space-y-3">
-                {['Nền tảng App Router', 'Data fetching với Convex', 'Auth, SEO và deployment'].map((chapter, index) => (
+                {['Nền tảng xây dựng trang', 'Kết nối và hiển thị dữ liệu', 'Đăng nhập, SEO và đưa lên online'].map((chapter, index) => (
                   <div key={chapter} className="rounded-xl border border-slate-200 p-4">
                     <div className="font-semibold text-slate-900">Chương {index + 1}: {chapter}</div>
                     <div className="mt-2 text-sm text-slate-500">{10 + index * 4} bài học · {3 + index} giờ</div>
@@ -210,7 +201,7 @@ export function CourseDetailPreview({
         </div>
 
         {!isMinimal && (
-          <aside className="space-y-4">
+          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
             {showStickyCta && (
               <div className="rounded-2xl border border-slate-200 p-5">
                 <p className="text-sm text-slate-500">Học trọn đời</p>
