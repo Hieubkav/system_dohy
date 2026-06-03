@@ -388,6 +388,7 @@ type CoursesDetailConfig = {
   showInstructor: boolean;
   showRelated: boolean;
   showStickyCta: boolean;
+  cornerRadius: 'none' | 'sm' | 'lg';
 };
 
 export function useCoursesDetailConfig(): CoursesDetailConfig {
@@ -401,6 +402,7 @@ export function useCoursesDetailConfig(): CoursesDetailConfig {
       showInstructor: raw?.showInstructor ?? true,
       showRelated: raw?.showRelated ?? true,
       showStickyCta: raw?.showStickyCta ?? true,
+      cornerRadius: raw?.cornerRadius ?? 'lg',
     };
   }, [experienceSetting?.value]);
 }

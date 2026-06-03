@@ -712,6 +712,42 @@ export function CoursesListPreview({
   );
 }
 
+type MockLesson = { order: number; title: string };
+type MockChapter = { title: string; lessons: MockLesson[] };
+
+const MOCK_CHAPTERS: MockChapter[] = [
+  {
+    title: 'Nền tảng xây dựng trang',
+    lessons: [
+      { order: 1, title: 'Giới thiệu khóa học & Lộ trình thực chiến' },
+      { order: 2, title: 'Thiết lập dự án Next.js 15 mới nhất' },
+      { order: 3, title: 'Cấu trúc thư mục App Router & Routing' }
+    ]
+  },
+  {
+    title: 'Kết nối và hiển thị dữ liệu',
+    lessons: [
+      { order: 1, title: 'Làm quen với Convex DB Serverless' },
+      { order: 2, title: 'Viết Schema & kết nối Query dữ liệu động' },
+      { order: 3, title: 'Xử lý Mutation & bảo mật dữ liệu đầu vào' }
+    ]
+  },
+  {
+    title: 'Đăng nhập, SEO và đưa lên online',
+    lessons: [
+      { order: 1, title: 'Tích hợp xác thực với Convex Auth' },
+      { order: 2, title: 'Tối ưu SEO nâng cao & cấu hình Metadata' },
+      { order: 3, title: 'Triển khai dự án lên Vercel sản xuất' }
+    ]
+  }
+];
+
+const MOCK_RELATED_PREVIEWS = [
+  { slug: 'react-can-ban-cho-nguoi-moi', title: 'React căn bản cho người mới' },
+  { slug: 'typescript-nang-cao', title: 'TypeScript nâng cao' },
+  { slug: 'thiet-ke-he-thong-saas', title: 'Thiết kế hệ thống SaaS' }
+];
+
 export function CourseDetailPreview({
   layoutStyle,
   showCurriculum = true,
@@ -780,7 +816,7 @@ export function CourseDetailPreview({
             <section>
               <h2 className="mb-3 text-2xl font-bold text-slate-900">Nội dung khóa học</h2>
               <div className="space-y-3">
-                {MOCK_CHAPTERS.map((chapter, index) => {
+                {MOCK_CHAPTERS.map((chapter: MockChapter, index: number) => {
                   const isOpen = openChapters[index] ?? false;
                   return (
                     <div key={index} className={`border border-slate-200 bg-white overflow-hidden p-4 ${radiusClass}`}>
@@ -801,7 +837,7 @@ export function CourseDetailPreview({
                       
                       {isOpen && (
                         <div className="mt-3 divide-y divide-slate-100 border-t border-slate-100 pt-2">
-                          {chapter.lessons.map((lesson) => (
+                          {chapter.lessons.map((lesson: MockLesson) => (
                             <div key={lesson.order} className="flex items-center justify-between py-2 text-sm text-slate-700">
                               <span>{index + 1}.{lesson.order}. {lesson.title}</span>
                               {lesson.order === 1 && (
@@ -842,7 +878,7 @@ export function CourseDetailPreview({
               <div className={`border border-slate-200 bg-white p-5 ${radiusClass}`}>
                 <h3 className="font-semibold text-slate-900">Khóa liên quan</h3>
                 <div className="mt-3 space-y-3">
-                  {MOCK_RELATED_PREVIEWS.map((item) => (
+                  {MOCK_RELATED_PREVIEWS.map((item: { slug: string; title: string }) => (
                     <div key={item.slug} className="block text-sm text-slate-600 hover:text-slate-900 cursor-pointer hover:underline">
                       {item.title}
                     </div>
