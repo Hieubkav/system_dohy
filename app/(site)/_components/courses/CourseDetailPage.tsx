@@ -5,38 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap, PlayCircle, Star, UserRound, ChevronDown } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap, PlayCircle, Star, UserRound, ChevronDown, Lock } from 'lucide-react';
 import { RichContent, withFormatMarker } from '@/components/common/RichContent';
 import { useBrandColors } from '@/components/site/hooks';
 import { getCourseLevelLabel } from '@/lib/courses/labels';
 import { useCoursesDetailConfig } from '@/lib/experiences';
-
-type CourseDetailPageProps = {
-  params: Promise<{ slug: string }>;
-};
-
-const getRadiusClass = (radius?: 'none' | 'sm' | 'lg', type: 'card' | 'input' | 'panel' = 'card') => {
-  if (radius === 'none') return 'rounded-none';
-  if (radius === 'sm') {
-    if (type === 'panel') return 'rounded-xl';
-    return 'rounded-lg';
-  }
-  if (type === 'panel') return 'rounded-2xl';
-  return 'rounded-xl';
-};
-
-const getSmallRadiusClass = (radius?: 'none' | 'sm' | 'lg') => {
-  if (radius === 'none') return 'rounded-none';
-  if (radius === 'sm') return 'rounded';
-  return 'rounded-lg';
-};
-
-const formatPrice = (pricingType: string, price?: number) => {
-  if (pricingType === 'free') {return 'Miễn phí';}
-  if (pricingType === 'contact') {return 'Liên hệ';}
-  if (!price) {return 'Liên hệ';}
-  return new Intl.NumberFormat('vi-VN', { currency: 'VND', style: 'currency' }).format(price);
-};
+import { getRadiusClass, getSmallRadiusClass, formatPrice, convertToSlug } from '@/lib/courses/courseUtils';
 
 type CourseContentSource = {
   content: string;
@@ -53,6 +27,10 @@ const resolveCourseContent = (course: CourseContentSource) => {
     return course.htmlRender ? withFormatMarker('html', course.htmlRender) : '';
   }
   return course.content ? withFormatMarker('richtext', course.content) : '';
+};
+
+type CourseDetailPageProps = {
+  params: Promise<{ slug: string }>;
 };
 
 export default function CourseDetailPage({ params }: CourseDetailPageProps) {
@@ -173,7 +151,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   );
 
   return (
-    <main className="min-h-screen bg-white pb-16 lg:pb-0">
+    <main className="min-h-screen bg-white pb-24 lg:pb-0">
       <section className={`border-b border-slate-100 px-4 ${isModern ? 'py-10 text-white' : 'py-8'}`} style={isModern ? { background: `linear-gradient(135deg, ${brandColor}, ${accent})` } : undefined}>
         <div className="mx-auto max-w-7xl">
           <div className="max-w-4xl space-y-4">
@@ -186,13 +164,13 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   <Star size={12} className="fill-current" /> Nổi bật
                 </span>
               )}
-              <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: isModern ? 'rgba(255,255,255,.18)' : `${brandColor}18`, color: isModern ? '#fff' : brandColor }}>
+              <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: isModern ? 'rgba(255,255,255,.18)' : `${brandColor}12`, color: isModern ? '#fff' : '#334155' }}>
                 {category?.name ?? 'Khóa học'}{course.level ? ` · ${getCourseLevelLabel(course.level)}` : ''}
               </span>
             </div>
-            <h1 className={`max-w-4xl text-4xl font-bold leading-tight md:text-5xl ${isModern ? 'text-white' : 'text-slate-900'}`}>{course.title}</h1>
-            {course.excerpt && <p className={`max-w-2xl text-lg ${isModern ? 'text-white/80' : 'text-slate-600'}`}>{course.excerpt}</p>}
-            <div className={`flex flex-wrap gap-4 text-sm ${isModern ? 'text-white/80' : 'text-slate-500'}`}>
+            <h1 className={`max-w-4xl text-4xl font-bold leading-tight md:text-5xl mt-2 ${isModern ? 'text-white' : 'text-slate-900'}`}>{course.title}</h1>
+            {course.excerpt && <p className={`max-w-2xl text-lg mt-2.5 ${isModern ? 'text-white/80' : 'text-slate-600'}`}>{course.excerpt}</p>}
+            <div className={`flex flex-wrap gap-4 text-sm mt-3 ${isModern ? 'text-white/80' : 'text-slate-500'}`}>
               <span className="inline-flex items-center gap-1"><BookOpen size={16} />{course.lessonCount} bài học</span>
               {course.durationText && <span className="inline-flex items-center gap-1"><Clock size={16} />{course.durationText}</span>}
               {config.showInstructor && course.instructorName && <span className="inline-flex items-center gap-1"><UserRound size={16} />{course.instructorName}</span>}
@@ -228,35 +206,61 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                 {chapters?.map((chapter, chapterIndex) => {
                   const chapterLessons = lessonsByChapter.get(chapter._id) ?? [];
                   const isOpen = openChapters[chapter._id] ?? false;
+                  
+                  const shouldShowSummary = !!chapter.summary;
+
                   return (
                     <div key={chapter._id} className={`border border-slate-200 bg-white overflow-hidden p-4 ${radiusClass}`}>
                       <button
                         type="button"
                         onClick={() => toggleChapter(chapter._id)}
-                        className="flex w-full items-center justify-between text-left focus:outline-none"
+                        className="flex w-full items-center justify-between text-left focus:outline-none py-1"
                       >
                         <div>
-                          <h3 className="font-semibold text-slate-900">{chapterIndex + 1}. {chapter.title}</h3>
-                          {chapter.summary && (
-                            <div className="mt-1 text-sm text-slate-500 prose-sm prose dark:prose-invert max-w-none">
-                              <RichContent content={withFormatMarker('richtext', chapter.summary)} />
-                            </div>
-                          )}
+                          <h3 className="font-semibold text-slate-900 text-base md:text-lg">
+                            {chapterIndex + 1}. {chapter.title}
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {chapterLessons.length} bài học
+                          </p>
                         </div>
                         <ChevronDown
                           size={18}
-                          className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                          className={`text-slate-400 transition-transform duration-200 shrink-0 ml-4 ${isOpen ? 'rotate-180' : ''}`}
                         />
                       </button>
                       
                       {isOpen && (
-                        <div className="mt-3 divide-y divide-slate-100 border-t border-slate-100 pt-2">
-                          {chapterLessons.map((lesson) => (
-                            <div key={lesson._id} className="flex items-center justify-between gap-3 py-2 text-sm text-slate-700">
-                              <span>{chapterIndex + 1}.{lesson.order + 1}. {lesson.title}</span>
-                              {lesson.isPreview && <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Xem thử</span>}
+                        <div className="mt-3 border-t border-slate-100 pt-3 space-y-3">
+                          {shouldShowSummary && (
+                            <div className="text-sm text-slate-600 prose-sm prose dark:prose-invert max-w-none bg-slate-50 p-3 rounded-lg border border-slate-100">
+                              <RichContent content={withFormatMarker('richtext', chapter.summary!)} />
                             </div>
-                          ))}
+                          )}
+                          
+                          {chapterLessons.length > 0 && (
+                            <div className="divide-y divide-slate-100 pl-4 md:pl-6">
+                              {chapterLessons.map((lesson, lessonIndex) => (
+                                <Link
+                                  key={lesson._id}
+                                  href={`/khoa-hoc/${course.slug}/bai-hoc/${convertToSlug(lesson.title)}--${lesson._id}`}
+                                  className="flex items-center justify-between gap-3 py-2.5 text-sm text-slate-700 hover:text-slate-900 transition-colors group/item"
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <span className="text-slate-400 font-mono text-xs w-6 shrink-0">{chapterIndex + 1}.{lessonIndex + 1}</span>
+                                    <span className="group-hover/item:underline">{lesson.title}</span>
+                                  </span>
+                                  {lesson.isPreview ? (
+                                    <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 shrink-0 group-hover/item:bg-emerald-100 transition-colors">
+                                      Học thử
+                                    </span>
+                                  ) : (
+                                    <Lock size={12} className="text-slate-300 group-hover/item:text-slate-400 shrink-0" />
+                                  )}
+                                </Link>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

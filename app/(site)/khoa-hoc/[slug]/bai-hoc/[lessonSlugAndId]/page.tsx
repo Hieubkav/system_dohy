@@ -1,0 +1,392 @@
+'use client';
+
+import React, { use, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { useCustomerAuth } from '@/app/(site)/auth/context';
+import { ArrowLeft, BookOpen, Clock, GraduationCap, PlayCircle, Lock, ChevronRight, ChevronLeft, Download, FileText, ArrowRight, Eye } from 'lucide-react';
+import { useBrandColors } from '@/components/site/hooks';
+import { formatPrice, convertToSlug } from '@/lib/courses/courseUtils';
+import { RichContent, withFormatMarker } from '@/components/common/RichContent';
+
+type LessonPageProps = {
+  params: Promise<{ slug: string; lessonSlugAndId: string }>;
+};
+
+export default function LessonDetailPage({ params }: LessonPageProps) {
+  const { slug, lessonSlugAndId } = use(params);
+  const router = useRouter();
+  const brandColors = useBrandColors();
+  const { isAuthenticated, isLoading: authLoading } = useCustomerAuth();
+
+  // Parse ID bài học từ slug lai (lessonSlugAndId) dạng tieu-de-bai-hoc--[id]
+  const lessonId = useMemo(() => {
+    if (!lessonSlugAndId) return '';
+    if (lessonSlugAndId.includes('--')) {
+      const parts = lessonSlugAndId.split('--');
+      return parts[parts.length - 1];
+    }
+    return lessonSlugAndId;
+  }, [lessonSlugAndId]);
+
+  const course = useQuery(api.courses.getBySlug, { slug });
+  const lesson = useQuery(api.courses.getLessonById, { id: lessonId as any });
+  const chapters = useQuery(api.courses.listChapters, course?._id ? { courseId: course._id } : 'skip');
+  const lessons = useQuery(api.courses.listLessonsByCourse, course?._id ? { courseId: course._id } : 'skip');
+
+  const brandColor = brandColors.primary;
+  const secondaryColor = brandColors.secondary || '';
+  const accent = useMemo(() => {
+    return brandColors.mode === 'dual' && secondaryColor ? secondaryColor : brandColor;
+  }, [brandColor, secondaryColor, brandColors.mode]);
+
+  // Trạng thái mở rộng accordion ở sidebar bài học
+  const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
+  const toggleChapter = (chapterId: string) => {
+    setOpenChapters((prev) => ({ ...prev, [chapterId]: !prev[chapterId] }));
+  };
+
+  useEffect(() => {
+    if (lesson?.chapterId) {
+      setOpenChapters((prev) => ({ ...prev, [lesson.chapterId]: true }));
+    }
+  }, [lesson?.chapterId]);
+
+  const lessonsByChapter = useMemo(() => {
+    const map = new Map<string, typeof lessons>();
+    lessons?.forEach((item) => {
+      map.set(item.chapterId, [...(map.get(item.chapterId) ?? []), item]);
+    });
+    return map;
+  }, [lessons]);
+
+  // Tính bài học trước và bài sau
+  const navigation = useMemo(() => {
+    if (!lessons || !lesson) return { next: null, prev: null };
+    // Sắp xếp bài học theo chapter và order
+    const sortedLessons = [...lessons].sort((a, b) => {
+      if (a.chapterId !== b.chapterId) {
+        const chapterA = chapters?.find((c) => c._id === a.chapterId);
+        const chapterB = chapters?.find((c) => c._id === b.chapterId);
+        return (chapterA?.order ?? 0) - (chapterB?.order ?? 0);
+      }
+      return a.order - b.order;
+    });
+
+    const currentIndex = sortedLessons.findIndex((item) => item._id === lesson._id);
+    return {
+      next: currentIndex !== -1 && currentIndex < sortedLessons.length - 1 ? sortedLessons[currentIndex + 1] : null,
+      prev: currentIndex > 0 ? sortedLessons[currentIndex - 1] : null,
+    };
+  }, [lessons, lesson, chapters]);
+
+  // Loading state
+  const isDataLoading = course === undefined || lesson === undefined || chapters === undefined || lessons === undefined;
+  if (isDataLoading || authLoading) {
+    return <LessonDetailSkeleton />;
+  }
+
+  // Not Found state
+  if (!course || !lesson || lesson.courseId !== course._id) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <div className="text-center">
+          <GraduationCap className="mx-auto mb-4 h-12 w-12 text-slate-300" />
+          <h1 className="text-2xl font-bold text-slate-900">Không tìm thấy bài học</h1>
+          <p className="mt-2 text-slate-500">Bài học không tồn tại hoặc đã bị xóa.</p>
+          <Link href="/khoa-hoc" className="mt-6 inline-flex items-center gap-2 rounded-full px-5 py-3 font-medium text-white" style={{ backgroundColor: brandColor }}>
+            <ArrowLeft size={18} /> Quay lại trang khóa học
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Kiểm tra quyền truy cập bài học
+  const isFreeCourse = course.pricingType === 'free';
+  const hasAccess = isAuthenticated && (isFreeCourse || lesson.isPreview);
+
+  // Parse Video URL Embed
+  const videoEmbedUrl = () => {
+    if (!lesson.videoUrl) return null;
+    if (lesson.videoType === 'youtube') {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = lesson.videoUrl.match(regExp);
+      const videoId = match && match[2].length === 11 ? match[2] : null;
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+    if (lesson.videoType === 'drive') {
+      return lesson.videoUrl.replace('/view', '/preview');
+    }
+    return lesson.videoUrl;
+  };
+
+  const embedUrl = videoEmbedUrl();
+
+  return (
+    <main className="min-h-screen bg-slate-50 flex justify-center pb-24">
+      {/* Ẩn scrollbar thô của trình duyệt bằng CSS inline */}
+      <style jsx global>{`
+        .no-scrollbar::-webkit-scrollbar {
+          width: 6px;
+          height: 6px;
+        }
+        .no-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .no-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e1;
+          border-radius: 10px;
+        }
+        .no-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8;
+        }
+      `}</style>
+
+      <div className="w-full max-w-[1600px] flex flex-col lg:flex-row-reverse gap-6 px-4 py-8">
+        {/* Cột chính, cách Sidebar một khoảng cách gap-6 hoàn hảo */}
+        <section className="flex-1 min-w-0 flex flex-col gap-6">
+          {/* Video Player / Lock Wall */}
+          <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-sm relative">
+            {hasAccess ? (
+              embedUrl ? (
+                <iframe
+                  src={embedUrl}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
+                  <PlayCircle size={48} className="text-slate-600" />
+                  <p className="text-sm">Bài học không có video phát.</p>
+                </div>
+              )
+            ) : (
+              /* Lock Wall Screen (Premium Blur) */
+              <div className="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center text-center p-6 text-white z-10">
+                <div className="p-4 bg-white/10 rounded-full mb-4 backdrop-blur-md">
+                  <Lock size={32} className="text-amber-400" />
+                </div>
+                {!isAuthenticated ? (
+                  <>
+                    <h3 className="text-xl font-bold mb-2">Đăng nhập để xem bài học</h3>
+                    <p className="text-sm text-slate-300 max-w-md mb-6">
+                      Để truy cập nội dung học tập và xem video học thử, vui lòng đăng nhập tài khoản của bạn.
+                    </p>
+                    <button
+                      onClick={() => router.push(`/account/login?redirect=${encodeURIComponent(window.location.pathname)}`)}
+                      className="px-6 py-2.5 font-bold text-sm rounded-lg text-white hover:opacity-90 transition-all flex items-center gap-2 shadow-lg"
+                      style={{ backgroundColor: brandColor }}
+                    >
+                      Đăng nhập ngay <ArrowRight size={16} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-bold mb-2">Bài học chưa được kích hoạt</h3>
+                    <p className="text-sm text-slate-300 max-w-md mb-6">
+                      Đây là nội dung thuộc chương trình khóa học có phí. Vui lòng liên hệ ban quản trị để đăng ký kích hoạt tài khoản của bạn.
+                    </p>
+                    <Link
+                      href={`/contact?subject=${encodeURIComponent(`Đăng ký khóa học: ${course.title}`)}`}
+                      className="px-6 py-2.5 font-bold text-sm rounded-lg text-white hover:opacity-90 transition-all flex items-center gap-2 shadow-lg"
+                      style={{ backgroundColor: brandColor }}
+                    >
+                      Đăng ký khóa học <GraduationCap size={16} />
+                    </Link>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Lesson Details with Security Lock blur */}
+          <div className="bg-white border border-slate-200 p-6 rounded-xl space-y-6 relative overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Bài học</span>
+                <h1 className="text-2xl font-bold text-slate-900 mt-1">{lesson.title}</h1>
+              </div>
+              {lesson.exerciseLink && hasAccess && (
+                <a
+                  href={lesson.exerciseLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-xs font-medium text-slate-700 transition shadow-sm"
+                >
+                  <Download size={14} className="text-slate-500" /> Tải bài tập thử
+                </a>
+              )}
+            </div>
+
+            {/* Lock/Blur mô tả nếu không có quyền truy cập */}
+            <div className="relative">
+              <div className={!hasAccess ? 'blur-sm select-none pointer-events-none opacity-40' : ''}>
+                {lesson.description ? (
+                  <div className="prose prose-slate max-w-none text-sm text-slate-600 leading-relaxed">
+                    <RichContent content={lesson.description} />
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-400 italic">Mô tả bài học đang được cập nhật.</p>
+                )}
+              </div>
+
+              {!hasAccess && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 bg-white/30 backdrop-blur-[2px]">
+                  <div className="bg-white/80 border border-slate-200 shadow-lg rounded-xl p-6 max-w-sm">
+                    <Eye size={24} className="mx-auto mb-2 text-slate-400" />
+                    <h4 className="font-bold text-slate-800 text-sm">Tài liệu đang bị khóa</h4>
+                    <p className="text-xs text-slate-500 mt-1 mb-4">
+                      {!isAuthenticated 
+                        ? "Vui lòng đăng nhập tài khoản của bạn để mở khóa tài liệu và bài tập thực hành."
+                        : "Khóa học này yêu cầu kích hoạt tài khoản để truy cập toàn bộ tài liệu giáo trình."}
+                    </p>
+                    <button
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          router.push(`/account/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+                        } else {
+                          router.push(`/contact?subject=${encodeURIComponent(`Đăng ký khóa học: ${course.title}`)}`);
+                        }
+                      }}
+                      className="px-4 py-2 text-xs font-bold text-white rounded-lg hover:opacity-90 transition-all"
+                      style={{ backgroundColor: brandColor }}
+                    >
+                      {!isAuthenticated ? "Đăng nhập ngay" : "Liên hệ kích hoạt"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bottom Navigation Control */}
+          <div className="flex items-center justify-between border-t border-slate-200 pt-6 mt-4">
+            {navigation.prev ? (
+              <Link
+                href={`/khoa-hoc/${course.slug}/bai-hoc/${convertToSlug(navigation.prev.title)}--${navigation.prev._id}`}
+                className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                <ChevronLeft size={16} /> Bài trước
+              </Link>
+            ) : (
+              <span className="text-xs text-slate-300 cursor-not-allowed inline-flex items-center gap-2">
+                <ChevronLeft size={16} /> Bài trước
+              </span>
+            )}
+
+            {navigation.next ? (
+              <Link
+                href={`/khoa-hoc/${course.slug}/bai-hoc/${convertToSlug(navigation.next.title)}--${navigation.next._id}`}
+                className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors"
+              >
+                Bài sau <ChevronRight size={16} />
+              </Link>
+            ) : (
+              <span className="text-xs text-slate-300 cursor-not-allowed inline-flex items-center gap-2">
+                Bài sau <ChevronRight size={16} />
+              </span>
+            )}
+          </div>
+        </section>
+
+        {/* Sidebar dạng Card Card-style, thẳng hàng Menu trên */}
+        <aside className="w-full lg:w-[380px] shrink-0 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col h-auto lg:h-[calc(100vh-140px)] lg:sticky lg:top-24 overflow-y-auto no-scrollbar">
+          <div className="p-4 border-b border-slate-100 bg-white sticky top-0 z-10 rounded-t-xl">
+            <Link href={`/khoa-hoc/${course.slug}`} className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors mb-2">
+              <ArrowLeft size={12} /> {course.title}
+            </Link>
+            <h2 className="font-bold text-slate-950 text-sm">Nội dung khóa học</h2>
+          </div>
+
+          <div className="divide-y divide-slate-100 flex-1">
+            {chapters?.map((chapter, chapterIndex) => {
+              const chapterLessons = lessonsByChapter.get(chapter._id) ?? [];
+              const isOpen = openChapters[chapter._id] ?? false;
+              return (
+                <div key={chapter._id} className="bg-white">
+                  <button
+                    onClick={() => toggleChapter(chapter._id)}
+                    className="w-full p-4 flex items-center justify-between text-left text-xs font-bold text-slate-800 hover:bg-slate-50/80 transition-colors"
+                  >
+                    <span className="line-clamp-2 pr-2">{chapterIndex + 1}. {chapter.title}</span>
+                    <ChevronRight size={14} className={`text-slate-400 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+                  </button>
+
+                  {isOpen && (
+                    <div className="bg-slate-50/40 pb-2">
+                      {chapter.summary && (
+                        <div className="mx-4 mb-3 text-[11px] leading-relaxed text-slate-600 bg-white p-3 rounded-lg border border-slate-200/60">
+                          <RichContent content={withFormatMarker('richtext', chapter.summary)} />
+                        </div>
+                      )}
+                      {chapterLessons.map((item, itemIndex) => {
+                        const isActive = item._id === lesson._id;
+                        // Phân biệt trạng thái trước đăng nhập: bài học xem thử vẫn hiển thị badge Học thử
+                        return (
+                          <Link
+                            key={item._id}
+                            href={`/khoa-hoc/${course.slug}/bai-hoc/${convertToSlug(item.title)}--${item._id}`}
+                            className={`flex items-start gap-2.5 px-5 py-3 text-xs transition-colors border-l-4 ${
+                              isActive
+                                ? 'bg-slate-100/80 font-bold text-slate-950'
+                                : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100/30 border-l-transparent'
+                            }`}
+                            style={isActive ? { borderLeftColor: brandColor } : undefined}
+                          >
+                            <span className="font-mono text-slate-400 mt-0.5 shrink-0 w-6">{chapterIndex + 1}.{itemIndex + 1}</span>
+                            <span className="flex-1 line-clamp-2 leading-relaxed">{item.title}</span>
+                            {item.isPreview ? (
+                              <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 shrink-0">Học thử</span>
+                            ) : (
+                              // Chỉ khóa thật sự đối với bài học có phí không được xem thử
+                              <Lock size={12} className="text-slate-400 mt-0.5 shrink-0" />
+                            )}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </aside>
+      </div>
+    </main>
+  );
+}
+
+function LessonDetailSkeleton() {
+  return (
+    <div className="min-h-screen bg-slate-50 flex justify-center pb-24">
+      <div className="w-full max-w-[1600px] flex flex-col lg:flex-row-reverse gap-6 px-4 py-8">
+        <section className="flex-1 min-w-0 flex flex-col gap-6">
+          <div className="aspect-video bg-slate-200 animate-pulse rounded-xl" />
+          <div className="bg-white p-6 border border-slate-200 rounded-xl space-y-4">
+            <div className="h-4 w-20 bg-slate-200 animate-pulse rounded" />
+            <div className="h-8 w-2/3 bg-slate-200 animate-pulse rounded" />
+            <div className="space-y-2 pt-4">
+              <div className="h-4 w-full bg-slate-100 animate-pulse rounded" />
+              <div className="h-4 w-full bg-slate-100 animate-pulse rounded" />
+              <div className="h-4 w-5/6 bg-slate-100 animate-pulse rounded" />
+            </div>
+          </div>
+        </section>
+
+        <aside className="w-full lg:w-[380px] shrink-0 bg-white border border-slate-200 rounded-xl p-4 space-y-4">
+          <div className="h-4 w-32 bg-slate-200 animate-pulse rounded" />
+          <div className="h-6 w-48 bg-slate-200 animate-pulse rounded" />
+          <div className="space-y-3 pt-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-10 w-full bg-slate-100 animate-pulse rounded" />
+            ))}
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
