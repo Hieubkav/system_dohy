@@ -319,7 +319,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
               </div>
               
               {/* Render the Certificate directly! */}
-              <div className="relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-[900px] mx-auto group">
+              <div className="relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-[1100px] mx-auto group">
                 <CertificateCard
                   customerName={customer?.name || "Học viên"}
                   courseTitle={course.title}
