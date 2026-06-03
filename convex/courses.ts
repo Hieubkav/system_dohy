@@ -988,3 +988,64 @@ export const removeLesson = mutation({
   },
   returns: v.null(),
 });
+
+export const reorderChapters = mutation({
+  args: {
+    orders: v.array(
+      v.object({
+        id: v.id("courseChapters"),
+        order: v.number(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    for (const item of args.orders) {
+      await ctx.db.patch(item.id, {
+        order: item.order,
+        updatedAt: Date.now(),
+      });
+    }
+    return null;
+  },
+  returns: v.null(),
+});
+
+export const reorderLessons = mutation({
+  args: {
+    orders: v.array(
+      v.object({
+        id: v.id("courseLessons"),
+        order: v.number(),
+        chapterId: v.optional(v.id("courseChapters")),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const courseIdsToRecalculate = new Set<string>();
+
+    for (const item of args.orders) {
+      const lesson = await ctx.db.get(item.id);
+      if (!lesson) {continue;}
+
+      const patchData: { order: number; chapterId?: typeof item.chapterId; updatedAt: number } = {
+        order: item.order,
+        updatedAt: Date.now(),
+      };
+
+      if (item.chapterId && item.chapterId !== lesson.chapterId) {
+        patchData.chapterId = item.chapterId;
+        courseIdsToRecalculate.add(lesson.courseId);
+      }
+
+      await ctx.db.patch(item.id, patchData);
+    }
+
+    for (const courseId of courseIdsToRecalculate) {
+      await recalculateCourseCounts(ctx, courseId as any);
+    }
+
+    return null;
+  },
+  returns: v.null(),
+});
+

@@ -152,7 +152,7 @@ export default function CourseCreatePage() {
     try {
       const resolvedMetaTitle = truncateText(title.trim(), 60);
       const resolvedMetaDescription = truncateText(stripHtml(excerpt || content || ''), 160);
-      await createCourse({
+      const newCourseId = await createCourse({
         additionalCategoryIds: multiCategoryEnabled
           ? additionalCategoryIds.filter((id) => id !== categoryId) as Id<'courseCategories'>[]
           : undefined,
@@ -181,8 +181,8 @@ export default function CourseCreatePage() {
         thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
         title: title.trim(),
       });
-      toast.success('Đã tạo khóa học');
-      router.push('/admin/courses');
+      toast.success('Đã tạo khóa học thành công. Vui lòng thiết lập lộ trình học.');
+      router.push(`/admin/courses/${newCourseId}/edit`);
     } catch (error) {
       toast.error(getAdminMutationErrorMessage(error, 'Không thể tạo khóa học'));
     } finally {
@@ -265,85 +265,6 @@ export default function CourseCreatePage() {
               </Card>
             )}
 
-            {(enabledFields.has('metaTitle') || enabledFields.has('metaDescription')) && (
-              <Card>
-                <CardHeader><CardTitle className="text-base">SEO</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  {enabledFields.has('metaTitle') && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label>Tiêu đề SEO</Label>
-                        <span className={`text-xs ${metaTitle.length > 60 ? 'text-red-500' : 'text-slate-400'}`}>{metaTitle.length}/60</span>
-                      </div>
-                      <Input value={metaTitle} onChange={(e) => { setMetaTitle(e.target.value); }} placeholder="Lấy theo tiêu đề nếu để trống" />
-                    </div>
-                  )}
-                  {enabledFields.has('metaDescription') && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label>Mô tả SEO</Label>
-                        <span className={`text-xs ${metaDescription.length > 160 ? 'text-red-500' : 'text-slate-400'}`}>{metaDescription.length}/160</span>
-                      </div>
-                      <textarea value={metaDescription} onChange={(e) => { setMetaDescription(e.target.value); }} className="min-h-[90px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800" />
-                    </div>
-                  )}
-                  <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900">
-                    <div className="truncate font-medium text-blue-600">{metaTitle.trim() || title || 'Tên khóa học'}</div>
-                    <div className="text-xs text-emerald-600">/{categorySlugPreview}/{slug || 'khoa-hoc'}</div>
-                    <div className="mt-1 line-clamp-2 text-xs text-slate-600">{metaDescription.trim() || excerpt || 'Mô tả ngắn sẽ hiển thị tại đây.'}</div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          <div className="space-y-6">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Xuất bản</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Trạng thái</Label>
-                  <select value={status} onChange={(e) => { setStatus(e.target.value as CourseStatus); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
-                    <option value="Draft">Bản nháp</option>
-                    <option value="Published">Đã xuất bản</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Danh mục <span className="text-red-500">*</span></Label>
-                  {multiCategoryEnabled ? (
-                    <>
-                      <CategoryTagsInput
-                        categories={categoriesData}
-                        value={[categoryId, ...additionalCategoryIds].filter(Boolean)}
-                        onQuickCreate={() => { setShowCategoryModal(true); }}
-                        onChange={(ids) => {
-                          setCategoryId(ids[0] ?? '');
-                          setAdditionalCategoryIds(ids.slice(1));
-                        }}
-                      />
-                      <p className="text-xs text-slate-500">Thẻ đầu tiên là danh mục chính.</p>
-                    </>
-                  ) : (
-                    <div className="flex gap-2">
-                      <select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); }} required className="h-10 flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
-                        <option value="">-- Chọn danh mục --</option>
-                        {categoriesData?.map((category) => <option key={category._id} value={category._id}>{category.name}</option>)}
-                      </select>
-                      <Button type="button" variant="outline" size="icon" onClick={() => { setShowCategoryModal(true); }} title="Tạo danh mục mới">
-                        <Plus size={16} />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                {enabledFields.has('featured') && (
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={featured} onChange={(e) => { setFeatured(e.target.checked); }} className="h-4 w-4 rounded border-slate-300" />
-                    <span className="text-sm">Khóa học nổi bật</span>
-                  </label>
-                )}
-              </CardContent>
-            </Card>
-
             <Card>
               <CardHeader><CardTitle className="text-base">Thông tin khóa học</CardTitle></CardHeader>
               <CardContent className="space-y-4">
@@ -422,6 +343,85 @@ export default function CourseCreatePage() {
                     <Label>URL video</Label>
                     <Input value={introVideoUrl} onChange={(e) => { setIntroVideoUrl(e.target.value); }} placeholder="https://..." />
                   </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {(enabledFields.has('metaTitle') || enabledFields.has('metaDescription')) && (
+              <Card>
+                <CardHeader><CardTitle className="text-base">SEO</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  {enabledFields.has('metaTitle') && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>Tiêu đề SEO</Label>
+                        <span className={`text-xs ${metaTitle.length > 60 ? 'text-red-500' : 'text-slate-400'}`}>{metaTitle.length}/60</span>
+                      </div>
+                      <Input value={metaTitle} onChange={(e) => { setMetaTitle(e.target.value); }} placeholder="Lấy theo tiêu đề nếu để trống" />
+                    </div>
+                  )}
+                  {enabledFields.has('metaDescription') && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>Mô tả SEO</Label>
+                        <span className={`text-xs ${metaDescription.length > 160 ? 'text-red-500' : 'text-slate-400'}`}>{metaDescription.length}/160</span>
+                      </div>
+                      <textarea value={metaDescription} onChange={(e) => { setMetaDescription(e.target.value); }} className="min-h-[90px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800" />
+                    </div>
+                  )}
+                  <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div className="truncate font-medium text-blue-600">{metaTitle.trim() || title || 'Tên khóa học'}</div>
+                    <div className="text-xs text-emerald-600">/{categorySlugPreview}/{slug || 'khoa-hoc'}</div>
+                    <div className="mt-1 line-clamp-2 text-xs text-slate-600">{metaDescription.trim() || excerpt || 'Mô tả ngắn sẽ hiển thị tại đây.'}</div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader><CardTitle className="text-base">Xuất bản</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Trạng thái</Label>
+                  <select value={status} onChange={(e) => { setStatus(e.target.value as CourseStatus); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
+                    <option value="Draft">Bản nháp</option>
+                    <option value="Published">Đã xuất bản</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Danh mục <span className="text-red-500">*</span></Label>
+                  {multiCategoryEnabled ? (
+                    <>
+                      <CategoryTagsInput
+                        categories={categoriesData}
+                        value={[categoryId, ...additionalCategoryIds].filter(Boolean)}
+                        onQuickCreate={() => { setShowCategoryModal(true); }}
+                        onChange={(ids) => {
+                          setCategoryId(ids[0] ?? '');
+                          setAdditionalCategoryIds(ids.slice(1));
+                        }}
+                      />
+                      <p className="text-xs text-slate-500">Thẻ đầu tiên là danh mục chính.</p>
+                    </>
+                  ) : (
+                    <div className="flex gap-2">
+                      <select value={categoryId} onChange={(e) => { setCategoryId(e.target.value); }} required className="h-10 flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <option value="">-- Chọn danh mục --</option>
+                        {categoriesData?.map((category) => <option key={category._id} value={category._id}>{category.name}</option>)}
+                      </select>
+                      <Button type="button" variant="outline" size="icon" onClick={() => { setShowCategoryModal(true); }} title="Tạo danh mục mới">
+                        <Plus size={16} />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {enabledFields.has('featured') && (
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={featured} onChange={(e) => { setFeatured(e.target.checked); }} className="h-4 w-4 rounded border-slate-300" />
+                    <span className="text-sm">Khóa học nổi bật</span>
+                  </label>
                 )}
               </CardContent>
             </Card>
