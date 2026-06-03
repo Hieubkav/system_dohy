@@ -95,14 +95,14 @@ export function CertificateCard({
             padding: 32px !important; margin: 0 !important;
             box-shadow: none !important; border: none !important;
             transform: none !important; border-radius: 0 !important;
-            background-color: #fdfbf7 !important;
+            background-color: #F8F0DC !important;
             box-sizing: border-box !important;
           }
         }
       `}</style>
 
       <div
-        className={`w-full bg-[#fdfbf7] text-[#0f172a] p-8 md:p-12 shadow-2xl rounded-xl border border-slate-200 relative overflow-hidden print-container select-none ${className}`}
+        className={`w-full bg-[#F8F0DC] text-[#0f172a] p-8 md:p-12 shadow-2xl rounded-xl border border-[#C9A84C]/30 relative overflow-hidden print-container select-none ${className}`}
         style={{ aspectRatio: '297 / 210', boxSizing: 'border-box' }}
       >
 
@@ -118,16 +118,22 @@ export function CertificateCard({
           preserveAspectRatio="xMidYMid slice"
         >
           <defs>
+            {/*
+              Color token system (research-backed, Canva/Certifier/Harvard-style):
+              - stroke.gold-metallic: #C9A84C  (true metallic gold, luminous shimmer)
+              - bg.parchment:        #F8F0DC  (warm parchment — avoids cold white feel)
+              - vignette.edge:       #D4A843  (deeper gold fade at edges)
+            */}
             {/* Diamond mesh: two sets of diagonal lines at 45° and -45° */}
             <pattern id="hatch-45" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-              <line x1="0" y1="0" x2="0" y2="10" stroke="#a27b4c" strokeWidth="0.35" strokeOpacity="0.11"/>
+              <line x1="0" y1="0" x2="0" y2="10" stroke="#C9A84C" strokeWidth="0.3" strokeOpacity="0.18"/>
             </pattern>
             <pattern id="hatch-neg45" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
-              <line x1="0" y1="0" x2="0" y2="10" stroke="#a27b4c" strokeWidth="0.35" strokeOpacity="0.08"/>
+              <line x1="0" y1="0" x2="0" y2="10" stroke="#C9A84C" strokeWidth="0.3" strokeOpacity="0.12"/>
             </pattern>
             <radialGradient id="vignette-cert" cx="50%" cy="50%" r="65%">
-              <stop offset="0%" stopColor="#fdfbf7" stopOpacity="0" />
-              <stop offset="100%" stopColor="#c9aa82" stopOpacity="0.25" />
+              <stop offset="0%" stopColor="#F8F0DC" stopOpacity="0" />
+              <stop offset="100%" stopColor="#D4A843" stopOpacity="0.2" />
             </radialGradient>
           </defs>
           {/* Layer cross-hatch: +45° then -45° = diamond mesh */}
