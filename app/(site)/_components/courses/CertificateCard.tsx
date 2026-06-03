@@ -68,13 +68,13 @@ export function CertificateCard({
   return (
     <>
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap');
 
         .font-cert-sans {
           font-family: 'Be Vietnam Pro', var(--font-be-vietnam-pro), sans-serif;
         }
-        .font-signature-pinyon {
-          font-family: 'Pinyon Script', cursive;
+        .font-signature-great-vibes {
+          font-family: 'Great Vibes', cursive;
         }
 
         @media print {
@@ -293,12 +293,13 @@ export function CertificateCard({
           <div className="w-full grid grid-cols-3 items-end mt-2 px-2">
 
             {/* Signature */}
-            <div className="text-left space-y-0.5 pb-1">
-              <div className="h-10 flex items-end justify-start relative">
-                <span className="font-signature-pinyon text-[2rem] text-blue-900/85 transform -rotate-2 select-none -translate-x-0.5 translate-y-3 whitespace-nowrap">
+            <div className="text-left flex flex-col justify-end pb-1">
+              {/* Great Vibes — #1 certificate signature font (Certifier, Canva, wplms) */}
+              <div className="relative mb-0.5">
+                <span className="font-signature-great-vibes text-[2.4rem] text-slate-700 select-none whitespace-nowrap leading-none block">
                   Tran Manh Hieu
                 </span>
-                <div className="absolute bottom-1.5 left-0 right-8 h-px bg-slate-200" />
+                <div className="h-px bg-gradient-to-r from-[#a27b4c]/50 via-[#a27b4c]/20 to-transparent mt-0.5" />
               </div>
               <p className="text-[8px] font-extrabold text-slate-700 uppercase tracking-wider">Trần Mạnh Hiếu</p>
               <p className="text-[7px] text-slate-400 uppercase tracking-wider font-bold">Đại diện Dohy Studio</p>
