@@ -1663,3 +1663,47 @@ export const getChapterById = query({
   returns: v.union(chapterDoc, v.null()),
 });
 
+export const getCertificateByCode = query({
+  args: {
+    code: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (!args.code) {
+      return null;
+    }
+    const student = await ctx.db
+      .query("courseStudents")
+      .withIndex("by_certificateCode", (q) => q.eq("certificateCode", args.code))
+      .unique();
+
+    if (!student || student.status !== "active" || !student.completedAt) {
+      return null;
+    }
+
+    const [customer, course] = await Promise.all([
+      ctx.db.get(student.customerId),
+      ctx.db.get(student.courseId),
+    ]);
+
+    return {
+      certificateCode: student.certificateCode || "",
+      enrolledAt: student.enrolledAt,
+      completedAt: student.completedAt,
+      customerName: customer?.name || "Học viên",
+      courseTitle: course?.title || "Khóa học",
+      courseSlug: course?.slug || "",
+    };
+  },
+  returns: v.union(
+    v.object({
+      certificateCode: v.string(),
+      enrolledAt: v.number(),
+      completedAt: v.number(),
+      customerName: v.string(),
+      courseTitle: v.string(),
+      courseSlug: v.string(),
+    }),
+    v.null()
+  ),
+});
+

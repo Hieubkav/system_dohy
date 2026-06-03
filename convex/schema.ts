@@ -1318,7 +1318,8 @@ export default defineSchema({
     .index("by_customerId_and_courseId", ["customerId", "courseId"])
     .index("by_courseId_and_status", ["courseId", "status"])
     .index("by_customerId_and_status", ["customerId", "status"])
-    .index("by_sourceOrderId", ["sourceOrderId"]),
+    .index("by_sourceOrderId", ["sourceOrderId"])
+    .index("by_certificateCode", ["certificateCode"]),
 
   courseLessonProgress: defineTable({
     completedAt: v.number(),

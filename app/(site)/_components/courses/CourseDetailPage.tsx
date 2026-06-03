@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
-import { ArrowLeft, BookOpen, CheckCircle2, Clock, Filter, GraduationCap, PlayCircle, Star, UserRound, ChevronDown, Lock, Play, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, Clock, Filter, GraduationCap, PlayCircle, Star, UserRound, ChevronDown, Lock, Play, ShoppingCart, Award } from 'lucide-react';
 import { RichContent, withFormatMarker } from '@/components/common/RichContent';
 import { useBrandColors } from '@/components/site/hooks';
 import { getCourseLevelLabel } from '@/lib/courses/labels';
@@ -292,43 +292,54 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           </article>
 
           {courseProgress?.completedAt && (
-            <section className={`overflow-hidden border border-slate-200 bg-white ${radiusClass}`}>
-              <div className="p-6 text-white" style={{ background: `linear-gradient(135deg, ${brandColor}, ${accent})` }}>
-                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white/75">Chứng nhận hoàn thành</p>
-                <h2 className="mt-2 text-3xl font-bold">Bạn đã hoàn thành khóa học</h2>
-              </div>
-              <div className="grid gap-5 p-6 md:grid-cols-[160px_1fr]">
-                <div className={`aspect-video overflow-hidden bg-slate-100 md:aspect-square ${smallRadiusClass}`}>
-                  {course.thumbnail ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <GraduationCap size={42} style={{ color: brandColor }} />
-                    </div>
-                  )}
+            <section className={`overflow-hidden border border-slate-200 dark:border-slate-800 bg-[#fdfcf7] dark:bg-slate-950 shadow-lg relative ${radiusClass}`}>
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent pointer-events-none" />
+              <div className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-6 md:gap-8 relative z-10">
+                {/* Certificate miniature preview icon */}
+                <div className="relative shrink-0 flex items-center justify-center h-24 w-24 md:h-28 md:w-28 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200/50 shadow-inner dark:from-amber-950/20 dark:to-transparent dark:border-amber-900/30">
+                  <div className="absolute inset-2 border border-dashed border-amber-300/40 rounded-xl" />
+                  <GraduationCap size={44} className="text-amber-600 dark:text-amber-400 drop-shadow" />
+                  <div className="absolute -bottom-1 -right-1 h-6 w-6 rounded-full bg-amber-500 border-2 border-white dark:border-slate-950 flex items-center justify-center text-white">
+                    <CheckCircle2 size={12} fill="currentColor" className="text-amber-500" />
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-slate-500">Học viên</p>
-                    <p className="text-xl font-bold text-slate-900">{customer?.name ?? 'Học viên'}</p>
+
+                {/* Text & Meta details */}
+                <div className="flex-1 text-center md:text-left space-y-3">
+                  <div className="space-y-1">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                      Đã tốt nghiệp
+                    </span>
+                    <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                      Bạn đã hoàn thành khóa học!
+                    </h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Chứng nhận danh giá ghi nhận sự kiên trì và kiến thức chuyên môn đã được cấp cho học viên <strong className="text-slate-800 dark:text-slate-200">{customer?.name}</strong>.
+                    </p>
                   </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Khóa học</p>
-                    <p className="font-semibold text-slate-800">{course.title}</p>
+
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 text-xs text-slate-400 font-medium">
+                    <p>
+                      Mã chứng nhận: <code className="bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded font-mono font-semibold">{courseProgress.certificateCode}</code>
+                    </p>
+                    <p>
+                      Ngày cấp: <span>{new Date(courseProgress.completedAt).toLocaleDateString('vi-VN')}</span>
+                    </p>
                   </div>
-                  <div className="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
-                    <div>
-                      <p className="text-xs uppercase text-slate-400">Ngày vào học</p>
-                      <p>{courseProgress.enrolledAt ? new Date(courseProgress.enrolledAt).toLocaleDateString('vi-VN') : 'Đang cập nhật'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase text-slate-400">Ngày hoàn thành</p>
-                      <p>{new Date(courseProgress.completedAt).toLocaleDateString('vi-VN')}</p>
-                    </div>
-                  </div>
+                </div>
+
+                {/* Open certificate button */}
+                <div className="w-full md:w-auto self-center md:self-end">
                   {courseProgress.certificateCode && (
-                    <p className="text-xs font-medium text-slate-400">Mã chứng nhận: {courseProgress.certificateCode}</p>
+                    <a
+                      href={`/chung-nhan/${courseProgress.certificateCode}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex w-full md:w-auto items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-3 text-sm font-bold text-white shadow-md hover:from-amber-600 hover:to-amber-700 hover:shadow-lg transition-all transform active:scale-[0.98] cursor-pointer"
+                    >
+                      <Award size={16} />
+                      Mở chứng nhận chính thức
+                    </a>
                   )}
                 </div>
               </div>
