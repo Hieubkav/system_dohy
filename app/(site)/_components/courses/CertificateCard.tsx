@@ -47,6 +47,22 @@ function rosettePath(cx: number, cy: number, r: number, petals: number): string 
   return paths.join(' ');
 }
 
+// ─── Starburst helper: N-ray notary seal polygon ──────────────────────────────
+// Most praised certificate seal shape (2024 dev community, Certifier, Canva)
+function starburstPoints(
+  cx: number, cy: number,
+  outerR: number, innerR: number,
+  rays: number,
+): string {
+  const pts: string[] = [];
+  for (let i = 0; i < rays * 2; i++) {
+    const angle = (i * Math.PI) / rays - Math.PI / 2;
+    const r = i % 2 === 0 ? outerR : innerR;
+    pts.push(`${(cx + r * Math.cos(angle)).toFixed(2)},${(cy + r * Math.sin(angle)).toFixed(2)}`);
+  }
+  return pts.join(' ');
+}
+
 export function CertificateCard({
   customerName,
   courseTitle,
@@ -64,6 +80,8 @@ export function CertificateCard({
   // Pre-compute guilloche paths (expensive but static)
   const guillocheOuter = useMemo(() => guillochePathD(80, 11, 68, 1800, 0, 0), []);
   const guillocheInner = useMemo(() => guillochePathD(60, 7, 52, 1800, 0, 0), []);
+  // 24-ray starburst notary seal (cx=36,cy=36, outerR=35, innerR=28)
+  const sealPoints = useMemo(() => starburstPoints(36, 36, 35, 28, 24), []);
 
   return (
     <>
@@ -322,19 +340,46 @@ export function CertificateCard({
 
 
 
-            {/* Gold wax seal */}
-            <div className="flex justify-center">
-              <div className="relative h-16 w-16 rounded-full bg-gradient-to-br from-[#f5d7b5] via-[#a27b4c] to-[#7f5d34] shadow-md border-2 border-[#fdfbf7] flex items-center justify-center select-none">
-                <div className="absolute inset-1 border border-dashed border-white/30 rounded-full" />
-                <div className="text-white flex flex-col items-center justify-center gap-0.5">
-                  <svg className="w-5 h-5 drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(255,255,255,0.05)" />
-                    <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span className="text-[5px] font-black tracking-[0.25em] uppercase leading-none font-cert-sans">VERIFIED</span>
-                  <span className="text-[4px] tracking-wider leading-none opacity-75 font-bold">DOHY STUDIO</span>
-                </div>
-              </div>
+            {/* ── Starburst Notary Seal (24-ray, most praised by devs) ── */}
+            <div className="flex justify-center items-center">
+              <svg
+                width="76" height="76" viewBox="0 0 72 72"
+                className="select-none"
+                aria-label="Verified seal"
+                style={{ filter: 'drop-shadow(0px 2px 5px rgba(90,50,0,0.38))' }}
+              >
+                <defs>
+                  {/* Metallic gold — highlights at top-left, deep at bottom-right */}
+                  <radialGradient id="sb-outer" cx="38%" cy="30%" r="65%">
+                    <stop offset="0%" stopColor="#FAE09A" />
+                    <stop offset="48%" stopColor="#C9A84C" />
+                    <stop offset="100%" stopColor="#7A4E14" />
+                  </radialGradient>
+                  <radialGradient id="sb-inner" cx="36%" cy="30%" r="65%">
+                    <stop offset="0%" stopColor="#F5D070" />
+                    <stop offset="52%" stopColor="#B88A2A" />
+                    <stop offset="100%" stopColor="#6A3E10" />
+                  </radialGradient>
+                </defs>
+
+                {/* Outer 24-ray starburst */}
+                <polygon points={sealPoints} fill="url(#sb-outer)" />
+
+                {/* Inner circle */}
+                <circle cx="36" cy="36" r="22" fill="url(#sb-inner)" />
+
+                {/* Decorative rings */}
+                <circle cx="36" cy="36" r="20" fill="none" stroke="#FAE09A" strokeWidth="0.7" strokeOpacity="0.45" />
+                <circle cx="36" cy="36" r="17.5" fill="none" stroke="#FAE09A" strokeWidth="0.45" strokeDasharray="1.6 1.8" strokeOpacity="0.35" />
+
+                {/* Checkmark — bold, centered */}
+                <path d="M27,35 L32.5,41 L45.5,29" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" opacity="0.93" />
+
+                {/* VERIFIED label */}
+                <text x="36" y="49" textAnchor="middle" fontSize="5" fontFamily="'Be Vietnam Pro',sans-serif" fontWeight="900" fill="white" letterSpacing="1.8" opacity="0.88">VERIFIED</text>
+                {/* DOHY STUDIO label */}
+                <text x="36" y="54.5" textAnchor="middle" fontSize="3.4" fontFamily="'Be Vietnam Pro',sans-serif" fontWeight="700" fill="white" letterSpacing="1" opacity="0.62">DOHY STUDIO</text>
+              </svg>
             </div>
 
             {/* QR code — cert code là trục căn giữa, QR và label đều center theo */}
