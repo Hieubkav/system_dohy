@@ -1,100 +1,75 @@
-# Spec: Tích Hợp Tab Tối Ưu Ảnh WebP Lossless (100% Không Tổn Hao)
+# Spec: Tích Hợp Tab Giảm Dung Lượng Ảnh WebP Lossless & Lossy (100% vs 90%)
 
 # I. Primer
 
 ## 1. TL;DR kiểu Feynman
-* **Vấn đề**: Người dùng muốn tối ưu hóa dung lượng ảnh nhưng bắt buộc phải giữ lại 100% chất lượng pixel gốc (Lossless không tổn hao) để logo sắc nét tuyệt đối. Tính năng này cần được đặt ở một Tab riêng để giao diện trực quan và dễ sử dụng.
+* **Vấn đề**: Người dùng muốn có 2 lựa chọn nén ảnh logo/sản phẩm: hoặc giữ nguyên 100% chất lượng tuyệt đối không mất pixel nào (Lossless), hoặc giảm dung lượng tối đa (giảm mạnh 80-90% dung lượng gốc) với chất lượng cực nét 90% (Lossy).
 * **Giải pháp**:
-  * Tạo thêm một Tab riêng mang tên **"Tối ưu ảnh"** trong trình chỉnh sửa ảnh.
-  * Sử dụng bộ mã hóa WebP Lossless native của trình duyệt thông qua **Canvas API** bằng cách gọi `canvas.toBlob(..., 'image/webp', 1.0)`.
-  * Trong tab này, hiển thị nút **"Nén WebP (Lossless)"** để chuyển đổi định dạng và nén ảnh hiện tại mà không làm mất chi tiết pixel nào, kèm theo hiển thị so sánh dung lượng thực tế trước và sau khi nén.
-* **Lợi ích**: Giao diện các tab chức năng được phân định rõ ràng. Logo được nén thành WebP siêu nét, giữ nguyên độ trong suốt, dung lượng giảm 30-50% giúp website tải nhanh hơn.
+  * Thiết lập tab riêng **"Giảm dung lượng ảnh"** trong trình chỉnh sửa.
+  * Tích hợp hai nút nén:
+    1. **"Nén WebP (Đẹp 100%)"**: Xuất file WebP Lossless qua Canvas gọi `canvas.toBlob(..., 'image/webp', 1.0)`.
+    2. **"Nén WebP (Giảm mạnh 90%)"**: Xuất file WebP Lossy chất lượng 90% qua Canvas gọi `canvas.toBlob(..., 'image/webp', 0.9)`.
+* **Lợi ích**: Admin có toàn quyền quyết định giữa độ nét tuyệt đối (Đẹp 100%) và dung lượng siêu nhẹ (Giảm mạnh 90%) ngay trên một giao diện thống nhất.
 
 ## 2. Elaboration & Self-Explanation
-Việc bổ sung một tab riêng `'compress'` giúp người dùng phân biệt rõ ràng giữa các hành động: Cắt ảnh (Crop), Xóa nền (Remove Background), Thêm nền (Add Background), và Tối ưu ảnh (Compress/Convert to WebP).
-Chúng tôi sẽ sử dụng chung state lưu trữ kết quả tạm thời `removedBgBlob` và `removedBgUrl` cho cả tab Xóa nền và tab Tối ưu ảnh. Thiết kế này giúp người dùng có thể thực hiện chuỗi hành động kết hợp một cách tự nhiên (ví dụ: Xóa nền xong, chuyển sang tab Tối ưu ảnh để nén tiếp file đó sang WebP Lossless, rồi mới lưu lại).
+Bộ mã hóa WebP của trình duyệt cho phép nén theo 2 phương thức:
+* **Lossless (quality = 1.0)**: Giữ nguyên 100% thông tin pixel, nén không tổn hao. Kích thước file giảm từ 30% đến 50% so với PNG gốc. Phù hợp cho logo dạng vector, chứa text hoặc chi tiết siêu mảnh cần độ chính xác tuyệt đối.
+* **Lossy (quality = 0.9)**: Tối ưu màu sắc để giảm dung lượng mạnh mẽ nhất. Kích thước file giảm đến 80-90%. Phù hợp cho các ảnh sản phẩm lớn hoặc logo có màu sắc phức tạp, ảnh chụp thật. Ở mức 90%, mắt thường hoàn toàn không thể nhận thấy sự khác biệt về chất lượng so với ảnh gốc.
 
-Thuật toán nén WebP Lossless qua Canvas native hoạt động bằng cách vẽ ảnh lên canvas ở kích thước gốc và xuất blob:
-```javascript
-canvas.toBlob((blob) => { ... }, 'image/webp', 1.0);
-```
-Giá trị chất lượng `1.0` truyền vào kiểu `image/webp` kích hoạt chế độ nén lossless trong các trình duyệt hiện đại.
+Hàm handler `handleCompressToWebP(quality)` sẽ nhận đối số chất lượng và thực hiện nén Canvas tương ứng, cập nhật metadata hiển thị trực quan.
 
 ## 3. Concrete Examples & Analogies
-* **Quy trình hoạt động kết hợp**:
-  1. Admin mở Dialog, ảnh gốc có dung lượng **1.2 MB** dạng **JPG**.
-  2. Admin chọn tab **Xóa nền**, bấm nút **Xóa nền**. Kết quả nhận được ảnh PNG không nền dung lượng **350 KB**.
-  3. Admin chuyển sang tab **Tối ưu ảnh**, bấm nút **Nén WebP (Lossless)**. Ảnh tách nền PNG lập tức được nén thành ảnh WebP Lossless trong suốt. Dung lượng cập nhật hiển thị giảm còn **180 KB** (giảm 48%), định dạng hiển thị cập nhật là `WEBP`.
-  4. Admin bấm **Áp dụng tối ưu**, file được lưu lên server dưới dạng WebP sắc nét 100%.
+* **Ví dụ thực tế**: Admin tải lên ảnh PNG 1.2 MB.
+  * Bấm **Nén WebP (Đẹp 100%)**: Dung lượng ảnh giảm còn **650 KB** (giảm 45%), độ nét 10/10.
+  * Bấm **Nén WebP (Giảm mạnh 90%)**: Dung lượng ảnh giảm chỉ còn **120 KB** (giảm 90%), độ nét 9.9/10 (mắt thường thấy giống hệt ảnh gốc).
 
 # II. Audit Summary (Tóm tắt kiểm tra)
 * **Tình trạng file hiện tại**:
-  * [ImageEditorDialog.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/app/admin/components/ImageEditorDialog.tsx) định nghĩa kiểu `EditorTab = 'crop' | 'removebg' | 'addbg'`.
-  * State `removedBgBlob` lưu trữ blob kết quả đã chỉnh sửa của tab Xóa nền.
-  * Footer dialog có các nút áp dụng tương ứng với `activeTab`.
+  * [ImageEditorDialog.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/app/admin/components/ImageEditorDialog.tsx) đã hỗ trợ tab `compress` mang tên "Giảm dung lượng ảnh".
+  * Hàm `handleCompressToWebP` đang mặc định chất lượng nén `1.0`.
 
 # III. Root Cause & Counter-Hypothesis (Nguyên nhân gốc & Giả thuyết đối chứng)
 * **Phân tích thiết kế**:
-  * Việc tích hợp tính năng nén thành tab riêng giúp luồng trải nghiệm (UX) rõ ràng hơn, không làm rối tab Xóa nền vốn đã có nhiều thao tác xử lý tiến trình AI phức tạp.
-  * Sử dụng chung state kết quả giúp tối giản lượng code, tối ưu hóa bộ nhớ và tăng cường tính đồng bộ giữa các tab chỉnh sửa.
+  * Cần cập nhật callback `handleCompressToWebP` nhận tham số `quality` động để hỗ trợ cả hai nút bấm (1.0 và 0.9).
 
 # IV. Proposal (Đề xuất)
 
 ## Option 1 (Recommend) — Confidence 98%
-Thiết lập tab "Tối ưu ảnh" riêng biệt và triển khai nén WebP Lossless.
-* **a) Mở rộng EditorTab**:
-  * Thêm `'compress'` vào kiểu `EditorTab`.
-  * Bổ sung mục tab vào mảng `tabs` hiển thị trên UI.
-* **b) Thiết kế giao diện Tab Tối ưu ảnh**:
-  * Hướng dẫn sử dụng: "Tối ưu hóa dung lượng ảnh bằng cách chuyển đổi sang định dạng WebP Lossless (không tổn hao). Ảnh giữ nguyên 100% chất lượng gốc và độ trong suốt."
-  * Hiển thị ảnh xem trước tương ứng (dùng `removedBgUrl` nếu có, ngược lại dùng `imageUrl`).
-  * Hiển thị dòng thông số ảnh hiện tại (size và type).
-  * Hiển thị nút bấm: **[Nén WebP (Lossless)]** (khi chưa nén hoặc muốn nén lại) và nút **[Hoàn tác]** (để quay lại ảnh gốc).
-* **c) Cập nhật Footer**:
-  * Khi `activeTab === 'compress'`, nút áp dụng hiển thị nhãn "Áp dụng tối ưu" và gọi `handleApplyRemovedBg`.
+Mở rộng giao diện tab "Giảm dung lượng ảnh" để cung cấp hai nút nén (1.0 và 0.9).
+* **a) Hàm xử lý**:
+  * Sửa `handleCompressToWebP(quality: number)` để nén và thông báo tương ứng.
+* **b) Nút bấm**:
+  * Render hai nút **"Nén WebP (Đẹp 100%)"** và **"Nén WebP (Giảm mạnh 90%)"** cạnh nhau trong tab `compress`.
 
 # V. Files Impacted (Tệp bị ảnh hưởng)
 * **Sửa**: [ImageEditorDialog.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/app/admin/components/ImageEditorDialog.tsx)
-  * Vai trò: Giao diện hộp thoại sửa ảnh.
-  * Thay đổi:
-    * Thêm tab `compress` vào kiểu và mảng tabs.
-    * Định nghĩa helper `compressImageToWebP`.
-    * Định nghĩa handler `handleCompressToWebP`.
-    * Render nội dung tab `compress`.
-    * Cập nhật footer để hỗ trợ tab `compress` áp dụng lưu ảnh.
+  * Thay đổi: Nâng cấp `handleCompressToWebP` nhận quality, render 2 nút bấm tương ứng trên giao diện.
 
 # VI. Execution Preview (Xem trước thực thi)
-1. **Bước 1**: Cập nhật kiểu `EditorTab` và thêm tab `Tối ưu ảnh` vào mảng `tabs`.
-2. **Bước 2**: Viết hàm helper `compressImageToWebP` và tích hợp logic nén WebP Lossless.
-3. **Bước 3**: Render nội dung chi tiết cho tab `compress` (preview, hướng dẫn, nút nén WebP, nút hoàn tác).
-4. **Bước 4**: Thêm nút "Áp dụng tối ưu" ở Footer khi tab hiện tại là `compress`.
-5. **Bước 5**: Kiểm tra kiểu dữ liệu TypeScript.
+1. **Bước 1**: Cập nhật hàm `handleCompressToWebP` nhận quality.
+2. **Bước 2**: Thay đổi nút bấm trong tab `compress` thành hai nút nén 100% và 90%.
+3. **Bước 3**: Chạy kiểm tra compile TypeScript.
 
 # VII. Verification Plan (Kế hoạch kiểm chứng)
 * **Kiểm tra biên dịch**: Chạy `tsc --noEmit` để xác nhận không lỗi compile.
 * **Kiểm tra thủ công**:
-  * Mở dialog sửa logo tại `/admin/settings/general`.
-  * Xác nhận có tab thứ 4 mang tên **"Tối ưu ảnh"**.
-  * Chuyển sang tab "Tối ưu ảnh", bấm **Nén WebP (Lossless)**. Kiểm tra định dạng đổi thành WEBP và dung lượng giảm.
-  * Bấm Hoàn tác để khôi phục ảnh gốc.
-  * Thử xóa nền ở tab "Xóa nền", sau đó chuyển sang tab "Tối ưu ảnh". Bấm **Nén WebP (Lossless)** để nén ảnh không nền. Bấm áp dụng ở Footer và verify file tải lên Convex là WebP trong suốt.
+  * Mở dialog chỉnh sửa logo.
+  * Vào tab "Giảm dung lượng ảnh".
+  * Bấm nút **Nén WebP (Đẹp 100%)**, verify dung lượng và định dạng. Bấm Hoàn tác.
+  * Bấm nút **Nén WebP (Giảm mạnh 90%)**, verify dung lượng giảm sâu hơn (ví dụ 80-90%), ảnh vẫn hiển thị sắc nét. Bấm Áp dụng.
 
 # VIII. Todo
 * [x] Cập nhật spec dự án.
-* [ ] Sửa đổi kiểu `EditorTab` và mảng `tabs` trong `ImageEditorDialog.tsx`.
-* [ ] Thêm helper `compressImageToWebP` và logic `handleCompressToWebP`.
-* [ ] Render nội dung tab `compress`.
-* [ ] Cập nhật Footer nút bấm áp dụng cho tab `compress`.
-* [ ] Chạy kiểm tra TypeScript và commit.
+* [x] Cập nhật `handleCompressToWebP` hỗ trợ tham số quality.
+* [x] Render hai nút nén 100% và 90% trong tab `compress`.
+* [ ] Kiểm tra lỗi biên dịch TypeScript.
+* [ ] Commit thay đổi.
 
 # IX. Acceptance Criteria (Tiêu chí chấp nhận)
-* Có tab "Tối ưu ảnh" riêng biệt trong dialog chỉnh sửa ảnh.
-* Tab này chứa nút "Nén WebP (Lossless)" hoạt động tốt cho cả ảnh gốc và ảnh đã xóa nền.
-* Chất lượng ảnh WebP đầu ra đạt 100% không tổn hao.
-* Kích thước và định dạng cập nhật chính xác trên giao diện.
-* File kết quả gửi về callback `onApply` có type là `image/webp` và tên file có đuôi `.webp` khi áp dụng ảnh đã nén.
-* Không có lỗi TypeScript.
+* Tab "Giảm dung lượng ảnh" hiển thị 2 nút: "Nén WebP (Đẹp 100%)" và "Nén WebP (Giảm mạnh 90%)".
+* Nút 100% thực hiện nén lossless, nút 90% thực hiện nén lossy chất lượng 90%.
+* Dung lượng hiển thị cập nhật chính xác.
+* Không lỗi TypeScript.
 
 # X. Risk / Rollback (Rủi ro / Hoàn tác)
-* **Rủi ro**: Không có rủi ro lớn vì Canvas API được hỗ trợ native ở tất cả các trình duyệt hiện đại.
-* **Hoàn tác**: Sử dụng `git checkout` để khôi phục lại trạng thái file trước khi sửa đổi.
+* Không có rủi ro lớn. Hoàn tác bằng `git checkout`.

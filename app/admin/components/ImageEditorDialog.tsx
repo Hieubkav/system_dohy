@@ -307,15 +307,17 @@ export function ImageEditorDialog({
   // Compress state & handler
   const [isCompressing, setIsCompressing] = useState(false);
 
-  const handleCompressToWebP = useCallback(async () => {
+  const handleCompressToWebP = useCallback(async (quality: number) => {
     if (isCompressing) return;
     setIsCompressing(true);
 
     const source = removedBgBlob || imageUrl;
+    const isLossless = quality === 1.0;
 
     try {
-      toast.loading('Đang tối ưu dung lượng ảnh sang WebP Lossless...');
-      const result = await compressImageToWebP(source, 1.0);
+      const modeText = isLossless ? 'đẹp 100%' : 'giảm mạnh 90%';
+      toast.loading(`Đang nén ảnh sang WebP (${modeText})...`);
+      const result = await compressImageToWebP(source, quality);
 
       setRemovedBgUrl((prev) => {
         if (prev && prev !== imageUrl) URL.revokeObjectURL(prev);
@@ -323,7 +325,7 @@ export function ImageEditorDialog({
       });
       setRemovedBgBlob(result.blob);
       toast.dismiss();
-      toast.success('Nén ảnh WebP Lossless thành công!');
+      toast.success(`Nén ảnh WebP (${modeText}) thành công!`);
     } catch (err) {
       console.error('[WebP Compress] Error:', err);
       toast.dismiss();
@@ -976,7 +978,7 @@ export function ImageEditorDialog({
               <div className="flex justify-center gap-2">
                 <Button
                   type="button"
-                  onClick={handleCompressToWebP}
+                  onClick={() => handleCompressToWebP(1.0)}
                   disabled={isCompressing}
                   className="gap-2"
                 >
@@ -985,7 +987,22 @@ export function ImageEditorDialog({
                   ) : (
                     <Sparkles size={15} />
                   )}
-                  Nén WebP (Lossless)
+                  Nén WebP (Đẹp 100%)
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={() => handleCompressToWebP(0.9)}
+                  disabled={isCompressing}
+                  variant="outline"
+                  className="gap-2 border-blue-500 text-blue-600 hover:bg-blue-50 dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-950/30"
+                >
+                  {isCompressing ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={15} />
+                  )}
+                  Nén WebP (Giảm mạnh 90%)
                 </Button>
 
                 {removedBgUrl && (
