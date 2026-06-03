@@ -304,12 +304,8 @@ export function CourseCurriculumEditor({
   }, [initialized, serverChapters, serverLessons, draftChapters, draftLessons]);
 
   // ── Notify parent of dirty change ──
-  const prevIsDirtyRef = useRef(false);
   useEffect(() => {
-    if (prevIsDirtyRef.current !== isDirty) {
-      prevIsDirtyRef.current = isDirty;
-      onDirtyChange(isDirty);
-    }
+    onDirtyChange(isDirty);
   }, [isDirty, onDirtyChange]);
 
   // ── Save function (exposed to parent via ref) ──
@@ -441,6 +437,8 @@ export function CourseCurriculumEditor({
     }
 
     toast.success('Đã lưu lộ trình học');
+    // Reset draft để Convex data mới reinit lại sạch
+    setInitialized(false);
   }, [
     serverChapters, serverLessons, draftChapters, draftLessons, courseId,
     createChapter, updateChapter, removeChapter, reorderChapters,

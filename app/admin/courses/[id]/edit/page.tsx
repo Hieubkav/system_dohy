@@ -457,7 +457,8 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
           </button>
         </div>
 
-        {activeTab === 'general' ? (
+        {/* Tab General */}
+        <div className={activeTab === 'general' ? '' : 'hidden'}>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
               <Card>
@@ -691,15 +692,16 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
               </Card>
             </div>
           </div>
-        ) : (
-          <div className="w-full">
-            <CourseCurriculumEditor
-              courseId={courseId}
-              onDirtyChange={handleCurriculumDirtyChange}
-              onSaveRef={curriculumSaveFnRef}
-            />
-          </div>
-        )}
+        </div>
+
+        {/* Tab Curriculum — always mounted, hidden when not active */}
+        <div className={activeTab === 'curriculum' ? '' : 'hidden'}>
+          <CourseCurriculumEditor
+            courseId={courseId}
+            onDirtyChange={handleCurriculumDirtyChange}
+            onSaveRef={curriculumSaveFnRef}
+          />
+        </div>
 
         <HomeComponentStickyFooter
           isSubmitting={isSubmitting}
