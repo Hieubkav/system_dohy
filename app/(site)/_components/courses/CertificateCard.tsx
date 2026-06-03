@@ -324,7 +324,7 @@ export function CertificateCard({
             </div>
 
             {/* QR code */}
-            <div className="flex flex-col items-end text-right space-y-1 pb-1">
+            <div className="flex flex-col items-center text-center pb-1 gap-0 justify-end">
               {currentUrl && (
                 <div className="bg-white p-1 border border-slate-200 rounded shadow-sm">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -335,11 +335,12 @@ export function CertificateCard({
                   />
                 </div>
               )}
-              <div className="space-y-0.5">
+              <div className="mt-1.5 space-y-0.5">
                 <p className="text-[7px] font-mono text-slate-500 select-all font-bold uppercase leading-none">{certificateCode}</p>
                 <p className="text-[7px] text-slate-400 uppercase tracking-wider font-extrabold">Quét xác thực</p>
               </div>
             </div>
+
 
           </div>
         </div>
