@@ -14,10 +14,10 @@ import { QuickCreateCourseCategoryModal } from '@/app/admin/components/QuickCrea
 import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
 import { COURSE_LEVEL_OPTIONS, parseCourseLevel, type CourseLevel } from '@/lib/courses/labels';
 import { stripHtml, truncateText } from '@/lib/seo';
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, cn } from '../../../components/ui';
-import { ImageUploader } from '../../../components/ImageUploader';
-import { LexicalEditor } from '../../../components/LexicalEditor';
-import { CourseCurriculumEditor } from '../../components/CourseCurriculumEditor';
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, cn } from '@/app/admin/components/ui';
+import { ImageUploader } from '@/app/admin/components/ImageUploader';
+import { LexicalEditor } from '@/app/admin/components/LexicalEditor';
+import { CourseCurriculumEditor } from '@/app/admin/courses/components/CourseCurriculumEditor';
 
 const MODULE_KEY = 'courses';
 
@@ -26,6 +26,20 @@ const generateSlug = (value: string) => value.toLowerCase()
   .replaceAll(/[đĐ]/g, 'd')
   .replaceAll(/[^a-z0-9\s]/g, '')
   .replaceAll(/\s+/g, '-');
+
+const getEmbedUrl = (type: string, url: string) => {
+  if (!url) return null;
+  if (type === 'youtube') {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    const videoId = match && match[2].length === 11 ? match[2] : null;
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  }
+  if (type === 'drive') {
+    return url.replace('/view', '/preview');
+  }
+  return url;
+};
 
 type CourseStatus = 'Draft' | 'Published' | 'Archived';
 type PricingType = 'free' | 'paid' | 'contact';
@@ -668,6 +682,16 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
                     <div className="space-y-2">
                       <Label>URL video</Label>
                       <Input value={introVideoUrl} onChange={(e) => { setIntroVideoUrl(e.target.value); }} />
+                      {getEmbedUrl(introVideoType, introVideoUrl) && (
+                        <div className="mt-2 aspect-video w-full overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900">
+                          <iframe
+                            src={getEmbedUrl(introVideoType, introVideoUrl)!}
+                            className="h-full w-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>

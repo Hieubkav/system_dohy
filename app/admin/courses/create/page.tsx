@@ -26,6 +26,20 @@ const generateSlug = (value: string) => value.toLowerCase()
   .replaceAll(/[^a-z0-9\s]/g, '')
   .replaceAll(/\s+/g, '-');
 
+const getEmbedUrl = (type: string, url: string) => {
+  if (!url) return null;
+  if (type === 'youtube') {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    const videoId = match && match[2].length === 11 ? match[2] : null;
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+  }
+  if (type === 'drive') {
+    return url.replace('/view', '/preview');
+  }
+  return url;
+};
+
 type CourseStatus = 'Draft' | 'Published';
 type PricingType = 'free' | 'paid' | 'contact';
 type RenderType = 'content' | 'markdown' | 'html';
@@ -421,6 +435,16 @@ export default function CourseCreatePage() {
                   <div className="space-y-2">
                     <Label>URL video</Label>
                     <Input value={introVideoUrl} onChange={(e) => { setIntroVideoUrl(e.target.value); }} placeholder="https://..." />
+                    {getEmbedUrl(introVideoType, introVideoUrl) && (
+                      <div className="mt-2 aspect-video w-full overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900">
+                        <iframe
+                          src={getEmbedUrl(introVideoType, introVideoUrl)!}
+                          className="h-full w-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

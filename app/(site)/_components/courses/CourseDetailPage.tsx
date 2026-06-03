@@ -61,6 +61,22 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const radiusClass = getRadiusClass(cornerRadius);
   const smallRadiusClass = getSmallRadiusClass(cornerRadius);
 
+  const [showPromoVideo, setShowPromoVideo] = useState(false);
+
+  const promoVideoEmbedUrl = useMemo(() => {
+    if (!course?.introVideoUrl || course.introVideoType === 'none') return null;
+    if (course.introVideoType === 'youtube') {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = course.introVideoUrl.match(regExp);
+      const videoId = match && match[2].length === 11 ? match[2] : null;
+      return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
+    }
+    if (course.introVideoType === 'drive') {
+      return course.introVideoUrl.replace('/view', '/preview');
+    }
+    return course.introVideoUrl;
+  }, [course?.introVideoUrl, course?.introVideoType]);
+
   // Accordion cho danh sách bài học (T4-01)
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
   const toggleChapter = (chapterId: string) => {
@@ -119,36 +135,54 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     router.push(`/contact?subject=${encodeURIComponent(`Đăng ký khóa học: ${course.title}`)}`);
   };
 
-  const CtaCard = () => (
-    <div className={`border border-slate-200 bg-white p-5 group ${radiusClass}`}>
-      {/* Thumbnail với hiệu ứng Hover Zoom (T4-02) */}
-      <div className={`mb-4 flex aspect-video items-center justify-center overflow-hidden bg-slate-100 relative ${smallRadiusClass}`}>
-        {course.thumbnail ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-        ) : (
+  const CtaCard = () => {
+    const hasPromoVideo = !!promoVideoEmbedUrl;
+    return (
+      <div className={`border border-slate-200 bg-white p-5 group ${radiusClass}`}>
+        {/* Thumbnail với hiệu ứng Hover Zoom (T4-02) */}
+        <div 
+          onClick={hasPromoVideo ? () => setShowPromoVideo(true) : undefined}
+          className={`mb-4 flex aspect-video items-center justify-center overflow-hidden bg-slate-100 relative ${smallRadiusClass} ${hasPromoVideo ? 'cursor-pointer group/thumb' : ''}`}
+        >
+          {course.thumbnail ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+          ) : (
+            <>
+              <div className="absolute inset-0 transition-transform duration-300 group-hover:scale-105" style={{ background: `linear-gradient(135deg, ${brandColor}22, ${accent}22)` }} />
+              <PlayCircle size={48} className="relative z-10 transition-transform duration-300 group-hover:scale-105" style={{ color: brandColor }} />
+            </>
+          )}
+
+          {/* Overlay nút Play tròn lớn nếu có video giới thiệu */}
+          {hasPromoVideo && (
+            <div className="absolute inset-0 bg-black/20 group-hover/thumb:bg-black/40 transition-colors flex items-center justify-center z-10">
+              <div className="bg-white/90 hover:bg-white text-slate-900 rounded-full p-4 shadow-lg transition-transform duration-300 group-hover/thumb:scale-110 flex items-center justify-center">
+                <PlayCircle size={28} className="text-slate-950 fill-slate-950" style={{ color: brandColor }} />
+              </div>
+              <span className="absolute bottom-3 right-3 bg-black/70 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">
+                Video giới thiệu
+              </span>
+            </div>
+          )}
+        </div>
+        {showPrice && (
           <>
-            <div className="absolute inset-0 transition-transform duration-300 group-hover:scale-105" style={{ background: `linear-gradient(135deg, ${brandColor}22, ${accent}22)` }} />
-            <PlayCircle size={48} className="relative z-10 transition-transform duration-300 group-hover:scale-105" style={{ color: brandColor }} />
+            <p className="text-sm text-slate-500">{course.priceNote || 'Học trọn đời'}</p>
+            <p className="mt-1 text-2xl font-bold" style={{ color: accent }}>{price}</p>
           </>
         )}
+        {showPrice && course.comparePriceAmount && course.pricingType === 'paid' && (
+          <p className="text-sm text-slate-400">
+            Giá gốc: <span className="line-through">{formatPrice('paid', course.comparePriceAmount)}</span>
+          </p>
+        )}
+        <button type="button" onClick={handleRegister} className="mt-4 w-full px-5 py-3 font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
+          {!showPrice || course.pricingType === 'contact' ? 'Liên hệ tư vấn' : 'Đăng ký học'}
+        </button>
       </div>
-      {showPrice && (
-        <>
-          <p className="text-sm text-slate-500">{course.priceNote || 'Học trọn đời'}</p>
-          <p className="mt-1 text-2xl font-bold" style={{ color: accent }}>{price}</p>
-        </>
-      )}
-      {showPrice && course.comparePriceAmount && course.pricingType === 'paid' && (
-        <p className="text-sm text-slate-400">
-          Giá gốc: <span className="line-through">{formatPrice('paid', course.comparePriceAmount)}</span>
-        </p>
-      )}
-      <button type="button" onClick={handleRegister} className="mt-4 w-full px-5 py-3 font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
-        {!showPrice || course.pricingType === 'contact' ? 'Liên hệ tư vấn' : 'Đăng ký học'}
-      </button>
-    </div>
-  );
+    );
+  };
 
   return (
     <main className="min-h-screen bg-white pb-24 lg:pb-0">
@@ -299,6 +333,32 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           <button type="button" onClick={handleRegister} className={`px-5 py-2.5 text-xs font-bold text-white shadow-sm`} style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
             {!showPrice || course.pricingType === 'contact' ? 'Liên hệ' : 'Đăng ký'}
           </button>
+        </div>
+      )}
+
+      {/* Promo Video Lightbox Modal */}
+      {showPromoVideo && promoVideoEmbedUrl && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm transition-all duration-300"
+          onClick={() => setShowPromoVideo(false)}
+        >
+          <div 
+            className="relative w-full max-w-4xl aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <iframe
+              src={`${promoVideoEmbedUrl}?autoplay=1`}
+              className="w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+            <button 
+              onClick={() => setShowPromoVideo(false)}
+              className="absolute top-4 right-4 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 p-2.5 rounded-full transition-colors font-medium text-xs flex items-center justify-center"
+            >
+              Đóng
+            </button>
+          </div>
         </div>
       )}
     </main>
