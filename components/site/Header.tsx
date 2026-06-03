@@ -40,6 +40,7 @@ export type HeaderInitialData = {
     products?: boolean;
     posts?: boolean;
     services?: boolean;
+    courses?: boolean;
     customers?: boolean;
     orders?: boolean;
     customerLogin?: boolean;
@@ -66,6 +67,7 @@ interface SearchConfig {
   searchProducts?: boolean;
   searchPosts?: boolean;
   searchServices?: boolean;
+  searchCourses?: boolean;
 }
 
 type LogoBackgroundStyle = 'none' | 'border' | 'shadow' | 'soft' | 'solid' | 'outline' | 'hairline' | 'inset' | 'pill';
@@ -112,7 +114,7 @@ const DEFAULT_CONFIG: HeaderConfig = {
   cart: { show: true },
   cta: { show: true, text: 'Liên hệ', url: '/contact' },
   login: { show: true, text: 'Đăng nhập' },
-  search: { placeholder: 'Tìm kiếm...', searchPosts: true, searchProducts: true, searchServices: true, show: true },
+  search: { placeholder: 'Tìm kiếm...', searchPosts: true, searchProducts: true, searchServices: true, searchCourses: true, show: true },
   topbar: {
     email: 'contact@example.com',
     hotline: '1900 1234',
@@ -211,6 +213,8 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
   const productsModule = useQuery(api.admin.modules.getModuleByKey, staticMode ? 'skip' : { key: 'products' });
   const postsModule = useQuery(api.admin.modules.getModuleByKey, staticMode ? 'skip' : { key: 'posts' });
   const servicesModule = useQuery(api.admin.modules.getModuleByKey, staticMode ? 'skip' : { key: 'services' });
+  const coursesModule = useQuery(api.admin.modules.getModuleByKey, staticMode ? 'skip' : { key: 'courses' });
+  const commerceCapabilities = useQuery(api.cart.getCommerceCapabilities, staticMode ? 'skip' : {});
   const customerLoginFeature = useQuery(api.admin.modules.getModuleFeature, staticMode ? 'skip' : { moduleKey: 'customers', featureKey: 'enableLogin' });
   const router = useRouter();
   const { customer, isAuthenticated, logout } = useCustomerAuth();
@@ -253,6 +257,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
   const productsEnabled = productsModule?.enabled ?? initialData?.modules?.products ?? (staticMode ? Boolean(config.search?.searchProducts) : false);
   const postsEnabled = postsModule?.enabled ?? initialData?.modules?.posts ?? (staticMode ? Boolean(config.search?.searchPosts) : false);
   const servicesEnabled = servicesModule?.enabled ?? initialData?.modules?.services ?? (staticMode ? Boolean(config.search?.searchServices) : false);
+  const coursesEnabled = coursesModule?.enabled ?? initialData?.modules?.courses ?? (staticMode ? Boolean(config.search?.searchCourses) : false);
   const showLogin = Boolean(config.login?.show && canLogin);
   const showUserMenu = showLogin && isAuthenticated;
   const showLoginLink = showLogin && !isAuthenticated;
@@ -261,8 +266,9 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
   const canSearchProducts = Boolean(config.search?.searchProducts && productsEnabled);
   const canSearchPosts = Boolean(config.search?.searchPosts && postsEnabled);
   const canSearchServices = Boolean(config.search?.searchServices && servicesEnabled);
-  const showSearch = Boolean(config.search?.show && (canSearchProducts || canSearchPosts || canSearchServices));
-  const showCart = Boolean(config.cart?.show && cartEnabled);
+  const canSearchCourses = Boolean(config.search?.searchCourses && coursesEnabled);
+  const showSearch = Boolean(config.search?.show && (canSearchProducts || canSearchPosts || canSearchServices || canSearchCourses));
+  const showCart = Boolean(config.cart?.show && (commerceCapabilities?.cartAvailable ?? (cartEnabled && ordersEnabled)));
   const showWishlist = Boolean(config.wishlist?.show && wishlistEnabled);
   const ctaHref = config.cta?.url?.trim() || DEFAULT_LINKS.cta;
   
@@ -1374,6 +1380,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                     searchProducts={canSearchProducts}
                     searchPosts={canSearchPosts}
                     searchServices={canSearchServices}
+                    searchCourses={canSearchCourses}
                     tokens={tokens}
                     className="w-48"
                     inputClassName="w-full pl-4 pr-10 py-2 rounded-full border text-sm focus:outline-none"
@@ -1425,6 +1432,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
               searchProducts={canSearchProducts}
               searchPosts={canSearchPosts}
               searchServices={canSearchServices}
+              searchCourses={canSearchCourses}
               tokens={tokens}
               showButton={true}
               className="w-full"
@@ -1540,6 +1548,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                   searchProducts={canSearchProducts}
                   searchPosts={canSearchPosts}
                   searchServices={canSearchServices}
+                  searchCourses={canSearchCourses}
                   tokens={tokens}
                   className="w-full"
                   inputClassName="w-full pl-4 pr-10 py-2 rounded-full border text-sm focus:outline-none"
@@ -1608,6 +1617,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
               searchProducts={canSearchProducts}
               searchPosts={canSearchPosts}
               searchServices={canSearchServices}
+              searchCourses={canSearchCourses}
               tokens={tokens}
               showButton={true}
               className="w-full"
@@ -2105,6 +2115,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                         searchProducts={canSearchProducts}
                         searchPosts={canSearchPosts}
                         searchServices={canSearchServices}
+                        searchCourses={canSearchCourses}
                         tokens={tokens}
                         showButton={false}
                         autoFocus={searchOpen}
@@ -2166,6 +2177,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
               searchProducts={canSearchProducts}
               searchPosts={canSearchPosts}
               searchServices={canSearchServices}
+              searchCourses={canSearchCourses}
               tokens={tokens}
               showButton={true}
               className="w-full"

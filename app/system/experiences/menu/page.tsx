@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
-import { Briefcase, CreditCard, Eye, FileText, Heart, LayoutTemplate, Loader2, Mail, Package, Save, ShoppingCart, Users } from 'lucide-react';
+import { BookOpen, Briefcase, CreditCard, Eye, FileText, Heart, LayoutTemplate, Loader2, Mail, Package, Save, ShoppingCart, Users } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, cn } from '@/app/admin/components/ui';
 import { useBrandColors } from '@/components/site/hooks';
 import {
@@ -44,7 +44,7 @@ const DEFAULT_CONFIG: HeaderMenuConfig = {
   cart: { show: true },
   cta: { show: true, text: 'Liên hệ', url: '/contact' },
   login: { show: true, text: 'Đăng nhập' },
-  search: { placeholder: 'Tìm kiếm...', searchPosts: true, searchProducts: true, searchServices: true, show: true },
+  search: { placeholder: 'Tìm kiếm...', searchPosts: true, searchProducts: true, searchServices: true, searchCourses: true, show: true },
   topbar: {
     email: 'contact@example.com',
     hotline: '1900 1234',
@@ -121,8 +121,10 @@ export default function HeaderMenuExperiencePage() {
   const productsModule = useQuery(api.admin.modules.getModuleByKey, { key: 'products' });
   const postsModule = useQuery(api.admin.modules.getModuleByKey, { key: 'posts' });
   const servicesModule = useQuery(api.admin.modules.getModuleByKey, { key: 'services' });
+  const coursesModule = useQuery(api.admin.modules.getModuleByKey, { key: 'courses' });
   const customersModule = useQuery(api.admin.modules.getModuleByKey, { key: 'customers' });
   const ordersModule = useQuery(api.admin.modules.getModuleByKey, { key: 'orders' });
+  const commerceCapabilities = useQuery(api.cart.getCommerceCapabilities, {});
   const customerLoginFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'customers', featureKey: 'enableLogin' });
 
   const setMultipleSettings = useMutation(api.settings.setMultiple);
@@ -182,8 +184,10 @@ export default function HeaderMenuExperiencePage() {
     || productsModule === undefined
     || postsModule === undefined
     || servicesModule === undefined
+    || coursesModule === undefined
     || customersModule === undefined
     || ordersModule === undefined
+    || commerceCapabilities === undefined
     || customerLoginFeature === undefined;
 
   const resolvedBrandColor = brandColor || brandColors.primary || '#f97316';
@@ -301,6 +305,7 @@ export default function HeaderMenuExperiencePage() {
     const productsEnabled = productsModule?.enabled ?? false;
     const postsEnabled = postsModule?.enabled ?? false;
     const servicesEnabled = servicesModule?.enabled ?? false;
+    const coursesEnabled = coursesModule?.enabled ?? false;
     const ordersEnabled = ordersModule?.enabled ?? false;
     const loginEnabled = (customersModule?.enabled ?? false) && (customerLoginFeature?.enabled ?? false);
 
@@ -309,6 +314,7 @@ export default function HeaderMenuExperiencePage() {
       searchProducts: productsEnabled ? normalizedConfig.search.searchProducts : false,
       searchPosts: postsEnabled ? normalizedConfig.search.searchPosts : false,
       searchServices: servicesEnabled ? normalizedConfig.search.searchServices : false,
+      searchCourses: coursesEnabled ? normalizedConfig.search.searchCourses : false,
     };
 
     const effectiveSloganEnabled = normalizedConfig.topbar.sloganEnabled ?? true;
@@ -316,7 +322,7 @@ export default function HeaderMenuExperiencePage() {
 
     return {
       ...normalizedConfig,
-      cart: { ...normalizedConfig.cart, show: normalizedConfig.cart.show && cartEnabled },
+      cart: { ...normalizedConfig.cart, show: normalizedConfig.cart.show && (commerceCapabilities?.cartAvailable ?? cartEnabled) },
       wishlist: { ...normalizedConfig.wishlist, show: normalizedConfig.wishlist.show && wishlistEnabled },
       login: { ...normalizedConfig.login, show: normalizedConfig.login.show && loginEnabled },
       topbar: {
@@ -327,7 +333,7 @@ export default function HeaderMenuExperiencePage() {
       },
       search: {
         ...search,
-        show: search.show && (search.searchProducts || search.searchPosts || search.searchServices),
+        show: Boolean(search.show && (search.searchProducts || search.searchPosts || search.searchServices || search.searchCourses)),
       },
     };
   }, [
@@ -337,9 +343,11 @@ export default function HeaderMenuExperiencePage() {
     productsModule?.enabled,
     postsModule?.enabled,
     servicesModule?.enabled,
+    coursesModule?.enabled,
     ordersModule?.enabled,
     customersModule?.enabled,
     customerLoginFeature?.enabled,
+    commerceCapabilities?.cartAvailable,
     resolvedTopbarSlogan,
   ]);
 
@@ -366,23 +374,24 @@ export default function HeaderMenuExperiencePage() {
     []
   );
   const headerSpacingLabel = headerSpacingOptions[(config.headerSpacingLevel ?? 5) - 1]?.label ?? 'Cân bằng';
-  const cartEnabled = cartModule?.enabled ?? false;
   const wishlistEnabled = wishlistModule?.enabled ?? false;
   const productsEnabled = productsModule?.enabled ?? false;
   const postsEnabled = postsModule?.enabled ?? false;
   const servicesEnabled = servicesModule?.enabled ?? false;
+  const coursesEnabled = coursesModule?.enabled ?? false;
   const ordersEnabled = ordersModule?.enabled ?? false;
   const loginEnabled = (customersModule?.enabled ?? false) && (customerLoginFeature?.enabled ?? false);
-  const canUseSearch = productsEnabled || postsEnabled || servicesEnabled;
+  const cartAvailable = commerceCapabilities?.cartAvailable ?? false;
+  const canUseSearch = productsEnabled || postsEnabled || servicesEnabled || coursesEnabled;
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const cartEnabled = cartModule?.enabled ?? false;
       const wishlistEnabled = wishlistModule?.enabled ?? false;
       const productsEnabled = productsModule?.enabled ?? false;
       const postsEnabled = postsModule?.enabled ?? false;
       const servicesEnabled = servicesModule?.enabled ?? false;
+      const coursesEnabled = coursesModule?.enabled ?? false;
       const customersEnabled = customersModule?.enabled ?? false;
       const ordersEnabled = ordersModule?.enabled ?? false;
       const loginEnabled = customersEnabled && (customerLoginFeature?.enabled ?? false);
@@ -396,8 +405,9 @@ export default function HeaderMenuExperiencePage() {
           searchProducts: productsEnabled ? normalizedConfig.search.searchProducts : false,
           searchPosts: postsEnabled ? normalizedConfig.search.searchPosts : false,
           searchServices: servicesEnabled ? normalizedConfig.search.searchServices : false,
+          searchCourses: coursesEnabled ? normalizedConfig.search.searchCourses : false,
         },
-        cart: { ...normalizedConfig.cart, show: normalizedConfig.cart.show && cartEnabled },
+        cart: { ...normalizedConfig.cart, show: normalizedConfig.cart.show && cartAvailable },
         wishlist: { ...normalizedConfig.wishlist, show: normalizedConfig.wishlist.show && wishlistEnabled },
         login: { ...normalizedConfig.login, show: normalizedConfig.login.show && loginEnabled },
         topbar: {
@@ -406,7 +416,7 @@ export default function HeaderMenuExperiencePage() {
         },
       };
 
-      if (!productsEnabled && !postsEnabled && !servicesEnabled) {
+      if (!productsEnabled && !postsEnabled && !servicesEnabled && !coursesEnabled) {
         configToSave.search = { ...configToSave.search, show: false };
       }
       const { email: _email, hotline: _hotline, useSettingsData: _useSettingsData, ...topbarNext } = configToSave.topbar as HeaderMenuConfig['topbar'] & { useSettingsData?: boolean };
@@ -511,10 +521,10 @@ export default function HeaderMenuExperiencePage() {
             />
             <ToggleRow
               label="Cart"
-              checked={config.cart.show && cartEnabled}
+              checked={config.cart.show && cartAvailable}
               onChange={(v) => updateCart('show', v)}
               accentColor={resolvedBrandColor}
-              disabled={!cartEnabled}
+              disabled={!cartAvailable}
             />
             <ToggleRow
               label="Wishlist"
@@ -762,6 +772,12 @@ export default function HeaderMenuExperiencePage() {
                     href="/system/modules/services"
                     moduleName="Module Dịch vụ"
                   />
+                  <ModuleFeatureStatus
+                    label="Khóa học"
+                    enabled={coursesModule?.enabled ?? false}
+                    href="/system/modules/courses"
+                    moduleName="Module Khóa học"
+                  />
                 </div>
               )}
             </div>
@@ -884,6 +900,13 @@ export default function HeaderMenuExperiencePage() {
                 colorScheme="cyan"
               />
               <ExperienceModuleLink
+                enabled={coursesModule?.enabled ?? false}
+                href="/system/modules/courses"
+                icon={BookOpen}
+                title="Khóa học"
+                colorScheme="blue"
+              />
+              <ExperienceModuleLink
                 enabled={customersModule?.enabled ?? false}
                 href="/system/modules/customers"
                 icon={Users}
@@ -974,6 +997,7 @@ export default function HeaderMenuExperiencePage() {
                 productsEnabled={productsModule?.enabled ?? false}
                 postsEnabled={postsModule?.enabled ?? false}
                 servicesEnabled={servicesModule?.enabled ?? false}
+                coursesEnabled={coursesModule?.enabled ?? false}
               />
             </BrowserFrame>
           </div>

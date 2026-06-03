@@ -6,7 +6,7 @@ const suggestionItem = v.object({
   id: v.string(),
   title: v.string(),
   thumbnail: v.optional(v.string()),
-  type: v.union(v.literal('post'), v.literal('product'), v.literal('service')),
+  type: v.union(v.literal('post'), v.literal('product'), v.literal('service'), v.literal('course')),
   url: v.string(),
 });
 
@@ -19,6 +19,7 @@ const searchResult = v.object({
   posts: suggestionGroup,
   products: suggestionGroup,
   services: suggestionGroup,
+  courses: suggestionGroup,
 });
 
 
@@ -28,6 +29,7 @@ export const autocomplete = query({
     searchPosts: v.boolean(),
     searchProducts: v.boolean(),
     searchServices: v.boolean(),
+    searchCourses: v.optional(v.boolean()),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
@@ -37,6 +39,7 @@ export const autocomplete = query({
         posts: { items: [], total: 0 },
         products: { items: [], total: 0 },
         services: { items: [], total: 0 },
+        courses: { items: [], total: 0 },
       };
     }
 
@@ -45,7 +48,7 @@ export const autocomplete = query({
 
     const buildSuggestions = <T extends { _id: string }>(
       items: T[],
-      type: 'post' | 'product' | 'service',
+      type: 'post' | 'product' | 'service' | 'course',
       getTitle: (item: T) => string,
       getThumbnail: (item: T) => string | undefined,
       getUrl: (item: T) => string,
@@ -80,7 +83,7 @@ export const autocomplete = query({
       };
     };
 
-    const [posts, products, services] = await Promise.all([
+    const [posts, products, services, courses] = await Promise.all([
       args.searchPosts
         ? (async () => {
           const primary = await ctx.db
@@ -123,6 +126,20 @@ export const autocomplete = query({
           return collectMatches(primary, fallback, (item) => [item.title ?? '', item.excerpt ?? '']);
         })()
         : Promise.resolve({ items: [], total: 0 }),
+      args.searchCourses
+        ? (async () => {
+          const primary = await ctx.db
+            .query('courses')
+            .withSearchIndex('search_title', q => q.search('title', searchLower).eq('status', 'Published'))
+            .take(Math.min(limit * 8, 60));
+          const fallback = await ctx.db
+            .query('courses')
+            .withIndex('by_status_publishedAt', q => q.eq('status', 'Published'))
+            .order('desc')
+            .take(200);
+          return collectMatches(primary, fallback, (item) => [item.title ?? '', item.excerpt ?? '', item.instructorName ?? '']);
+        })()
+        : Promise.resolve({ items: [], total: 0 }),
     ]);
 
     const routeModeSetting = await ctx.db
@@ -134,13 +151,15 @@ export const autocomplete = query({
     const postCategories = await Promise.all(posts.items.map((item) => ctx.db.get(item.categoryId)));
     const productCategories = await Promise.all(products.items.map((item) => ctx.db.get(item.categoryId)));
     const serviceCategories = await Promise.all(services.items.map((item) => ctx.db.get(item.categoryId)));
+    const courseCategories = await Promise.all(courses.items.map((item) => ctx.db.get(item.categoryId)));
 
     const postCategoryMap = new Map(postCategories.filter(Boolean).map((cat) => [cat!._id, cat!]));
     const productCategoryMap = new Map(productCategories.filter(Boolean).map((cat) => [cat!._id, cat!]));
     const serviceCategoryMap = new Map(serviceCategories.filter(Boolean).map((cat) => [cat!._id, cat!]));
+    const courseCategoryMap = new Map(courseCategories.filter(Boolean).map((cat) => [cat!._id, cat!]));
 
     const buildDetailUrl = (params: {
-      moduleKey: "posts" | "products" | "services";
+      moduleKey: "posts" | "products" | "services" | "courses";
       slug: string;
       categorySlug?: string;
     }) => {
@@ -192,6 +211,20 @@ export const autocomplete = query({
           }),
         ),
         total: services.total,
+      },
+      courses: {
+        items: buildSuggestions(
+          courses.items,
+          'course',
+          (item) => item.title,
+          (item) => item.thumbnail ?? undefined,
+          (item) => buildDetailUrl({
+            moduleKey: "courses",
+            slug: item.slug,
+            categorySlug: courseCategoryMap.get(item.categoryId)?.slug,
+          }),
+        ),
+        total: courses.total,
       },
     };
   },

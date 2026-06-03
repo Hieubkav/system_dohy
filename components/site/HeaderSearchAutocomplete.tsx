@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { PublicImage as Image } from '@/components/shared/PublicImage';
 import { useRouter } from 'next/navigation';
 import { useQuery } from 'convex/react';
-import { Briefcase, FileText, History, Package, Search, X } from 'lucide-react';
+import { BookOpen, Briefcase, FileText, History, Package, Search, X } from 'lucide-react';
 import { api } from '@/convex/_generated/api';
 import type { MenuColors } from './header/colors';
 
@@ -12,7 +12,7 @@ type SuggestionItem = {
   id: string;
   title: string;
   thumbnail?: string | null;
-  type: 'post' | 'product' | 'service';
+  type: 'post' | 'product' | 'service' | 'course';
   url: string;
 };
 
@@ -25,6 +25,7 @@ type AutocompleteResult = {
   posts: SuggestionGroup;
   products: SuggestionGroup;
   services: SuggestionGroup;
+  courses: SuggestionGroup;
 };
 
 export type HeaderSearchAutocompleteProps = {
@@ -33,6 +34,7 @@ export type HeaderSearchAutocompleteProps = {
   searchProducts: boolean;
   searchPosts: boolean;
   searchServices: boolean;
+  searchCourses?: boolean;
   className?: string;
   inputClassName?: string;
   inputStyle?: React.CSSProperties;
@@ -52,6 +54,7 @@ export function HeaderSearchAutocomplete({
   searchProducts,
   searchPosts,
   searchServices,
+  searchCourses = false,
   className,
   inputClassName,
   inputStyle,
@@ -113,7 +116,7 @@ export function HeaderSearchAutocomplete({
     }
   }, [autoFocus, disabled]);
 
-  const canSearch = searchProducts || searchPosts || searchServices;
+  const canSearch = searchProducts || searchPosts || searchServices || searchCourses;
   const shouldSearch = !disabled && debouncedQuery.length >= 1 && canSearch;
 
   const results = useQuery(api.search.autocomplete, shouldSearch
@@ -122,6 +125,7 @@ export function HeaderSearchAutocomplete({
       searchPosts,
       searchProducts,
       searchServices,
+      searchCourses,
       limit: 5,
     }
     : 'skip');
@@ -133,7 +137,8 @@ export function HeaderSearchAutocomplete({
     { key: 'products', label: 'Sản phẩm', icon: Package, items: data?.products?.items ?? [], total: data?.products?.total ?? 0 },
     { key: 'posts', label: 'Bài viết', icon: FileText, items: data?.posts?.items ?? [], total: data?.posts?.total ?? 0 },
     { key: 'services', label: 'Dịch vụ', icon: Briefcase, items: data?.services?.items ?? [], total: data?.services?.total ?? 0 },
-  ]), [data?.posts, data?.products, data?.services]);
+    { key: 'courses', label: 'Khóa học', icon: BookOpen, items: data?.courses?.items ?? [], total: data?.courses?.total ?? 0 },
+  ]), [data?.courses, data?.posts, data?.products, data?.services]);
 
   const hasResults = sections.some(section => section.items.length > 0);
   

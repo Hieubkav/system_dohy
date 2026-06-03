@@ -4,13 +4,15 @@ import React, { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
+import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
-import { ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap, PlayCircle, Star, UserRound, ChevronDown, Lock, Play } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap, PlayCircle, Star, UserRound, ChevronDown, Lock, Play, ShoppingCart } from 'lucide-react';
 import { RichContent, withFormatMarker } from '@/components/common/RichContent';
 import { useBrandColors } from '@/components/site/hooks';
 import { getCourseLevelLabel } from '@/lib/courses/labels';
 import { useCoursesDetailConfig } from '@/lib/experiences';
 import { getRadiusClass, getSmallRadiusClass, formatPrice, convertToSlug } from '@/lib/courses/courseUtils';
+import { useCart } from '@/lib/cart';
 
 type CourseContentSource = {
   content: string;
@@ -38,7 +40,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const router = useRouter();
   const config = useCoursesDetailConfig();
   const brandColors = useBrandColors();
+  const { addItem, openDrawer } = useCart();
   const course = useQuery(api.courses.getBySlug, { slug });
+  const courseCommerceSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'courses', settingKey: 'commerceMode' });
   const category = useQuery(api.courseCategories.getById, course?.categoryId ? { id: course.categoryId } : 'skip');
   const chapters = useQuery(api.courses.listChapters, course?._id ? { courseId: course._id } : 'skip');
   const lessons = useQuery(api.courses.listLessonsByCourse, course?._id ? { courseId: course._id } : 'skip');
@@ -127,13 +131,25 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const showPrice = course.isPriceVisible !== false;
   const courseContent = resolveCourseContent(course);
   const isModern = config.layoutStyle === 'modern';
+  const commerceMode = courseCommerceSetting?.value === 'cart' ? 'cart' : 'contact';
 
   const showAside = config.showStickyCta || (related.length > 0);
 
-  // Điều hướng nút đăng ký học sang trang liên hệ (T0-02)
-  const handleRegister = () => {
+  const handleRegister = async () => {
+    if (commerceMode === 'cart' && course.pricingType !== 'contact') {
+      const ok = await addItem({ itemType: 'course', courseId: course._id, quantity: 1 });
+      if (ok) {
+        toast.success('Đã thêm khóa học vào giỏ hàng');
+        openDrawer();
+      }
+      return;
+    }
     router.push(`/contact?subject=${encodeURIComponent(`Đăng ký khóa học: ${course.title}`)}`);
   };
+
+  const ctaLabel = commerceMode === 'cart' && course.pricingType !== 'contact'
+    ? 'Thêm vào giỏ hàng'
+    : (!showPrice || course.pricingType === 'contact' ? 'Liên hệ tư vấn' : 'Đăng ký học');
 
   const CtaCard = () => {
     const hasPromoVideo = !!promoVideoEmbedUrl;
@@ -179,8 +195,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             Giá gốc: <span className="line-through">{formatPrice('paid', course.comparePriceAmount)}</span>
           </p>
         )}
-        <button type="button" onClick={handleRegister} className="mt-4 w-full px-5 py-3 font-semibold text-white transition hover:opacity-90" style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
-          {!showPrice || course.pricingType === 'contact' ? 'Liên hệ tư vấn' : 'Đăng ký học'}
+        <button type="button" onClick={() => void handleRegister()} className="mt-4 w-full px-5 py-3 font-semibold text-white transition hover:opacity-90 inline-flex items-center justify-center gap-2" style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
+          {commerceMode === 'cart' && course.pricingType !== 'contact' && <ShoppingCart size={18} />}
+          {ctaLabel}
         </button>
       </div>
     );
@@ -332,8 +349,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Học phí</p>
             <p className="text-lg font-bold" style={{ color: accent }}>{price}</p>
           </div>
-          <button type="button" onClick={handleRegister} className={`px-5 py-2.5 text-xs font-bold text-white shadow-sm`} style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
-            {!showPrice || course.pricingType === 'contact' ? 'Liên hệ' : 'Đăng ký'}
+          <button type="button" onClick={() => void handleRegister()} className="px-5 py-2.5 text-xs font-bold text-white shadow-sm inline-flex items-center gap-2" style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
+            {commerceMode === 'cart' && course.pricingType !== 'contact' && <ShoppingCart size={14} />}
+            {commerceMode === 'cart' && course.pricingType !== 'contact' ? 'Thêm giỏ' : (!showPrice || course.pricingType === 'contact' ? 'Liên hệ' : 'Đăng ký')}
           </button>
         </div>
       )}

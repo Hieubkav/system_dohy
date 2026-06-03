@@ -10,8 +10,11 @@ import { useCustomerAuth } from '@/app/(site)/auth/context';
 type CartItem = {
   _id: Id<'cartItems'>;
   cartId: Id<'carts'>;
+  itemType?: 'product' | 'service' | 'course';
   price: number;
-  productId: Id<'products'>;
+  productId?: Id<'products'>;
+  serviceId?: Id<'services'>;
+  courseId?: Id<'courses'>;
   productImage?: string;
   productName: string;
   quantity: number;
@@ -39,7 +42,20 @@ type CartContextValue = {
   openDrawer: () => void;
   closeDrawer: () => void;
   addItem: (
-    productId: Id<'products'>,
+    item: Id<'products'> | {
+      itemType: 'product';
+      productId: Id<'products'>;
+      quantity?: number;
+      variantId?: Id<'productVariants'>;
+    } | {
+      itemType: 'service';
+      serviceId: Id<'services'>;
+      quantity?: number;
+    } | {
+      itemType: 'course';
+      courseId: Id<'courses'>;
+      quantity?: number;
+    },
     quantity?: number,
     variantId?: Id<'productVariants'>,
     options?: { silent?: boolean }
@@ -138,7 +154,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addItem = useCallback(async (
-    productId: Id<'products'>,
+    itemInput: Id<'products'> | {
+      itemType: 'product';
+      productId: Id<'products'>;
+      quantity?: number;
+      variantId?: Id<'productVariants'>;
+    } | {
+      itemType: 'service';
+      serviceId: Id<'services'>;
+      quantity?: number;
+    } | {
+      itemType: 'course';
+      courseId: Id<'courses'>;
+      quantity?: number;
+    },
     quantity = 1,
     variantId?: Id<'productVariants'>,
     options?: { silent?: boolean }
@@ -152,7 +181,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         customerId: isAuthenticated && customer ? (customer.id as Id<'customers'>) : undefined,
         sessionId: !isAuthenticated && sessionId ? sessionId : undefined
       });
-      return addItemMutation({ cartId: activeCartId, productId, quantity, variantId });
+      const payload = typeof itemInput === 'string'
+        ? { cartId: activeCartId, itemType: 'product' as const, productId: itemInput, quantity, variantId }
+        : {
+            cartId: activeCartId,
+            quantity: itemInput.quantity ?? quantity,
+            variantId: itemInput.itemType === 'product' ? (itemInput.variantId ?? variantId) : undefined,
+            ...itemInput,
+          };
+      return addItemMutation(payload);
     }, 'Không thể thêm sản phẩm vào giỏ hàng.', options?.silent);
   }, [addItemMutation, cart, createCart, customer, isAuthenticated, sessionId, runSafely]);
 

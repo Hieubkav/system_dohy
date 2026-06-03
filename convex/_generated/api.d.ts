@@ -39,6 +39,7 @@ import type * as kanban from "../kanban.js";
 import type * as landingPages from "../landingPages.js";
 import type * as lib_aggregates_pageViews from "../lib/aggregates/pageViews.js";
 import type * as lib_aggregates_publicContent from "../lib/aggregates/publicContent.js";
+import type * as lib_commerce from "../lib/commerce.js";
 import type * as lib_fileService from "../lib/fileService.js";
 import type * as lib_helpers from "../lib/helpers.js";
 import type * as lib_iaSlugs from "../lib/iaSlugs.js";
@@ -133,6 +134,7 @@ declare const fullApi: ApiFromModules<{
   landingPages: typeof landingPages;
   "lib/aggregates/pageViews": typeof lib_aggregates_pageViews;
   "lib/aggregates/publicContent": typeof lib_aggregates_publicContent;
+  "lib/commerce": typeof lib_commerce;
   "lib/fileService": typeof lib_fileService;
   "lib/helpers": typeof lib_helpers;
   "lib/iaSlugs": typeof lib_iaSlugs;

@@ -2,6 +2,7 @@ import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
+import { getCommerceCapabilities as resolveCommerceCapabilities, isProviderCartCapable } from "./lib/commerce";
 
 // ============ CONSTANTS ============
 const CART_DEFAULTS = {
@@ -34,14 +35,64 @@ const cartItemDoc = v.object({
   _creationTime: v.number(),
   _id: v.id("cartItems"),
   cartId: v.id("carts"),
+  itemType: v.optional(v.union(v.literal("product"), v.literal("service"), v.literal("course"))),
   price: v.number(),
-  productId: v.id("products"),
+  productId: v.optional(v.id("products")),
+  serviceId: v.optional(v.id("services")),
+  courseId: v.optional(v.id("courses")),
   productImage: v.optional(v.string()),
   productName: v.string(),
   quantity: v.number(),
   subtotal: v.number(),
   variantId: v.optional(v.id("productVariants")),
 });
+
+const cartAddItemArgs = {
+  cartId: v.id("carts"),
+  itemType: v.optional(v.union(v.literal("product"), v.literal("service"), v.literal("course"))),
+  productId: v.optional(v.id("products")),
+  serviceId: v.optional(v.id("services")),
+  courseId: v.optional(v.id("courses")),
+  quantity: v.number(),
+  variantId: v.optional(v.id("productVariants")),
+};
+
+type CartLineItemInput = {
+  itemType?: "product" | "service" | "course";
+  productId?: Id<"products">;
+  serviceId?: Id<"services">;
+  courseId?: Id<"courses">;
+  variantId?: Id<"productVariants">;
+};
+
+type ResolvedCartItem = {
+  itemType: "product" | "service" | "course";
+  price: number;
+  productId?: Id<"products">;
+  serviceId?: Id<"services">;
+  courseId?: Id<"courses">;
+  productImage?: string;
+  productName: string;
+  variantId?: Id<"productVariants">;
+  productStock?: number;
+  variantStock?: number;
+};
+
+const getCartItemType = (item: CartLineItemInput) => item.itemType ?? "product";
+
+const isSameCartLine = (a: CartLineItemInput, b: CartLineItemInput) => {
+  const itemType = getCartItemType(a);
+  if (itemType !== getCartItemType(b)) {
+    return false;
+  }
+  if (itemType === "product") {
+    return a.productId === b.productId && a.variantId === b.variantId;
+  }
+  if (itemType === "service") {
+    return a.serviceId === b.serviceId;
+  }
+  return a.courseId === b.courseId;
+};
 
 async function getVariantPricingSetting(ctx: MutationCtx): Promise<"product" | "variant"> {
   const setting = await ctx.db
@@ -67,7 +118,138 @@ async function isStockCheckEnabled(ctx: MutationCtx): Promise<boolean> {
   return feature?.enabled ?? false;
 }
 
+async function resolveCartItem(ctx: MutationCtx, args: CartLineItemInput): Promise<
+  | { ok: true; item: ResolvedCartItem }
+  | { ok: false; error: string }
+> {
+  const itemType = getCartItemType(args);
+
+  if (itemType === "product") {
+    if (!args.productId) {
+      return { ok: false, error: "Thiếu sản phẩm cần thêm vào giỏ hàng" };
+    }
+    if (!await isProviderCartCapable(ctx, "products")) {
+      return { ok: false, error: "Sản phẩm chưa được bật chế độ giỏ hàng và thanh toán" };
+    }
+
+    const product = await ctx.db.get(args.productId);
+    if (!product || product.status !== "Active") {
+      return { ok: false, error: "Sản phẩm không tồn tại hoặc chưa được bán" };
+    }
+
+    let variant = null;
+    if (product.hasVariants) {
+      if (!args.variantId) {
+        return { ok: false, error: "Vui lòng chọn phiên bản sản phẩm" };
+      }
+      variant = await ctx.db.get(args.variantId);
+      if (!variant || variant.productId !== args.productId) {
+        return { ok: false, error: "Phiên bản không hợp lệ" };
+      }
+    } else if (args.variantId) {
+      return { ok: false, error: "Sản phẩm không hỗ trợ phiên bản" };
+    }
+
+    const variantPricing = product.hasVariants ? await getVariantPricingSetting(ctx) : "product";
+    const basePrice = variantPricing === "variant" && variant
+      ? (variant.salePrice ?? variant.price ?? product.salePrice ?? product.price)
+      : (product.salePrice ?? product.price);
+    const price = basePrice ?? product.price;
+
+    return {
+      ok: true,
+      item: {
+        itemType: "product",
+        price,
+        productId: args.productId,
+        productImage: product.image,
+        productName: product.name,
+        variantId: args.variantId,
+        productStock: product.stock,
+        variantStock: variant?.stock,
+      },
+    };
+  }
+
+  if (itemType === "service") {
+    if (!args.serviceId) {
+      return { ok: false, error: "Thiếu dịch vụ cần thêm vào giỏ hàng" };
+    }
+    if (!await isProviderCartCapable(ctx, "services")) {
+      return { ok: false, error: "Dịch vụ chưa được bật chế độ giỏ hàng và thanh toán" };
+    }
+
+    const service = await ctx.db.get(args.serviceId);
+    if (!service || service.status !== "Published") {
+      return { ok: false, error: "Dịch vụ không tồn tại hoặc chưa được xuất bản" };
+    }
+    if (service.price === undefined || service.price < 0) {
+      return { ok: false, error: "Dịch vụ cần có giá hợp lệ để thanh toán" };
+    }
+
+    return {
+      ok: true,
+      item: {
+        itemType: "service",
+        price: service.price,
+        serviceId: args.serviceId,
+        productImage: service.thumbnail,
+        productName: service.title,
+      },
+    };
+  }
+
+  if (!args.courseId) {
+    return { ok: false, error: "Thiếu khóa học cần thêm vào giỏ hàng" };
+  }
+  if (!await isProviderCartCapable(ctx, "courses")) {
+    return { ok: false, error: "Khóa học chưa được bật chế độ giỏ hàng và thanh toán" };
+  }
+
+  const course = await ctx.db.get(args.courseId);
+  if (!course || course.status !== "Published") {
+    return { ok: false, error: "Khóa học không tồn tại hoặc chưa được xuất bản" };
+  }
+  if (course.pricingType === "contact") {
+    return { ok: false, error: "Khóa học đang ở chế độ liên hệ, chưa thể thanh toán qua giỏ hàng" };
+  }
+  const price = course.pricingType === "free" ? 0 : course.priceAmount;
+  if (price === undefined || price < 0) {
+    return { ok: false, error: "Khóa học cần có giá hợp lệ để thanh toán" };
+  }
+
+  return {
+    ok: true,
+    item: {
+      itemType: "course",
+      price,
+      courseId: args.courseId,
+      productImage: course.thumbnail,
+      productName: course.title,
+    },
+  };
+}
+
 // ============ CART QUERIES ============
+
+export const getCommerceCapabilities = query({
+  args: {},
+  handler: async (ctx) => resolveCommerceCapabilities(ctx),
+  returns: v.object({
+    providers: v.array(v.object({
+      provider: v.union(v.literal("products"), v.literal("services"), v.literal("courses")),
+      moduleEnabled: v.boolean(),
+      commerceMode: v.union(v.literal("off"), v.literal("cart"), v.literal("contact"), v.literal("affiliate")),
+      cartCapable: v.boolean(),
+      contactCapable: v.boolean(),
+      affiliateCapable: v.boolean(),
+    })),
+    cartEnabled: v.boolean(),
+    ordersEnabled: v.boolean(),
+    hasCartProvider: v.boolean(),
+    cartAvailable: v.boolean(),
+  }),
+});
 
 // FIX Issue #1: Added limit parameter with default
 export const listAll = query({
@@ -374,21 +556,18 @@ export const mergeCart = mutation({
         getVariantStockSetting(ctx),
         isStockCheckEnabled(ctx),
       ]);
+      const customerItems = await ctx.db
+        .query("cartItems")
+        .withIndex("by_cart", (q) => q.eq("cartId", customerCart._id))
+        .collect();
 
       for (const item of sessionItems) {
-        const existingItem = await ctx.db
-          .query("cartItems")
-          .withIndex("by_cart_product_variant", (q) =>
-            q.eq("cartId", customerCart._id)
-              .eq("productId", item.productId)
-              .eq("variantId", item.variantId)
-          )
-          .first();
+        const existingItem = customerItems.find((customerItem) => isSameCartLine(customerItem, item));
 
         if (existingItem) {
           const newQty = existingItem.quantity + item.quantity;
 
-          if (stockCheckEnabled) {
+          if ((item.itemType ?? "product") === "product" && item.productId && stockCheckEnabled) {
             const product = await ctx.db.get(item.productId);
             let stockValue = product?.stock;
             if (variantStock === "variant" && item.variantId) {
@@ -412,11 +591,14 @@ export const mergeCart = mutation({
             quantity: newQty,
             subtotal: existingItem.price * newQty,
           });
+          existingItem.quantity = newQty;
+          existingItem.subtotal = existingItem.price * newQty;
           await ctx.db.delete(item._id);
         } else {
           await ctx.db.patch(item._id, {
             cartId: customerCart._id,
           });
+          customerItems.push({ ...item, cartId: customerCart._id });
         }
       }
     }
@@ -459,12 +641,7 @@ export const remove = mutation({
 
 // FIX Issue #11: Added quantity validation
 export const addItem = mutation({
-  args: {
-    cartId: v.id("carts"),
-    productId: v.id("products"),
-    quantity: v.number(),
-    variantId: v.optional(v.id("productVariants")),
-  },
+  args: cartAddItemArgs,
   handler: async (ctx, args) => {
     // FIX Issue #11: Validate quantity > 0
     if (args.quantity <= 0) {
@@ -476,23 +653,11 @@ export const addItem = mutation({
       return { ok: false, error: "Cart not found" };
     }
 
-    const product = await ctx.db.get(args.productId);
-    if (!product) {
-      return { ok: false, error: "Product not found" };
+    const resolved = await resolveCartItem(ctx, args);
+    if (!resolved.ok) {
+      return resolved;
     }
-
-    let variant = null;
-    if (product.hasVariants) {
-      if (!args.variantId) {
-        return { ok: false, error: "Vui lòng chọn phiên bản sản phẩm" };
-      }
-      variant = await ctx.db.get(args.variantId);
-      if (!variant || variant.productId !== args.productId) {
-        return { ok: false, error: "Phiên bản không hợp lệ" };
-      }
-    } else if (args.variantId) {
-      return { ok: false, error: "Sản phẩm không hỗ trợ phiên bản" };
-    }
+    const item = resolved.item;
 
     const [variantStock, stockCheckEnabled] = await Promise.all([
       getVariantStockSetting(ctx),
@@ -506,20 +671,19 @@ export const addItem = mutation({
       .first();
     const maxItems = (maxItemsSetting?.value as number) ?? CART_DEFAULTS.MAX_ITEMS_PER_CART;
 
-    const existingItem = await ctx.db
+    const cartItems = await ctx.db
       .query("cartItems")
-      .withIndex("by_cart_product_variant", (q) =>
-        q.eq("cartId", args.cartId).eq("productId", args.productId).eq("variantId", args.variantId)
-      )
-      .first();
+      .withIndex("by_cart", (q) => q.eq("cartId", args.cartId))
+      .collect();
+    const existingItem = cartItems.find((cartItem) => isSameCartLine(cartItem, item));
 
     const targetQuantity = (existingItem?.quantity ?? 0) + args.quantity;
-    if (stockCheckEnabled) {
-      const stockValue = variantStock === "variant" && variant?.stock !== undefined
-        ? variant.stock
-        : product.stock;
+    if (item.itemType === "product" && stockCheckEnabled) {
+      const stockValue = variantStock === "variant" && item.variantStock !== undefined
+        ? item.variantStock
+        : item.productStock;
       if (stockValue !== undefined && targetQuantity > stockValue) {
-        return { ok: false, error: `Không đủ hàng trong kho cho ${product.name}. Còn lại: ${stockValue}` };
+        return { ok: false, error: `Không đủ hàng trong kho cho ${item.productName}. Còn lại: ${stockValue}` };
       }
     }
 
@@ -533,28 +697,22 @@ export const addItem = mutation({
       return { ok: true, itemId: existingItem._id };
     }
 
-    const currentItems = await ctx.db
-      .query("cartItems")
-      .withIndex("by_cart", (q) => q.eq("cartId", args.cartId))
-      .collect();
-    if (currentItems.length >= maxItems) {
+    if (cartItems.length >= maxItems) {
       return { ok: false, error: `Giỏ hàng đã đạt giới hạn ${maxItems} sản phẩm` };
     }
 
-    const variantPricing = product.hasVariants ? await getVariantPricingSetting(ctx) : "product";
-    const basePrice = variantPricing === "variant" && variant
-      ? (variant.salePrice ?? variant.price ?? product.salePrice ?? product.price)
-      : (product.salePrice ?? product.price);
-    const price = basePrice ?? product.price;
     const itemId = await ctx.db.insert("cartItems", {
       cartId: args.cartId,
-      price,
-      productId: args.productId,
-      productImage: product.image,
-      productName: product.name,
+      itemType: item.itemType,
+      price: item.price,
+      productId: item.productId,
+      serviceId: item.serviceId,
+      courseId: item.courseId,
+      productImage: item.productImage,
+      productName: item.productName,
       quantity: args.quantity,
-      subtotal: price * args.quantity,
-      variantId: args.variantId,
+      subtotal: item.price * args.quantity,
+      variantId: item.variantId,
     });
 
     await recalculateCart(ctx, args.cartId);
@@ -578,7 +736,10 @@ export const updateItemQuantity = mutation({
       return { ok: false, error: "Cart item not found" };
     }
 
-    if (args.quantity > 0) {
+    if (args.quantity > 0 && (item.itemType ?? "product") === "product") {
+      if (!item.productId) {
+        return { ok: false, error: "Cart item product is invalid" };
+      }
       const [product, variantStock, stockCheckEnabled] = await Promise.all([
         ctx.db.get(item.productId),
         getVariantStockSetting(ctx),

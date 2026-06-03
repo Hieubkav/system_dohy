@@ -16,6 +16,11 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { useCart } from '@/lib/cart';
 
 const formatPrice = (value: number) => new Intl.NumberFormat('vi-VN', { currency: 'VND', style: 'currency' }).format(value);
+const itemTypeLabel = (itemType?: 'product' | 'service' | 'course') => {
+  if (itemType === 'service') return 'Dịch vụ';
+  if (itemType === 'course') return 'Khóa học';
+  return 'Sản phẩm';
+};
 
 // ─── Combobox search cho Tỉnh/Quận/Phường ────────────────────────────────────
 interface ComboboxOption { code: string; name: string; }
@@ -442,7 +447,7 @@ function CheckoutContent() {
     if (!fromCart || !cartItems) {
       return [] as Id<'products'>[];
     }
-    return Array.from(new Set(cartItems.map((item) => item.productId)));
+    return Array.from(new Set(cartItems.map((item) => item.productId).filter((id): id is Id<'products'> => Boolean(id))));
   }, [cartItems, fromCart]);
   const cartProducts = useQuery(
     api.products.listByIds,
@@ -458,7 +463,7 @@ function CheckoutContent() {
       if (!cartItems || cartProducts === undefined) {
         return true;
       }
-      return cartItems.some((item) => (cartProductTypeMap.get(item.productId) ?? 'physical') !== 'digital');
+      return cartItems.some((item) => (item.itemType ?? 'product') === 'product' && item.productId && (cartProductTypeMap.get(item.productId) ?? 'physical') !== 'digital');
     }
     if (!product) {
       return true;
@@ -605,7 +610,10 @@ function CheckoutContent() {
   const orderItems = useMemo(() => {
     if (fromCart) {
       return (cartItems ?? []).map((item) => ({
+        itemType: item.itemType ?? 'product',
         productId: item.productId,
+        serviceId: item.serviceId,
+        courseId: item.courseId,
         productName: item.productName,
         price: item.price,
         quantity: item.quantity,
@@ -619,6 +627,7 @@ function CheckoutContent() {
     }
 
     return [{
+      itemType: 'product' as const,
       productId: product._id,
       productName: product.name,
       price: unitPrice,
@@ -632,6 +641,7 @@ function CheckoutContent() {
     if (fromCart) {
       return (cartItems ?? []).map((item) => ({
         id: item._id,
+        type: itemTypeLabel(item.itemType),
         name: item.productName,
         quantity: item.quantity,
         price: item.price,
@@ -643,6 +653,7 @@ function CheckoutContent() {
     return product
       ? [{
           id: product._id,
+          type: 'Sản phẩm',
           name: product.name,
           quantity,
           price: unitPrice,
@@ -1326,7 +1337,7 @@ function CheckoutContent() {
       style={{ backgroundColor: tokens.summaryBg, borderColor: tokens.border }}
     >
       <div className="flex items-center justify-between text-sm">
-        <span style={{ color: tokens.summaryText }}>Sản phẩm</span>
+        <span style={{ color: tokens.summaryText }}>Mục</span>
         <span className="font-medium" style={{ color: tokens.summaryValue }}>{fromCart ? cart?.itemsCount ?? 0 : quantity}x</span>
       </div>
       <div className="space-y-3">
@@ -1344,6 +1355,7 @@ function CheckoutContent() {
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium" style={{ color: tokens.bodyText }}>{item.name}</p>
+              <p className="text-xs" style={{ color: tokens.metaText }}>{item.type}</p>
               {item.variantTitle && <p className="text-xs" style={{ color: tokens.metaText }}>{item.variantTitle}</p>}
               <p className="text-xs" style={{ color: tokens.metaText }}>Số lượng: {item.quantity}</p>
             </div>

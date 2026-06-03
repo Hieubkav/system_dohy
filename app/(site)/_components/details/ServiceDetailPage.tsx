@@ -3,12 +3,14 @@
 import React, { use, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
+import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
 import { useBrandColors } from '@/components/site/hooks';
 import { getServiceDetailColors } from '@/components/site/services/detail/_lib/colors';
 import { ClassicStyle, MinimalStyle, ModernStyle } from '@/components/site/services/detail/ServiceDetailStyles';
 import { ArrowLeft, Briefcase } from 'lucide-react';
 import { normalizeRouteMode } from '@/lib/ia/route-mode';
+import { useCart } from '@/lib/cart';
 
 type ServiceDetailStyle = 'classic' | 'modern' | 'minimal';
 
@@ -95,8 +97,10 @@ export default function ServiceDetailPage({ params }: PageProps) {
   );
   const experienceConfig = useServiceDetailExperienceConfig();
   const enabledFields = useEnabledServiceFields();
+  const { addItem, openDrawer } = useCart();
   
   const service = useQuery(api.services.getBySlug, { slug });
+  const serviceCommerceSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'services', settingKey: 'commerceMode' });
   const category = useQuery(
     api.serviceCategories.getById,
     service?.categoryId ? { id: service.categoryId } : 'skip'
@@ -109,6 +113,7 @@ export default function ServiceDetailPage({ params }: PageProps) {
     return new Map(categories.map((item) => [item._id, item.slug]));
   }, [categories]);
   const incrementViews = useMutation(api.services.incrementViews);
+  const commerceMode: 'cart' | 'contact' = serviceCommerceSetting?.value === 'cart' ? 'cart' : 'contact';
   
   const relatedServices = useQuery(
     api.services.searchPublished,
@@ -161,6 +166,17 @@ export default function ServiceDetailPage({ params }: PageProps) {
     enabledFields,
     showShare: experienceConfig.showShare,
     tokens,
+    commerceCta: {
+      mode: commerceMode,
+      buttonText: commerceMode === 'cart' ? 'Thêm vào giỏ hàng' : undefined,
+      onAddToCart: async () => {
+        const ok = await addItem({ itemType: 'service', serviceId: service._id, quantity: 1 });
+        if (ok) {
+          toast.success('Đã thêm dịch vụ vào giỏ hàng');
+          openDrawer();
+        }
+      },
+    },
     routeMode,
     categorySlugMap,
   };

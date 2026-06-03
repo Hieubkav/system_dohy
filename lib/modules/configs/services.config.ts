@@ -26,6 +26,16 @@ export const servicesModule = defineModuleWithRuntime({
       default: false,
     },
     {
+      key: 'commerceMode',
+      label: 'Chế độ thương mại',
+      type: 'select',
+      default: 'contact',
+      options: [
+        { value: 'cart', label: 'Giỏ hàng & thanh toán' },
+        { value: 'contact', label: 'Nút liên hệ (/contact)' },
+      ],
+    },
+    {
       key: 'defaultStatus',
       label: 'Trạng thái mặc định',
       type: 'select',

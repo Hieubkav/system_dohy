@@ -900,8 +900,11 @@ export default defineSchema({
     customerId: v.id("customers"),
     items: v.array(
       v.object({
+        itemType: v.optional(v.union(v.literal("product"), v.literal("service"), v.literal("course"))),
         price: v.number(),
-        productId: v.id("products"),
+        productId: v.optional(v.id("products")),
+        serviceId: v.optional(v.id("services")),
+        courseId: v.optional(v.id("courses")),
         productImage: v.optional(v.string()),
         productName: v.string(),
         quantity: v.number(),
@@ -994,8 +997,11 @@ export default defineSchema({
   // 23. cartItems - Items trong giỏ hàng
   cartItems: defineTable({
     cartId: v.id("carts"),
+    itemType: v.optional(v.union(v.literal("product"), v.literal("service"), v.literal("course"))),
     price: v.number(),
-    productId: v.id("products"),
+    productId: v.optional(v.id("products")),
+    serviceId: v.optional(v.id("services")),
+    courseId: v.optional(v.id("courses")),
     productImage: v.optional(v.string()),
     productName: v.string(),
     quantity: v.number(),
@@ -1004,6 +1010,9 @@ export default defineSchema({
   })
     .index("by_cart", ["cartId"])
     .index("by_product", ["productId"])
+    .index("by_service", ["serviceId"])
+    .index("by_course", ["courseId"])
+    .index("by_cart_product", ["cartId", "productId"])
     .index("by_cart_product_variant", ["cartId", "productId", "variantId"]),
 
   // 24. notifications - Thông báo hệ thống

@@ -17,6 +17,11 @@ const formatVND = (value: number) => new Intl.NumberFormat('vi-VN', {
   style: 'currency',
   currency: 'VND',
 }).format(value);
+const itemTypeLabel = (itemType?: 'product' | 'service' | 'course') => {
+  if (itemType === 'service') return 'Dịch vụ';
+  if (itemType === 'course') return 'Khóa học';
+  return 'Sản phẩm';
+};
 
 export function CartDrawer() {
   const brandColors = useBrandColors();
@@ -165,6 +170,7 @@ export function CartDrawer() {
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="font-medium text-sm line-clamp-2" style={{ color: tokens.bodyText }}>{item.productName}</h4>
+                <p className="text-[11px] font-medium mt-0.5" style={{ color: tokens.metaText }}>{itemTypeLabel(item.itemType)}</p>
                 {item.variantId && variantTitleById.get(item.variantId) && (
                   <p className="text-xs mt-0.5" style={{ color: tokens.metaText }}>{variantTitleById.get(item.variantId)}</p>
                 )}

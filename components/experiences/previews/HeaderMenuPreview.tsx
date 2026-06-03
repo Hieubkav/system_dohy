@@ -28,7 +28,7 @@ export type HeaderMenuConfig = {
   cart: { show: boolean };
   cta: { show: boolean; text: string; url?: string };
   login: { show: boolean; text: string };
-  search: { show: boolean; placeholder: string; searchProducts: boolean; searchPosts: boolean; searchServices: boolean };
+  search: { show: boolean; placeholder: string; searchProducts: boolean; searchPosts: boolean; searchServices: boolean; searchCourses?: boolean };
   topbar: {
     email: string;
     hotline: string;
@@ -88,6 +88,7 @@ export type HeaderMenuPreviewProps = {
   productsEnabled: boolean;
   postsEnabled: boolean;
   servicesEnabled: boolean;
+  coursesEnabled?: boolean;
 };
 
 export function HeaderMenuPreview({
@@ -107,6 +108,7 @@ export function HeaderMenuPreview({
   productsEnabled,
   postsEnabled,
   servicesEnabled,
+  coursesEnabled = false,
 }: HeaderMenuPreviewProps) {
   const tokens = useMemo<MenuColors>(
     () => getMenuColors(brandColor, secondaryColor, colorMode),
@@ -376,7 +378,8 @@ export function HeaderMenuPreview({
   const canSearchProducts = config.search.searchProducts && productsEnabled;
   const canSearchPosts = config.search.searchPosts && postsEnabled;
   const canSearchServices = config.search.searchServices && servicesEnabled;
-  const showSearch = config.search.show && (canSearchProducts || canSearchPosts || canSearchServices);
+  const canSearchCourses = Boolean(config.search.searchCourses && coursesEnabled);
+  const showSearch = config.search.show && (canSearchProducts || canSearchPosts || canSearchServices || canSearchCourses);
   const isDesktop = device === 'desktop';
 
   const renderUserMenu = (variant: 'text' | 'icon') => (

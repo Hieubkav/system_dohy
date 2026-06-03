@@ -15,6 +15,7 @@ import {
   getOrderPlacedShopTemplate,
   getOrderCancelledTemplate,
 } from "./emailTemplates";
+import { isProviderCartCapable, type CommerceProviderKey } from "./lib/commerce";
 
 const orderStatus = v.string();
 
@@ -145,8 +146,11 @@ async function handleOrderStatusTransition(
 }
 
 const orderItemValidator = v.object({
+  itemType: v.optional(v.union(v.literal("product"), v.literal("service"), v.literal("course"))),
   price: v.number(),
-  productId: v.id("products"),
+  productId: v.optional(v.id("products")),
+  serviceId: v.optional(v.id("services")),
+  courseId: v.optional(v.id("courses")),
   productImage: v.optional(v.string()),
   productName: v.string(),
   quantity: v.number(),
@@ -169,8 +173,11 @@ type VariantPricingSetting = "product" | "variant";
 type VariantStockSetting = "product" | "variant";
 
 type OrderItemInput = {
+  itemType?: "product" | "service" | "course";
   price: number;
-  productId: Id<"products">;
+  productId?: Id<"products">;
+  serviceId?: Id<"services">;
+  courseId?: Id<"courses">;
   productImage?: string;
   productName: string;
   quantity: number;
@@ -187,6 +194,25 @@ type OrderItemInput = {
     expiresAt?: number;
     deliveredAt?: number;
   };
+};
+
+const getOrderItemType = (item: Pick<OrderItemInput, "itemType">) => item.itemType ?? "product";
+
+const isSameOrderLine = (
+  a: Pick<OrderItemInput, "itemType" | "productId" | "serviceId" | "courseId" | "variantId">,
+  b: Pick<OrderItemInput, "itemType" | "productId" | "serviceId" | "courseId" | "variantId">
+) => {
+  const itemType = getOrderItemType(a);
+  if (itemType !== getOrderItemType(b)) {
+    return false;
+  }
+  if (itemType === "product") {
+    return a.productId === b.productId && a.variantId === b.variantId;
+  }
+  if (itemType === "service") {
+    return a.serviceId === b.serviceId;
+  }
+  return a.courseId === b.courseId;
 };
 
 async function getVariantSettings(ctx: MutationCtx): Promise<{
@@ -239,43 +265,100 @@ async function normalizeOrderItems(
     return items;
   }
 
-  const products = await Promise.all(items.map((item) => ctx.db.get(item.productId)));
-  const variants = await Promise.all(items.map((item) => (item.variantId ? ctx.db.get(item.variantId) : Promise.resolve(null))));
+  return Promise.all(items.map(async (item) => {
+    const itemType = getOrderItemType(item);
 
-  return Promise.all(items.map(async (item, index) => {
-    const product = products[index];
-    if (!product) {
-      throw new Error("Product not found");
-    }
+    if (itemType === "product") {
+      if (!item.productId) {
+        throw new Error("Product not found");
+      }
 
-    const variant = variants[index];
-    if (item.variantId) {
-      if (!variant || variant.productId !== item.productId) {
+      const [product, variant] = await Promise.all([
+        ctx.db.get(item.productId),
+        item.variantId ? ctx.db.get(item.variantId) : Promise.resolve(null),
+      ]);
+      if (!product) {
+        throw new Error("Product not found");
+      }
+      if (item.variantId && (!variant || variant.productId !== item.productId)) {
         throw new Error("Phiên bản không hợp lệ");
       }
+
+      const price = variantPricing === "variant" && variant
+        ? (variant.salePrice ?? variant.price ?? item.price)
+        : item.price;
+      const variantTitle = variant ? await buildVariantTitle(ctx, variant) : undefined;
+
+      return {
+        ...item,
+        itemType: "product",
+        price,
+        productImage: item.productImage ?? product.image ?? undefined,
+        variantTitle,
+        isDigital: product.productType === "digital",
+        digitalDeliveryType: product.digitalDeliveryType ?? undefined,
+        digitalCredentials: product.productType === "digital"
+          ? (product.digitalCredentialsTemplate ?? undefined)
+          : undefined,
+      };
     }
 
-    const price = variantPricing === "variant" && variant
-      ? (variant.salePrice ?? variant.price ?? item.price)
-      : item.price;
-    const variantTitle = variant ? await buildVariantTitle(ctx, variant) : undefined;
+    if (itemType === "service") {
+      if (!item.serviceId) {
+        throw new Error("Service not found");
+      }
+      const service = await ctx.db.get(item.serviceId);
+      if (!service || service.status !== "Published") {
+        throw new Error("Service not found");
+      }
+      if (service.price === undefined || service.price < 0) {
+        throw new Error(`Giá dịch vụ ${service.title} không hợp lệ`);
+      }
+      return {
+        ...item,
+        itemType: "service",
+        price: service.price,
+        productImage: item.productImage ?? service.thumbnail ?? undefined,
+        productName: service.title,
+        variantId: undefined,
+        variantTitle: undefined,
+        isDigital: false,
+        digitalDeliveryType: undefined,
+        digitalCredentials: undefined,
+      };
+    }
 
+    if (!item.courseId) {
+      throw new Error("Course not found");
+    }
+    const course = await ctx.db.get(item.courseId);
+    if (!course || course.status !== "Published") {
+      throw new Error("Course not found");
+    }
+    if (course.pricingType === "contact") {
+      throw new Error("Khóa học đang ở chế độ liên hệ, chưa thể thanh toán");
+    }
+    const price = course.pricingType === "free" ? 0 : course.priceAmount;
+    if (price === undefined || price < 0) {
+      throw new Error(`Giá khóa học ${course.title} không hợp lệ`);
+    }
     return {
       ...item,
+      itemType: "course",
       price,
-      productImage: item.productImage ?? product.image ?? undefined,
-      variantTitle,
-      isDigital: product.productType === "digital",
-      digitalDeliveryType: product.digitalDeliveryType ?? undefined,
-      digitalCredentials: product.productType === "digital"
-        ? (product.digitalCredentialsTemplate ?? undefined)
-        : undefined,
+      productImage: item.productImage ?? course.thumbnail ?? undefined,
+      productName: course.title,
+      variantId: undefined,
+      variantTitle: undefined,
+      isDigital: false,
+      digitalDeliveryType: undefined,
+      digitalCredentials: undefined,
     };
   }));
 }
 
 async function decrementVariantStock(ctx: MutationCtx, items: OrderItemInput[]) {
-  const variantItems = items.filter((item) => item.variantId);
+  const variantItems = items.filter((item) => getOrderItemType(item) === "product" && item.variantId);
   if (variantItems.length === 0) {
     return;
   }
@@ -292,13 +375,14 @@ async function decrementVariantStock(ctx: MutationCtx, items: OrderItemInput[]) 
 }
 
 async function decrementProductStock(ctx: MutationCtx, items: OrderItemInput[]) {
-  if (items.length === 0) {
+  const productItems = items.filter((item) => getOrderItemType(item) === "product" && item.productId);
+  if (productItems.length === 0) {
     return;
   }
 
   const quantities = new Map<string, number>();
-  items.forEach((item) => {
-    const key = item.productId;
+  productItems.forEach((item) => {
+    const key = item.productId!;
     quantities.set(key, (quantities.get(key) ?? 0) + item.quantity);
   });
 
@@ -320,14 +404,15 @@ async function validateStockBeforeCreate(
   items: OrderItemInput[],
   variantStock: VariantStockSetting
 ): Promise<string | null> {
-  if (items.length === 0) {
+  const productItems = items.filter((item) => getOrderItemType(item) === "product" && item.productId);
+  if (productItems.length === 0) {
     return null;
   }
 
   if (variantStock === "product") {
     const quantities = new Map<string, number>();
-    items.forEach((item) => {
-      const key = item.productId;
+    productItems.forEach((item) => {
+      const key = item.productId!;
       quantities.set(key, (quantities.get(key) ?? 0) + item.quantity);
     });
     const productIds = Array.from(quantities.keys()) as Id<"products">[];
@@ -347,11 +432,11 @@ async function validateStockBeforeCreate(
   }
 
   const [products, variants] = await Promise.all([
-    Promise.all(items.map((item) => ctx.db.get(item.productId))),
-    Promise.all(items.map((item) => (item.variantId ? ctx.db.get(item.variantId) : Promise.resolve(null)))),
+    Promise.all(productItems.map((item) => ctx.db.get(item.productId!))),
+    Promise.all(productItems.map((item) => (item.variantId ? ctx.db.get(item.variantId) : Promise.resolve(null)))),
   ]);
 
-  for (const [index, item] of items.entries()) {
+  for (const [index, item] of productItems.entries()) {
     const product = products[index];
     if (!product) {
       throw new Error("Product not found");
@@ -370,6 +455,27 @@ async function validateStockBeforeCreate(
   }
 
   return null;
+}
+
+async function validateCheckoutCommerce(ctx: MutationCtx, items: OrderItemInput[]) {
+  const requiredProviders = new Set<CommerceProviderKey>();
+  for (const item of items) {
+    const itemType = getOrderItemType(item);
+    if (itemType === "product") {
+      requiredProviders.add("products");
+    } else if (itemType === "service") {
+      requiredProviders.add("services");
+    } else {
+      requiredProviders.add("courses");
+    }
+  }
+
+  for (const provider of requiredProviders) {
+    if (!await isProviderCartCapable(ctx, provider)) {
+      const label = provider === "products" ? "Sản phẩm" : provider === "services" ? "Dịch vụ" : "Khóa học";
+      throw new Error(`${label} chưa được bật chế độ giỏ hàng và thanh toán`);
+    }
+  }
 }
 
 const orderDoc = v.object({
@@ -908,6 +1014,9 @@ export const cancelOwnOrder = mutation({
       if (variantStock === "variant") {
         await Promise.all(
           order.items.map(async (item) => {
+            if (getOrderItemType(item) !== "product" || !item.productId) {
+              return;
+            }
             if (item.variantId) {
               const variant = await ctx.db.get(item.variantId);
               if (variant && variant.stock !== undefined) {
@@ -924,6 +1033,9 @@ export const cancelOwnOrder = mutation({
       } else {
         await Promise.all(
           order.items.map(async (item) => {
+            if (getOrderItemType(item) !== "product" || !item.productId) {
+              return;
+            }
             const product = await ctx.db.get(item.productId);
             if (product && product.stock !== undefined) {
               await ctx.db.patch(item.productId, { stock: product.stock + item.quantity });
@@ -1084,8 +1196,9 @@ export const placeOrder = mutation({
 
     // Siết chặt validation đầu vào
     if (normalizedItems.length === 0) {
-      throw new Error("Không có sản phẩm để đặt hàng");
+      throw new Error("Không có mục nào để đặt hàng");
     }
+    await validateCheckoutCommerce(ctx, normalizedItems);
     for (const item of normalizedItems) {
       if (item.quantity <= 0 || !Number.isFinite(item.quantity)) {
         throw new Error(`Số lượng sản phẩm ${item.productName} không hợp lệ`);
@@ -1160,11 +1273,7 @@ export const placeOrder = mutation({
         .collect();
 
       for (const item of cartItems) {
-        const isInOrder = normalizedItems.some(
-          (orderItem) =>
-            orderItem.productId === item.productId &&
-            orderItem.variantId === item.variantId
-        );
+        const isInOrder = normalizedItems.some((orderItem) => isSameOrderLine(orderItem, item));
         if (isInOrder) {
           await ctx.db.delete(item._id);
         }
@@ -1268,6 +1377,9 @@ export const cancelByCustomer = mutation({
       if (variantStock === "variant") {
         await Promise.all(
           order.items.map(async (item) => {
+            if (getOrderItemType(item) !== "product" || !item.productId) {
+              return;
+            }
             if (item.variantId) {
               const variant = await ctx.db.get(item.variantId);
               if (variant && variant.stock !== undefined) {
@@ -1284,6 +1396,9 @@ export const cancelByCustomer = mutation({
       } else {
         await Promise.all(
           order.items.map(async (item) => {
+            if (getOrderItemType(item) !== "product" || !item.productId) {
+              return;
+            }
             const product = await ctx.db.get(item.productId);
             if (product && product.stock !== undefined) {
               await ctx.db.patch(item.productId, { stock: product.stock + item.quantity });
