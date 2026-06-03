@@ -20,6 +20,7 @@ export default function CustomerLoginPage() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [otpSentMessage, setOtpSentMessage] = useState('');
+  const [otpRequired, setOtpRequired] = useState(true);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -40,6 +41,10 @@ export default function CustomerLoginPage() {
               const otpRes = await requestPasswordSetup(prefill);
               if (otpRes.success) {
                 setStep('password_setup');
+                setOtpRequired(otpRes.otpRequired !== false);
+              } else {
+                setError(otpRes.message);
+                toast.error(otpRes.message);
               }
             } else if (res.state === 'requiresPassword') {
               setStep('password');
@@ -83,6 +88,7 @@ export default function CustomerLoginPage() {
           const otpRes = await requestPasswordSetup(identifier);
           if (otpRes.success) {
             setStep('password_setup');
+            setOtpRequired(otpRes.otpRequired !== false);
             setOtpSentMessage(otpRes.message);
             toast.success(otpRes.message);
           } else {
@@ -129,7 +135,7 @@ export default function CustomerLoginPage() {
 
   const handleCompleteSetup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpCode || otpCode.length < 6) {
+    if (otpRequired && (!otpCode || otpCode.length < 6)) {
       setError('Vui lòng nhập mã xác minh gồm 6 số.');
       return;
     }
@@ -141,7 +147,7 @@ export default function CustomerLoginPage() {
     setIsSubmitting(true);
 
     try {
-      const result = await completePasswordSetup(identifier, otpCode, newPassword);
+      const result = await completePasswordSetup(identifier, otpRequired ? otpCode : 'BYPASS', newPassword);
       if (result.success) {
         toast.success('Đã kích hoạt tài khoản và đăng nhập thành công!');
         const params = new URLSearchParams(window.location.search);
@@ -163,6 +169,7 @@ export default function CustomerLoginPage() {
     try {
       const otpRes = await requestPasswordSetup(identifier);
       if (otpRes.success) {
+        setOtpRequired(otpRes.otpRequired !== false);
         setOtpSentMessage(otpRes.message);
         toast.success(otpRes.message);
       } else {
@@ -306,7 +313,7 @@ export default function CustomerLoginPage() {
                   <span>Kích hoạt tài khoản cũ</span>
                 </div>
                 <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-                  Hệ thống tìm thấy lịch sử mua hàng của bạn gắn liền với thông tin liên hệ: <strong>{maskedEmail || identifier}</strong>. Hãy nhập OTP được gửi để thiết lập mật khẩu đăng nhập.
+                  Hệ thống tìm thấy lịch sử mua hàng của bạn gắn liền với thông tin liên hệ: <strong>{maskedEmail || identifier}</strong>. {otpRequired ? 'Hãy nhập OTP được gửi để thiết lập mật khẩu đăng nhập.' : 'Vui lòng thiết lập mật khẩu đăng nhập bên dưới để kích hoạt tài khoản.'}
                 </p>
               </div>
 
@@ -316,23 +323,25 @@ export default function CustomerLoginPage() {
                 </p>
               )}
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                  Mã xác minh (OTP)
-                </label>
-                <div className="relative">
-                  <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                  <input
-                    type="text"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl pl-12 pr-4 py-3.5 text-slate-800 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-slate-900 focus:border-transparent focus:outline-none transition-all text-sm tracking-widest font-bold"
-                    placeholder="Mã gồm 6 chữ số"
-                    required
-                    disabled={isSubmitting}
-                  />
+              {otpRequired && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                    Mã xác minh (OTP)
+                  </label>
+                  <div className="relative">
+                    <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl pl-12 pr-4 py-3.5 text-slate-800 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-slate-900 focus:border-transparent focus:outline-none transition-all text-sm tracking-widest font-bold"
+                      placeholder="Mã gồm 6 chữ số"
+                      required={otpRequired}
+                      disabled={isSubmitting}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
@@ -368,14 +377,16 @@ export default function CustomerLoginPage() {
                   )}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={handleResendOtp}
-                  disabled={isSubmitting}
-                  className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white py-2 text-center underline cursor-pointer"
-                >
-                  Không nhận được mã? Gửi lại mã
-                </button>
+                {otpRequired && (
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={isSubmitting}
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white py-2 text-center underline cursor-pointer"
+                  >
+                    Không nhận được mã? Gửi lại mã
+                  </button>
+                )}
               </div>
             </form>
           )}

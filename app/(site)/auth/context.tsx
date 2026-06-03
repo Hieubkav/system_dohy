@@ -23,7 +23,7 @@ type CustomerAuthContextType = {
   logout: () => Promise<void>;
   openLoginModal: () => void;
   identify: (identifier: string) => Promise<{ success: boolean; state: string; message: string; maskedEmail?: string; maskedPhone?: string }>;
-  requestPasswordSetup: (identifier: string) => Promise<{ success: boolean; challengeId?: string; message: string }>;
+  requestPasswordSetup: (identifier: string) => Promise<{ success: boolean; challengeId?: string; message: string; otpRequired?: boolean }>;
   completePasswordSetup: (identifier: string, code: string, password: string) => Promise<{ success: boolean; message: string }>;
 };
 

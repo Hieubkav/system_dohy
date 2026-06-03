@@ -10,6 +10,8 @@ import {
   normalizeOrderStatusPreset,
   parseOrderStatuses,
 } from "../lib/orders/statuses";
+import { EMAIL_CONFIG_SETTING_KEYS, getEmailConfigurationStatus } from "../lib/email-config-status";
+
 
 async function resolveSuperAdminRole(ctx: MutationCtx) {
   let superAdminRole = await ctx.db
@@ -585,6 +587,27 @@ export const identifyCustomerAuthState = mutation({
   }),
 });
 
+async function checkEmailConfigured(ctx: MutationCtx) {
+  const keys = EMAIL_CONFIG_SETTING_KEYS;
+  const uniqueKeys = [...new Set(keys)];
+  const settingsList = await Promise.all(uniqueKeys.map((key) =>
+    ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", key))
+      .unique()
+  ));
+
+  const settings: Record<string, unknown> = {};
+  for (const setting of settingsList) {
+    if (setting) {
+      settings[setting.key] = setting.value;
+    }
+  }
+
+  const emailStatus = getEmailConfigurationStatus(settings);
+  return emailStatus.configured;
+}
+
 export const requestCustomerPasswordSetup = mutation({
   args: { identifier: v.string() },
   handler: async (ctx, args) => {
@@ -618,8 +641,13 @@ export const requestCustomerPasswordSetup = mutation({
       await ctx.db.delete(challenge._id);
     }
 
-    // Generate a random 6-digit code
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // Check if email outgoing is configured
+    const isEmailConfigured = await checkEmailConfigured(ctx);
+
+    // Generate code
+    const otpCode = isEmailConfigured
+      ? Math.floor(100000 + Math.random() * 900000).toString()
+      : "BYPASS";
     const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
 
     const challengeId = await ctx.db.insert("customerAuthChallenges", {
@@ -630,22 +658,28 @@ export const requestCustomerPasswordSetup = mutation({
       attempts: 0,
     });
 
-    // Schedule SMTP action to send the email
-    await ctx.scheduler.runAfter(0, internal.email.sendOtpEmail, {
-      email: customer.email,
-      otpCode,
-    });
+    if (isEmailConfigured) {
+      // Schedule SMTP action to send the email
+      await ctx.scheduler.runAfter(0, internal.email.sendOtpEmail, {
+        email: customer.email,
+        otpCode,
+      });
+    }
 
     return {
       success: true,
       challengeId,
-      message: "Mã xác minh đã được gửi đến email của bạn.",
+      message: isEmailConfigured
+        ? "Mã xác minh đã được gửi đến email của bạn."
+        : "Hệ thống chưa cấu hình gửi email. Bạn có thể thiết lập mật khẩu trực tiếp mà không cần mã xác minh.",
+      otpRequired: isEmailConfigured,
     };
   },
   returns: v.object({
     success: v.boolean(),
     challengeId: v.optional(v.string()),
     message: v.string(),
+    otpRequired: v.optional(v.boolean()),
   }),
 });
 
@@ -685,14 +719,19 @@ export const completeCustomerPasswordSetup = mutation({
       return { success: false, message: "Mã xác minh đã hết hạn." };
     }
 
-    if (challenge.attempts >= 5) {
+    // Check if email outgoing is configured
+    const isEmailConfigured = await checkEmailConfigured(ctx);
+
+    if (isEmailConfigured && challenge.attempts >= 5) {
       return { success: false, message: "Bạn đã nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới." };
     }
 
-    if (challenge.code !== args.code.trim()) {
+    if (isEmailConfigured && challenge.code !== args.code.trim()) {
       await ctx.db.patch(challenge._id, { attempts: challenge.attempts + 1 });
       return { success: false, message: `Mã xác minh không đúng. Bạn còn ${5 - (challenge.attempts + 1)} lần thử.` };
     }
+
+
 
     // Success! Update password
     const passwordHash = await hashPassword(args.password);
