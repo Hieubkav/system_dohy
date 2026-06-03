@@ -1527,4 +1527,46 @@ export default defineSchema({
     idempotencyKey: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_idempotencyKey", ["idempotencyKey"]),
+
+  // 27-course-filters. courseFilters - Bộ lọc khóa học (Nhóm bộ lọc)
+  courseFilters: defineTable({
+    active: v.boolean(),
+    description: v.optional(v.string()),
+    name: v.string(),
+    order: v.optional(v.number()),
+    slug: v.string(),
+    icon: v.optional(v.string()),
+    iconStorageId: v.optional(v.union(v.id("_storage"), v.null())),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_active", ["active"]),
+
+  // 27-course-filters. courseFilterValues - Giá trị bộ lọc
+  courseFilterValues: defineTable({
+    filterId: v.id("courseFilters"),
+    name: v.string(),
+    slug: v.string(),
+    active: v.boolean(),
+    order: v.number(),
+    icon: v.optional(v.string()),
+    iconStorageId: v.optional(v.union(v.id("_storage"), v.null())),
+  })
+    .index("by_filter", ["filterId"])
+    .index("by_filter_active_order", ["filterId", "active", "order"])
+    .index("by_slug", ["slug"])
+    .index("by_order", ["order"]),
+
+  // 27-course-filters. courseFilterAssignments - Liên kết bộ lọc với khóa học
+  courseFilterAssignments: defineTable({
+    courseId: v.id("courses"),
+    valueId: v.id("courseFilterValues"),
+    filterId: v.id("courseFilters"),
+    createdAt: v.number(),
+  })
+    .index("by_course", ["courseId"])
+    .index("by_value", ["valueId"])
+    .index("by_filter", ["filterId"])
+    .index("by_course_filter", ["courseId", "filterId"])
+    .index("by_course_value", ["courseId", "valueId"]),
 });
+

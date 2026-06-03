@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Bookmark, ChevronDown, ChevronLeft, ChevronRight, Clock, Download, Eye, FileText, GraduationCap, Lock, PlayCircle, Search, SlidersHorizontal, Star, UserRound, X, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Bookmark, ChevronDown, ChevronLeft, ChevronRight, Clock, Download, Eye, FileText, Filter, GraduationCap, Lock, PlayCircle, Search, SlidersHorizontal, Star, UserRound, X, CheckCircle2 } from 'lucide-react';
 import { getRadiusClass, getSmallRadiusClass, formatPrice } from '@/lib/courses/courseUtils';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 type DeviceType = 'desktop' | 'tablet' | 'mobile';
 type CoursesListLayoutStyle = 'grid' | 'sidebar' | 'masonry';
@@ -57,10 +59,10 @@ type LessonDetailPreviewProps = {
 };
 
 const MOCK_COURSES = [
-  { title: 'Lộ trình Next.js thực chiến', category: 'Frontend', level: 'Trung cấp', lessons: 42, duration: '18 giờ', price: '2.900.000đ', featured: true, excerpt: 'Xây dựng website thực tế, tối ưu SEO và đưa sản phẩm lên online.', instructorName: 'Nguyễn Minh Đức' },
-  { title: 'React căn bản cho người mới', category: 'Cơ bản', level: 'Cơ bản', lessons: 28, duration: '10 giờ', price: 'Miễn phí', excerpt: 'Nắm vững kiến thức React cơ bản thông qua các dự án nhỏ thú vị.', instructorName: 'Trần Văn Sơn' },
-  { title: 'Thiết kế hệ thống SaaS', category: 'Chuyên sâu', level: 'Nâng cao', lessons: 36, duration: '24 giờ', price: '4.500.000đ', excerpt: 'Tự tay thiết kế và vận hành hệ thống SaaS quy mô lớn, chịu tải cao.', instructorName: 'Hoàng Anh Tuấn' },
-  { title: 'TypeScript nâng cao', category: 'Frontend', level: 'Nâng cao', lessons: 31, duration: '14 giờ', price: '1.900.000đ', excerpt: 'Làm chủ các tính năng nâng cao của TypeScript, viết code an toàn hơn.', instructorName: 'Lê Huy Hoàng' },
+  { title: 'Lộ trình Revit Architecture thực chiến', category: 'Frontend', level: 'Trung cấp', lessons: 42, duration: '18 giờ', price: '2.900.000đ', featured: true, excerpt: 'Xây dựng bản vẽ kiến trúc 3D chuyên nghiệp bằng Revit từ cơ bản.', instructorName: 'Nguyễn Minh Đức', filters: [{ name: 'Revit' }, { name: 'Enscape' }] },
+  { title: 'AutoCAD căn bản cho người mới', category: 'Cơ bản', level: 'Cơ bản', lessons: 28, duration: '10 giờ', price: 'Miễn phí', excerpt: 'Nắm vững kiến thức AutoCAD cơ bản triển khai bản vẽ 2D kỹ thuật.', instructorName: 'Trần Văn Sơn', filters: [{ name: 'AutoCAD' }] },
+  { title: '3DS Max & Vray Render Nội Thất', category: 'Chuyên sâu', level: 'Nâng cao', lessons: 36, duration: '24 giờ', price: '4.500.000đ', excerpt: 'Tạo dựng phối cảnh 3D nội thất và render ánh sáng chân thực với Vray.', instructorName: 'Hoàng Anh Tuấn', filters: [{ name: '3DS Max' }, { name: 'Vray' }] },
+  { title: 'SketchUp dựng hình nhanh', category: 'Frontend', level: 'Nâng cao', lessons: 31, duration: '14 giờ', price: '1.900.000đ', excerpt: 'Làm chủ SketchUp dựng hình kiến trúc ngoại thất cực kỳ nhanh chóng.', instructorName: 'Lê Huy Hoàng', filters: [{ name: 'SketchUp' }] },
 ];
 
 const MOCK_CATEGORIES = [
@@ -285,12 +287,14 @@ function CourseCard({
   course,
   secondaryColor,
   cornerRadius = 'lg',
+  showFilters = false,
 }: {
   brandColor: string;
   className?: string;
   course: typeof MOCK_COURSES[number];
   secondaryColor: string;
   cornerRadius?: 'none' | 'sm' | 'lg';
+  showFilters?: boolean;
 }) {
   const radiusClass = getRadiusClass(cornerRadius);
   return (
@@ -315,6 +319,15 @@ function CourseCard({
           <span className="inline-flex items-center gap-1"><Clock size={13} />{course.duration}</span>
           <span className="inline-flex items-center gap-1"><UserRound size={13} />{course.instructorName}</span>
         </div>
+        {showFilters && course.filters && course.filters.length > 0 && (
+          <div className="flex flex-wrap gap-1 pt-0.5">
+            {course.filters.map((filter, index) => (
+              <span key={index} className="inline-flex items-center gap-1 rounded bg-slate-50 px-1.5 py-0.5 text-[9px] font-medium text-slate-600 border border-slate-200">
+                <span>{filter.name}</span>
+              </span>
+            ))}
+          </div>
+        )}
         {course.price && (
           <div className="border-t border-slate-100 pt-3 font-bold" style={{ color: secondaryColor || brandColor }}>
             {course.price}
@@ -331,12 +344,14 @@ function FeaturedCourseCard({
   course,
   secondaryColor,
   cornerRadius = 'lg',
+  showFilters = false,
 }: {
   brandColor: string;
   className?: string;
   course: typeof MOCK_COURSES[number];
   secondaryColor: string;
   cornerRadius?: 'none' | 'sm' | 'lg';
+  showFilters?: boolean;
 }) {
   const radiusClass = getRadiusClass(cornerRadius);
   return (
@@ -365,6 +380,15 @@ function FeaturedCourseCard({
             <span className="inline-flex items-center gap-1.5"><Clock size={14} className="text-slate-400" />{course.duration}</span>
             <span className="inline-flex items-center gap-1.5"><UserRound size={14} className="text-slate-400" />{course.instructorName}</span>
           </div>
+          {showFilters && course.filters && course.filters.length > 0 && (
+            <div className="flex flex-wrap gap-1 pt-0.5">
+              {course.filters.map((filter, index) => (
+                <span key={index} className="inline-flex items-center gap-1 rounded bg-slate-50 px-1.5 py-0.5 text-[9px] font-medium text-slate-600 border border-slate-200">
+                  <span>{filter.name}</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         
         <div className="flex items-center justify-between border-t border-slate-100 pt-4">
@@ -397,9 +421,12 @@ export function CoursesListPreview({
   const accent = resolveSecondary(brandColor, secondaryColor, colorMode);
   const isMobile = device === 'mobile';
 
+  const courseFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'courses', featureKey: 'enableCourseFilters' });
+
   const [searchVal, setSearchVal] = useState('');
   const [activeCat, setActiveCat] = useState('Tất cả');
   const [levelVal, setLevelVal] = useState('');
+  const [filterVal, setFilterVal] = useState('');
   const [sortByVal, setSortByVal] = useState('newest');
   const [categoryQuery, setCategoryQuery] = useState('');
 
@@ -413,6 +440,10 @@ export function CoursesListPreview({
     
     if (levelVal) {
       list = list.filter(c => c.level === levelVal);
+    }
+
+    if (filterVal) {
+      list = list.filter(c => c.filters?.some(f => f.name === filterVal));
     }
     
     if (searchVal.trim()) {
@@ -437,7 +468,7 @@ export function CoursesListPreview({
     }
     
     return list;
-  }, [activeCat, levelVal, searchVal, sortByVal]);
+  }, [activeCat, levelVal, filterVal, searchVal, sortByVal]);
 
   const courses = layoutStyle === 'masonry' ? processedCourses : processedCourses.slice(0, isMobile ? 2 : 4);
   const visibleCategories = hideEmptyCategories ? MOCK_CATEGORIES.filter((category) => !category.empty) : MOCK_CATEGORIES;
@@ -558,6 +589,40 @@ export function CoursesListPreview({
             </div>
           </div>
         )}
+
+        {courseFiltersFeature?.enabled && (
+          <div className={`border border-slate-200 bg-white p-3.5 shadow-sm ${getRadiusClass(cornerRadius, 'panel')}`}>
+            <h3 className="font-semibold text-xs text-slate-700 mb-2 flex items-center gap-2">
+              <Filter size={12} className="text-slate-400" />
+              Phần mềm
+            </h3>
+            <div className="space-y-1">
+              <button
+                onClick={() => setFilterVal('')}
+                className={`w-full py-1.5 px-2.5 rounded text-left text-xs transition-colors border border-transparent ${!filterVal ? 'font-semibold' : ''}`}
+                style={!filterVal
+                  ? { backgroundColor: `${brandColor}18`, color: brandColor }
+                  : { backgroundColor: 'transparent', color: '#475569' }
+                }
+              >
+                Tất cả phần mềm
+              </button>
+              {['Revit', 'AutoCAD', '3DS Max', 'SketchUp'].map((name) => (
+                <button
+                  key={name}
+                  onClick={() => setFilterVal(name)}
+                  className={`w-full py-1.5 px-2.5 rounded text-left text-xs transition-colors border border-transparent ${filterVal === name ? 'font-semibold' : ''}`}
+                  style={filterVal === name
+                    ? { backgroundColor: `${brandColor}18`, color: brandColor }
+                    : { backgroundColor: 'transparent', color: '#475569' }
+                  }
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     ) : (
       <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(cornerRadius, 'panel')}`}>
@@ -600,6 +665,18 @@ export function CoursesListPreview({
                   { value: 'Nâng cao', label: 'Nâng cao' },
                 ]}
                 icon={<GraduationCap size={14} className="text-slate-400" />}
+                cornerRadius={cornerRadius}
+              />
+            )}
+            {courseFiltersFeature?.enabled && (
+              <CustomDropdown
+                value={filterVal}
+                onChange={setFilterVal}
+                options={[
+                  { value: '', label: 'Tất cả phần mềm' },
+                  ...['Revit', 'AutoCAD', '3DS Max', 'SketchUp'].map((name) => ({ value: name, label: name })),
+                ]}
+                icon={<Filter size={14} className="text-slate-400" />}
                 cornerRadius={cornerRadius}
               />
             )}
@@ -680,6 +757,7 @@ export function CoursesListPreview({
                       brandColor={brandColor}
                       secondaryColor={accent}
                       cornerRadius={cornerRadius}
+                      showFilters={courseFiltersFeature?.enabled}
                     />
                   );
                 }
@@ -690,6 +768,7 @@ export function CoursesListPreview({
                     brandColor={brandColor}
                     secondaryColor={accent}
                     cornerRadius={cornerRadius}
+                    showFilters={courseFiltersFeature?.enabled}
                   />
                 );
               })}

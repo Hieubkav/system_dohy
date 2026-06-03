@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { BookOpen, Bookmark, ChevronDown, Clock, GraduationCap, Search, SlidersHorizontal, Star, UserRound, X } from 'lucide-react';
+import { BookOpen, Bookmark, ChevronDown, Clock, Filter, GraduationCap, Search, SlidersHorizontal, Star, UserRound, X } from 'lucide-react';
 import { useBrandColors } from '@/components/site/hooks';
 import { COURSE_LEVEL_OPTIONS, getCourseLevelLabel } from '@/lib/courses/labels';
 import { useCoursesListConfig } from '@/lib/experiences';
@@ -320,8 +320,24 @@ function CoursesContent() {
     return categories.find((category) => category._id === activeCategoryId)?.name ?? null;
   }, [activeCategoryId, categories]);
 
+  const courseFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'courses', featureKey: 'enableCourseFilters' });
+  const activeFilters = useQuery(api.courseFilters.listActive, {});
+  const allFilterValues = useQuery(api.courseFilters.listAllValues, {});
+
+  const activeFilterSlugs = useMemo(() => {
+    const raw = searchParams.get('filter');
+    return raw ? raw.split(',').filter(Boolean) : [];
+  }, [searchParams]);
+
+  const activeValueIds = useMemo(() => {
+    if (activeFilterSlugs.length === 0 || !allFilterValues) return [];
+    return activeFilterSlugs
+      .map((slug) => allFilterValues.find((v) => v.slug === slug)?._id)
+      .filter((id): id is Id<'courseFilterValues'> => id !== undefined);
+  }, [activeFilterSlugs, allFilterValues]);
+
   const isSearchActive = debouncedSearch.length > 0;
-  const isPaginationMode = config.paginationType === 'pagination' || isSearchActive || level.length > 0;
+  const isPaginationMode = config.paginationType === 'pagination' || isSearchActive || level.length > 0 || activeFilterSlugs.length > 0;
   const offset = isPaginationMode ? (urlPage - 1) * postsPerPage : 0;
   const coursesLimit = isPaginationMode ? postsPerPage : visibleLimit;
   const courses = useQuery(api.courses.listPublishedWithOffset, {
@@ -331,12 +347,24 @@ function CoursesContent() {
     offset,
     search: debouncedSearch || undefined,
     sortBy,
+    valueIds: activeValueIds.length > 0 ? activeValueIds : undefined,
   });
   const totalCount = useQuery(api.courses.countPublished, {
     categoryId: activeCategoryId ?? undefined,
     level: level ? level as 'Beginner' | 'Intermediate' | 'Advanced' : undefined,
     search: debouncedSearch || undefined,
+    valueIds: activeValueIds.length > 0 ? activeValueIds : undefined,
   });
+
+  const courseIds = useMemo(() => courses?.map((c) => c._id) ?? [], [courses]);
+  const assignments = useQuery(api.courseFilters.listAssignmentsByCourses, { courseIds: courseIds.length > 0 ? courseIds : [] });
+  const courseFiltersMap = useMemo(() => {
+    const map = new Map<string, any[]>();
+    assignments?.forEach((item) => {
+      map.set(item.courseId, item.values);
+    });
+    return map;
+  }, [assignments]);
 
   useEffect(() => {
     if (urlPage === 1) {return;}
@@ -344,7 +372,7 @@ function CoursesContent() {
     params.delete('page');
     const nextUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
     router.replace(nextUrl, { scroll: false });
-  }, [activeCategoryId, debouncedSearch, level, pathname, router, searchParams, sortBy, urlPage]);
+  }, [activeCategoryId, debouncedSearch, level, searchParams.get('filter'), pathname, router, searchParams, sortBy, urlPage]);
 
   const handleCategoryChange = useCallback((nextCategoryId: Id<'courseCategories'> | null) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -381,6 +409,29 @@ function CoursesContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [pathname, router, searchParams]);
 
+  const handleFilterChange = useCallback((filterSlug: string | null) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('page');
+    if (filterSlug === null) {
+      params.delete('filter');
+    } else {
+      const current = params.get('filter')?.split(',').filter(Boolean) ?? [];
+      let next: string[];
+      if (current.includes(filterSlug)) {
+        next = current.filter((s) => s !== filterSlug);
+      } else {
+        next = [...current, filterSlug];
+      }
+      if (next.length > 0) {
+        params.set('filter', next.join(','));
+      } else {
+        params.delete('filter');
+      }
+    }
+    const nextUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    router.push(nextUrl, { scroll: false });
+  }, [pathname, router, searchParams]);
+
   const courseItems = courses ?? [];
   const progressSummaries = useQuery(
     api.courses.getCourseProgressSummaries,
@@ -395,7 +446,7 @@ function CoursesContent() {
   const isLoading = courses === undefined || categories === undefined;
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-slate-50 font-active" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
       <section className="px-4 py-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 text-center">
@@ -511,6 +562,60 @@ function CoursesContent() {
                       </div>
                     </div>
                   )}
+
+                  {courseFiltersFeature?.enabled && activeFilters && activeFilters.length > 0 && (
+                    <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
+                      <h3 className="font-semibold text-sm text-slate-700 mb-2.5 flex items-center gap-2">
+                        <Filter size={14} className="text-slate-400" />
+                        Bộ lọc khóa học
+                      </h3>
+                      <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                        <div>
+                          <button
+                            onClick={() => handleFilterChange(null)}
+                            className={`w-full py-1.5 px-2.5 rounded-lg text-left text-xs transition-colors border border-transparent flex items-center gap-2 ${activeFilterSlugs.length === 0 ? 'font-semibold' : ''}`}
+                            style={activeFilterSlugs.length === 0
+                              ? { backgroundColor: `${brandColors.primary}18`, color: brandColors.primary }
+                              : { backgroundColor: 'transparent', color: '#475569' }
+                            }
+                          >
+                            Tất cả bộ lọc
+                          </button>
+                        </div>
+                        {activeFilters.map((filter) => {
+                          const childValues = allFilterValues?.filter((v) => v.filterId === filter._id && v.active) ?? [];
+                          if (childValues.length === 0) return null;
+                          return (
+                            <div key={filter._id} className="space-y-1">
+                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2.5">
+                                {filter.name}
+                              </div>
+                              {childValues.map((val) => {
+                                const isValActive = activeFilterSlugs.includes(val.slug);
+                                return (
+                                  <button
+                                    key={val._id}
+                                    onClick={() => handleFilterChange(val.slug)}
+                                    className={`w-full py-1.5 px-2.5 rounded-lg text-left text-xs transition-colors border border-transparent flex items-center gap-2 ${isValActive ? 'font-semibold' : ''}`}
+                                    style={isValActive
+                                      ? { backgroundColor: `${brandColors.primary}18`, color: brandColors.primary }
+                                      : { backgroundColor: 'transparent', color: '#475569' }
+                                    }
+                                  >
+                                    {val.icon && (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img src={val.icon} alt={val.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                                    )}
+                                    <span className="truncate">{val.name}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </aside>
               ) : (
                 <aside className={`border border-slate-200 bg-white p-5 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
@@ -551,6 +656,19 @@ function CoursesContent() {
                             ...COURSE_LEVEL_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
                           ]}
                           icon={<GraduationCap size={16} className="text-slate-400" />}
+                          cornerRadius={config.cornerRadius}
+                        />
+                      )}
+                      {courseFiltersFeature?.enabled && allFilterValues && allFilterValues.filter(v => v.active).length > 0 && (
+                        <CustomDropdown
+                          value={activeFilterSlugs.length === 1 ? activeFilterSlugs[0] : ''}
+                          onChange={(value) => handleFilterChange(value || null)}
+                          options={[
+                            { value: '', label: 'Tất cả phần mềm' },
+                            ...allFilterValues.filter(v => v.active).map((val) => ({ value: val.slug, label: val.name })),
+                          ]}
+                          placeholder={activeFilterSlugs.length > 1 ? `Đã chọn (${activeFilterSlugs.length})` : 'Tất cả phần mềm'}
+                          icon={<Filter size={16} className="text-slate-400" />}
                           cornerRadius={config.cornerRadius}
                         />
                       )}
@@ -660,6 +778,19 @@ function CoursesContent() {
                                   {course.durationText && <span className="inline-flex items-center gap-1.5"><Clock size={14} className="text-slate-400" />{course.durationText}</span>}
                                   {course.instructorName && <span className="inline-flex items-center gap-1.5"><UserRound size={14} className="text-slate-400" />{course.instructorName}</span>}
                                 </div>
+                                {courseFiltersFeature?.enabled && courseFiltersMap.get(course._id) && (courseFiltersMap.get(course._id) ?? []).length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                    {(courseFiltersMap.get(course._id) ?? []).map((filter: any) => (
+                                      <span key={filter._id} title={filter.name} className="inline-flex items-center gap-1 rounded bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                        {filter.icon && (
+                                          // eslint-disable-next-line @next/next/no-img-element
+                                          <img src={filter.icon} alt={filter.name} className="h-3.5 w-3.5 object-contain" />
+                                        )}
+                                        <span>{filter.name}</span>
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                               
                               {(hasLearningAccess || showPrice) && (
@@ -719,6 +850,19 @@ function CoursesContent() {
                               {course.durationText && <span className="inline-flex items-center gap-1"><Clock size={13} />{course.durationText}</span>}
                               {course.instructorName && <span className="inline-flex items-center gap-1"><UserRound size={13} />{course.instructorName}</span>}
                             </div>
+                            {courseFiltersFeature?.enabled && courseFiltersMap.get(course._id) && (courseFiltersMap.get(course._id) ?? []).length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                {(courseFiltersMap.get(course._id) ?? []).map((filter: any) => (
+                                  <span key={filter._id} title={filter.name} className="inline-flex items-center gap-1 rounded bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                    {filter.icon && (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img src={filter.icon} alt={filter.name} className="h-3.5 w-3.5 object-contain" />
+                                    )}
+                                    <span>{filter.name}</span>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                             {(hasLearningAccess || showPrice) && (
                               <div className="border-t border-slate-100 pt-3">
                                 {hasLearningAccess ? (

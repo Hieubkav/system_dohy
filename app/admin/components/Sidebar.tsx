@@ -145,6 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   const userFeatures = useQuery(api.admin.modules.listModuleFeatures, { moduleKey: 'users' });
   const siteSettings = useQuery(api.settings.getMultiple, { keys: ['site_logo', 'site_name'] });
   const trustPagesFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'settings', featureKey: 'enableTrustPages' });
+  const courseFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'courses', featureKey: 'enableCourseFilters' });
 
   const isActive = (route: string) => pathname.startsWith(route);
 
@@ -372,7 +373,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
                   icon={GraduationCap}
                   label="Khóa học"
                   href="/admin/courses"
-                  active={isActive('/admin/courses') || isActive('/admin/course-categories')}
+                  active={isActive('/admin/courses') || isActive('/admin/course-categories') || isActive('/admin/courses/filters')}
                   isCollapsed={isSidebarCollapsed}
                   isExpanded={currentExpandedMenu === 'Khóa học'}
                   onToggle={() =>{  handleMenuToggle('Khóa học'); }}
@@ -381,6 +382,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
                   subItems={[
                     { href: '/admin/courses', label: 'Tất cả khóa học', moduleKey: 'courses' },
                     { href: '/admin/course-categories', label: 'Danh mục khóa học', moduleKey: 'courses' },
+                    ...(courseFiltersFeature?.enabled ? [{ href: '/admin/courses/filters', label: 'Bộ lọc khóa học', moduleKey: 'courses' }] : []),
                     { href: '/admin/courses/students', label: 'Học viên', moduleKey: 'courses' },
                   ]}
                 />

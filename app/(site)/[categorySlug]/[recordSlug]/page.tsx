@@ -4,7 +4,7 @@ import { getConvexClient } from '@/lib/convex';
 import ProductDetailPage from './_components/ProductDetailPage';
 import PostDetailPage from './_components/PostDetailPage';
 import ServiceDetailPage from './_components/ServiceDetailPage';
-import CourseDetailPage from '../../_components/courses/CourseDetailPage';
+import CourseDetailPage from '@/app/(site)/_components/courses/CourseDetailPage';
 
 interface Props {
   params: Promise<{ categorySlug: string; recordSlug: string }>;

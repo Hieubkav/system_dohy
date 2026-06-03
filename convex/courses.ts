@@ -5,7 +5,7 @@ import { paginationOptsValidator } from "convex/server";
 import { contentStatus } from "./lib/validators";
 import { rankByFuzzyMatches } from "./lib/search";
 import * as CoursesModel from "./model/courses";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
   isBrokenStorageBackedUrl,
   removeOwnerFilesAndCleanup,
@@ -17,6 +17,7 @@ import {
   mergeCoursesByCategoryAssignments,
   syncCourseCategoryAssignments,
 } from "./lib/multiCategory";
+import { syncCourseFilterAssignments } from "./courseFilters";
 import {
   customerHasCourseOrderAccess,
   ensureCourseStudentForCustomerCourse,
@@ -466,6 +467,8 @@ export const listPublishedWithOffset = query({
     limit: v.optional(v.number()),
     offset: v.optional(v.number()),
     search: v.optional(v.string()),
+    valueId: v.optional(v.id("courseFilterValues")),
+    valueIds: v.optional(v.array(v.id("courseFilterValues"))),
     sortBy: v.optional(v.union(
       v.literal("newest"),
       v.literal("oldest"),
@@ -482,7 +485,36 @@ export const listPublishedWithOffset = query({
     const fetchLimit = offset + limit + 10;
     let courses: Doc<"courses">[] = [];
 
-    if (args.search?.trim()) {
+    const filterCourseIdsSet = new Set<string>();
+    let hasFilter = false;
+
+    if (args.valueIds && args.valueIds.length > 0) {
+      hasFilter = true;
+      const allAssignments = await Promise.all(
+        args.valueIds.map((valId) =>
+          ctx.db
+            .query("courseFilterAssignments")
+            .withIndex("by_value", (q) => q.eq("valueId", valId))
+            .collect()
+        )
+      );
+      allAssignments.flat().forEach((a) => filterCourseIdsSet.add(a.courseId));
+    } else if (args.valueId) {
+      hasFilter = true;
+      const filterAssignments = await ctx.db
+        .query("courseFilterAssignments")
+        .withIndex("by_value", (q) => q.eq("valueId", args.valueId!))
+        .collect();
+      filterAssignments.forEach((a) => filterCourseIdsSet.add(a.courseId));
+    }
+
+    if (hasFilter && !args.search?.trim() && !args.categoryId && !args.level) {
+      // Optimisation: if only filtering by software, get directly from assignments
+      const courseDocs = await Promise.all(
+        Array.from(filterCourseIdsSet).map((courseId) => ctx.db.get(courseId as Id<"courses">))
+      );
+      courses = courseDocs.filter((c): c is Doc<"courses"> => c !== null && c.status === "Published");
+    } else if (args.search?.trim()) {
       const searchLower = args.search.toLowerCase().trim();
       const searchQuery = ctx.db
         .query("courses")
@@ -493,6 +525,9 @@ export const listPublishedWithOffset = query({
       courses = await searchQuery.take(fetchLimit);
       if (args.level) {
         courses = courses.filter((course) => course.level === args.level);
+      }
+      if (hasFilter) {
+        courses = courses.filter((course) => filterCourseIdsSet.has(course._id));
       }
     } else if (args.categoryId) {
       courses = await ctx.db
@@ -508,23 +543,35 @@ export const listPublishedWithOffset = query({
       if (args.level) {
         courses = courses.filter((course) => course.level === args.level);
       }
+      if (hasFilter) {
+        courses = courses.filter((course) => filterCourseIdsSet.has(course._id));
+      }
     } else if (args.level) {
       courses = await ctx.db
         .query("courses")
         .withIndex("by_status_level", (q) => q.eq("status", "Published").eq("level", args.level))
         .take(fetchLimit);
+      if (hasFilter) {
+        courses = courses.filter((course) => filterCourseIdsSet.has(course._id));
+      }
     } else if (sortBy === "popular") {
       courses = await ctx.db
         .query("courses")
         .withIndex("by_status_views", (q) => q.eq("status", "Published"))
         .order("desc")
         .take(fetchLimit);
+      if (hasFilter) {
+        courses = courses.filter((course) => filterCourseIdsSet.has(course._id));
+      }
     } else {
       courses = await ctx.db
         .query("courses")
         .withIndex("by_status_publishedAt", (q) => q.eq("status", "Published"))
         .order(sortBy === "oldest" ? "asc" : "desc")
         .take(fetchLimit);
+      if (hasFilter) {
+        courses = courses.filter((course) => filterCourseIdsSet.has(course._id));
+      }
     }
 
     if (args.search?.trim() && courses.length > 0) {
@@ -648,8 +695,40 @@ export const countPublished = query({
     categoryId: v.optional(v.id("courseCategories")),
     level: v.optional(courseLevel),
     search: v.optional(v.string()),
+    valueId: v.optional(v.id("courseFilterValues")),
+    valueIds: v.optional(v.array(v.id("courseFilterValues"))),
   },
   handler: async (ctx, args) => {
+    const filterCourseIdsSet = new Set<string>();
+    let hasFilter = false;
+
+    if (args.valueIds && args.valueIds.length > 0) {
+      hasFilter = true;
+      const allAssignments = await Promise.all(
+        args.valueIds.map((valId) =>
+          ctx.db
+            .query("courseFilterAssignments")
+            .withIndex("by_value", (q) => q.eq("valueId", valId))
+            .collect()
+        )
+      );
+      allAssignments.flat().forEach((a) => filterCourseIdsSet.add(a.courseId));
+    } else if (args.valueId) {
+      hasFilter = true;
+      const filterAssignments = await ctx.db
+        .query("courseFilterAssignments")
+        .withIndex("by_value", (q) => q.eq("valueId", args.valueId!))
+        .collect();
+      filterAssignments.forEach((a) => filterCourseIdsSet.add(a.courseId));
+    }
+
+    if (hasFilter && !args.search?.trim() && !args.categoryId && !args.level) {
+      const courseDocs = await Promise.all(
+        Array.from(filterCourseIdsSet).map((courseId) => ctx.db.get(courseId as Id<"courses">))
+      );
+      return courseDocs.filter((c) => c !== null && c.status === "Published").length;
+    }
+
     if (args.search?.trim()) {
       const searchLower = args.search.toLowerCase().trim();
       const searchQuery = ctx.db
@@ -658,16 +737,21 @@ export const countPublished = query({
           const builder = q.search("title", searchLower).eq("status", "Published");
           return args.categoryId ? builder.eq("categoryId", args.categoryId) : builder;
         });
-      const courses = await searchQuery.take(1000);
+      let courses = await searchQuery.take(1000);
       const ranked = rankByFuzzyMatches(
         courses,
         args.search,
         (course) => [course.title ?? "", course.excerpt ?? ""],
         42,
       );
-      return args.level
-        ? ranked.filter((entry) => entry.item.level === args.level).length
-        : ranked.length;
+      let items = ranked.map((entry) => entry.item);
+      if (args.level) {
+        items = items.filter((item) => item.level === args.level);
+      }
+      if (hasFilter) {
+        items = items.filter((item) => filterCourseIdsSet.has(item._id));
+      }
+      return items.length;
     }
 
     if (args.categoryId) {
@@ -677,26 +761,36 @@ export const countPublished = query({
           q.eq("categoryId", args.categoryId!).eq("status", "Published")
         )
         .take(1000);
-      const mergedCourses = await isMultiCategoryEnabled(ctx, "courses")
+      let mergedCourses = await isMultiCategoryEnabled(ctx, "courses")
         ? await mergeCoursesByCategoryAssignments(ctx, args.categoryId, courses, 1000)
         : courses;
-      return mergedCourses.filter((course) =>
-        course.status === "Published" && (!args.level || course.level === args.level)
-      ).length;
+      if (args.level) {
+        mergedCourses = mergedCourses.filter((course) => course.level === args.level);
+      }
+      if (hasFilter) {
+        mergedCourses = mergedCourses.filter((course) => filterCourseIdsSet.has(course._id));
+      }
+      return mergedCourses.filter((course) => course.status === "Published").length;
     }
 
     if (args.level) {
-      const courses = await ctx.db
+      let courses = await ctx.db
         .query("courses")
         .withIndex("by_status_level", (q) => q.eq("status", "Published").eq("level", args.level))
         .take(1000);
+      if (hasFilter) {
+        courses = courses.filter((course) => filterCourseIdsSet.has(course._id));
+      }
       return courses.length;
     }
 
-    const courses = await ctx.db
+    let courses = await ctx.db
       .query("courses")
       .withIndex("by_status_publishedAt", (q) => q.eq("status", "Published"))
       .take(1000);
+    if (hasFilter) {
+      courses = courses.filter((course) => filterCourseIdsSet.has(course._id));
+    }
     return courses.length;
   },
   returns: v.number(),
@@ -731,12 +825,18 @@ export const create = mutation({
     thumbnail: v.optional(v.string()),
     thumbnailStorageId: v.optional(v.union(v.id("_storage"), v.null())),
     title: v.string(),
+    valueIds: v.optional(v.array(v.id("courseFilterValues"))),
   },
   handler: async (ctx, args) => {
-    const id = await CoursesModel.create(ctx, args);
+    const modelArgs = { ...args };
+    delete (modelArgs as { valueIds?: unknown }).valueIds;
+    delete (modelArgs as { filterIds?: unknown }).filterIds;
+    
+    const id = await CoursesModel.create(ctx, modelArgs);
     if (await isMultiCategoryEnabled(ctx, "courses")) {
       await syncCourseCategoryAssignments(ctx, id, args.categoryId, args.additionalCategoryIds);
     }
+    await syncCourseFilterAssignments(ctx, id, args.valueIds);
 
     if (args.thumbnailStorageId) {
       await syncOwnerFilesAndCleanup(ctx, {
@@ -781,6 +881,7 @@ export const update = mutation({
     thumbnail: v.optional(v.string()),
     thumbnailStorageId: v.optional(v.union(v.id("_storage"), v.null())),
     title: v.optional(v.string()),
+    valueIds: v.optional(v.array(v.id("courseFilterValues"))),
   },
   handler: async (ctx, args) => {
     const previous = await ctx.db.get(args.id);
@@ -794,10 +895,15 @@ export const update = mutation({
     }
     const modelArgs = { ...nextArgs };
     delete (modelArgs as { additionalCategoryIds?: unknown }).additionalCategoryIds;
+    delete (modelArgs as { valueIds?: unknown }).valueIds;
+    delete (modelArgs as { filterIds?: unknown }).filterIds;
 
     await CoursesModel.update(ctx, modelArgs);
     if (previous && await isMultiCategoryEnabled(ctx, "courses")) {
       await syncCourseCategoryAssignments(ctx, args.id, args.categoryId ?? previous.categoryId, args.additionalCategoryIds);
+    }
+    if (args.valueIds !== undefined) {
+      await syncCourseFilterAssignments(ctx, args.id, args.valueIds);
     }
 
     const shouldCheckStorage = Object.prototype.hasOwnProperty.call(args, "thumbnailStorageId");

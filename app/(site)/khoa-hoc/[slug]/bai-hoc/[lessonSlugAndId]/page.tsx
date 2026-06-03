@@ -167,7 +167,7 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   const embedUrl = videoEmbedUrl();
 
   return (
-    <main className="min-h-screen bg-slate-50 flex justify-center pb-24">
+    <main className="min-h-screen bg-slate-50 flex justify-center pb-24 font-active" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
       {/* Ẩn scrollbar thô của trình duyệt bằng CSS inline */}
       <style jsx global>{`
         .no-scrollbar::-webkit-scrollbar {

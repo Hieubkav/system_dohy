@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
-import { ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap, PlayCircle, Star, UserRound, ChevronDown, Lock, Play, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, Clock, Filter, GraduationCap, PlayCircle, Star, UserRound, ChevronDown, Lock, Play, ShoppingCart } from 'lucide-react';
 import { RichContent, withFormatMarker } from '@/components/common/RichContent';
 import { useBrandColors } from '@/components/site/hooks';
 import { getCourseLevelLabel } from '@/lib/courses/labels';
@@ -52,6 +52,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const courseProgress = useQuery(api.courses.getCourseProgress, course?._id ? { courseId: course._id, token: token ?? undefined } : 'skip');
   const relatedCourses = useQuery(api.courses.searchPublished, course?.categoryId ? { categoryId: course.categoryId, limit: 4 } : 'skip');
   const incrementViews = useMutation(api.courses.incrementViews);
+  const courseFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'courses', featureKey: 'enableCourseFilters' });
+  const assignedFilters = useQuery(api.courseFilters.listByCourse, course?._id ? { courseId: course._id } : 'skip');
 
   const brandColor = brandColors.primary;
   const secondaryColor = brandColors.secondary || '';
@@ -208,6 +210,11 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             <p className="mt-1 text-2xl font-bold" style={{ color: accent }}>{price}</p>
           </>
         )}
+        {showPrice && course.comparePriceAmount && course.pricingType === 'paid' && (
+          <p className="text-sm text-slate-400">
+            Giá gốc: <span className="line-through">{formatPrice('paid', course.comparePriceAmount)}</span>
+          </p>
+        )}
         {hasCourseAccess && (
           <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3">
             <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-600">
@@ -219,11 +226,6 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             </div>
           </div>
         )}
-        {showPrice && course.comparePriceAmount && course.pricingType === 'paid' && (
-          <p className="text-sm text-slate-400">
-            Giá gốc: <span className="line-through">{formatPrice('paid', course.comparePriceAmount)}</span>
-          </p>
-        )}
         <button type="button" onClick={() => void handleRegister()} className="mt-4 w-full px-5 py-3 font-semibold text-white transition hover:opacity-90 inline-flex items-center justify-center gap-2" style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
           {firstLessonHref ? <PlayCircle size={18} /> : commerceMode === 'cart' && course.pricingType !== 'contact' && <ShoppingCart size={18} />}
           {ctaLabel}
@@ -233,7 +235,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   };
 
   return (
-    <main className="min-h-screen bg-white pb-24 lg:pb-0">
+    <main className="min-h-screen bg-white pb-24 lg:pb-0 font-active" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
       <section className={`border-b border-slate-100 px-4 ${isModern ? 'py-10 text-white' : 'py-8'}`} style={isModern ? { background: `linear-gradient(135deg, ${brandColor}, ${accent})` } : undefined}>
         <div className="mx-auto max-w-7xl">
           <div className="max-w-4xl space-y-4">
@@ -257,6 +259,27 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
               {course.durationText && <span className="inline-flex items-center gap-1"><Clock size={16} />{course.durationText}</span>}
               {config.showInstructor && course.instructorName && <span className="inline-flex items-center gap-1"><UserRound size={16} />{course.instructorName}</span>}
             </div>
+            {courseFiltersFeature?.enabled && assignedFilters && assignedFilters.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {assignedFilters.map((filter) => (
+                  <div
+                    key={filter._id}
+                    title={filter.name}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold backdrop-blur-sm transition-all duration-300 ${
+                      isModern 
+                        ? 'border-white/20 bg-white/10 text-white hover:bg-white/15' 
+                        : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 hover:bg-slate-100'
+                    }`}
+                  >
+                    {filter.icon && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={filter.icon} alt={filter.name} className="h-4.5 w-4.5 object-contain shrink-0" />
+                    )}
+                    <span>{filter.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>

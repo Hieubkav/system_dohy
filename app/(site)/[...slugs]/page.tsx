@@ -23,7 +23,7 @@ import CoursesPage from '../_components/courses/CoursesPage';
 import ProductDetailPage from '../_components/details/ProductDetailPage';
 import PostDetailPage from '../_components/details/PostDetailPage';
 import ServiceDetailPage from '../_components/details/ServiceDetailPage';
-import CourseDetailPage from '../_components/courses/CourseDetailPage';
+import CourseDetailPage from '@/app/(site)/_components/courses/CourseDetailPage';
 
 interface Props {
   params: Promise<{ slugs: string[] }>;

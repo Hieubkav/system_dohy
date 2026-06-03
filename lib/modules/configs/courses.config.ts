@@ -1,4 +1,4 @@
-import { BadgeDollarSign, BookOpen, Code, FileText, GraduationCap, PlayCircle, Star, UserRound } from 'lucide-react';
+import { BadgeDollarSign, BookOpen, Code, FileText, Filter, GraduationCap, PlayCircle, Star, UserRound } from 'lucide-react';
 import { defineModuleWithRuntime } from '../define-module';
 
 export const coursesModule = defineModuleWithRuntime({
@@ -15,6 +15,7 @@ export const coursesModule = defineModuleWithRuntime({
     { key: 'enableLevel', label: 'Trình độ học', icon: BookOpen, linkedField: 'level' },
     { key: 'enableIntroVideo', label: 'Video giới thiệu', icon: PlayCircle, linkedField: 'introVideoUrl' },
     { key: 'enableFeatured', label: 'Nổi bật', icon: Star, linkedField: 'featured', enabled: false },
+    { key: 'enableCourseFilters', label: 'Bộ lọc khóa học', icon: Filter, enabled: false },
     { key: 'enableMarkdownRender', label: 'Nội dung Markdown', icon: FileText, linkedField: 'markdownRender', enabled: false },
     { key: 'enableHtmlRender', label: 'Nội dung HTML', icon: Code, linkedField: 'htmlRender', enabled: false },
   ],

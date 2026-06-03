@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { BookOpen, ExternalLink, Loader2, Plus } from 'lucide-react';
+import { BookOpen, ExternalLink, Loader2, Plus, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
@@ -14,8 +14,9 @@ import { QuickCreateCourseCategoryModal } from '@/app/admin/components/QuickCrea
 import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
 import { COURSE_LEVEL_OPTIONS, parseCourseLevel, type CourseLevel } from '@/lib/courses/labels';
 import { stripHtml, truncateText } from '@/lib/seo';
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, cn } from '@/app/admin/components/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, cn, Popover, PopoverTrigger, PopoverContent, Checkbox } from '@/app/admin/components/ui';
 import { ImageUploader } from '@/app/admin/components/ImageUploader';
+import { AdminImage as Image } from '@/app/admin/components/AdminImage';
 import { LexicalEditor } from '@/app/admin/components/LexicalEditor';
 import { CourseCurriculumEditor } from '@/app/admin/courses/components/CourseCurriculumEditor';
 import { CourseStudentsPanel } from '@/app/admin/courses/components/CourseStudentsPanel';
@@ -58,6 +59,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
   const updateCourse = useMutation(api.courses.update);
   const fieldsData = useQuery(api.admin.modules.listEnabledModuleFields, { moduleKey: MODULE_KEY });
   const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: MODULE_KEY });
+  const courseFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: MODULE_KEY, featureKey: 'enableCourseFilters' });
+  const activeFilters = useQuery(api.courseFilters.listActive, {});
+  const allFilterValues = useQuery(api.courseFilters.listAllValues, {});
+  const assignedFilters = useQuery(api.courseFilters.listByCourse, { courseId });
 
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
@@ -89,6 +94,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
   const [initialized, setInitialized] = useState(false);
   const [editorResetKey, setEditorResetKey] = useState(0);
   const [activeTab, setActiveTab] = useState<'general' | 'curriculum' | 'students'>('general');
+  const [selectedValueIds, setSelectedValueIds] = useState<Id<'courseFilterValues'>[]>([]);
 
   // Curriculum dirty state (từ CourseCurriculumEditor)
   const [curriculumIsDirty, setCurriculumIsDirty] = useState(false);
@@ -125,6 +131,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     htmlRender: string;
     metaTitle: string;
     metaDescription: string;
+    valueIds: string[];
   } | null>(null);
 
   const [snapshotVersion, setSnapshotVersion] = useState(0);
@@ -156,6 +163,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
       htmlRender: htmlRender.trim(),
       metaTitle: metaTitle.trim(),
       metaDescription: metaDescription.trim(),
+      valueIds: [...selectedValueIds].sort(),
     };
   }, [
     title,
@@ -183,6 +191,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     htmlRender,
     metaTitle,
     metaDescription,
+    selectedValueIds,
   ]);
 
   const generalHasChanges = useMemo(() => {
@@ -202,7 +211,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
 
 
   useEffect(() => {
-    if (!courseData || additionalCategoryIdsData === undefined || initialized) {return;}
+    if (!courseData || additionalCategoryIdsData === undefined || assignedFilters === undefined || initialized) {return;}
     setTitle(courseData.title);
     setSlug(courseData.slug);
     setContent(courseData.content);
@@ -230,6 +239,9 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     setMetaTitle(courseData.metaTitle ?? '');
     setMetaDescription(courseData.metaDescription ?? '');
 
+    const valIds = assignedFilters.map((f) => f._id);
+    setSelectedValueIds(valIds);
+
     initialSnapshotRef.current = {
       title: courseData.title.trim(),
       slug: courseData.slug.trim(),
@@ -256,12 +268,13 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
       htmlRender: (courseData.htmlRender ?? '').trim(),
       metaTitle: (courseData.metaTitle ?? '').trim(),
       metaDescription: (courseData.metaDescription ?? '').trim(),
+      valueIds: [...valIds].sort(),
     };
 
     setEditorResetKey((prev) => prev + 1);
     setInitialized(true);
     setSnapshotVersion((prev) => prev + 1);
-  }, [courseData, additionalCategoryIdsData, initialized]);
+  }, [courseData, additionalCategoryIdsData, assignedFilters, initialized]);
 
 
 
@@ -364,6 +377,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
           thumbnail: thumbnail ?? '',
           thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
           title: title.trim(),
+          valueIds: selectedValueIds,
         });
 
         // Reset snapshot sau khi lưu thành công
@@ -393,6 +407,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
           htmlRender: htmlRender.trim(),
           metaTitle: metaTitle.trim(),
           metaDescription: metaDescription.trim(),
+          valueIds: [...selectedValueIds].sort(),
         };
         setSnapshotVersion((prev) => prev + 1);
       }
@@ -469,7 +484,6 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
             )}
           >
             Lộ trình học
-          </button>
           <button
             type="button"
             onClick={() => setActiveTab('students')}
@@ -481,6 +495,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
             )}
           >
             Học viên
+          </button>
           </button>
         </div>
 
@@ -710,6 +725,101 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
                 </CardContent>
               </Card>
 
+              {courseFiltersFeature?.enabled && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Phần mềm liên quan</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      {selectedValueIds.map((valueId) => {
+                        const valueDoc = allFilterValues?.find((v) => v._id === valueId);
+                        if (!valueDoc) return null;
+                        return (
+                          <div
+                            key={valueId}
+                            className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 py-1 pl-1.5 pr-2.5 text-xs font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+                          >
+                            {valueDoc.icon ? (
+                              <div className="relative h-4 w-4 overflow-hidden rounded bg-white">
+                                <Image src={valueDoc.icon} alt={valueDoc.name} fill className="object-contain" />
+                              </div>
+                            ) : (
+                              <div className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                                <Filter size={10} />
+                              </div>
+                            )}
+                            <span>{valueDoc.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedValueIds((prev) => prev.filter((id) => id !== valueId))}
+                              className="ml-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-[14px] leading-none"
+                            >
+                              &times;
+                            </button>
+                          </div>
+                        );
+                      })}
+                      {selectedValueIds.length === 0 && (
+                        <p className="text-xs text-slate-500">Chưa chọn phần mềm nào.</p>
+                      )}
+                    </div>
+
+                    <Popover>
+                      <PopoverTrigger>
+                        <Button type="button" variant="outline" className="w-full justify-center gap-2">
+                          <Plus size={16} /> Chọn phần mềm
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[280px] p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-lg z-50" align="start">
+                        <div className="space-y-2 max-h-[250px] overflow-y-auto p-1">
+                          {activeFilters?.map((filter) => {
+                            const childValues = allFilterValues?.filter((v) => v.filterId === filter._id && v.active) ?? [];
+                            if (childValues.length === 0) return null;
+                            return (
+                              <div key={filter._id} className="space-y-1">
+                                <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase px-2 py-0.5 mt-1 border-t border-slate-100 dark:border-slate-800/55 first:border-t-0 first:mt-0">
+                                  {filter.name}
+                                </div>
+                                {childValues.map((val) => {
+                                  const isChecked = selectedValueIds.includes(val._id);
+                                  return (
+                                    <label
+                                      key={val._id}
+                                      className="flex items-center gap-2 rounded px-2 py-1 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer w-full text-left"
+                                    >
+                                      <Checkbox
+                                        checked={isChecked}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            setSelectedValueIds((prev) => [...prev, val._id]);
+                                          } else {
+                                            setSelectedValueIds((prev) => prev.filter((id) => id !== val._id));
+                                          }
+                                        }}
+                                      />
+                                      {val.icon && (
+                                        <div className="relative h-4 w-4 overflow-hidden rounded bg-slate-50">
+                                          <Image src={val.icon} alt={val.name} fill className="object-contain" />
+                                        </div>
+                                      )}
+                                      <span className="text-xs">{val.name}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })}
+                          {(!activeFilters || activeFilters.length === 0) && (
+                            <p className="text-xs text-center text-slate-500 p-2 italic">Chưa cấu hình bộ lọc hoạt động</p>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card>
                 <CardHeader><CardTitle className="text-base">Ảnh đại diện</CardTitle></CardHeader>
                 <CardContent>
@@ -726,6 +836,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
                     aspectRatio="video"
                   />
                 </CardContent>
+
+        <div className={activeTab === 'students' ? '' : 'hidden'}>
+          <CourseStudentsPanel courseId={courseId} />
+        </div>
               </Card>
             </div>
           </div>
@@ -738,10 +852,6 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
             onDirtyChange={handleCurriculumDirtyChange}
             onSaveRef={curriculumSaveFnRef}
           />
-        </div>
-
-        <div className={activeTab === 'students' ? '' : 'hidden'}>
-          <CourseStudentsPanel courseId={courseId} />
         </div>
 
         <HomeComponentStickyFooter
