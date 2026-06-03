@@ -62,19 +62,19 @@ export default function StandaloneCertificatePage({ params }: CertificatePagePro
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white py-12 px-4 flex flex-col items-center justify-center gap-6 select-none">
+    <div className="min-h-screen bg-slate-950 bg-[radial-gradient(ellipse_at_center,_rgba(30,41,59,0.45)_0%,_rgba(2,6,23,1)_100%)] text-white py-12 px-4 flex flex-col items-center justify-center gap-6 select-none">
       {/* Navigation Toolbar (no-print) */}
       <div className="w-full max-w-[1000px] flex items-center justify-between no-print px-2">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-amber-500 transition-colors"
+          className="inline-flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-amber-500 transition-colors"
         >
           <ArrowLeft size={16} />
           Về trang chủ
         </Link>
         <button
           onClick={handlePrint}
-          className="inline-flex items-center gap-2 rounded-xl bg-slate-900 border border-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-800 transition-colors shadow-lg cursor-pointer"
+          className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-2.5 text-sm font-bold text-white hover:from-amber-600 hover:to-amber-700 transition-colors shadow-xl cursor-pointer"
         >
           <Printer size={16} />
           In / Tải về PDF
