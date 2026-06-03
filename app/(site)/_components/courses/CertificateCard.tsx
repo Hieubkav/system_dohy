@@ -324,7 +324,7 @@ export function CertificateCard({
             </div>
 
             {/* QR code — cert code là trục căn giữa, QR và label đều center theo */}
-            <div className="flex flex-col items-center text-center pb-1 justify-end">
+            <div className="flex flex-col items-center text-center pb-0 justify-end translate-y-2">
               {currentUrl && (
                 <div className="bg-white p-1 border border-slate-200 rounded shadow-sm">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
