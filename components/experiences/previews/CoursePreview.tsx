@@ -945,15 +945,21 @@ export function LessonDetailPreview({
   const containerClass = isFocus
     ? 'max-w-7xl gap-6 px-5 py-7'
     : isCompact
-      ? 'max-w-6xl gap-5 px-5 py-6'
+      ? 'max-w-7xl gap-5 px-5 py-6'
       : 'max-w-6xl gap-5 px-4 py-6';
-  const directionClass = isMobile ? 'flex-col' : isFocus ? 'flex-row' : 'flex-row-reverse';
-  const sidebarWidthClass = isFocus ? 'w-[280px]' : isCompact ? 'w-[320px]' : 'w-[300px]';
+  const directionClass = isMobile || isCompact ? 'flex-col' : isFocus ? 'flex-row' : 'flex-row-reverse';
+  const sidebarWidthClass = isCompact ? 'w-full' : isFocus ? 'w-[280px]' : 'w-[300px]';
 
   const lessonItems = [
     { title: 'Làm quen AutoCAD tiêu chuẩn bản vẽ', active: true, preview: true },
     { title: 'Thiết lập layer, dim và text style', active: false, preview: false },
     { title: 'Vẽ mặt bằng nội thất cơ bản', active: false, preview: false },
+  ];
+  const compactChapters = [
+    { title: '1. AutoCAD kiến trúc', lessons: lessonItems },
+    { title: '2. 3DS Max dựng khối', lessons: lessonItems.map((item) => ({ ...item, active: false, preview: false })) },
+    { title: '3. V-Ray ánh sáng', lessons: lessonItems.map((item) => ({ ...item, active: false, preview: false })) },
+    { title: '4. Render nội thất', lessons: lessonItems.map((item) => ({ ...item, active: false, preview: false })) },
   ];
 
   const lockContent = (
@@ -1050,23 +1056,25 @@ export function LessonDetailPreview({
                 </div>
               )}
             </div>
-            <div className="divide-y divide-slate-100">
-              <div className={isFocus ? 'p-3' : 'p-4'}>
-                <h3 className="mb-3 text-xs font-bold text-slate-800">1. Nền tảng bản vẽ</h3>
-                <div className="space-y-1">
-                  {lessonItems.map((item, index) => (
-                    <div
-                      key={item.title}
-                      className={`flex items-start gap-2 border-l-4 px-3 py-2 text-xs ${item.active ? 'bg-slate-100 font-bold text-slate-950' : 'border-l-transparent text-slate-600'}`}
-                      style={item.active ? { borderLeftColor: brandColor } : undefined}
-                    >
-                      <span className="font-mono text-slate-400">1.{index + 1}</span>
-                      <span className="flex-1">{item.title}</span>
-                      {item.preview ? <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] text-emerald-700">Học thử</span> : <Lock size={11} className="text-slate-400" />}
-                    </div>
-                  ))}
+            <div className={isCompact ? 'grid grid-cols-1 gap-3 p-3 md:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(220px,1fr))]' : 'divide-y divide-slate-100'}>
+              {(isCompact ? compactChapters : [{ title: '1. Nền tảng bản vẽ', lessons: lessonItems }]).map((chapter, chapterIndex) => (
+                <div key={chapter.title} className={`${isCompact ? `${radiusClass} border border-slate-200 overflow-hidden` : ''} ${isFocus ? 'p-3' : 'p-4'}`}>
+                  <h3 className="mb-3 text-xs font-bold text-slate-800">{chapter.title}</h3>
+                  <div className={isCompact ? 'max-h-44 space-y-1 overflow-y-auto no-scrollbar' : 'space-y-1'}>
+                    {chapter.lessons.map((item, index) => (
+                      <div
+                        key={`${chapter.title}-${item.title}`}
+                        className={`flex items-start gap-2 border-l-4 px-3 py-2 text-xs ${item.active ? 'bg-slate-100 font-bold text-slate-950' : 'border-l-transparent text-slate-600'}`}
+                        style={item.active ? { borderLeftColor: brandColor } : undefined}
+                      >
+                        <span className="font-mono text-slate-400">{chapterIndex + 1}.{index + 1}</span>
+                        <span className="flex-1">{item.title}</span>
+                        {item.preview ? <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] text-emerald-700">Học thử</span> : <Lock size={11} className="text-slate-400" />}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ))}
               {!isCompact && (
                 <div className="p-4 text-xs text-slate-500">
                   <FileText size={14} className="mb-2" style={{ color: accent }} />
@@ -1074,9 +1082,9 @@ export function LessonDetailPreview({
                 </div>
               )}
               {isCompact && (
-                <div className="p-4 text-xs text-slate-500">
+                <div className="p-4 text-xs text-slate-500 md:col-span-2 xl:col-span-full">
                   <FileText size={14} className="mb-2" style={{ color: accent }} />
-                  Bố cục gọn nhưng vẫn giữ đủ khóa học, bài hiện tại và bài khóa.
+                  Video full width ở trên, khung khóa học full width ở dưới để chọn bài nhanh.
                 </div>
               )}
             </div>

@@ -39,7 +39,7 @@ const EXPERIENCE_KEY = 'lesson_detail_ui';
 const LAYOUTS: LayoutOption<LessonDetailLayoutStyle>[] = [
   { id: 'classic', label: 'Cổ điển', description: 'Video + sidebar nội dung khóa học' },
   { id: 'focus', label: 'Tập trung', description: 'Video rộng + sidebar khóa học tinh gọn' },
-  { id: 'compact', label: 'Gọn', description: 'Bố cục chắc, vẫn đủ khóa học và điều hướng' },
+  { id: 'compact', label: 'Gọn', description: 'Video full width, khóa học full width bên dưới' },
 ];
 
 const DEFAULT_CONFIG: LessonDetailExperienceConfig = {
@@ -154,7 +154,7 @@ export default function LessonDetailExperiencePage() {
             <ExampleLinks links={[{ label: 'Xem bài học mẫu', url: EXAMPLE_LESSON_URL }]} color={brandColor} compact />
           </ControlCard>
           <Card className="p-2">
-            <ExperienceHintCard hints={['Cổ điển phù hợp trang học có nhiều chương/bài.', 'Tập trung mở rộng vùng học nhưng vẫn giữ khung khóa học để chọn bài.', 'Gọn chỉ tối ưu nhịp spacing, không bỏ sidebar/nội dung khóa học.']} />
+            <ExperienceHintCard hints={['Cổ điển phù hợp trang học có nhiều chương/bài.', 'Tập trung mở rộng vùng học nhưng vẫn giữ khung khóa học để chọn bài.', 'Gọn ưu tiên clip full width, đưa nội dung khóa học xuống dưới và bung rộng để chọn bài.']} />
           </Card>
         </CardContent>
       </Card>

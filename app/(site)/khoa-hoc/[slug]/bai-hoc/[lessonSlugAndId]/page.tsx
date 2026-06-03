@@ -44,9 +44,10 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   const shouldShowSidebar = config.showSidebar || isFocusLayout || isCompactLayout;
   const radiusClass = getRadiusClass(config.cornerRadius);
   const smallRadiusClass = getSmallRadiusClass(config.cornerRadius);
-  const pageMaxClass = isFocusLayout ? 'max-w-[1720px]' : isCompactLayout ? 'max-w-[1500px]' : 'max-w-[1600px]';
-  const directionClass = isFocusLayout ? 'lg:flex-row' : 'lg:flex-row-reverse';
-  const sidebarWidthClass = isFocusLayout ? 'lg:w-[320px]' : isCompactLayout ? 'lg:w-[340px]' : 'lg:w-[380px]';
+  const pageMaxClass = isFocusLayout || isCompactLayout ? 'max-w-[1720px]' : 'max-w-[1600px]';
+  const directionClass = isCompactLayout ? 'lg:flex-col' : isFocusLayout ? 'lg:flex-row' : 'lg:flex-row-reverse';
+  const sidebarWidthClass = isCompactLayout ? 'lg:w-full' : isFocusLayout ? 'lg:w-[320px]' : 'lg:w-[380px]';
+  const sidebarPositionClass = isCompactLayout ? '' : 'lg:h-[calc(100vh-140px)] lg:sticky lg:top-24';
 
   // Trạng thái mở rộng accordion ở sidebar bài học
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
@@ -309,7 +310,7 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
 
         {/* Sidebar dạng Card Card-style, thẳng hàng Menu trên */}
         {shouldShowSidebar && (
-        <aside className={`w-full ${sidebarWidthClass} shrink-0 bg-white border border-slate-200 ${radiusClass} shadow-sm flex flex-col h-auto lg:h-[calc(100vh-140px)] lg:sticky lg:top-24 overflow-y-auto no-scrollbar`}>
+        <aside className={`w-full ${sidebarWidthClass} shrink-0 bg-white border border-slate-200 ${radiusClass} shadow-sm flex flex-col h-auto ${sidebarPositionClass} overflow-y-auto no-scrollbar`}>
           <div className={`p-4 border-b border-slate-100 bg-white sticky top-0 z-10 ${config.cornerRadius === 'none' ? 'rounded-none' : 'rounded-t-xl'}`}>
             {config.showCourseBreadcrumb && (
             <Link href={`/khoa-hoc/${course.slug}`} className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors mb-2">
@@ -325,12 +326,12 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
             )}
           </div>
 
-          <div className="divide-y divide-slate-100 flex-1">
+          <div className={`flex-1 ${isCompactLayout ? 'grid grid-cols-1 gap-4 p-4 md:grid-cols-2 xl:grid-cols-[repeat(auto-fit,minmax(320px,1fr))]' : 'divide-y divide-slate-100'}`}>
             {chapters?.map((chapter, chapterIndex) => {
               const chapterLessons = lessonsByChapter.get(chapter._id) ?? [];
               const isOpen = openChapters[chapter._id] ?? false;
               return (
-                <div key={chapter._id} className="bg-white">
+                <div key={chapter._id} className={`bg-white ${isCompactLayout ? `${radiusClass} border border-slate-200 overflow-hidden` : ''}`}>
                   <button
                     onClick={() => toggleChapter(chapter._id)}
                     className="w-full p-4 flex items-center justify-between text-left text-xs font-bold text-slate-800 hover:bg-slate-50/80 transition-colors"
@@ -340,7 +341,7 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
                   </button>
 
                   {isOpen && (
-                    <div className="bg-slate-50/40 pb-2">
+                    <div className={`bg-slate-50/40 pb-2 ${isCompactLayout ? 'max-h-[360px] overflow-y-auto no-scrollbar' : ''}`}>
                       {chapter.summary && (
                         <div className="mx-4 mb-3 text-[11px] leading-relaxed text-slate-600 bg-white p-3 rounded-lg border border-slate-200/60">
                           <RichContent content={withFormatMarker('richtext', chapter.summary)} />
