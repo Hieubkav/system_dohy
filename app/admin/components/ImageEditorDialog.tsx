@@ -12,6 +12,7 @@ import {
   Sparkles,
   X,
   PaintBucket,
+  Minimize2,
 } from 'lucide-react';
 import { Button, cn } from './ui';
 import { toast } from 'sonner';
@@ -632,7 +633,7 @@ export function ImageEditorDialog({
     { key: 'crop', label: 'Cắt ảnh', icon: <CropIcon size={15} /> },
     { key: 'removebg', label: 'Xóa nền', icon: <Eraser size={15} /> },
     { key: 'addbg', label: 'Thêm nền', icon: <PaintBucket size={15} /> },
-    { key: 'compress', label: 'Giảm dung lượng ảnh', icon: <Sparkles size={15} /> },
+    { key: 'compress', label: 'Giảm dung lượng ảnh', icon: <Minimize2 size={15} /> },
   ];
 
   return (
@@ -985,7 +986,7 @@ export function ImageEditorDialog({
                   {isCompressing ? (
                     <Loader2 size={15} className="animate-spin" />
                   ) : (
-                    <Sparkles size={15} />
+                    <Minimize2 size={15} />
                   )}
                   Nén WebP (Đẹp 100%)
                 </Button>
@@ -1000,7 +1001,7 @@ export function ImageEditorDialog({
                   {isCompressing ? (
                     <Loader2 size={15} className="animate-spin" />
                   ) : (
-                    <Sparkles size={15} />
+                    <Minimize2 size={15} />
                   )}
                   Nén WebP (Giảm mạnh 90%)
                 </Button>
