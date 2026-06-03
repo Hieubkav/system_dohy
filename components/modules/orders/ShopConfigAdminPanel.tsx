@@ -242,6 +242,9 @@ export function ShopConfigAdminPanel({
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 Khu vực này cho phép bạn quản lý các thiết lập vận hành của shop bao gồm Phí vận chuyển, Các cổng thanh toán (chuyển khoản VietQR, COD), Định dạng form nhập địa chỉ tại trang thanh toán và Vòng đời các trạng thái đơn hàng trong Admin. Hãy di chuyển qua các tab để tùy biến sâu hơn.
               </p>
+              <p className="mt-2 text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                Checkout tự áp dụng theo loại hàng: sản phẩm vật lý mới cần vận chuyển/COD; khóa học, dịch vụ và sản phẩm số sẽ bỏ vận chuyển và không cho chọn COD.
+              </p>
             </div>
           </div>
         )}
@@ -249,7 +252,13 @@ export function ShopConfigAdminPanel({
         {/* TAB 2: VẬN CHUYỂN */}
         {activeTab === 'shipping' && (
           <SettingsCard title="Cấu hình Vận chuyển">
-            <ShippingMethodsEditor methods={shippingMethods} onChange={handleShippingChange} />
+            <div className="space-y-3">
+              <div className="flex gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-300">
+                <Truck size={16} className="shrink-0 mt-0.5" />
+                <span>Phí vận chuyển chỉ áp dụng khi đơn có sản phẩm vật lý. Khóa học, dịch vụ và sản phẩm số không yêu cầu địa chỉ/phương thức giao hàng.</span>
+              </div>
+              <ShippingMethodsEditor methods={shippingMethods} onChange={handleShippingChange} />
+            </div>
           </SettingsCard>
         )}
 
@@ -258,7 +267,13 @@ export function ShopConfigAdminPanel({
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="lg:col-span-3">
               <SettingsCard title="Phương thức thanh toán">
-                <PaymentMethodsEditor methods={paymentMethods} onChange={handlePaymentChange} />
+                <div className="space-y-3">
+                  <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-300">
+                    <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+                    <span>COD chỉ hợp lệ cho đơn chỉ gồm sản phẩm vật lý cần giao hàng. Nếu giỏ có khóa học, dịch vụ hoặc sản phẩm số, Checkout sẽ tự ẩn COD và yêu cầu phương thức thanh toán khác.</span>
+                  </div>
+                  <PaymentMethodsEditor methods={paymentMethods} onChange={handlePaymentChange} />
+                </div>
               </SettingsCard>
             </div>
             

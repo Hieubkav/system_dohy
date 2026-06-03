@@ -102,6 +102,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     api.cart.listCartItems,
     cart?._id ? { cartId: cart._id } : 'skip'
   );
+  const normalizedItems = useMemo(() => (items ?? []).map((item) => {
+    if ((item.itemType ?? 'product') !== 'course') {
+      return item;
+    }
+    return {
+      ...item,
+      quantity: 1,
+      subtotal: item.price,
+    };
+  }), [items]);
+  const normalizedItemsCount = useMemo(
+    () => normalizedItems.reduce((sum, item) => sum + item.quantity, 0),
+    [normalizedItems]
+  );
+  const normalizedTotalAmount = useMemo(
+    () => normalizedItems.reduce((sum, item) => sum + item.subtotal, 0),
+    [normalizedItems]
+  );
+  const normalizedCart = useMemo<Cart | null>(() => {
+    if (!cart) {
+      return null;
+    }
+    if (items === undefined) {
+      return cart;
+    }
+    return {
+      ...cart,
+      itemsCount: normalizedItemsCount,
+      totalAmount: normalizedTotalAmount,
+    };
+  }, [cart, items, normalizedItemsCount, normalizedTotalAmount]);
 
   const createCart = useMutation(api.cart.create);
   const addItemMutation = useMutation(api.cart.addItem);
@@ -185,9 +216,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         ? { cartId: activeCartId, itemType: 'product' as const, productId: itemInput, quantity, variantId }
         : {
             cartId: activeCartId,
-            quantity: itemInput.quantity ?? quantity,
-            variantId: itemInput.itemType === 'product' ? (itemInput.variantId ?? variantId) : undefined,
             ...itemInput,
+            quantity: itemInput.itemType === 'course' ? 1 : (itemInput.quantity ?? quantity),
+            variantId: itemInput.itemType === 'product' ? (itemInput.variantId ?? variantId) : undefined,
           };
       return addItemMutation(payload);
     }, 'Không thể thêm sản phẩm vào giỏ hàng.', options?.silent);
@@ -221,10 +252,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
 
   const value = useMemo<CartContextValue>(() => ({
-    cart: cart ?? null,
-    items: items ?? [],
-    itemsCount: cart?.itemsCount ?? 0,
-    totalAmount: cart?.totalAmount ?? 0,
+    cart: normalizedCart,
+    items: normalizedItems,
+    itemsCount: normalizedCart?.itemsCount ?? 0,
+    totalAmount: normalizedCart?.totalAmount ?? 0,
     isLoading,
     isDrawerOpen,
     openDrawer,
@@ -234,7 +265,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     updateQuantity,
     clearCart,
     updateNote,
-  }), [addItem, cart, clearCart, closeDrawer, isDrawerOpen, isLoading, items, openDrawer, removeItem, updateNote, updateQuantity]);
+  }), [addItem, clearCart, closeDrawer, isDrawerOpen, isLoading, normalizedCart, normalizedItems, openDrawer, removeItem, updateNote, updateQuantity]);
 
   return (
     <CartContext.Provider value={value}>

@@ -238,7 +238,7 @@ export default function AccountOrdersPage() {
       const ok = itemType === 'service' && item.serviceId
         ? await addItem({ itemType: 'service', serviceId: item.serviceId, quantity: item.quantity }, undefined, undefined, { silent: true })
         : itemType === 'course' && item.courseId
-          ? await addItem({ itemType: 'course', courseId: item.courseId, quantity: item.quantity }, undefined, undefined, { silent: true })
+          ? await addItem({ itemType: 'course', courseId: item.courseId, quantity: 1 }, undefined, undefined, { silent: true })
           : item.productId
             ? await addItem(item.productId as Id<'products'>, item.quantity, item.variantId, { silent: true })
             : false;

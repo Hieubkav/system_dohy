@@ -159,7 +159,9 @@ export function CartDrawer() {
           {items.length === 0 && (
             <div className="text-sm text-center py-8" style={{ color: tokens.metaText }}>Giỏ hàng đang trống.</div>
           )}
-          {items.map(item => (
+          {items.map(item => {
+            const isCourse = item.itemType === 'course';
+            return (
             <div key={item._id} className="flex gap-3 py-3 border-b last:border-0" style={{ borderColor: tokens.itemDivider }}>
               <div className="w-16 h-16 rounded-lg flex-shrink-0 overflow-hidden" style={{ backgroundColor: tokens.thumbBg }}>
                 {item.productImage ? (
@@ -176,31 +178,39 @@ export function CartDrawer() {
                 )}
                 <p className="text-sm font-semibold mt-0.5" style={{ color: tokens.priceText }}>{formatVND(item.price)}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  <button
-                    type="button"
-                    className="w-6 h-6 rounded border flex items-center justify-center hover:bg-[var(--qty-hover-bg)]"
-                    style={{
-                      borderColor: tokens.quantityButtonBorder,
-                      backgroundColor: tokens.quantityButtonBg,
-                      ['--qty-hover-bg' as never]: tokens.quantityButtonHoverBg,
-                    }}
-                    onClick={() => handleUpdateQuantity(item._id, item.quantity - 1)}
-                  >
-                    <Minus size={12} style={{ color: tokens.quantityButtonIcon }} />
-                  </button>
-                  <span className="text-sm font-medium w-6 text-center" style={{ color: tokens.bodyText }}>{item.quantity}</span>
-                  <button
-                    type="button"
-                    className="w-6 h-6 rounded border flex items-center justify-center hover:bg-[var(--qty-hover-bg)]"
-                    style={{
-                      borderColor: tokens.quantityButtonBorder,
-                      backgroundColor: tokens.quantityButtonBg,
-                      ['--qty-hover-bg' as never]: tokens.quantityButtonHoverBg,
-                    }}
-                    onClick={() => handleUpdateQuantity(item._id, item.quantity + 1)}
-                  >
-                    <Plus size={12} style={{ color: tokens.quantityButtonIcon }} />
-                  </button>
+                  {isCourse ? (
+                    <span className="rounded-full px-2 py-1 text-xs font-medium" style={{ backgroundColor: tokens.surfaceSoft, color: tokens.metaText }}>
+                      1 khóa học
+                    </span>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="w-6 h-6 rounded border flex items-center justify-center hover:bg-[var(--qty-hover-bg)]"
+                        style={{
+                          borderColor: tokens.quantityButtonBorder,
+                          backgroundColor: tokens.quantityButtonBg,
+                          ['--qty-hover-bg' as never]: tokens.quantityButtonHoverBg,
+                        }}
+                        onClick={() => handleUpdateQuantity(item._id, item.quantity - 1)}
+                      >
+                        <Minus size={12} style={{ color: tokens.quantityButtonIcon }} />
+                      </button>
+                      <span className="text-sm font-medium w-6 text-center" style={{ color: tokens.bodyText }}>{item.quantity}</span>
+                      <button
+                        type="button"
+                        className="w-6 h-6 rounded border flex items-center justify-center hover:bg-[var(--qty-hover-bg)]"
+                        style={{
+                          borderColor: tokens.quantityButtonBorder,
+                          backgroundColor: tokens.quantityButtonBg,
+                          ['--qty-hover-bg' as never]: tokens.quantityButtonHoverBg,
+                        }}
+                        onClick={() => handleUpdateQuantity(item._id, item.quantity + 1)}
+                      >
+                        <Plus size={12} style={{ color: tokens.quantityButtonIcon }} />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col items-end justify-between">
@@ -222,7 +232,7 @@ export function CartDrawer() {
                 <span className="text-sm font-semibold" style={{ color: tokens.bodyText }}>{formatVND(item.subtotal)}</span>
               </div>
             </div>
-          ))}
+          );})}
         </div>
 
         {showNote && (

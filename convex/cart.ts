@@ -12,6 +12,7 @@ const CART_DEFAULTS = {
   MAX_ITEMS_PER_CART: 50,
   MAX_ITEMS_PER_PAGE: 100,
 } as const;
+const COURSE_CART_QUANTITY = 1;
 
 const cartStatus = v.union(
   v.literal("Active"),
@@ -565,9 +566,12 @@ export const mergeCart = mutation({
         const existingItem = customerItems.find((customerItem) => isSameCartLine(customerItem, item));
 
         if (existingItem) {
-          const newQty = existingItem.quantity + item.quantity;
+          const itemType = item.itemType ?? "product";
+          const newQty = itemType === "course"
+            ? COURSE_CART_QUANTITY
+            : existingItem.quantity + item.quantity;
 
-          if ((item.itemType ?? "product") === "product" && item.productId && stockCheckEnabled) {
+          if (itemType === "product" && item.productId && stockCheckEnabled) {
             const product = await ctx.db.get(item.productId);
             let stockValue = product?.stock;
             if (variantStock === "variant" && item.variantId) {
@@ -595,10 +599,14 @@ export const mergeCart = mutation({
           existingItem.subtotal = existingItem.price * newQty;
           await ctx.db.delete(item._id);
         } else {
+          const quantity = (item.itemType ?? "product") === "course" ? COURSE_CART_QUANTITY : item.quantity;
+          const subtotal = item.price * quantity;
           await ctx.db.patch(item._id, {
             cartId: customerCart._id,
+            quantity,
+            subtotal,
           });
-          customerItems.push({ ...item, cartId: customerCart._id });
+          customerItems.push({ ...item, cartId: customerCart._id, quantity, subtotal });
         }
       }
     }
@@ -677,7 +685,10 @@ export const addItem = mutation({
       .collect();
     const existingItem = cartItems.find((cartItem) => isSameCartLine(cartItem, item));
 
-    const targetQuantity = (existingItem?.quantity ?? 0) + args.quantity;
+    const requestedQuantity = item.itemType === "course" ? COURSE_CART_QUANTITY : args.quantity;
+    const targetQuantity = item.itemType === "course"
+      ? COURSE_CART_QUANTITY
+      : (existingItem?.quantity ?? 0) + requestedQuantity;
     if (item.itemType === "product" && stockCheckEnabled) {
       const stockValue = variantStock === "variant" && item.variantStock !== undefined
         ? item.variantStock
@@ -710,8 +721,8 @@ export const addItem = mutation({
       courseId: item.courseId,
       productImage: item.productImage,
       productName: item.productName,
-      quantity: args.quantity,
-      subtotal: item.price * args.quantity,
+      quantity: requestedQuantity,
+      subtotal: item.price * requestedQuantity,
       variantId: item.variantId,
     });
 
@@ -765,12 +776,17 @@ export const updateItemQuantity = mutation({
       }
     }
 
+    const itemType = item.itemType ?? "product";
+    const nextQuantity = itemType === "course" && args.quantity > 0
+      ? COURSE_CART_QUANTITY
+      : args.quantity;
+
     if (args.quantity <= 0) {
       await ctx.db.delete(args.itemId);
     } else {
       await ctx.db.patch(args.itemId, {
-        quantity: args.quantity,
-        subtotal: item.price * args.quantity,
+        quantity: nextQuantity,
+        subtotal: item.price * nextQuantity,
       });
     }
 
@@ -822,8 +838,17 @@ async function recalculateCart(ctx: MutationCtx, cartId: Id<"carts">) {
     .withIndex("by_cart", (q) => q.eq("cartId", cartId))
     .collect();
 
-  const itemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalAmount = items.reduce((sum, item) => sum + item.subtotal, 0);
+  const normalizedItems = await Promise.all(items.map(async (item) => {
+    const quantity = (item.itemType ?? "product") === "course" ? COURSE_CART_QUANTITY : item.quantity;
+    const subtotal = item.price * quantity;
+    if (item.quantity !== quantity || item.subtotal !== subtotal) {
+      await ctx.db.patch(item._id, { quantity, subtotal });
+    }
+    return { quantity, subtotal };
+  }));
+
+  const itemsCount = normalizedItems.reduce((sum, item) => sum + item.quantity, 0);
+  const totalAmount = normalizedItems.reduce((sum, item) => sum + item.subtotal, 0);
 
   await ctx.db.patch(cartId, { itemsCount, totalAmount });
 }

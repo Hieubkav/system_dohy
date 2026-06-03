@@ -198,6 +198,34 @@ type OrderItemInput = {
 
 const getOrderItemType = (item: Pick<OrderItemInput, "itemType">) => item.itemType ?? "product";
 
+const isShippableOrderItem = (item: OrderItemInput) =>
+  getOrderItemType(item) === "product" && !item.isDigital;
+
+const isCodRestrictedOrderItem = (item: OrderItemInput) =>
+  getOrderItemType(item) !== "product" || Boolean(item.isDigital);
+
+const validateOrderFulfillmentPolicy = (params: {
+  items: OrderItemInput[];
+  paymentMethod?: string;
+  shippingFee?: number;
+  shippingMethodId?: string;
+  shippingMethodLabel?: string;
+}) => {
+  const hasShippableItems = params.items.some(isShippableOrderItem);
+  const hasCodRestrictedItems = params.items.some(isCodRestrictedOrderItem);
+
+  if (params.paymentMethod === "COD" && hasCodRestrictedItems) {
+    return "COD chỉ áp dụng cho đơn chỉ gồm sản phẩm vật lý cần giao hàng. Đơn có khóa học, dịch vụ hoặc sản phẩm số cần dùng phương thức thanh toán khác.";
+  }
+  if (!hasShippableItems && (params.shippingFee ?? 0) > 0) {
+    return "Đơn không có sản phẩm cần giao hàng nên không được tính phí vận chuyển.";
+  }
+  if (!hasShippableItems && (params.shippingMethodId || params.shippingMethodLabel)) {
+    return "Đơn không có sản phẩm cần giao hàng nên không cần phương thức vận chuyển.";
+  }
+  return null;
+};
+
 const isSameOrderLine = (
   a: Pick<OrderItemInput, "itemType" | "productId" | "serviceId" | "courseId" | "variantId">,
   b: Pick<OrderItemInput, "itemType" | "productId" | "serviceId" | "courseId" | "variantId">
@@ -265,7 +293,7 @@ async function normalizeOrderItems(
     return items;
   }
 
-  return Promise.all(items.map(async (item) => {
+  const normalizedItems: OrderItemInput[] = await Promise.all(items.map(async (item) => {
     const itemType = getOrderItemType(item);
 
     if (itemType === "product") {
@@ -348,6 +376,7 @@ async function normalizeOrderItems(
       price,
       productImage: item.productImage ?? course.thumbnail ?? undefined,
       productName: course.title,
+      quantity: 1,
       variantId: undefined,
       variantTitle: undefined,
       isDigital: false,
@@ -355,6 +384,18 @@ async function normalizeOrderItems(
       digitalCredentials: undefined,
     };
   }));
+
+  const seenCourseIds = new Set<string>();
+  return normalizedItems.filter((item) => {
+    if (getOrderItemType(item) !== "course" || !item.courseId) {
+      return true;
+    }
+    if (seenCourseIds.has(item.courseId)) {
+      return false;
+    }
+    seenCourseIds.add(item.courseId);
+    return true;
+  });
 }
 
 async function decrementVariantStock(ctx: MutationCtx, items: OrderItemInput[]) {
@@ -817,6 +858,16 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const { variantPricing, variantStock } = await getVariantSettings(ctx);
     const normalizedItems = await normalizeOrderItems(ctx, args.items, variantPricing);
+    const fulfillmentError = validateOrderFulfillmentPolicy({
+      items: normalizedItems,
+      paymentMethod: args.paymentMethod,
+      shippingFee: args.shippingFee,
+      shippingMethodId: args.shippingMethodId,
+      shippingMethodLabel: args.shippingMethodLabel,
+    });
+    if (fulfillmentError) {
+      return { ok: false, error: fulfillmentError };
+    }
     const stockCheckEnabled = await isStockCheckEnabled(ctx);
     if (stockCheckEnabled) {
       const stockError = await validateStockBeforeCreate(ctx, normalizedItems, variantStock);
@@ -1197,6 +1248,16 @@ export const placeOrder = mutation({
     // Siết chặt validation đầu vào
     if (normalizedItems.length === 0) {
       throw new Error("Không có mục nào để đặt hàng");
+    }
+    const fulfillmentError = validateOrderFulfillmentPolicy({
+      items: normalizedItems,
+      paymentMethod: args.paymentMethod,
+      shippingFee: args.shippingFee,
+      shippingMethodId: args.shippingMethodId,
+      shippingMethodLabel: args.shippingMethodLabel,
+    });
+    if (fulfillmentError) {
+      throw new Error(fulfillmentError);
     }
     await validateCheckoutCommerce(ctx, normalizedItems);
     for (const item of normalizedItems) {

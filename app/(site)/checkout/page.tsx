@@ -184,6 +184,15 @@ type PaymentMethodConfig = {
   type: 'COD' | 'BankTransfer' | 'VietQR' | 'CreditCard' | 'EWallet';
 };
 
+type CheckoutItemPolicy = {
+  canUseCod: boolean;
+  hasCourseItems: boolean;
+  hasDigitalProductItems: boolean;
+  hasServiceItems: boolean;
+  hasShippableItems: boolean;
+  isPending: boolean;
+};
+
 type AddressOption = {
   code: string;
   name: string;
@@ -217,6 +226,55 @@ const DEFAULT_PAYMENT_METHODS: PaymentMethodConfig[] = [
   { id: 'bank', label: 'Chuyển khoản ngân hàng', description: 'Chuyển khoản trước khi giao', type: 'BankTransfer' },
   { id: 'vietqr', label: 'VietQR', description: 'Quét mã QR để thanh toán', type: 'VietQR' },
 ];
+
+const buildCheckoutPolicy = (params: {
+  directProductType?: string | null;
+  fromCart: boolean;
+  cartItems: Array<{
+    itemType?: 'product' | 'service' | 'course';
+    productId?: Id<'products'>;
+  }>;
+  cartProductTypeMap: Map<Id<'products'>, string>;
+  cartProductsPending: boolean;
+}): CheckoutItemPolicy => {
+  if (!params.fromCart) {
+    if (!params.directProductType) {
+      return {
+        canUseCod: false,
+        hasCourseItems: false,
+        hasDigitalProductItems: false,
+        hasServiceItems: false,
+        hasShippableItems: true,
+        isPending: true,
+      };
+    }
+    const isDigital = params.directProductType === 'digital';
+    return {
+      canUseCod: !isDigital,
+      hasCourseItems: false,
+      hasDigitalProductItems: isDigital,
+      hasServiceItems: false,
+      hasShippableItems: !isDigital,
+      isPending: false,
+    };
+  }
+
+  const productItems = params.cartItems.filter((item) => (item.itemType ?? 'product') === 'product' && item.productId);
+  const hasCourseItems = params.cartItems.some((item) => item.itemType === 'course');
+  const hasServiceItems = params.cartItems.some((item) => item.itemType === 'service');
+  const hasDigitalProductItems = productItems.some((item) => params.cartProductTypeMap.get(item.productId!) === 'digital');
+  const hasPhysicalProductItems = productItems.some((item) => (params.cartProductTypeMap.get(item.productId!) ?? 'physical') !== 'digital');
+  const hasShippableItems = params.cartProductsPending || hasPhysicalProductItems;
+
+  return {
+    canUseCod: !params.cartProductsPending && hasShippableItems && !hasCourseItems && !hasServiceItems && !hasDigitalProductItems,
+    hasCourseItems,
+    hasDigitalProductItems,
+    hasServiceItems,
+    hasShippableItems,
+    isPending: params.cartProductsPending,
+  };
+};
 
 const parseJsonSetting = <T,>(value: unknown, fallback: T): T => {
   if (!value) {
@@ -368,13 +426,6 @@ function CheckoutContent() {
   const isPaymentEnabled = checkoutConfig.showPaymentMethods && (paymentFeature?.enabled ?? true);
   const isPromotionEnabled = promotionsModule?.enabled ?? true;
 
-
-  useEffect(() => {
-    if (!paymentMethods.find((method) => method.id === paymentMethodId)) {
-      setPaymentMethodId(paymentMethods[0]?.id ?? '');
-    }
-  }, [paymentMethods, paymentMethodId]);
-
   useEffect(() => {
     setProvinceCode('');
     setDistrictCode('');
@@ -458,20 +509,32 @@ function CheckoutContent() {
     return new Map(cartProducts?.map((product) => [product._id, product.productType ?? 'physical']) ?? []);
   }, [cartProducts]);
 
-  const hasPhysicalItems = useMemo(() => {
-    if (fromCart) {
-      if (!cartItems || cartProducts === undefined) {
-        return true;
-      }
-      return cartItems.some((item) => (item.itemType ?? 'product') === 'product' && item.productId && (cartProductTypeMap.get(item.productId) ?? 'physical') !== 'digital');
-    }
-    if (!product) {
-      return true;
-    }
-    return (product.productType ?? 'physical') !== 'digital';
-  }, [cartItems, cartProductTypeMap, cartProducts, fromCart, product]);
+  const cartProductsPending = fromCart && cartProductIds.length > 0 && cartProducts === undefined;
+  const checkoutItemPolicy = useMemo(() => buildCheckoutPolicy({
+    cartItems: cartItems ?? [],
+    cartProductsPending,
+    cartProductTypeMap,
+    directProductType: product?.productType ?? (product ? 'physical' : null),
+    fromCart,
+  }), [cartItems, cartProductTypeMap, cartProductsPending, fromCart, product]);
+  const availablePaymentMethods = useMemo(() => (
+    checkoutItemPolicy.canUseCod
+      ? paymentMethods
+      : paymentMethods.filter((method) => method.type !== 'COD')
+  ), [checkoutItemPolicy.canUseCod, paymentMethods]);
+  const hiddenCodByPolicy = paymentMethods.some((method) => method.type === 'COD') && !checkoutItemPolicy.canUseCod;
 
-  const shouldCollectShipping = isShippingEnabled && hasPhysicalItems;
+  const shouldCollectShipping = isShippingEnabled && checkoutItemPolicy.hasShippableItems;
+
+  useEffect(() => {
+    if (!isPaymentEnabled) {
+      setPaymentMethodId('');
+      return;
+    }
+    if (!availablePaymentMethods.find((method) => method.id === paymentMethodId)) {
+      setPaymentMethodId(availablePaymentMethods[0]?.id ?? '');
+    }
+  }, [availablePaymentMethods, isPaymentEnabled, paymentMethodId]);
 
   // Tính effectiveFee cho từng phương thức vận chuyển (sau áp dụng freeShipThreshold)
   // Dùng totalAmount được khai báo phía dưới nhưng đây chỉ là hàm pure âm thầm ref
@@ -593,7 +656,7 @@ function CheckoutContent() {
   const unitPrice = basePrice;
   const subtotal = unitPrice * quantity;
   const selectedShipping = shippingMethods.find((method) => method.id === shippingMethodId);
-  const selectedPayment = paymentMethods.find((method) => method.id === paymentMethodId);
+  const selectedPayment = availablePaymentMethods.find((method) => method.id === paymentMethodId);
   const totalAmount = fromCart ? (cart?.totalAmount ?? 0) : subtotal;
   const shippingFee = shouldCollectShipping ? getEffectiveFee(selectedShipping ?? { fee: 0 }, totalAmount) : 0;
   const promotionResult = useQuery(
@@ -616,7 +679,7 @@ function CheckoutContent() {
         courseId: item.courseId,
         productName: item.productName,
         price: item.price,
-        quantity: item.quantity,
+        quantity: item.itemType === 'course' ? 1 : item.quantity,
         variantId: item.variantId,
         variantTitle: item.variantId ? cartVariantTitleMap.get(item.variantId) || undefined : undefined,
       }));
@@ -643,7 +706,7 @@ function CheckoutContent() {
         id: item._id,
         type: itemTypeLabel(item.itemType),
         name: item.productName,
-        quantity: item.quantity,
+        quantity: item.itemType === 'course' ? 1 : item.quantity,
         price: item.price,
         image: item.productImage ?? undefined,
         variantTitle: item.variantId ? cartVariantTitleMap.get(item.variantId) || undefined : undefined,
@@ -808,14 +871,29 @@ function CheckoutContent() {
       toast.error('Không có sản phẩm để đặt hàng.');
       return;
     }
+    if (checkoutItemPolicy.isPending) {
+      toast.error('Đang kiểm tra loại hàng trong giỏ, vui lòng thử lại sau giây lát.');
+      return;
+    }
+    if (shouldCollectShipping && !selectedShipping) {
+      toast.error('Vui lòng chọn phương thức vận chuyển.');
+      return;
+    }
+    if (isPaymentEnabled && !selectedPayment) {
+      toast.error('Không có phương thức thanh toán phù hợp cho giỏ hàng này. Vui lòng chọn/chỉnh cấu hình chuyển khoản hoặc VietQR.');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
+      const paymentMethod = isPaymentEnabled
+        ? selectedPayment?.type
+        : checkoutItemPolicy.canUseCod ? 'COD' : 'BankTransfer';
       const result = await placeOrderMutation({
         customer: { name: customerName.trim(), email: emailTrimmed, phone: customerPhone.trim() },
         items: orderItems,
         note: fromCart ? (cart?.note ?? undefined) : undefined,
-        paymentMethod: selectedPayment?.type ?? 'COD',
+        paymentMethod,
         promotionId: appliedPromotion?.promotion?._id,
         promotionCode: appliedPromotion?.promotion?.code,
         discountAmount,
@@ -863,13 +941,14 @@ function CheckoutContent() {
     isAddressValid
   );
   const isStepShippingCompleted = !shouldCollectShipping || Boolean(shippingMethodId);
+  const isStepPaymentCompleted = !isPaymentEnabled || Boolean(selectedPayment);
   const stepsState = useMemo(() => {
     return [
       { label: 'Thông tin', icon: MapPin, isCompleted: isStepInfoCompleted, isActive: true },
       ...(shouldCollectShipping ? [{ label: 'Vận chuyển', icon: Truck, isCompleted: isStepShippingCompleted, isActive: isStepInfoCompleted }] : []),
-      ...(isPaymentEnabled ? [{ label: 'Thanh toán', icon: CreditCard, isCompleted: false, isActive: isStepInfoCompleted && isStepShippingCompleted }] : []),
+      ...(isPaymentEnabled ? [{ label: 'Thanh toán', icon: CreditCard, isCompleted: isStepPaymentCompleted, isActive: isStepInfoCompleted && isStepShippingCompleted }] : []),
     ];
-  }, [isStepInfoCompleted, isStepShippingCompleted, shouldCollectShipping, isPaymentEnabled]);
+  }, [isPaymentEnabled, isStepInfoCompleted, isStepPaymentCompleted, isStepShippingCompleted, shouldCollectShipping]);
 
   if (ordersModule && !ordersModule.enabled) {
     return (
@@ -971,6 +1050,18 @@ function CheckoutContent() {
       </div>
     );
   }
+
+  const noShippingNotice = checkoutItemPolicy.hasCourseItems
+    ? 'Khóa học sẽ được xử lý theo tài khoản/email sau khi thanh toán, không cần giao hàng.'
+    : checkoutItemPolicy.hasServiceItems
+      ? 'Đơn dịch vụ chỉ cần thông tin liên hệ để tư vấn/xác nhận lịch, không cần giao hàng.'
+      : checkoutItemPolicy.hasDigitalProductItems
+        ? 'Sản phẩm số sẽ được gửi qua email/tài khoản sau khi thanh toán, không cần giao hàng.'
+        : 'Đơn hàng này không cần giao hàng.';
+  const codPolicyNotice = hiddenCodByPolicy
+    ? 'COD chỉ áp dụng khi toàn bộ đơn là sản phẩm vật lý cần giao hàng. Đơn có khóa học, dịch vụ hoặc sản phẩm số cần thanh toán chuyển khoản/VietQR/thẻ/ví.'
+    : null;
+  const isPaymentBlocked = isPaymentEnabled && availablePaymentMethods.length === 0;
 
   const StepIndicator = (
     <div className="flex items-center justify-between mb-6">
@@ -1206,7 +1297,7 @@ function CheckoutContent() {
             className="rounded-lg border px-3 py-2 text-xs"
             style={{ borderColor: tokens.border, backgroundColor: tokens.surfaceMuted, color: tokens.metaText }}
           >
-            Đơn hàng digital sẽ được gửi qua email của bạn sau khi thanh toán thành công.
+            {noShippingNotice}
           </div>
         )}
       </div>
@@ -1291,8 +1382,23 @@ function CheckoutContent() {
           <CreditCard className="w-5 h-5" style={{ color: tokens.iconMuted }} />
           <h2 className="text-lg font-semibold" style={{ color: tokens.heading }}>Thanh toán</h2>
         </div>
+        {codPolicyNotice && (
+          <div
+            className="rounded-lg border px-3 py-2 text-xs"
+            style={{ borderColor: tokens.border, backgroundColor: tokens.surfaceMuted, color: tokens.metaText }}
+          >
+            {codPolicyNotice}
+          </div>
+        )}
         <div className="space-y-2 text-sm" style={{ color: tokens.metaText }}>
-          {paymentMethods.map((method) => (
+          {availablePaymentMethods.length === 0 ? (
+            <div
+              className="rounded-lg border px-3 py-3 text-xs"
+              style={{ borderColor: tokens.border, backgroundColor: tokens.surfaceMuted, color: tokens.metaText }}
+            >
+              Không có phương thức thanh toán phù hợp. Vui lòng vào Cấu hình cửa hàng để thêm Chuyển khoản ngân hàng, VietQR, thẻ hoặc ví điện tử.
+            </div>
+          ) : availablePaymentMethods.map((method) => (
             <label
               key={method.id}
               className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer"
@@ -1392,9 +1498,9 @@ function CheckoutContent() {
         className="w-full h-11 rounded-lg text-sm font-semibold transition-colors px-4"
         style={{ backgroundColor: tokens.primaryButtonBg, color: tokens.primaryButtonText }}
         onClick={handlePlaceOrder}
-        disabled={isSubmitting || Boolean(orderId)}
+        disabled={isSubmitting || Boolean(orderId) || isPaymentBlocked || checkoutItemPolicy.isPending}
       >
-        {orderId ? 'Đã đặt hàng' : isSubmitting ? 'Đang xử lý...' : 
+        {orderId ? 'Đã đặt hàng' : isSubmitting ? 'Đang xử lý...' : checkoutItemPolicy.isPending ? 'Đang kiểm tra giỏ hàng...' :
           (selectedPayment?.type === 'BankTransfer' || selectedPayment?.type === 'VietQR')
             ? 'Tạo đơn và xem thông tin thanh toán'
             : 'Đặt hàng ngay'
