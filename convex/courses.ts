@@ -1,5 +1,5 @@
 import { mutation, query } from "./_generated/server";
-import type { MutationCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { contentStatus } from "./lib/validators";
@@ -108,6 +108,22 @@ const lessonDoc = v.object({
   videoUrl: v.optional(v.string()),
 });
 
+const courseAccessDoc = v.object({
+  courseSlug: v.optional(v.string()),
+  firstLessonId: v.optional(v.id("courseLessons")),
+  firstLessonTitle: v.optional(v.string()),
+  hasAccess: v.boolean(),
+  reason: v.string(),
+});
+
+const courseLearningLinkDoc = v.object({
+  courseId: v.id("courses"),
+  courseSlug: v.string(),
+  courseTitle: v.string(),
+  firstLessonId: v.optional(v.id("courseLessons")),
+  firstLessonTitle: v.optional(v.string()),
+});
+
 const paginatedCourses = v.object({
   continueCursor: v.string(),
   isDone: v.boolean(),
@@ -115,6 +131,110 @@ const paginatedCourses = v.object({
   pageStatus: v.optional(v.union(v.literal("SplitRecommended"), v.literal("SplitRequired"), v.null())),
   splitCursor: v.optional(v.union(v.string(), v.null())),
 });
+
+async function resolveCustomerIdByToken(ctx: QueryCtx, token?: string | null) {
+  if (!token || !token.startsWith("cus_")) {
+    return null;
+  }
+
+  const session = await ctx.db
+    .query("customerSessions")
+    .withIndex("by_token", (q) => q.eq("token", token))
+    .unique();
+  if (!session || session.expiresAt < Date.now()) {
+    return null;
+  }
+
+  const customer = await ctx.db.get(session.customerId);
+  if (!customer || customer.status !== "Active") {
+    return null;
+  }
+
+  return customer._id;
+}
+
+function isCancelledOrRefundedOrderStatus(status: string) {
+  const normalized = status.toLowerCase();
+  return (
+    normalized.includes("cancel") ||
+    normalized.includes("refund") ||
+    normalized.includes("huy") ||
+    normalized.includes("hủy") ||
+    normalized.includes("hoan-tien") ||
+    normalized.includes("hoantien") ||
+    normalized.includes("hoàn tiền") ||
+    normalized.includes("hoàn-tiền")
+  );
+}
+
+function isCompletedOrderStatus(status: string) {
+  const normalized = status.toLowerCase();
+  return (
+    normalized.includes("complete") ||
+    normalized.includes("completed") ||
+    normalized.includes("delivered") ||
+    normalized.includes("done") ||
+    normalized.includes("hoan-thanh") ||
+    normalized.includes("hoanthanh") ||
+    normalized.includes("hoàn thành")
+  );
+}
+
+function orderCanUnlockCourse(order: Doc<"orders">) {
+  if (order.paymentStatus === "Refunded" || order.paymentStatus === "Failed") {
+    return false;
+  }
+  if (isCancelledOrRefundedOrderStatus(order.status)) {
+    return false;
+  }
+  return order.paymentStatus === "Paid" || isCompletedOrderStatus(order.status);
+}
+
+async function customerHasCourseOrderAccess(
+  ctx: QueryCtx,
+  customerId: Doc<"customers">["_id"],
+  courseId: Doc<"courses">["_id"]
+) {
+  const orders = await ctx.db
+    .query("orders")
+    .withIndex("by_customer", (q) => q.eq("customerId", customerId))
+    .order("desc")
+    .take(500);
+
+  return orders.some((order) =>
+    orderCanUnlockCourse(order) &&
+    order.items.some((item) =>
+      (item.itemType ?? "product") === "course" &&
+      item.courseId === courseId
+    )
+  );
+}
+
+async function getFirstActiveLesson(ctx: QueryCtx, courseId: Doc<"courses">["_id"]) {
+  const [chapters, lessons] = await Promise.all([
+    ctx.db
+      .query("courseChapters")
+      .withIndex("by_course_active_order", (q) => q.eq("courseId", courseId).eq("active", true))
+      .take(200),
+    ctx.db
+      .query("courseLessons")
+      .withIndex("by_course_active_order", (q) => q.eq("courseId", courseId).eq("active", true))
+      .take(500),
+  ]);
+
+  const chapterOrderMap = new Map(chapters.map((chapter) => [chapter._id, chapter.order]));
+  return lessons.sort((a, b) => {
+    const chapterDiff = (chapterOrderMap.get(a.chapterId) ?? 0) - (chapterOrderMap.get(b.chapterId) ?? 0);
+    return chapterDiff === 0 ? a.order - b.order : chapterDiff;
+  })[0] ?? null;
+}
+
+function sanitizeLockedLesson(lesson: Doc<"courseLessons">) {
+  const safeLesson: Partial<Doc<"courseLessons">> = { ...lesson };
+  delete safeLesson.exerciseLink;
+  delete safeLesson.videoUrl;
+  return safeLesson as Doc<"courseLessons">;
+}
 
 export const list = query({
   args: { paginationOpts: paginationOptsValidator },
@@ -836,6 +956,18 @@ export const listLessonsByCourse = query({
   returns: v.array(lessonDoc),
 });
 
+export const listPublicLessonsByCourse = query({
+  args: { courseId: v.id("courses") },
+  handler: async (ctx, args) => {
+    const lessons = await ctx.db
+      .query("courseLessons")
+      .withIndex("by_course_active_order", (q) => q.eq("courseId", args.courseId).eq("active", true))
+      .take(500);
+    return lessons.map(sanitizeLockedLesson);
+  },
+  returns: v.array(lessonDoc),
+});
+
 export const listLessonsByChapter = query({
   args: { chapterId: v.id("courseChapters") },
   handler: async (ctx, args) => ctx.db
@@ -843,6 +975,91 @@ export const listLessonsByChapter = query({
     .withIndex("by_chapter_order", (q) => q.eq("chapterId", args.chapterId))
     .take(500),
   returns: v.array(lessonDoc),
+});
+
+export const getCourseAccess = query({
+  args: {
+    courseId: v.id("courses"),
+    token: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const course = await ctx.db.get(args.courseId);
+    if (!course || course.status !== "Published") {
+      return { hasAccess: false, reason: "course_not_found" };
+    }
+
+    const customerId = await resolveCustomerIdByToken(ctx, args.token);
+    if (!customerId) {
+      return { courseSlug: course.slug, hasAccess: false, reason: "login_required" };
+    }
+
+    const hasAccess = course.pricingType === "free" ||
+      await customerHasCourseOrderAccess(ctx, customerId, course._id);
+    if (!hasAccess) {
+      return { courseSlug: course.slug, hasAccess: false, reason: "not_enrolled" };
+    }
+
+    const firstLesson = await getFirstActiveLesson(ctx, course._id);
+    return {
+      courseSlug: course.slug,
+      firstLessonId: firstLesson?._id,
+      firstLessonTitle: firstLesson?.title,
+      hasAccess: true,
+      reason: course.pricingType === "free" ? "free_course" : "purchased",
+    };
+  },
+  returns: courseAccessDoc,
+});
+
+export const listMyCourseLearningLinks = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const customerId = await resolveCustomerIdByToken(ctx, args.token);
+    if (!customerId) {
+      return [];
+    }
+
+    const orders = await ctx.db
+      .query("orders")
+      .withIndex("by_customer", (q) => q.eq("customerId", customerId))
+      .order("desc")
+      .take(500);
+
+    const accessibleCourseIds = new Set<Doc<"courses">["_id"]>();
+    for (const order of orders) {
+      if (!orderCanUnlockCourse(order)) {
+        continue;
+      }
+      for (const item of order.items) {
+        if ((item.itemType ?? "product") === "course" && item.courseId) {
+          accessibleCourseIds.add(item.courseId);
+        }
+      }
+    }
+
+    const courseIds = Array.from(accessibleCourseIds).slice(0, 100);
+    const courses = await Promise.all(courseIds.map((courseId) => ctx.db.get(courseId)));
+    const firstLessons = await Promise.all(courses.map((course) =>
+      course && course.status === "Published"
+        ? getFirstActiveLesson(ctx, course._id)
+        : Promise.resolve(null)
+    ));
+
+    return courses.flatMap((course, index) => {
+      if (!course || course.status !== "Published") {
+        return [];
+      }
+      const firstLesson = firstLessons[index];
+      return [{
+        courseId: course._id,
+        courseSlug: course.slug,
+        courseTitle: course.title,
+        firstLessonId: firstLesson?._id,
+        firstLessonTitle: firstLesson?.title,
+      }];
+    });
+  },
+  returns: v.array(courseLearningLinkDoc),
 });
 
 export const createChapter = mutation({
@@ -1047,5 +1264,39 @@ export const reorderLessons = mutation({
     return null;
   },
   returns: v.null(),
+});
+
+export const getLessonById = query({
+  args: {
+    id: v.id("courseLessons"),
+    token: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const lesson = await ctx.db.get(args.id);
+    if (!lesson) {
+      return null;
+    }
+
+    const course = await ctx.db.get(lesson.courseId);
+    if (!course || course.status !== "Published") {
+      return sanitizeLockedLesson(lesson);
+    }
+
+    const customerId = await resolveCustomerIdByToken(ctx, args.token);
+    const hasAccess = Boolean(customerId) && (
+      course.pricingType === "free" ||
+      lesson.isPreview ||
+      await customerHasCourseOrderAccess(ctx, customerId!, course._id)
+    );
+
+    return hasAccess ? lesson : sanitizeLockedLesson(lesson);
+  },
+  returns: v.union(lessonDoc, v.null()),
+});
+
+export const getChapterById = query({
+  args: { id: v.id("courseChapters") },
+  handler: async (ctx, args) => ctx.db.get(args.id),
+  returns: v.union(chapterDoc, v.null()),
 });
 

@@ -20,6 +20,7 @@ import {
   getAccountOrdersColors,
   getAccountOrdersStatusBadgeTokens,
 } from '@/components/site/account/orders/colors';
+import { convertToSlug } from '@/lib/courses/courseUtils';
 
 const formatPrice = (value: number) => new Intl.NumberFormat('vi-VN', { currency: 'VND', style: 'currency' }).format(value);
 
@@ -348,6 +349,10 @@ export default function AccountOrdersPage() {
       ? { customerId: customer.id as Id<'customers'>, limit: 20 }
       : 'skip'
   );
+  const courseLearningLinks = useQuery(
+    api.courses.listMyCourseLearningLinks,
+    token ? { token } : 'skip'
+  );
 
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
@@ -390,6 +395,23 @@ export default function AccountOrdersPage() {
     accountNumber: getStringSetting(ordersSettingsMap, 'bankAccountNumber', '0123456789'),
     vietQrTemplate: getStringSetting(ordersSettingsMap, 'vietQrTemplate', 'compact'),
   }), [ordersSettingsMap]);
+  const courseLearningLinkMap = useMemo(() => {
+    return new Map((courseLearningLinks ?? []).map((link) => [link.courseId, link]));
+  }, [courseLearningLinks]);
+
+  const getCourseLearningHref = (courseId?: Id<'courses'>) => {
+    if (!courseId) {
+      return null;
+    }
+    const link = courseLearningLinkMap.get(courseId);
+    if (!link) {
+      return null;
+    }
+    if (link.firstLessonId && link.firstLessonTitle) {
+      return `/khoa-hoc/${link.courseSlug}/bai-hoc/${convertToSlug(link.firstLessonTitle)}--${link.firstLessonId}`;
+    }
+    return `/khoa-hoc/${link.courseSlug}`;
+  };
 
   const stats = {
     totalSpent: ordersList.reduce((sum, order) => sum + order.totalAmount, 0),
@@ -492,6 +514,8 @@ export default function AccountOrdersPage() {
   const drawerTimelineLabels = drawerRequiresShipping ? timelineLabels : NON_SHIPPING_TIMELINE_STEPS;
   const drawerTimelineStep = getTimelineStepForOrder(drawerStatus?.step ?? 1, drawerRequiresShipping);
   const drawerItems = drawerOrder?.items.map((item) => ({
+    actionHref: (item.itemType ?? 'product') === 'course' ? getCourseLearningHref(item.courseId) ?? undefined : undefined,
+    actionLabel: (item.itemType ?? 'product') === 'course' ? 'Vào học' : undefined,
     name: item.productName,
     quantity: item.quantity,
     priceLabel: formatPrice(item.price * item.quantity),
@@ -720,37 +744,52 @@ export default function AccountOrdersPage() {
                             <div>
                               <div className="text-[10px] mb-3 uppercase tracking-wide" style={{ color: tokens.orderMetaText }}>Mục trong đơn</div>
                               <div className="space-y-3">
-                                {order.items.map((item, itemIndex) => (
-                                  <div key={`${item.productId}-${itemIndex}`} className="flex items-center gap-4">
-                                    <div
-                                      className="h-12 w-12 rounded-md border overflow-hidden flex items-center justify-center"
-                                      style={{ borderColor: tokens.orderItemThumbBorder, backgroundColor: tokens.orderItemThumbBg }}
-                                    >
-                                      {item.productImage ? (
-                                        <Image
-                                          src={item.productImage}
-                                          alt={item.productName}
-                                          width={48}
-                                          height={48}
-                                          className="h-full w-full object-cover"
-                                          mode="thumb"
-                                        />
-                                      ) : (
-                                        <Package size={18} style={{ color: tokens.orderItemThumbIcon }} />
-                                      )}
+                                {order.items.map((item, itemIndex) => {
+                                  const learningHref = (item.itemType ?? 'product') === 'course'
+                                    ? getCourseLearningHref(item.courseId)
+                                    : null;
+
+                                  return (
+                                    <div key={`${item.productId}-${itemIndex}`} className="flex items-center gap-4">
+                                      <div
+                                        className="h-12 w-12 rounded-md border overflow-hidden flex items-center justify-center"
+                                        style={{ borderColor: tokens.orderItemThumbBorder, backgroundColor: tokens.orderItemThumbBg }}
+                                      >
+                                        {item.productImage ? (
+                                          <Image
+                                            src={item.productImage}
+                                            alt={item.productName}
+                                            width={48}
+                                            height={48}
+                                            className="h-full w-full object-cover"
+                                            mode="thumb"
+                                          />
+                                        ) : (
+                                          <Package size={18} style={{ color: tokens.orderItemThumbIcon }} />
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-medium truncate" style={{ color: tokens.orderValueText }}>{item.productName}</div>
+                                        {item.variantTitle && (
+                                          <div className="text-xs" style={{ color: tokens.orderMetaText }}>{item.variantTitle}</div>
+                                        )}
+                                        <div className="text-xs" style={{ color: tokens.orderMetaText }}>Số lượng: {item.quantity}</div>
+                                        {learningHref && (
+                                          <Link
+                                            href={learningHref}
+                                            className="mt-2 inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold"
+                                            style={{ backgroundColor: tokens.primaryButtonBg, color: tokens.primaryButtonText }}
+                                          >
+                                            Vào học
+                                          </Link>
+                                        )}
+                                      </div>
+                                      <div className="text-sm font-semibold" style={{ color: tokens.priceText }}>
+                                        {formatPrice(item.price * item.quantity)}
+                                      </div>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="text-sm font-medium truncate" style={{ color: tokens.orderValueText }}>{item.productName}</div>
-                                      {item.variantTitle && (
-                                        <div className="text-xs" style={{ color: tokens.orderMetaText }}>{item.variantTitle}</div>
-                                      )}
-                                      <div className="text-xs" style={{ color: tokens.orderMetaText }}>Số lượng: {item.quantity}</div>
-                                    </div>
-                                    <div className="text-sm font-semibold" style={{ color: tokens.priceText }}>
-                                      {formatPrice(item.price * item.quantity)}
-                                    </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             </div>
                           )}
@@ -999,35 +1038,50 @@ export default function AccountOrdersPage() {
                       {config.showOrderItems && (
                         <div className="space-y-4">
                           <div className="text-xs font-semibold uppercase" style={{ color: tokens.orderMetaText }}>Mục trong đơn</div>
-                          {order.items.map((item, itemIndex) => (
-                            <div key={`${item.productId}-${itemIndex}`} className="flex flex-col sm:flex-row gap-4 items-start">
-                              <div
-                                className="w-16 h-16 rounded-lg border overflow-hidden flex items-center justify-center"
-                                style={{ borderColor: tokens.orderItemThumbBorder, backgroundColor: tokens.orderItemThumbBg }}
-                              >
-                                {item.productImage ? (
-                                  <Image
-                                    src={item.productImage}
-                                    alt={item.productName}
-                                    width={64}
-                                    height={64}
-                                    className="h-full w-full object-cover"
-                                    mode="thumb"
-                                  />
-                                ) : (
-                                  <Package size={20} style={{ color: tokens.orderItemThumbIcon }} />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                <div>
-                                  <div className="text-sm font-semibold" style={{ color: tokens.orderValueText }}>{item.productName}</div>
-                                  {item.variantTitle && <div className="text-xs" style={{ color: tokens.orderMetaText }}>{item.variantTitle}</div>}
-                                  <div className="text-xs" style={{ color: tokens.orderMetaText }}>Số lượng: {item.quantity}</div>
+                          {order.items.map((item, itemIndex) => {
+                            const learningHref = (item.itemType ?? 'product') === 'course'
+                              ? getCourseLearningHref(item.courseId)
+                              : null;
+
+                            return (
+                              <div key={`${item.productId}-${itemIndex}`} className="flex flex-col sm:flex-row gap-4 items-start">
+                                <div
+                                  className="w-16 h-16 rounded-lg border overflow-hidden flex items-center justify-center"
+                                  style={{ borderColor: tokens.orderItemThumbBorder, backgroundColor: tokens.orderItemThumbBg }}
+                                >
+                                  {item.productImage ? (
+                                    <Image
+                                      src={item.productImage}
+                                      alt={item.productName}
+                                      width={64}
+                                      height={64}
+                                      className="h-full w-full object-cover"
+                                      mode="thumb"
+                                    />
+                                  ) : (
+                                    <Package size={20} style={{ color: tokens.orderItemThumbIcon }} />
+                                  )}
                                 </div>
-                                <div className="text-base font-semibold" style={{ color: tokens.priceText }}>{formatPrice(item.price * item.quantity)}</div>
+                                <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                  <div>
+                                    <div className="text-sm font-semibold" style={{ color: tokens.orderValueText }}>{item.productName}</div>
+                                    {item.variantTitle && <div className="text-xs" style={{ color: tokens.orderMetaText }}>{item.variantTitle}</div>}
+                                    <div className="text-xs" style={{ color: tokens.orderMetaText }}>Số lượng: {item.quantity}</div>
+                                    {learningHref && (
+                                      <Link
+                                        href={learningHref}
+                                        className="mt-2 inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold"
+                                        style={{ backgroundColor: tokens.primaryButtonBg, color: tokens.primaryButtonText }}
+                                      >
+                                        Vào học
+                                      </Link>
+                                    )}
+                                  </div>
+                                  <div className="text-base font-semibold" style={{ color: tokens.priceText }}>{formatPrice(item.price * item.quantity)}</div>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                       {order.items.some((item) => item.isDigital && item.digitalCredentials?.deliveredAt) && (

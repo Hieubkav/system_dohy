@@ -21,7 +21,7 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   const router = useRouter();
   const brandColors = useBrandColors();
   const config = useLessonDetailConfig();
-  const { isAuthenticated, isLoading: authLoading } = useCustomerAuth();
+  const { isAuthenticated, isLoading: authLoading, token } = useCustomerAuth();
 
   // Parse ID bài học từ slug lai (lessonSlugAndId) dạng tieu-de-bai-hoc--[id]
   const lessonId = useMemo(() => {
@@ -34,9 +34,10 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   }, [lessonSlugAndId]);
 
   const course = useQuery(api.courses.getBySlug, { slug });
-  const lesson = useQuery(api.courses.getLessonById, { id: lessonId as any });
+  const lesson = useQuery(api.courses.getLessonById, { id: lessonId as any, token: token ?? undefined });
   const chapters = useQuery(api.courses.listChapters, course?._id ? { courseId: course._id } : 'skip');
-  const lessons = useQuery(api.courses.listLessonsByCourse, course?._id ? { courseId: course._id } : 'skip');
+  const lessons = useQuery(api.courses.listPublicLessonsByCourse, course?._id ? { courseId: course._id } : 'skip');
+  const courseAccess = useQuery(api.courses.getCourseAccess, course?._id ? { courseId: course._id, token: token ?? undefined } : 'skip');
 
   const brandColor = brandColors.primary;
   const isCompactLayout = config.layoutStyle === 'compact';
@@ -90,7 +91,7 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   }, [lessons, lesson, chapters]);
 
   // Loading state
-  const isDataLoading = course === undefined || lesson === undefined || chapters === undefined || lessons === undefined;
+  const isDataLoading = course === undefined || lesson === undefined || (course ? chapters === undefined || lessons === undefined || courseAccess === undefined : false);
   if (isDataLoading || authLoading) {
     return <LessonDetailSkeleton />;
   }
@@ -113,7 +114,8 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
 
   // Kiểm tra quyền truy cập bài học
   const isFreeCourse = course.pricingType === 'free';
-  const hasAccess = isAuthenticated && (isFreeCourse || lesson.isPreview);
+  const hasFullCourseAccess = Boolean(courseAccess?.hasAccess);
+  const hasAccess = isAuthenticated && (isFreeCourse || lesson.isPreview || hasFullCourseAccess);
 
   // Parse Video URL Embed
   const videoEmbedUrl = () => {
@@ -363,7 +365,9 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
                           >
                             <span className="font-mono text-slate-400 mt-0.5 shrink-0 w-6">{chapterIndex + 1}.{itemIndex + 1}</span>
                             <span className="flex-1 line-clamp-2 leading-relaxed">{item.title}</span>
-                            {item.isPreview ? (
+                            {hasFullCourseAccess ? (
+                              <span className="rounded bg-sky-50 px-1.5 py-0.5 text-[9px] font-bold text-sky-700 shrink-0">Đã mở</span>
+                            ) : item.isPreview ? (
                               <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 shrink-0">Học thử</span>
                             ) : (
                               // Chỉ khóa thật sự đối với bài học có phí không được xem thử

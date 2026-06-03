@@ -13,6 +13,7 @@ import { getCourseLevelLabel } from '@/lib/courses/labels';
 import { useCoursesDetailConfig } from '@/lib/experiences';
 import { getRadiusClass, getSmallRadiusClass, formatPrice, convertToSlug } from '@/lib/courses/courseUtils';
 import { useCart } from '@/lib/cart';
+import { useCustomerAuth } from '@/app/(site)/auth/context';
 
 type CourseContentSource = {
   content: string;
@@ -41,11 +42,13 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const config = useCoursesDetailConfig();
   const brandColors = useBrandColors();
   const { addItem, openDrawer } = useCart();
+  const { token } = useCustomerAuth();
   const course = useQuery(api.courses.getBySlug, { slug });
   const courseCommerceSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'courses', settingKey: 'commerceMode' });
   const category = useQuery(api.courseCategories.getById, course?.categoryId ? { id: course.categoryId } : 'skip');
   const chapters = useQuery(api.courses.listChapters, course?._id ? { courseId: course._id } : 'skip');
-  const lessons = useQuery(api.courses.listLessonsByCourse, course?._id ? { courseId: course._id } : 'skip');
+  const lessons = useQuery(api.courses.listPublicLessonsByCourse, course?._id ? { courseId: course._id } : 'skip');
+  const courseAccess = useQuery(api.courses.getCourseAccess, course?._id ? { courseId: course._id, token: token ?? undefined } : 'skip');
   const relatedCourses = useQuery(api.courses.searchPublished, course?.categoryId ? { categoryId: course.categoryId, limit: 4 } : 'skip');
   const incrementViews = useMutation(api.courses.incrementViews);
 
@@ -132,10 +135,18 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const courseContent = resolveCourseContent(course);
   const isModern = config.layoutStyle === 'modern';
   const commerceMode = courseCommerceSetting?.value === 'cart' ? 'cart' : 'contact';
+  const hasCourseAccess = Boolean(courseAccess?.hasAccess);
+  const firstLessonHref = hasCourseAccess && courseAccess?.firstLessonId && courseAccess.firstLessonTitle
+    ? `/khoa-hoc/${course.slug}/bai-hoc/${convertToSlug(courseAccess.firstLessonTitle)}--${courseAccess.firstLessonId}`
+    : null;
 
   const showAside = config.showStickyCta || (related.length > 0);
 
   const handleRegister = async () => {
+    if (firstLessonHref) {
+      router.push(firstLessonHref);
+      return;
+    }
     if (commerceMode === 'cart' && course.pricingType !== 'contact') {
       const ok = await addItem({ itemType: 'course', courseId: course._id, quantity: 1 });
       if (ok) {
@@ -147,7 +158,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     router.push(`/contact?subject=${encodeURIComponent(`Đăng ký khóa học: ${course.title}`)}`);
   };
 
-  const ctaLabel = commerceMode === 'cart' && course.pricingType !== 'contact'
+  const ctaLabel = firstLessonHref
+    ? 'Vào học ngay'
+    : commerceMode === 'cart' && course.pricingType !== 'contact'
     ? 'Thêm vào giỏ hàng'
     : (!showPrice || course.pricingType === 'contact' ? 'Liên hệ tư vấn' : 'Đăng ký học');
 
@@ -196,7 +209,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           </p>
         )}
         <button type="button" onClick={() => void handleRegister()} className="mt-4 w-full px-5 py-3 font-semibold text-white transition hover:opacity-90 inline-flex items-center justify-center gap-2" style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
-          {commerceMode === 'cart' && course.pricingType !== 'contact' && <ShoppingCart size={18} />}
+          {firstLessonHref ? <PlayCircle size={18} /> : commerceMode === 'cart' && course.pricingType !== 'contact' && <ShoppingCart size={18} />}
           {ctaLabel}
         </button>
       </div>
@@ -303,7 +316,11 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                                     <span className="text-slate-400 font-mono text-xs w-6 shrink-0">{chapterIndex + 1}.{lessonIndex + 1}</span>
                                     <span className="group-hover/item:underline">{lesson.title}</span>
                                   </span>
-                                  {lesson.isPreview ? (
+                                  {hasCourseAccess ? (
+                                    <span className="rounded bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 shrink-0 group-hover/item:bg-sky-100 transition-colors">
+                                      Đã mở
+                                    </span>
+                                  ) : lesson.isPreview ? (
                                     <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 shrink-0 group-hover/item:bg-emerald-100 transition-colors">
                                       Học thử
                                     </span>
@@ -350,8 +367,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             <p className="text-lg font-bold" style={{ color: accent }}>{price}</p>
           </div>
           <button type="button" onClick={() => void handleRegister()} className="px-5 py-2.5 text-xs font-bold text-white shadow-sm inline-flex items-center gap-2" style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
-            {commerceMode === 'cart' && course.pricingType !== 'contact' && <ShoppingCart size={14} />}
-            {commerceMode === 'cart' && course.pricingType !== 'contact' ? 'Thêm giỏ' : (!showPrice || course.pricingType === 'contact' ? 'Liên hệ' : 'Đăng ký')}
+            {firstLessonHref ? <PlayCircle size={14} /> : commerceMode === 'cart' && course.pricingType !== 'contact' && <ShoppingCart size={14} />}
+            {firstLessonHref ? 'Vào học' : commerceMode === 'cart' && course.pricingType !== 'contact' ? 'Thêm giỏ' : (!showPrice || course.pricingType === 'contact' ? 'Liên hệ' : 'Đăng ký')}
           </button>
         </div>
       )}

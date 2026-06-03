@@ -2,10 +2,13 @@
 
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { X } from 'lucide-react';
 import { DigitalCredentialsDisplay } from '@/components/orders/DigitalCredentialsDisplay';
 
 type OrderDetailItem = {
+  actionHref?: string;
+  actionLabel?: string;
   name: string;
   quantity: number;
   priceLabel: string;
@@ -267,6 +270,15 @@ export function OrderDetailDrawer({
                       <div className="text-xs" style={{ color: tokens?.sectionTitle ?? '#64748b' }}>
                         Số lượng: {item.quantity}
                       </div>
+                      {item.actionHref && item.actionLabel && (
+                        <Link
+                          href={item.actionHref}
+                          className="mt-2 inline-flex rounded-md px-3 py-1.5 text-xs font-semibold"
+                          style={{ backgroundColor: tokens?.actionPrimaryBg ?? brandColor, color: tokens?.actionPrimaryText ?? '#ffffff' }}
+                        >
+                          {item.actionLabel}
+                        </Link>
+                      )}
                     </div>
                     <div className="text-sm font-semibold" style={{ color: tokens?.sectionText ?? '#0f172a' }}>{item.priceLabel}</div>
                   </div>
