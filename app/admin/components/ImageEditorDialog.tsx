@@ -47,6 +47,47 @@ function getExtensionFromMime(mime: string): string {
   return mime.toUpperCase();
 }
 
+async function compressImageToWebP(
+  imageBlobOrUrl: Blob | string,
+  quality = 1.0,
+): Promise<{ blob: Blob; url: string }> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Không thể khởi tạo Canvas Context 2D'));
+        return;
+      }
+      ctx.drawImage(img, 0, 0);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error('Lỗi xuất ảnh WebP từ Canvas'));
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          resolve({ blob, url });
+        },
+        'image/webp',
+        quality,
+      );
+    };
+    img.onerror = (err) => {
+      reject(err);
+    };
+    if (typeof imageBlobOrUrl === 'string') {
+      img.src = imageBlobOrUrl;
+    } else {
+      img.src = URL.createObjectURL(imageBlobOrUrl);
+    }
+  });
+}
+
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
@@ -62,7 +103,7 @@ type ImageEditorDialogProps = {
   enableSmartLogoCrop?: boolean;
 };
 
-type EditorTab = 'crop' | 'removebg' | 'addbg';
+type EditorTab = 'crop' | 'removebg' | 'addbg' | 'compress';
 
 type CropRatio = {
   label: string;
@@ -238,7 +279,7 @@ export function ImageEditorDialog({
     };
   }, [imageUrl]);
 
-  const currentMeta = (activeTab === 'removebg' && removedBgBlob)
+  const currentMeta = ((activeTab === 'removebg' || activeTab === 'compress') && removedBgBlob)
     ? { size: removedBgBlob.size, type: removedBgBlob.type }
     : imageMeta;
 
@@ -262,6 +303,35 @@ export function ImageEditorDialog({
       removeBgHandleRef.current?.cancel();
     };
   }, [removedBgUrl]);
+
+  // Compress state & handler
+  const [isCompressing, setIsCompressing] = useState(false);
+
+  const handleCompressToWebP = useCallback(async () => {
+    if (isCompressing) return;
+    setIsCompressing(true);
+
+    const source = removedBgBlob || imageUrl;
+
+    try {
+      toast.loading('Đang tối ưu dung lượng ảnh sang WebP Lossless...');
+      const result = await compressImageToWebP(source, 1.0);
+
+      setRemovedBgUrl((prev) => {
+        if (prev && prev !== imageUrl) URL.revokeObjectURL(prev);
+        return result.url;
+      });
+      setRemovedBgBlob(result.blob);
+      toast.dismiss();
+      toast.success('Nén ảnh WebP Lossless thành công!');
+    } catch (err) {
+      console.error('[WebP Compress] Error:', err);
+      toast.dismiss();
+      toast.error('Không thể nén ảnh sang WebP. Vui lòng thử lại.');
+    } finally {
+      setIsCompressing(false);
+    }
+  }, [imageUrl, removedBgBlob, isCompressing]);
 
   /* ---- Crop handlers ---- */
 
@@ -375,14 +445,18 @@ export function ImageEditorDialog({
 
   const handleApplyRemovedBg = useCallback(() => {
     if (!removedBgBlob) {
-      toast.error('Chưa xóa nền');
+      toast.error('Chưa thực hiện chỉnh sửa');
       return;
     }
 
+    const isWebP = removedBgBlob.type === 'image/webp';
+    const ext = isWebP ? 'webp' : 'png';
+    const mime = isWebP ? 'image/webp' : 'image/png';
+
     const file = new File(
       [removedBgBlob],
-      `logo-nobg-${Date.now()}.png`,
-      { type: 'image/png' },
+      `logo-edited-${Date.now()}.${ext}`,
+      { type: mime },
     );
     onApply(file);
   }, [removedBgBlob, onApply]);
@@ -556,6 +630,7 @@ export function ImageEditorDialog({
     { key: 'crop', label: 'Cắt ảnh', icon: <CropIcon size={15} /> },
     { key: 'removebg', label: 'Xóa nền', icon: <Eraser size={15} /> },
     { key: 'addbg', label: 'Thêm nền', icon: <PaintBucket size={15} /> },
+    { key: 'compress', label: 'Giảm dung lượng ảnh', icon: <Sparkles size={15} /> },
   ];
 
   return (
@@ -871,6 +946,63 @@ export function ImageEditorDialog({
               </div>
             </div>
           )}
+
+          {activeTab === 'compress' && (
+            <div className="space-y-4">
+              <p className="text-xs text-slate-500">
+                Giảm dung lượng ảnh nhưng giữ nguyên 100% độ nét ban đầu và nền trong suốt.
+              </p>
+
+              <div className="flex justify-center bg-[repeating-conic-gradient(#e2e8f0_0%_25%,transparent_0%_50%)] dark:bg-[repeating-conic-gradient(#334155_0%_25%,transparent_0%_50%)] bg-[length:16px_16px] rounded-lg p-3 min-h-[200px] items-center">
+                {removedBgUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={removedBgUrl}
+                    alt="Ảnh tối ưu"
+                    className="max-h-[50vh] rounded"
+                  />
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={imageUrl}
+                    alt="Ảnh gốc"
+                    className="max-h-[50vh] rounded"
+                    crossOrigin="anonymous"
+                  />
+                )}
+              </div>
+              {renderImageMetaInfo()}
+
+              <div className="flex justify-center gap-2">
+                <Button
+                  type="button"
+                  onClick={handleCompressToWebP}
+                  disabled={isCompressing}
+                  className="gap-2"
+                >
+                  {isCompressing ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <Sparkles size={15} />
+                  )}
+                  Nén WebP (Lossless)
+                </Button>
+
+                {removedBgUrl && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetRemoveBg}
+                    className="gap-1.5 text-slate-500"
+                  >
+                    <RotateCcw size={14} />
+                    Hoàn tác
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -920,6 +1052,18 @@ export function ImageEditorDialog({
                 <Check size={15} />
               )}
               Áp dụng thêm nền
+            </Button>
+          )}
+
+          {activeTab === 'compress' && (
+            <Button
+              type="button"
+              onClick={handleApplyRemovedBg}
+              disabled={!removedBgBlob}
+              className="gap-1.5"
+            >
+              <Check size={15} />
+              Áp dụng tối ưu
             </Button>
           )}
 
