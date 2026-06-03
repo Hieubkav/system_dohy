@@ -67,7 +67,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
           onClick={handleClick}
           className={cn(
             "w-full flex items-center transition-all duration-200 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
-            isCollapsed ? "justify-center p-3" : "justify-between px-3 py-2.5",
+            isCollapsed ? "justify-center p-2" : "justify-between px-3 py-2",
             active ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
           )}
           title={isCollapsed ? label : undefined}
@@ -87,7 +87,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
           href={href} 
           className={cn(
             "flex items-center transition-all duration-200 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-blue-500",
-            isCollapsed ? "justify-center p-3" : "gap-3 px-3 py-2.5",
+            isCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2",
             active ? "bg-blue-500/10 text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
           )}
           title={isCollapsed ? label : undefined}
@@ -110,7 +110,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
                 key={sub.href} 
                 href={sub.href}
                 className={cn(
-                  "block px-3 py-2 rounded-md text-sm transition-colors truncate relative",
+                  "block px-3 py-1.5 rounded-md text-sm transition-colors truncate relative",
                   pathname === sub.href || pathname.startsWith(sub.href + '/')
                     ? "text-blue-600 bg-blue-500/5 font-medium dark:text-blue-400" 
                     : "text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -223,7 +223,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   const marketingSectionItemCount = Number(showNotificationsSection) + Number(showPromotionsSection);
   const systemSectionItemCount = Number(showUsersSection) + Number(showWebsiteSection) + Number(showContactInboxSection) + Number(showKanbanSection) + Number(showSubscriptionsSection) + Number(showSettingsSection);
 
-  const shouldShowGroupTitle = (itemCount: number) => !isSidebarCollapsed && itemCount > 1;
+  const shouldShowGroupTitle = (itemCount: number) => !isSidebarCollapsed && itemCount > 0;
   const getSectionClassName = (showTitle: boolean) => cn('space-y-1', !showTitle && '-mt-2');
 
   const showAnalyticsTitle = shouldShowGroupTitle(analyticsSectionItemCount);
@@ -321,7 +321,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
             <Loader2 size={24} className="animate-spin text-slate-400" />
           </div>
         ) : (
-          <div className="admin-sidebar-scroll flex-1 py-6 px-3 space-y-6 overflow-y-auto scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+          <div className="admin-sidebar-scroll flex-1 py-4 px-3 space-y-3.5 overflow-y-auto scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
             
             {/* Dashboard/Analytics */}
             {showAnalyticsSection && (
