@@ -1,13 +1,15 @@
 import { mutation, query } from "../_generated/server";
 import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
-import { api } from "../_generated/api";
+import { anyApi } from "convex/server";
 import { v } from "convex/values";
 import { dependencyType, fieldType, moduleCategory } from "../lib/validators";
 import { syncModuleRuntimeConfig } from "../lib/moduleConfigSync";
 import { resolveMenuMaxDepthLevel } from "../../lib/utils/menu-tree";
 import { TRUST_PAGE_SLOTS } from "../../lib/ia/trust-pages";
 import { validateShippingMethods, validatePaymentMethods, validateOrderStatuses } from "../../lib/orders/config-validation";
+
+const syncProgrammaticFromSourceChange = anyApi.landingPages.syncProgrammaticFromSourceChange;
 
 // ============ ADMIN MODULES ============
 
@@ -331,7 +333,7 @@ export const createModule = mutation({
       isCore: args.isCore ?? false,
       order: args.order ?? count,
     });
-    await ctx.runMutation(api.landingPages.syncProgrammaticFromSourceChange, { source: "module" });
+    await ctx.runMutation(syncProgrammaticFromSourceChange, { source: "module" });
     return id;
   },
   returns: v.id("adminModules"),
@@ -354,7 +356,7 @@ export const updateModule = mutation({
     const moduleRecord = await ctx.db.get(id);
     if (!moduleRecord) {throw new Error("Module not found");}
     await ctx.db.patch(id, updates);
-    await ctx.runMutation(api.landingPages.syncProgrammaticFromSourceChange, { source: "module" });
+    await ctx.runMutation(syncProgrammaticFromSourceChange, { source: "module" });
     return null;
   },
   returns: v.null(),
@@ -442,7 +444,7 @@ export const toggleModule = mutation({
     if (args.enabled && args.key === "homepage") {
       await resetHomeComponentCreateVisibility(ctx);
     }
-    await ctx.runMutation(api.landingPages.syncProgrammaticFromSourceChange, { source: "module" });
+    await ctx.runMutation(syncProgrammaticFromSourceChange, { source: "module" });
     return createToggleBasicResult({ code: "OK", success: true });
   },
   returns: v.object({
@@ -685,7 +687,7 @@ export const removeModule = mutation({
       await ctx.db.delete(setting._id);
     }
     await ctx.db.delete(args.id);
-    await ctx.runMutation(api.landingPages.syncProgrammaticFromSourceChange, { source: "module" });
+    await ctx.runMutation(syncProgrammaticFromSourceChange, { source: "module" });
     return null;
   },
   returns: v.null(),

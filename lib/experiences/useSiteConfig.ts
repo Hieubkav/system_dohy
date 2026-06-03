@@ -335,12 +335,14 @@ export function useServicesListConfig(): ServicesListConfig {
 
 type CoursesListConfig = {
   layoutStyle: 'grid' | 'sidebar' | 'masonry';
+  gridColumns: number;
   paginationType: PaginationType;
   showSearch: boolean;
   showCategories: boolean;
   showLevelFilter: boolean;
   hideEmptyCategories: boolean;
   postsPerPage: number;
+  cornerRadius: 'none' | 'sm' | 'lg';
 };
 
 const normalizeCoursesListLayoutStyle = (value?: string): CoursesListConfig['layoutStyle'] => {
@@ -354,6 +356,7 @@ export function useCoursesListConfig(): CoursesListConfig {
   return useMemo(() => {
     const raw = experienceSetting?.value as {
       layoutStyle?: CoursesListConfig['layoutStyle'];
+      gridColumns?: number;
       layouts?: Partial<Record<CoursesListConfig['layoutStyle'], Partial<Omit<CoursesListConfig, 'layoutStyle'>>>>;
       paginationType?: PaginationType;
       showSearch?: boolean;
@@ -361,17 +364,20 @@ export function useCoursesListConfig(): CoursesListConfig {
       showLevelFilter?: boolean;
       hideEmptyCategories?: boolean;
       postsPerPage?: number;
+      cornerRadius?: 'none' | 'sm' | 'lg';
     } | undefined;
     const layoutStyle = normalizeCoursesListLayoutStyle(raw?.layoutStyle);
     const layoutConfig = raw?.layouts?.[layoutStyle];
     return {
       layoutStyle,
+      gridColumns: raw?.gridColumns ?? 3,
       paginationType: normalizePaginationType(layoutConfig?.paginationType ?? raw?.paginationType),
       showSearch: layoutConfig?.showSearch ?? raw?.showSearch ?? true,
       showCategories: layoutConfig?.showCategories ?? raw?.showCategories ?? true,
       showLevelFilter: layoutConfig?.showLevelFilter ?? raw?.showLevelFilter ?? true,
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
       postsPerPage: layoutConfig?.postsPerPage ?? raw?.postsPerPage ?? 12,
+      cornerRadius: raw?.cornerRadius ?? 'lg',
     };
   }, [experienceSetting?.value]);
 }

@@ -27,12 +27,14 @@ type PaginationType = 'pagination' | 'infiniteScroll';
 
 type CoursesListExperienceConfig = {
   layoutStyle: ListLayoutStyle;
+  gridColumns: number;
   showSearch: boolean;
   showCategories: boolean;
   showLevelFilter: boolean;
   hideEmptyCategories: boolean;
   paginationType: PaginationType;
   postsPerPage: number;
+  cornerRadius: 'none' | 'sm' | 'lg';
 };
 
 const EXPERIENCE_KEY = 'courses_list_ui';
@@ -45,12 +47,14 @@ const LAYOUTS: LayoutOption<ListLayoutStyle>[] = [
 
 const DEFAULT_CONFIG: CoursesListExperienceConfig = {
   layoutStyle: 'grid',
+  gridColumns: 3,
   showSearch: true,
   showCategories: true,
   showLevelFilter: true,
   hideEmptyCategories: true,
   paginationType: 'pagination',
   postsPerPage: 12,
+  cornerRadius: 'lg',
 };
 
 const HINTS = [
@@ -94,12 +98,14 @@ export default function CoursesListExperiencePage() {
 
     return {
       layoutStyle,
+      gridColumns: raw?.gridColumns ?? 3,
       showSearch: legacyLayout?.showSearch ?? raw?.showSearch ?? true,
       showCategories: legacyLayout?.showCategories ?? raw?.showCategories ?? true,
       showLevelFilter: legacyLayout?.showLevelFilter ?? raw?.showLevelFilter ?? true,
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
       paginationType: normalizePaginationType(legacyLayout?.paginationType ?? raw?.paginationType),
       postsPerPage: legacyLayout?.postsPerPage ?? raw?.postsPerPage ?? 12,
+      cornerRadius: raw?.cornerRadius ?? 'lg',
     };
   }, [experienceSetting?.value]);
 
@@ -148,6 +154,24 @@ export default function CoursesListExperiencePage() {
           <ControlCard title="Danh sách">
             <SelectRow label="Kiểu tải" value={config.paginationType} options={[{ value: 'pagination', label: 'Phân trang' }, { value: 'infiniteScroll', label: 'Cuộn vô hạn' }]} onChange={(value) => setConfig((prev) => ({ ...prev, paginationType: value as PaginationType }))} />
             <SelectRow label="Khóa học/trang" value={String(config.postsPerPage)} options={[12, 20, 24, 48].map((value) => ({ value: String(value), label: String(value) }))} onChange={(value) => setConfig((prev) => ({ ...prev, postsPerPage: Number(value) }))} />
+            {config.layoutStyle === 'grid' && (
+              <SelectRow
+                label="Số cột hiển thị"
+                value={String(config.gridColumns ?? 3)}
+                options={[{ value: '3', label: '3 cột' }, { value: '4', label: '4 cột' }]}
+                onChange={(value) => setConfig((prev) => ({ ...prev, gridColumns: Number(value) }))}
+              />
+            )}
+            <SelectRow
+              label="Độ bo góc"
+              value={config.cornerRadius ?? 'lg'}
+              options={[
+                { value: 'lg', label: 'Nhiều (Mặc định)' },
+                { value: 'sm', label: 'Ít (1/2)' },
+                { value: 'none', label: 'Không bo' },
+              ]}
+              onChange={(value) => setConfig((prev) => ({ ...prev, cornerRadius: value as 'none' | 'sm' | 'lg' }))}
+            />
           </ControlCard>
         </CardContent>
       </Card>
@@ -182,6 +206,7 @@ export default function CoursesListExperiencePage() {
             <BrowserFrame url="yoursite.com/khoa-hoc">
               <CoursesListPreview
                 layoutStyle={config.layoutStyle}
+                gridColumns={config.gridColumns}
                 showSearch={config.showSearch}
                 showCategories={config.showCategories}
                 showLevelFilter={config.showLevelFilter}
@@ -192,6 +217,7 @@ export default function CoursesListExperiencePage() {
                 secondaryColor={secondaryColor}
                 colorMode={colorMode}
                 device={previewDevice}
+                cornerRadius={config.cornerRadius}
               />
             </BrowserFrame>
           </div>
