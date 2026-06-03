@@ -758,6 +758,7 @@ export function AiEntityImportDialog({
   enableProductTypes = false,
   enableCombos = false,
   formConfig,
+  buttonLabel = 'Import AI',
 }: {
   buttonClassName?: string;
   enabledFields?: Iterable<string>;
@@ -766,6 +767,7 @@ export function AiEntityImportDialog({
   enableProductTypes?: boolean;
   enableCombos?: boolean;
   formConfig?: any;
+  buttonLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [rawInput, setRawInput] = useState('');
@@ -942,7 +944,7 @@ export function AiEntityImportDialog({
   return (
     <>
       <Button type="button" variant="outline" className={cn('gap-2', buttonClassName)} onClick={() => setOpen(true)}>
-        <Bot size={16} /> Nhập bằng AI
+        <Bot size={16} /> {buttonLabel}
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
