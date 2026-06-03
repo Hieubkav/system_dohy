@@ -38,8 +38,8 @@ const EXPERIENCE_KEY = 'lesson_detail_ui';
 
 const LAYOUTS: LayoutOption<LessonDetailLayoutStyle>[] = [
   { id: 'classic', label: 'Cổ điển', description: 'Video + sidebar nội dung khóa học' },
-  { id: 'focus', label: 'Tập trung', description: 'Ẩn sidebar, ưu tiên nội dung bài học' },
-  { id: 'compact', label: 'Gọn', description: 'Giảm khoảng cách cho nội dung dày' },
+  { id: 'focus', label: 'Tập trung', description: 'Video rộng + sidebar khóa học tinh gọn' },
+  { id: 'compact', label: 'Gọn', description: 'Bố cục chắc, vẫn đủ khóa học và điều hướng' },
 ];
 
 const DEFAULT_CONFIG: LessonDetailExperienceConfig = {
@@ -113,7 +113,7 @@ export default function LessonDetailExperiencePage() {
             <ColorConfigCard primary={brandColor} secondary={secondaryColor} mode={colorMode} onPrimaryChange={setBrandColor} onSecondaryChange={setSecondaryColor} onModeChange={setColorMode} />
           </ControlCard>
           <ControlCard title="Khối bài học">
-            <ToggleRow label="Sidebar nội dung" description="Danh sách chương/bài học bên cạnh video" checked={config.showSidebar} onChange={(value) => updateConfig('showSidebar', value)} accentColor={brandColor} />
+            <ToggleRow label="Sidebar nội dung" description="Tắt/mở sidebar đầy đủ; Tập trung/Gọn vẫn giữ khung khóa học rút gọn" checked={config.showSidebar} onChange={(value) => updateConfig('showSidebar', value)} accentColor={brandColor} />
             <ToggleRow label="Điều hướng bài trước/sau" checked={config.showLessonNavigation} onChange={(value) => updateConfig('showLessonNavigation', value)} accentColor={brandColor} />
             <ToggleRow label="Nút tải bài tập" checked={config.showExerciseDownload} onChange={(value) => updateConfig('showExerciseDownload', value)} accentColor={brandColor} />
             <ToggleRow label="Breadcrumb khóa học" checked={config.showCourseBreadcrumb} onChange={(value) => updateConfig('showCourseBreadcrumb', value)} accentColor={brandColor} />
@@ -154,7 +154,7 @@ export default function LessonDetailExperiencePage() {
             <ExampleLinks links={[{ label: 'Xem bài học mẫu', url: EXAMPLE_LESSON_URL }]} color={brandColor} compact />
           </ControlCard>
           <Card className="p-2">
-            <ExperienceHintCard hints={['Cổ điển phù hợp trang học có nhiều chương/bài.', 'Tập trung phù hợp khi cần ưu tiên video và nội dung bài học.', 'Card sáng giúp lock wall nhẹ hơn trên trang học thử.']} />
+            <ExperienceHintCard hints={['Cổ điển phù hợp trang học có nhiều chương/bài.', 'Tập trung mở rộng vùng học nhưng vẫn giữ khung khóa học để chọn bài.', 'Gọn chỉ tối ưu nhịp spacing, không bỏ sidebar/nội dung khóa học.']} />
           </Card>
         </CardContent>
       </Card>

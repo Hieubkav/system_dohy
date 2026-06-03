@@ -939,9 +939,16 @@ export function LessonDetailPreview({
   const isMobile = device === 'mobile';
   const isCompact = layoutStyle === 'compact';
   const isFocus = layoutStyle === 'focus';
-  const shouldShowSidebar = showSidebar && !isFocus;
+  const shouldShowSidebar = showSidebar || isFocus || isCompact;
   const radiusClass = getRadiusClass(cornerRadius);
   const smallRadiusClass = getSmallRadiusClass(cornerRadius);
+  const containerClass = isFocus
+    ? 'max-w-7xl gap-6 px-5 py-7'
+    : isCompact
+      ? 'max-w-6xl gap-5 px-5 py-6'
+      : 'max-w-6xl gap-5 px-4 py-6';
+  const directionClass = isMobile ? 'flex-col' : isFocus ? 'flex-row' : 'flex-row-reverse';
+  const sidebarWidthClass = isFocus ? 'w-[280px]' : isCompact ? 'w-[320px]' : 'w-[300px]';
 
   const lessonItems = [
     { title: 'Làm quen AutoCAD tiêu chuẩn bản vẽ', active: true, preview: true },
@@ -966,8 +973,8 @@ export function LessonDetailPreview({
 
   return (
     <div className="min-h-[640px] bg-slate-50">
-      <div className={`mx-auto flex w-full ${isCompact ? 'max-w-5xl gap-4 px-4 py-5' : 'max-w-6xl gap-5 px-4 py-6'} ${isMobile ? 'flex-col' : 'flex-row-reverse'}`}>
-        <section className={`min-w-0 flex-1 ${isCompact ? 'space-y-4' : 'space-y-5'}`}>
+      <div className={`mx-auto flex w-full ${containerClass} ${directionClass}`}>
+        <section className={`min-w-0 flex-1 ${isCompact ? 'space-y-5' : 'space-y-6'}`}>
           {showCourseBreadcrumb && (
             <div className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
               <ArrowLeft size={13} /> Khóa học kiến trúc nội thất
@@ -985,7 +992,7 @@ export function LessonDetailPreview({
             )}
           </div>
 
-          <div className={`relative space-y-5 border border-slate-200 bg-white ${isCompact ? 'p-4' : 'p-5'} ${radiusClass}`}>
+          <div className={`relative space-y-5 border border-slate-200 bg-white ${isCompact ? 'p-5' : 'p-6'} ${radiusClass}`}>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Bài học</span>
@@ -1030,15 +1037,21 @@ export function LessonDetailPreview({
         </section>
 
         {shouldShowSidebar && (
-          <aside className={`${isMobile ? 'w-full' : 'w-[300px]'} shrink-0 overflow-hidden border border-slate-200 bg-white shadow-sm ${radiusClass}`}>
+          <aside className={`${isMobile ? 'w-full' : sidebarWidthClass} shrink-0 overflow-hidden border border-slate-200 bg-white shadow-sm ${radiusClass}`}>
             <div className="border-b border-slate-100 p-4">
               <div className="mb-2 inline-flex items-center gap-1.5 text-xs text-slate-500">
                 <BookOpen size={13} /> Giáo trình AutoCAD 2025
               </div>
-              <h2 className="text-sm font-bold text-slate-950">Nội dung khóa học</h2>
+              <h2 className="text-sm font-bold text-slate-950">{isFocus ? 'Khóa học & tiến độ' : 'Nội dung khóa học'}</h2>
+              {isFocus && (
+                <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-slate-500">
+                  <span className={`border border-slate-200 bg-slate-50 px-2 py-1.5 ${smallRadiusClass}`}>12 chương</span>
+                  <span className={`border border-slate-200 bg-slate-50 px-2 py-1.5 ${smallRadiusClass}`}>58 bài học</span>
+                </div>
+              )}
             </div>
             <div className="divide-y divide-slate-100">
-              <div className="p-4">
+              <div className={isFocus ? 'p-3' : 'p-4'}>
                 <h3 className="mb-3 text-xs font-bold text-slate-800">1. Nền tảng bản vẽ</h3>
                 <div className="space-y-1">
                   {lessonItems.map((item, index) => (
@@ -1057,7 +1070,13 @@ export function LessonDetailPreview({
               {!isCompact && (
                 <div className="p-4 text-xs text-slate-500">
                   <FileText size={14} className="mb-2" style={{ color: accent }} />
-                  Chọn chế độ tập trung để ẩn sidebar khi muốn học toàn màn hình.
+                  {isFocus ? 'Sidebar rút gọn giúp chọn bài nhanh mà vẫn giữ vùng video rộng.' : 'Sidebar đầy đủ giúp học viên biết đang ở đâu trong khóa học.'}
+                </div>
+              )}
+              {isCompact && (
+                <div className="p-4 text-xs text-slate-500">
+                  <FileText size={14} className="mb-2" style={{ color: accent }} />
+                  Bố cục gọn nhưng vẫn giữ đủ khóa học, bài hiện tại và bài khóa.
                 </div>
               )}
             </div>

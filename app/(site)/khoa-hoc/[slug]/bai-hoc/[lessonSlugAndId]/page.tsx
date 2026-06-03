@@ -41,9 +41,12 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   const brandColor = brandColors.primary;
   const isCompactLayout = config.layoutStyle === 'compact';
   const isFocusLayout = config.layoutStyle === 'focus';
-  const shouldShowSidebar = config.showSidebar && !isFocusLayout;
+  const shouldShowSidebar = config.showSidebar || isFocusLayout || isCompactLayout;
   const radiusClass = getRadiusClass(config.cornerRadius);
   const smallRadiusClass = getSmallRadiusClass(config.cornerRadius);
+  const pageMaxClass = isFocusLayout ? 'max-w-[1720px]' : isCompactLayout ? 'max-w-[1500px]' : 'max-w-[1600px]';
+  const directionClass = isFocusLayout ? 'lg:flex-row' : 'lg:flex-row-reverse';
+  const sidebarWidthClass = isFocusLayout ? 'lg:w-[320px]' : isCompactLayout ? 'lg:w-[340px]' : 'lg:w-[380px]';
 
   // Trạng thái mở rộng accordion ở sidebar bài học
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
@@ -148,9 +151,9 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
         }
       `}</style>
 
-      <div className={`w-full flex flex-col ${shouldShowSidebar ? 'lg:flex-row-reverse' : ''} ${isFocusLayout ? 'max-w-5xl' : 'max-w-[1600px]'} ${isCompactLayout ? 'gap-4 px-3 py-5' : 'gap-6 px-4 py-8'}`}>
+      <div className={`w-full flex flex-col ${shouldShowSidebar ? directionClass : ''} ${pageMaxClass} ${isCompactLayout ? 'gap-5 px-4 py-6' : 'gap-6 px-4 py-8'}`}>
         {/* Cột chính, cách Sidebar một khoảng cách gap-6 hoàn hảo */}
-        <section className={`flex-1 min-w-0 flex flex-col ${isCompactLayout ? 'gap-4' : 'gap-6'}`}>
+        <section className={`flex-1 min-w-0 flex flex-col ${isCompactLayout ? 'gap-5' : 'gap-6'}`}>
           {config.showCourseBreadcrumb && !shouldShowSidebar && (
             <Link href={`/khoa-hoc/${course.slug}`} className="inline-flex w-fit items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors">
               <ArrowLeft size={12} /> {course.title}
@@ -213,7 +216,7 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
           </div>
 
           {/* Lesson Details with Security Lock blur */}
-          <div className={`bg-white border border-slate-200 ${isCompactLayout ? 'p-4 space-y-4' : 'p-6 space-y-6'} ${radiusClass} relative overflow-hidden`}>
+          <div className={`bg-white border border-slate-200 ${isCompactLayout ? 'p-5 space-y-5' : 'p-6 space-y-6'} ${radiusClass} relative overflow-hidden`}>
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Bài học</span>
@@ -306,14 +309,20 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
 
         {/* Sidebar dạng Card Card-style, thẳng hàng Menu trên */}
         {shouldShowSidebar && (
-        <aside className={`w-full lg:w-[380px] shrink-0 bg-white border border-slate-200 ${radiusClass} shadow-sm flex flex-col h-auto lg:h-[calc(100vh-140px)] lg:sticky lg:top-24 overflow-y-auto no-scrollbar`}>
+        <aside className={`w-full ${sidebarWidthClass} shrink-0 bg-white border border-slate-200 ${radiusClass} shadow-sm flex flex-col h-auto lg:h-[calc(100vh-140px)] lg:sticky lg:top-24 overflow-y-auto no-scrollbar`}>
           <div className={`p-4 border-b border-slate-100 bg-white sticky top-0 z-10 ${config.cornerRadius === 'none' ? 'rounded-none' : 'rounded-t-xl'}`}>
             {config.showCourseBreadcrumb && (
             <Link href={`/khoa-hoc/${course.slug}`} className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors mb-2">
               <ArrowLeft size={12} /> {course.title}
             </Link>
             )}
-            <h2 className="font-bold text-slate-950 text-sm">Nội dung khóa học</h2>
+            <h2 className="font-bold text-slate-950 text-sm">{isFocusLayout ? 'Khóa học & tiến độ' : 'Nội dung khóa học'}</h2>
+            {isFocusLayout && (
+              <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-slate-500">
+                <span className={`border border-slate-200 bg-slate-50 px-2 py-1.5 ${smallRadiusClass}`}>{chapters?.length ?? 0} chương</span>
+                <span className={`border border-slate-200 bg-slate-50 px-2 py-1.5 ${smallRadiusClass}`}>{lessons?.length ?? 0} bài học</span>
+              </div>
+            )}
           </div>
 
           <div className="divide-y divide-slate-100 flex-1">
