@@ -11,6 +11,7 @@ import { useBrandColors } from '@/components/site/hooks';
 import { COURSE_LEVEL_OPTIONS, getCourseLevelLabel } from '@/lib/courses/labels';
 import { useCoursesListConfig } from '@/lib/experiences';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
+import { useCustomerAuth } from '@/app/(site)/auth/context';
 
 const formatPrice = (pricingType: string, price?: number) => {
   if (pricingType === 'free') {return 'Miễn phí';}
@@ -252,6 +253,7 @@ function CoursesContent() {
   const brandColors = useBrandColors();
   const config = useCoursesListConfig();
   const router = useRouter();
+  const { token } = useCustomerAuth();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const routeModeSetting = useQuery(api.settings.getValue, { key: 'ia_route_mode', defaultValue: 'unified' });
@@ -380,6 +382,13 @@ function CoursesContent() {
   }, [pathname, router, searchParams]);
 
   const courseItems = courses ?? [];
+  const progressSummaries = useQuery(
+    api.courses.getCourseProgressSummaries,
+    courseItems.length > 0 ? { courseIds: courseItems.map((course) => course._id), token: token ?? undefined } : 'skip'
+  );
+  const progressMap = useMemo(() => {
+    return new Map((progressSummaries ?? []).map((progress) => [progress.courseId, progress]));
+  }, [progressSummaries]);
   const totalCourses = totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCourses / postsPerPage));
 
@@ -615,6 +624,9 @@ function CoursesContent() {
                         recordSlug: course.slug,
                       });
                       const showPrice = course.isPriceVisible !== false;
+                      const progress = progressMap.get(course._id);
+                      const hasLearningAccess = Boolean(progress?.hasAccess);
+                      const progressPercent = progress?.progressPercent ?? 0;
 
                       if (config.layoutStyle === 'masonry') {
                         return (
@@ -650,15 +662,29 @@ function CoursesContent() {
                                 </div>
                               </div>
                               
-                              {showPrice && (
+                              {(hasLearningAccess || showPrice) && (
                                 <div className="flex items-center justify-between border-t border-slate-100 pt-4">
-                                  <div className="flex flex-col">
-                                    <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Học phí</span>
-                                    <span className="text-lg font-bold" style={{ color: brandColors.secondary || brandColors.primary }}>
-                                      {formatPrice(course.pricingType, course.priceAmount)}
-                                    </span>
-                                  </div>
-                                  <span className="rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:shadow transition-all" style={{ backgroundColor: brandColors.primary }}>Xem khóa học</span>
+                                  {hasLearningAccess ? (
+                                    <div className="min-w-0 flex-1 pr-4">
+                                      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                                        <span>Tiến độ học</span>
+                                        <span>{progressPercent}%</span>
+                                      </div>
+                                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                                        <div className="h-full rounded-full" style={{ width: `${progressPercent}%`, backgroundColor: brandColors.primary }} />
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col">
+                                      <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Học phí</span>
+                                      <span className="text-lg font-bold" style={{ color: brandColors.secondary || brandColors.primary }}>
+                                        {formatPrice(course.pricingType, course.priceAmount)}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <span className="rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:shadow transition-all" style={{ backgroundColor: brandColors.primary }}>
+                                    {hasLearningAccess ? 'Vào học' : 'Xem khóa học'}
+                                  </span>
                                 </div>
                               )}
                             </div>
@@ -693,9 +719,23 @@ function CoursesContent() {
                               {course.durationText && <span className="inline-flex items-center gap-1"><Clock size={13} />{course.durationText}</span>}
                               {course.instructorName && <span className="inline-flex items-center gap-1"><UserRound size={13} />{course.instructorName}</span>}
                             </div>
-                            {showPrice && (
-                              <div className="border-t border-slate-100 pt-3 font-bold" style={{ color: brandColors.secondary || brandColors.primary }}>
-                                {formatPrice(course.pricingType, course.priceAmount)}
+                            {(hasLearningAccess || showPrice) && (
+                              <div className="border-t border-slate-100 pt-3">
+                                {hasLearningAccess ? (
+                                  <div>
+                                    <div className="mb-2 flex items-center justify-between text-xs font-semibold" style={{ color: brandColors.primary }}>
+                                      <span>Vào học</span>
+                                      <span>{progressPercent}%</span>
+                                    </div>
+                                    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                                      <div className="h-full rounded-full" style={{ width: `${progressPercent}%`, backgroundColor: brandColors.primary }} />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="font-bold" style={{ color: brandColors.secondary || brandColors.primary }}>
+                                    {formatPrice(course.pricingType, course.priceAmount)}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>

@@ -1,5 +1,5 @@
 import { mutation, query } from "./_generated/server";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { contentStatus } from "./lib/validators";
@@ -17,6 +17,17 @@ import {
   mergeCoursesByCategoryAssignments,
   syncCourseCategoryAssignments,
 } from "./lib/multiCategory";
+import {
+  customerHasCourseOrderAccess,
+  ensureCourseStudentForCustomerCourse,
+  getActiveLessonCount,
+  getCourseStudent,
+  getFirstActiveLesson,
+  getProgressPercent,
+  orderCanUnlockCourse,
+  recalculateCourseStudentProgress,
+  resolveCustomerIdByToken,
+} from "./lib/courseEnrollment";
 
 const videoType = v.union(
   v.literal("none"),
@@ -124,6 +135,53 @@ const courseLearningLinkDoc = v.object({
   firstLessonTitle: v.optional(v.string()),
 });
 
+const courseProgressDoc = v.object({
+  certificateCode: v.optional(v.string()),
+  certificateIssuedAt: v.optional(v.number()),
+  completedAt: v.optional(v.number()),
+  completedLessonIds: v.array(v.id("courseLessons")),
+  completedLessonsCount: v.number(),
+  courseId: v.id("courses"),
+  enrolledAt: v.optional(v.number()),
+  hasAccess: v.boolean(),
+  isEnrolled: v.boolean(),
+  lastActivityAt: v.optional(v.number()),
+  lastLessonId: v.optional(v.id("courseLessons")),
+  lessonCount: v.number(),
+  progressPercent: v.number(),
+  reason: v.string(),
+});
+
+const courseProgressSummaryDoc = v.object({
+  certificateCode: v.optional(v.string()),
+  completedAt: v.optional(v.number()),
+  completedLessonsCount: v.number(),
+  courseId: v.id("courses"),
+  hasAccess: v.boolean(),
+  isEnrolled: v.boolean(),
+  lessonCount: v.number(),
+  progressPercent: v.number(),
+});
+
+const courseStudentAdminDoc = v.object({
+  certificateCode: v.optional(v.string()),
+  completedAt: v.optional(v.number()),
+  completedLessonsCount: v.number(),
+  courseId: v.id("courses"),
+  courseTitle: v.string(),
+  customerEmail: v.string(),
+  customerId: v.id("customers"),
+  customerName: v.string(),
+  customerPhone: v.string(),
+  enrolledAt: v.number(),
+  lastActivityAt: v.optional(v.number()),
+  lastLessonTitle: v.optional(v.string()),
+  lessonCount: v.number(),
+  progressPercent: v.number(),
+  status: v.union(v.literal("active"), v.literal("revoked")),
+  studentId: v.id("courseStudents"),
+});
+
 const paginatedCourses = v.object({
   continueCursor: v.string(),
   isDone: v.boolean(),
@@ -131,103 +189,6 @@ const paginatedCourses = v.object({
   pageStatus: v.optional(v.union(v.literal("SplitRecommended"), v.literal("SplitRequired"), v.null())),
   splitCursor: v.optional(v.union(v.string(), v.null())),
 });
-
-async function resolveCustomerIdByToken(ctx: QueryCtx, token?: string | null) {
-  if (!token || !token.startsWith("cus_")) {
-    return null;
-  }
-
-  const session = await ctx.db
-    .query("customerSessions")
-    .withIndex("by_token", (q) => q.eq("token", token))
-    .unique();
-  if (!session || session.expiresAt < Date.now()) {
-    return null;
-  }
-
-  const customer = await ctx.db.get(session.customerId);
-  if (!customer || customer.status !== "Active") {
-    return null;
-  }
-
-  return customer._id;
-}
-
-function isCancelledOrRefundedOrderStatus(status: string) {
-  const normalized = status.toLowerCase();
-  return (
-    normalized.includes("cancel") ||
-    normalized.includes("refund") ||
-    normalized.includes("huy") ||
-    normalized.includes("hủy") ||
-    normalized.includes("hoan-tien") ||
-    normalized.includes("hoantien") ||
-    normalized.includes("hoàn tiền") ||
-    normalized.includes("hoàn-tiền")
-  );
-}
-
-function isCompletedOrderStatus(status: string) {
-  const normalized = status.toLowerCase();
-  return (
-    normalized.includes("complete") ||
-    normalized.includes("completed") ||
-    normalized.includes("delivered") ||
-    normalized.includes("done") ||
-    normalized.includes("hoan-thanh") ||
-    normalized.includes("hoanthanh") ||
-    normalized.includes("hoàn thành")
-  );
-}
-
-function orderCanUnlockCourse(order: Doc<"orders">) {
-  if (order.paymentStatus === "Refunded" || order.paymentStatus === "Failed") {
-    return false;
-  }
-  if (isCancelledOrRefundedOrderStatus(order.status)) {
-    return false;
-  }
-  return order.paymentStatus === "Paid" || isCompletedOrderStatus(order.status);
-}
-
-async function customerHasCourseOrderAccess(
-  ctx: QueryCtx,
-  customerId: Doc<"customers">["_id"],
-  courseId: Doc<"courses">["_id"]
-) {
-  const orders = await ctx.db
-    .query("orders")
-    .withIndex("by_customer", (q) => q.eq("customerId", customerId))
-    .order("desc")
-    .take(500);
-
-  return orders.some((order) =>
-    orderCanUnlockCourse(order) &&
-    order.items.some((item) =>
-      (item.itemType ?? "product") === "course" &&
-      item.courseId === courseId
-    )
-  );
-}
-
-async function getFirstActiveLesson(ctx: QueryCtx, courseId: Doc<"courses">["_id"]) {
-  const [chapters, lessons] = await Promise.all([
-    ctx.db
-      .query("courseChapters")
-      .withIndex("by_course_active_order", (q) => q.eq("courseId", courseId).eq("active", true))
-      .take(200),
-    ctx.db
-      .query("courseLessons")
-      .withIndex("by_course_active_order", (q) => q.eq("courseId", courseId).eq("active", true))
-      .take(500),
-  ]);
-
-  const chapterOrderMap = new Map(chapters.map((chapter) => [chapter._id, chapter.order]));
-  return lessons.sort((a, b) => {
-    const chapterDiff = (chapterOrderMap.get(a.chapterId) ?? 0) - (chapterOrderMap.get(b.chapterId) ?? 0);
-    return chapterDiff === 0 ? a.order - b.order : chapterDiff;
-  })[0] ?? null;
-}
 
 function sanitizeLockedLesson(lesson: Doc<"courseLessons">) {
   const safeLesson: Partial<Doc<"courseLessons">> = { ...lesson };
@@ -776,6 +737,7 @@ export const create = mutation({
     if (await isMultiCategoryEnabled(ctx, "courses")) {
       await syncCourseCategoryAssignments(ctx, id, args.categoryId, args.additionalCategoryIds);
     }
+
     if (args.thumbnailStorageId) {
       await syncOwnerFilesAndCleanup(ctx, {
         ownerField: "thumbnail",
@@ -832,10 +794,12 @@ export const update = mutation({
     }
     const modelArgs = { ...nextArgs };
     delete (modelArgs as { additionalCategoryIds?: unknown }).additionalCategoryIds;
+
     await CoursesModel.update(ctx, modelArgs);
     if (previous && await isMultiCategoryEnabled(ctx, "courses")) {
       await syncCourseCategoryAssignments(ctx, args.id, args.categoryId ?? previous.categoryId, args.additionalCategoryIds);
     }
+
     const shouldCheckStorage = Object.prototype.hasOwnProperty.call(args, "thumbnailStorageId");
     if (shouldCheckStorage && previous) {
       const nextThumbnailStorageId = Object.prototype.hasOwnProperty.call(args, "thumbnailStorageId")
@@ -993,7 +957,9 @@ export const getCourseAccess = query({
       return { courseSlug: course.slug, hasAccess: false, reason: "login_required" };
     }
 
+    const student = await getCourseStudent(ctx, customerId, course._id);
     const hasAccess = course.pricingType === "free" ||
+      student?.status === "active" ||
       await customerHasCourseOrderAccess(ctx, customerId, course._id);
     if (!hasAccess) {
       return { courseSlug: course.slug, hasAccess: false, reason: "not_enrolled" };
@@ -1019,13 +985,22 @@ export const listMyCourseLearningLinks = query({
       return [];
     }
 
-    const orders = await ctx.db
-      .query("orders")
-      .withIndex("by_customer", (q) => q.eq("customerId", customerId))
-      .order("desc")
-      .take(500);
+    const [orders, activeStudents] = await Promise.all([
+      ctx.db
+        .query("orders")
+        .withIndex("by_customer", (q) => q.eq("customerId", customerId))
+        .order("desc")
+        .take(500),
+      ctx.db
+        .query("courseStudents")
+        .withIndex("by_customerId_and_status", (q) => q.eq("customerId", customerId).eq("status", "active"))
+        .take(500),
+    ]);
 
     const accessibleCourseIds = new Set<Doc<"courses">["_id"]>();
+    for (const student of activeStudents) {
+      accessibleCourseIds.add(student.courseId);
+    }
     for (const order of orders) {
       if (!orderCanUnlockCourse(order)) {
         continue;
@@ -1060,6 +1035,286 @@ export const listMyCourseLearningLinks = query({
     });
   },
   returns: v.array(courseLearningLinkDoc),
+});
+
+export const getCourseProgress = query({
+  args: {
+    courseId: v.id("courses"),
+    token: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const course = await ctx.db.get(args.courseId);
+    const customerId = await resolveCustomerIdByToken(ctx, args.token);
+    if (!course || course.status !== "Published" || !customerId) {
+      return {
+        completedLessonIds: [],
+        completedLessonsCount: 0,
+        courseId: args.courseId,
+        hasAccess: false,
+        isEnrolled: false,
+        lessonCount: course?.lessonCount ?? 0,
+        progressPercent: 0,
+        reason: !customerId ? "login_required" : "course_not_found",
+      };
+    }
+
+    const [student, lessonCount] = await Promise.all([
+      getCourseStudent(ctx, customerId, course._id),
+      getActiveLessonCount(ctx, course._id),
+    ]);
+    const hasOrderAccess = student?.status === "active"
+      ? true
+      : await customerHasCourseOrderAccess(ctx, customerId, course._id);
+    const hasAccess = course.pricingType === "free" || hasOrderAccess;
+    const progressRows = student?.status === "active"
+      ? await ctx.db
+        .query("courseLessonProgress")
+        .withIndex("by_courseId_and_customerId", (q) =>
+          q.eq("courseId", course._id).eq("customerId", customerId)
+        )
+        .take(500)
+      : [];
+    const completedLessonsCount = progressRows.length || student?.completedLessonsCount || 0;
+
+    return {
+      certificateCode: student?.certificateCode,
+      certificateIssuedAt: student?.certificateIssuedAt,
+      completedAt: student?.completedAt,
+      completedLessonIds: progressRows.map((row) => row.lessonId),
+      completedLessonsCount,
+      courseId: course._id,
+      enrolledAt: student?.enrolledAt,
+      hasAccess,
+      isEnrolled: student?.status === "active",
+      lastActivityAt: student?.lastActivityAt,
+      lastLessonId: student?.lastLessonId,
+      lessonCount,
+      progressPercent: getProgressPercent(completedLessonsCount, lessonCount),
+      reason: hasAccess ? (student?.status === "active" ? "enrolled" : "purchased") : "not_enrolled",
+    };
+  },
+  returns: courseProgressDoc,
+});
+
+export const getCourseProgressSummaries = query({
+  args: {
+    courseIds: v.array(v.id("courses")),
+    token: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const courseIds = Array.from(new Set(args.courseIds)).slice(0, 50);
+    const customerId = await resolveCustomerIdByToken(ctx, args.token);
+    const courses = await Promise.all(courseIds.map((courseId) => ctx.db.get(courseId)));
+    const courseMap = new Map(courses.filter(Boolean).map((course) => [course!._id, course!]));
+
+    if (!customerId) {
+      return courseIds.map((courseId) => {
+        const course = courseMap.get(courseId);
+        const lessonCount = course?.lessonCount ?? 0;
+        return {
+          completedLessonsCount: 0,
+          courseId,
+          hasAccess: course?.pricingType === "free",
+          isEnrolled: false,
+          lessonCount,
+          progressPercent: 0,
+        };
+      });
+    }
+
+    const [activeStudents, orders] = await Promise.all([
+      ctx.db
+        .query("courseStudents")
+        .withIndex("by_customerId_and_status", (q) => q.eq("customerId", customerId).eq("status", "active"))
+        .take(500),
+      ctx.db
+        .query("orders")
+        .withIndex("by_customer", (q) => q.eq("customerId", customerId))
+        .order("desc")
+        .take(500),
+    ]);
+    const studentMap = new Map(activeStudents.map((student) => [student.courseId, student]));
+    const purchasedCourseIds = new Set<Doc<"courses">["_id"]>();
+    for (const order of orders) {
+      if (!orderCanUnlockCourse(order)) {
+        continue;
+      }
+      for (const item of order.items) {
+        if ((item.itemType ?? "product") === "course" && item.courseId) {
+          purchasedCourseIds.add(item.courseId);
+        }
+      }
+    }
+
+    return courseIds.map((courseId) => {
+      const course = courseMap.get(courseId);
+      const student = studentMap.get(courseId);
+      const lessonCount = student?.lessonCountSnapshot || course?.lessonCount || 0;
+      const completedLessonsCount = student?.completedLessonsCount ?? 0;
+      const hasAccess = course?.pricingType === "free" || student?.status === "active" || purchasedCourseIds.has(courseId);
+      return {
+        certificateCode: student?.certificateCode,
+        completedAt: student?.completedAt,
+        completedLessonsCount,
+        courseId,
+        hasAccess,
+        isEnrolled: student?.status === "active",
+        lessonCount,
+        progressPercent: getProgressPercent(completedLessonsCount, lessonCount),
+      };
+    });
+  },
+  returns: v.array(courseProgressSummaryDoc),
+});
+
+export const setLessonCompletion = mutation({
+  args: {
+    completed: v.boolean(),
+    lessonId: v.id("courseLessons"),
+    token: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const customerId = await resolveCustomerIdByToken(ctx, args.token);
+    if (!customerId) {
+      throw new Error("Vui lòng đăng nhập để lưu tiến độ học.");
+    }
+
+    const lesson = await ctx.db.get(args.lessonId);
+    if (!lesson || !lesson.active) {
+      throw new Error("Bài học không tồn tại hoặc đã bị tắt.");
+    }
+    const course = await ctx.db.get(lesson.courseId);
+    if (!course || course.status !== "Published") {
+      throw new Error("Khóa học không khả dụng.");
+    }
+
+    const existingStudent = await getCourseStudent(ctx, customerId, course._id);
+    const hasAccess = course.pricingType === "free" ||
+      existingStudent?.status === "active" ||
+      await customerHasCourseOrderAccess(ctx, customerId, course._id);
+    if (!hasAccess) {
+      throw new Error("Bạn chưa có quyền học khóa này.");
+    }
+
+    const studentId = existingStudent?.status === "active"
+      ? existingStudent._id
+      : await ensureCourseStudentForCustomerCourse(ctx, customerId, course._id, {
+        sourceType: course.pricingType === "free" ? "free" : "order",
+      });
+
+    const existingProgress = await ctx.db
+      .query("courseLessonProgress")
+      .withIndex("by_studentId_and_lessonId", (q) =>
+        q.eq("studentId", studentId).eq("lessonId", lesson._id)
+      )
+      .unique();
+    const now = Date.now();
+    if (args.completed && !existingProgress) {
+      await ctx.db.insert("courseLessonProgress", {
+        completedAt: now,
+        courseId: course._id,
+        customerId,
+        lessonId: lesson._id,
+        studentId,
+        updatedAt: now,
+      });
+    } else if (!args.completed && existingProgress) {
+      await ctx.db.delete(existingProgress._id);
+    }
+
+    const updatedStudent = await recalculateCourseStudentProgress(ctx, studentId, lesson._id);
+    const completedLessonsCount = updatedStudent?.completedLessonsCount ?? 0;
+    const lessonCount = updatedStudent?.lessonCountSnapshot ?? await getActiveLessonCount(ctx, course._id);
+    return {
+      certificateCode: updatedStudent?.certificateCode,
+      completedAt: updatedStudent?.completedAt,
+      completedLessonsCount,
+      lessonCount,
+      progressPercent: getProgressPercent(completedLessonsCount, lessonCount),
+    };
+  },
+  returns: v.object({
+    certificateCode: v.optional(v.string()),
+    completedAt: v.optional(v.number()),
+    completedLessonsCount: v.number(),
+    lessonCount: v.number(),
+    progressPercent: v.number(),
+  }),
+});
+
+export const listCourseStudentsAdmin = query({
+  args: {
+    courseId: v.optional(v.id("courses")),
+    limit: v.optional(v.number()),
+    offset: v.optional(v.number()),
+    status: v.optional(v.union(v.literal("active"), v.literal("revoked"))),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit ?? 50, 100);
+    const offset = args.offset ?? 0;
+    const fetchLimit = Math.min(offset + limit + 1, 501);
+
+    let students: Doc<"courseStudents">[] = [];
+    if (args.courseId && args.status) {
+      students = await ctx.db
+        .query("courseStudents")
+        .withIndex("by_courseId_and_status", (q) => q.eq("courseId", args.courseId!).eq("status", args.status!))
+        .take(fetchLimit);
+    } else if (args.courseId) {
+      students = await ctx.db
+        .query("courseStudents")
+        .withIndex("by_courseId", (q) => q.eq("courseId", args.courseId!))
+        .take(fetchLimit);
+    } else if (args.status) {
+      students = await ctx.db
+        .query("courseStudents")
+        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .take(fetchLimit);
+    } else {
+      students = await ctx.db.query("courseStudents").take(fetchLimit);
+    }
+
+    const page = students.slice(offset, offset + limit);
+    const [customers, courses, lessons] = await Promise.all([
+      Promise.all(Array.from(new Set(page.map((student) => student.customerId))).map((id) => ctx.db.get(id))),
+      Promise.all(Array.from(new Set(page.map((student) => student.courseId))).map((id) => ctx.db.get(id))),
+      Promise.all(Array.from(new Set(page.map((student) => student.lastLessonId).filter(Boolean))).map((id) => ctx.db.get(id!))),
+    ]);
+    const customerMap = new Map(customers.filter(Boolean).map((customer) => [customer!._id, customer!]));
+    const courseMap = new Map(courses.filter(Boolean).map((course) => [course!._id, course!]));
+    const lessonMap = new Map(lessons.filter(Boolean).map((lesson) => [lesson!._id, lesson!]));
+
+    return {
+      hasMore: students.length > offset + limit,
+      items: page.map((student) => {
+        const customer = customerMap.get(student.customerId);
+        const course = courseMap.get(student.courseId);
+        const lessonCount = student.lessonCountSnapshot || course?.lessonCount || 0;
+        return {
+          certificateCode: student.certificateCode,
+          completedAt: student.completedAt,
+          completedLessonsCount: student.completedLessonsCount,
+          courseId: student.courseId,
+          courseTitle: course?.title ?? "Khóa học đã xóa",
+          customerEmail: customer?.email ?? "",
+          customerId: student.customerId,
+          customerName: customer?.name ?? "Khách hàng đã xóa",
+          customerPhone: customer?.phone ?? "",
+          enrolledAt: student.enrolledAt,
+          lastActivityAt: student.lastActivityAt,
+          lastLessonTitle: student.lastLessonId ? lessonMap.get(student.lastLessonId)?.title : undefined,
+          lessonCount,
+          progressPercent: getProgressPercent(student.completedLessonsCount, lessonCount),
+          status: student.status,
+          studentId: student._id,
+        };
+      }),
+    };
+  },
+  returns: v.object({
+    hasMore: v.boolean(),
+    items: v.array(courseStudentAdminDoc),
+  }),
 });
 
 export const createChapter = mutation({
@@ -1283,9 +1538,11 @@ export const getLessonById = query({
     }
 
     const customerId = await resolveCustomerIdByToken(ctx, args.token);
+    const student = customerId ? await getCourseStudent(ctx, customerId, course._id) : null;
     const hasAccess = Boolean(customerId) && (
       course.pricingType === "free" ||
       lesson.isPreview ||
+      student?.status === "active" ||
       await customerHasCourseOrderAccess(ctx, customerId!, course._id)
     );
 

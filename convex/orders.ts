@@ -17,6 +17,7 @@ import {
   getOrderCancelledTemplate,
 } from "./emailTemplates";
 import { isProviderCartCapable, type CommerceProviderKey } from "./lib/commerce";
+import { syncCourseStudentsForOrder } from "./lib/courseEnrollment";
 
 const orderStatus = v.string();
 
@@ -919,6 +920,7 @@ export const create = mutation({
       isDigitalOrder,
       status: defaultStatus,
     });
+    await syncCourseStudentsForOrder(ctx, orderId);
 
     if (stockCheckEnabled) {
       if (variantStock === "variant") {
@@ -958,6 +960,9 @@ export const update = mutation({
     if (args.status && args.status !== oldOrder.status) {
       await handleOrderStatusTransition(ctx, args.id, oldOrder.status, args.status);
     }
+    if ((args.status && args.status !== oldOrder.status) || args.paymentStatus !== undefined) {
+      await syncCourseStudentsForOrder(ctx, args.id);
+    }
     return null;
   },
   returns: v.null(),
@@ -974,6 +979,7 @@ export const updateStatus = mutation({
     await OrdersModel.updateStatus(ctx, args);
 
     await handleOrderStatusTransition(ctx, args.id, oldOrder.status, args.status);
+    await syncCourseStudentsForOrder(ctx, args.id);
     return null;
   },
   returns: v.null(),
@@ -983,6 +989,7 @@ export const updatePaymentStatus = mutation({
   args: { id: v.id("orders"), paymentStatus: paymentStatus },
   handler: async (ctx, args) => {
     await OrdersModel.updatePaymentStatus(ctx, args);
+    await syncCourseStudentsForOrder(ctx, args.id);
     return null;
   },
   returns: v.null(),
@@ -1045,6 +1052,7 @@ export const cancel = mutation({
     
     // Gửi email hủy đơn hàng
     await handleOrderStatusTransition(ctx, args.id, order.status, cancelledStatus.key);
+    await syncCourseStudentsForOrder(ctx, args.id);
     return null;
   },
   returns: v.null(),
@@ -1093,6 +1101,7 @@ export const cancelOwnOrder = mutation({
 
     // Gửi email hủy đơn hàng
     await handleOrderStatusTransition(ctx, order._id, order.status, cancelledStatus.key);
+    await syncCourseStudentsForOrder(ctx, order._id);
 
     const stockCheckEnabled = await isStockCheckEnabled(ctx);
     if (stockCheckEnabled) {
@@ -1335,6 +1344,7 @@ export const placeOrder = mutation({
       status: defaultStatus,
       isDigitalOrder,
     });
+    await syncCourseStudentsForOrder(ctx, orderId);
 
     // Lưu promotion usage sau khi đã có orderId hợp lệ
     if (args.promotionId) {
@@ -1481,6 +1491,7 @@ export const cancelByCustomer = mutation({
 
     // Gửi email hủy đơn hàng
     await handleOrderStatusTransition(ctx, order._id, order.status, cancelledStatus.key, { notifyShopOnCancel: true });
+    await syncCourseStudentsForOrder(ctx, order._id);
 
     const stockCheckEnabled = await isStockCheckEnabled(ctx);
     if (stockCheckEnabled) {

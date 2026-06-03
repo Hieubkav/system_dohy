@@ -42,13 +42,14 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const config = useCoursesDetailConfig();
   const brandColors = useBrandColors();
   const { addItem, openDrawer } = useCart();
-  const { token } = useCustomerAuth();
+  const { customer, token } = useCustomerAuth();
   const course = useQuery(api.courses.getBySlug, { slug });
   const courseCommerceSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'courses', settingKey: 'commerceMode' });
   const category = useQuery(api.courseCategories.getById, course?.categoryId ? { id: course.categoryId } : 'skip');
   const chapters = useQuery(api.courses.listChapters, course?._id ? { courseId: course._id } : 'skip');
   const lessons = useQuery(api.courses.listPublicLessonsByCourse, course?._id ? { courseId: course._id } : 'skip');
   const courseAccess = useQuery(api.courses.getCourseAccess, course?._id ? { courseId: course._id, token: token ?? undefined } : 'skip');
+  const courseProgress = useQuery(api.courses.getCourseProgress, course?._id ? { courseId: course._id, token: token ?? undefined } : 'skip');
   const relatedCourses = useQuery(api.courses.searchPublished, course?.categoryId ? { categoryId: course.categoryId, limit: 4 } : 'skip');
   const incrementViews = useMutation(api.courses.incrementViews);
 
@@ -109,6 +110,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     });
     return map;
   }, [lessons]);
+  const completedLessonIds = useMemo(() => new Set(courseProgress?.completedLessonIds ?? []), [courseProgress?.completedLessonIds]);
 
   if (course === undefined) {
     return <CourseDetailSkeleton />;
@@ -136,6 +138,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const isModern = config.layoutStyle === 'modern';
   const commerceMode = courseCommerceSetting?.value === 'cart' ? 'cart' : 'contact';
   const hasCourseAccess = Boolean(courseAccess?.hasAccess);
+  const progressPercent = courseProgress?.progressPercent ?? 0;
+  const completedLessonsCount = courseProgress?.completedLessonsCount ?? 0;
+  const progressLessonCount = courseProgress?.lessonCount ?? course.lessonCount;
   const firstLessonHref = hasCourseAccess && courseAccess?.firstLessonId && courseAccess.firstLessonTitle
     ? `/khoa-hoc/${course.slug}/bai-hoc/${convertToSlug(courseAccess.firstLessonTitle)}--${courseAccess.firstLessonId}`
     : null;
@@ -203,6 +208,17 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             <p className="mt-1 text-2xl font-bold" style={{ color: accent }}>{price}</p>
           </>
         )}
+        {hasCourseAccess && (
+          <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-600">
+              <span>Tiến độ học</span>
+              <span>{completedLessonsCount}/{progressLessonCount} bài · {progressPercent}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white">
+              <div className="h-full rounded-full" style={{ width: `${progressPercent}%`, backgroundColor: brandColor }} />
+            </div>
+          </div>
+        )}
         {showPrice && course.comparePriceAmount && course.pricingType === 'paid' && (
           <p className="text-sm text-slate-400">
             Giá gốc: <span className="line-through">{formatPrice('paid', course.comparePriceAmount)}</span>
@@ -251,6 +267,50 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           <article className="prose prose-slate max-w-none prose-headings:text-slate-900 prose-p:text-slate-600">
             <RichContent content={courseContent} />
           </article>
+
+          {courseProgress?.completedAt && (
+            <section className={`overflow-hidden border border-slate-200 bg-white ${radiusClass}`}>
+              <div className="p-6 text-white" style={{ background: `linear-gradient(135deg, ${brandColor}, ${accent})` }}>
+                <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white/75">Chứng nhận hoàn thành</p>
+                <h2 className="mt-2 text-3xl font-bold">Bạn đã hoàn thành khóa học</h2>
+              </div>
+              <div className="grid gap-5 p-6 md:grid-cols-[160px_1fr]">
+                <div className={`aspect-video overflow-hidden bg-slate-100 md:aspect-square ${smallRadiusClass}`}>
+                  {course.thumbnail ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center">
+                      <GraduationCap size={42} style={{ color: brandColor }} />
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-slate-500">Học viên</p>
+                    <p className="text-xl font-bold text-slate-900">{customer?.name ?? 'Học viên'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-500">Khóa học</p>
+                    <p className="font-semibold text-slate-800">{course.title}</p>
+                  </div>
+                  <div className="grid gap-3 text-sm text-slate-600 sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs uppercase text-slate-400">Ngày vào học</p>
+                      <p>{courseProgress.enrolledAt ? new Date(courseProgress.enrolledAt).toLocaleDateString('vi-VN') : 'Đang cập nhật'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase text-slate-400">Ngày hoàn thành</p>
+                      <p>{new Date(courseProgress.completedAt).toLocaleDateString('vi-VN')}</p>
+                    </div>
+                  </div>
+                  {courseProgress.certificateCode && (
+                    <p className="text-xs font-medium text-slate-400">Mã chứng nhận: {courseProgress.certificateCode}</p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* Đồng bộ mục kiến thức và tiêu đề "Bạn sẽ học được gì?" (T1-01) */}
           <section>
@@ -306,29 +366,36 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                           
                           {chapterLessons.length > 0 && (
                             <div className="divide-y divide-slate-100 pl-4 md:pl-6">
-                              {chapterLessons.map((lesson, lessonIndex) => (
-                                <Link
-                                  key={lesson._id}
-                                  href={`/khoa-hoc/${course.slug}/bai-hoc/${convertToSlug(lesson.title)}--${lesson._id}`}
-                                  className="flex items-center justify-between gap-3 py-2.5 text-sm text-slate-700 hover:text-slate-900 transition-colors group/item"
-                                >
-                                  <span className="flex items-center gap-2">
-                                    <span className="text-slate-400 font-mono text-xs w-6 shrink-0">{chapterIndex + 1}.{lessonIndex + 1}</span>
-                                    <span className="group-hover/item:underline">{lesson.title}</span>
-                                  </span>
-                                  {hasCourseAccess ? (
-                                    <span className="rounded bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 shrink-0 group-hover/item:bg-sky-100 transition-colors">
-                                      Đã mở
+                              {chapterLessons.map((lesson, lessonIndex) => {
+                                const isCompletedLesson = completedLessonIds.has(lesson._id);
+                                return (
+                                  <Link
+                                    key={lesson._id}
+                                    href={`/khoa-hoc/${course.slug}/bai-hoc/${convertToSlug(lesson.title)}--${lesson._id}`}
+                                    className="flex items-center justify-between gap-3 py-2.5 text-sm text-slate-700 hover:text-slate-900 transition-colors group/item"
+                                  >
+                                    <span className="flex items-center gap-2">
+                                      <span className="text-slate-400 font-mono text-xs w-6 shrink-0">{chapterIndex + 1}.{lessonIndex + 1}</span>
+                                      <span className="group-hover/item:underline">{lesson.title}</span>
                                     </span>
-                                  ) : lesson.isPreview ? (
-                                    <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 shrink-0 group-hover/item:bg-emerald-100 transition-colors">
-                                      Học thử
-                                    </span>
-                                  ) : (
-                                    <Lock size={12} className="text-slate-300 group-hover/item:text-slate-400 shrink-0" />
-                                  )}
-                                </Link>
-                              ))}
+                                    {isCompletedLesson ? (
+                                      <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 shrink-0 group-hover/item:bg-emerald-100 transition-colors">
+                                        Đã học
+                                      </span>
+                                    ) : hasCourseAccess ? (
+                                      <span className="rounded bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 shrink-0 group-hover/item:bg-sky-100 transition-colors">
+                                        Đã mở
+                                      </span>
+                                    ) : lesson.isPreview ? (
+                                      <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 shrink-0 group-hover/item:bg-emerald-100 transition-colors">
+                                        Học thử
+                                      </span>
+                                    ) : (
+                                      <Lock size={12} className="text-slate-300 group-hover/item:text-slate-400 shrink-0" />
+                                    )}
+                                  </Link>
+                                );
+                              })}
                             </div>
                           )}
                         </div>

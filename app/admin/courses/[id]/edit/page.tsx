@@ -18,6 +18,7 @@ import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, cn } fr
 import { ImageUploader } from '@/app/admin/components/ImageUploader';
 import { LexicalEditor } from '@/app/admin/components/LexicalEditor';
 import { CourseCurriculumEditor } from '@/app/admin/courses/components/CourseCurriculumEditor';
+import { CourseStudentsPanel } from '@/app/admin/courses/components/CourseStudentsPanel';
 
 const MODULE_KEY = 'courses';
 
@@ -87,7 +88,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [editorResetKey, setEditorResetKey] = useState(0);
-  const [activeTab, setActiveTab] = useState<'general' | 'curriculum'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'curriculum' | 'students'>('general');
 
   // Curriculum dirty state (từ CourseCurriculumEditor)
   const [curriculumIsDirty, setCurriculumIsDirty] = useState(false);
@@ -469,6 +470,18 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
           >
             Lộ trình học
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('students')}
+            className={cn(
+              "px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors duration-200 focus:outline-none",
+              activeTab === 'students'
+                ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+                : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+            )}
+          >
+            Học viên
+          </button>
         </div>
 
         {/* Tab General */}
@@ -725,6 +738,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
             onDirtyChange={handleCurriculumDirtyChange}
             onSaveRef={curriculumSaveFnRef}
           />
+        </div>
+
+        <div className={activeTab === 'students' ? '' : 'hidden'}>
+          <CourseStudentsPanel courseId={courseId} />
         </div>
 
         <HomeComponentStickyFooter

@@ -27,6 +27,8 @@ const EXTRA_TABLES: TableNames[] = [
   "courseCategoryAssignments",
   "courseChapters",
   "courseLessons",
+  "courseLessonProgress",
+  "courseStudents",
 ] as TableNames[];
 
 // Danh sách các bảng trong hệ thống
@@ -308,6 +310,17 @@ const DATA_CONTRACTS: DataContract[] = [
     table: "courseLessons",
   },
   {
+    label: "Course students",
+    optional: ["certificateCode", "certificateIssuedAt", "completedAt", "lastActivityAt", "lastLessonId", "sourceOrderId"],
+    required: ["completedLessonsCount", "courseId", "customerId", "enrolledAt", "lessonCountSnapshot", "sourceType", "status", "updatedAt"],
+    table: "courseStudents",
+  },
+  {
+    label: "Course lesson progress",
+    required: ["completedAt", "courseId", "customerId", "lessonId", "studentId", "updatedAt"],
+    table: "courseLessonProgress",
+  },
+  {
     label: "Orders",
     optional: ["discountAmount", "isDigitalOrder", "note", "paymentMethod", "paymentStatus", "promotionCode", "promotionId", "shippingAddress", "shippingMethodId", "shippingMethodLabel", "trackingNumber"],
     required: ["customerId", "items", "orderNumber", "shippingFee", "status", "subtotal", "totalAmount"],
@@ -400,7 +413,9 @@ const TABLE_CATEGORIES: Record<string, string> = {
   moduleSettings: "system",
   courseCategoryAssignments: "content",
   courseChapters: "content",
+  courseLessonProgress: "content",
   courseLessons: "content",
+  courseStudents: "content",
 };
 
 const SYSTEM_TABLES = new Set([

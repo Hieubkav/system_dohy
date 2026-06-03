@@ -3,14 +3,15 @@
 import React, { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useQuery } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
-import { ArrowLeft, GraduationCap, PlayCircle, Lock, ChevronRight, ChevronLeft, Download, ArrowRight, Eye } from 'lucide-react';
+import { ArrowLeft, GraduationCap, PlayCircle, Lock, ChevronRight, ChevronLeft, Download, ArrowRight, Eye, CheckCircle2, Circle } from 'lucide-react';
 import { useBrandColors } from '@/components/site/hooks';
 import { convertToSlug, getRadiusClass, getSmallRadiusClass } from '@/lib/courses/courseUtils';
 import { RichContent, withFormatMarker } from '@/components/common/RichContent';
 import { useLessonDetailConfig } from '@/lib/experiences';
+import { toast } from 'sonner';
 
 type LessonPageProps = {
   params: Promise<{ slug: string; lessonSlugAndId: string }>;
@@ -38,6 +39,9 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   const chapters = useQuery(api.courses.listChapters, course?._id ? { courseId: course._id } : 'skip');
   const lessons = useQuery(api.courses.listPublicLessonsByCourse, course?._id ? { courseId: course._id } : 'skip');
   const courseAccess = useQuery(api.courses.getCourseAccess, course?._id ? { courseId: course._id, token: token ?? undefined } : 'skip');
+  const courseProgress = useQuery(api.courses.getCourseProgress, course?._id ? { courseId: course._id, token: token ?? undefined } : 'skip');
+  const setLessonCompletion = useMutation(api.courses.setLessonCompletion);
+  const [isSavingProgress, setIsSavingProgress] = useState(false);
 
   const brandColor = brandColors.primary;
   const isCompactLayout = config.layoutStyle === 'compact';
@@ -91,7 +95,7 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   }, [lessons, lesson, chapters]);
 
   // Loading state
-  const isDataLoading = course === undefined || lesson === undefined || (course ? chapters === undefined || lessons === undefined || courseAccess === undefined : false);
+  const isDataLoading = course === undefined || lesson === undefined || (course ? chapters === undefined || lessons === undefined || courseAccess === undefined || courseProgress === undefined : false);
   if (isDataLoading || authLoading) {
     return <LessonDetailSkeleton />;
   }
@@ -116,6 +120,34 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   const isFreeCourse = course.pricingType === 'free';
   const hasFullCourseAccess = Boolean(courseAccess?.hasAccess);
   const hasAccess = isAuthenticated && (isFreeCourse || lesson.isPreview || hasFullCourseAccess);
+  const progress = courseProgress!;
+  const completedLessonIdSet = new Set<string>(progress.completedLessonIds.map(String));
+  const isLessonCompleted = completedLessonIdSet.has(String(lesson._id));
+  const progressPercent = progress.progressPercent;
+  const completedLessonsCount = progress.completedLessonsCount;
+  const progressLessonCount = progress.lessonCount || course.lessonCount;
+
+  const handleToggleLessonCompletion = async () => {
+    if (!token || !hasAccess) {
+      return;
+    }
+    setIsSavingProgress(true);
+    try {
+      const result = await setLessonCompletion({
+        completed: !isLessonCompleted,
+        lessonId: lesson._id,
+        token,
+      });
+      toast.success(!isLessonCompleted ? 'Đã đánh dấu hoàn thành bài học' : 'Đã bỏ đánh dấu hoàn thành');
+      if (result.progressPercent >= 100) {
+        toast.success('Chúc mừng, bạn đã hoàn thành khóa học!');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể lưu tiến độ học.');
+    } finally {
+      setIsSavingProgress(false);
+    }
+  };
 
   // Parse Video URL Embed
   const videoEmbedUrl = () => {
@@ -161,6 +193,32 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
             <Link href={`/khoa-hoc/${course.slug}`} className="inline-flex w-fit items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors">
               <ArrowLeft size={12} /> {course.title}
             </Link>
+          )}
+
+          {hasFullCourseAccess && (
+            <div className={`border border-slate-200 bg-white p-4 ${radiusClass}`}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-600">
+                    <span>Tiến độ khóa học</span>
+                    <span>{completedLessonsCount}/{progressLessonCount} bài · {progressPercent}%</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-full rounded-full" style={{ width: `${progressPercent}%`, backgroundColor: brandColor }} />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleToggleLessonCompletion()}
+                  disabled={isSavingProgress}
+                  className={`inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold text-white disabled:opacity-60 ${smallRadiusClass}`}
+                  style={{ backgroundColor: isLessonCompleted ? '#16a34a' : brandColor }}
+                >
+                  {isLessonCompleted ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+                  {isLessonCompleted ? 'Đã học xong bài này' : 'Đánh dấu đã học xong'}
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Video Player / Lock Wall */}
@@ -217,6 +275,27 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
               </div>
             )}
           </div>
+
+          {progress.completedAt && (
+            <div className={`border border-emerald-100 bg-emerald-50 p-5 ${radiusClass}`}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Hoàn thành khóa học</p>
+                  <h3 className="mt-1 text-lg font-bold text-emerald-950">{course.title}</h3>
+                  <p className="mt-1 text-sm text-emerald-800">
+                    Ngày hoàn thành: {new Date(progress.completedAt).toLocaleDateString('vi-VN')}
+                  </p>
+                </div>
+                <Link
+                  href={`/khoa-hoc/${course.slug}`}
+                  className={`inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-white ${smallRadiusClass}`}
+                  style={{ backgroundColor: brandColor }}
+                >
+                  Xem bằng hoàn thành <GraduationCap size={16} />
+                </Link>
+              </div>
+            </div>
+          )}
 
           {/* Lesson Details with Security Lock blur */}
           <div className={`bg-white border border-slate-200 ${isCompactLayout ? 'p-5 space-y-5' : 'p-6 space-y-6'} ${radiusClass} relative overflow-hidden`}>
@@ -320,6 +399,17 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
             </Link>
             )}
             <h2 className="font-bold text-slate-950 text-sm">{isFocusLayout ? 'Khóa học & tiến độ' : 'Nội dung khóa học'}</h2>
+            {hasFullCourseAccess && (
+              <div className="mt-3">
+                <div className="mb-1 flex items-center justify-between text-[10px] font-semibold text-slate-500">
+                  <span>Đã học</span>
+                  <span>{progressPercent}%</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full rounded-full" style={{ width: `${progressPercent}%`, backgroundColor: brandColor }} />
+                </div>
+              </div>
+            )}
             {isFocusLayout && (
               <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-slate-500">
                 <span className={`border border-slate-200 bg-slate-50 px-2 py-1.5 ${smallRadiusClass}`}>{chapters?.length ?? 0} chương</span>
@@ -351,6 +441,7 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
                       )}
                       {chapterLessons.map((item, itemIndex) => {
                         const isActive = item._id === lesson._id;
+                        const itemCompleted = completedLessonIdSet.has(String(item._id));
                         // Phân biệt trạng thái trước đăng nhập: bài học xem thử vẫn hiển thị badge Học thử
                         return (
                           <Link
@@ -365,7 +456,9 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
                           >
                             <span className="font-mono text-slate-400 mt-0.5 shrink-0 w-6">{chapterIndex + 1}.{itemIndex + 1}</span>
                             <span className="flex-1 line-clamp-2 leading-relaxed">{item.title}</span>
-                            {hasFullCourseAccess ? (
+                            {itemCompleted ? (
+                              <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 shrink-0">Đã học</span>
+                            ) : hasFullCourseAccess ? (
                               <span className="rounded bg-sky-50 px-1.5 py-0.5 text-[9px] font-bold text-sky-700 shrink-0">Đã mở</span>
                             ) : item.isPreview ? (
                               <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 shrink-0">Học thử</span>

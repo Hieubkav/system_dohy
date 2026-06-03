@@ -381,6 +381,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
                   subItems={[
                     { href: '/admin/courses', label: 'Tất cả khóa học', moduleKey: 'courses' },
                     { href: '/admin/course-categories', label: 'Danh mục khóa học', moduleKey: 'courses' },
+                    { href: '/admin/courses/students', label: 'Học viên', moduleKey: 'courses' },
                   ]}
                 />
               </div>

@@ -1295,6 +1295,44 @@ export default defineSchema({
     .index("by_chapter_order", ["chapterId", "order"])
     .index("by_course_active_order", ["courseId", "active", "order"]),
 
+  courseStudents: defineTable({
+    certificateCode: v.optional(v.string()),
+    certificateIssuedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    completedLessonsCount: v.number(),
+    courseId: v.id("courses"),
+    customerId: v.id("customers"),
+    enrolledAt: v.number(),
+    lastActivityAt: v.optional(v.number()),
+    lastLessonId: v.optional(v.id("courseLessons")),
+    lessonCountSnapshot: v.number(),
+    sourceOrderId: v.optional(v.id("orders")),
+    sourceType: v.union(v.literal("order"), v.literal("free"), v.literal("manual")),
+    status: v.union(v.literal("active"), v.literal("revoked")),
+    updatedAt: v.number(),
+  })
+    .index("by_courseId", ["courseId"])
+    .index("by_customerId", ["customerId"])
+    .index("by_status", ["status"])
+    .index("by_courseId_and_customerId", ["courseId", "customerId"])
+    .index("by_customerId_and_courseId", ["customerId", "courseId"])
+    .index("by_courseId_and_status", ["courseId", "status"])
+    .index("by_customerId_and_status", ["customerId", "status"])
+    .index("by_sourceOrderId", ["sourceOrderId"]),
+
+  courseLessonProgress: defineTable({
+    completedAt: v.number(),
+    courseId: v.id("courses"),
+    customerId: v.id("customers"),
+    lessonId: v.id("courseLessons"),
+    studentId: v.id("courseStudents"),
+    updatedAt: v.number(),
+  })
+    .index("by_studentId_and_lessonId", ["studentId", "lessonId"])
+    .index("by_courseId_and_customerId", ["courseId", "customerId"])
+    .index("by_courseId_and_customerId_and_lessonId", ["courseId", "customerId", "lessonId"])
+    .index("by_lessonId", ["lessonId"]),
+
   // 27a. bookings - Đặt lịch
   bookings: defineTable({
     serviceId: v.id("services"),
