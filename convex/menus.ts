@@ -1,7 +1,8 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { MENU_MAX_DEPTH, clampMenuDepth } from "../lib/utils/menu-tree";
+import { TRUST_PAGE_SLOTS } from "../lib/ia/trust-pages";
 
 const menuDoc = v.object({
   _creationTime: v.number(),
@@ -562,6 +563,96 @@ export const listServicesForPicker = query({
     title: v.string(),
     slug: v.string(),
     categorySlug: v.string(),
+  })),
+});
+
+export const listCoursesForPicker = query({
+  args: {
+    search: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit ?? 20, 50);
+    const search = args.search?.trim();
+    const courses = search
+      ? await ctx.db
+        .query("courses")
+        .withSearchIndex("search_title", (q) => q.search("title", search.toLowerCase()).eq("status", "Published"))
+        .take(limit)
+      : await ctx.db
+        .query("courses")
+        .withIndex("by_status_publishedAt", (q) => q.eq("status", "Published"))
+        .order("desc")
+        .take(limit);
+
+    const categories = await Promise.all(courses.map((course) => ctx.db.get(course.categoryId)));
+    const categoryMap = new Map(categories.filter(Boolean).map((cat) => [cat!._id, cat!]));
+
+    return courses.map((course: Doc<"courses">) => ({
+      _id: course._id,
+      title: course.title,
+      slug: course.slug,
+      categorySlug: categoryMap.get(course.categoryId)?.slug ?? "",
+    }));
+  },
+  returns: v.array(v.object({
+    _id: v.id("courses"),
+    title: v.string(),
+    slug: v.string(),
+    categorySlug: v.string(),
+  })),
+});
+
+const resolvePostId = (value: unknown) =>
+  typeof value === "string" && value.trim() ? (value.trim() as Id<"posts">) : null;
+
+export const listTrustPageRoutesForPicker = query({
+  args: {},
+  handler: async (ctx) => {
+    const trustPagesFeature = await ctx.db
+      .query("moduleFeatures")
+      .withIndex("by_module_feature", (q) => q.eq("moduleKey", "settings").eq("featureKey", "enableTrustPages"))
+      .unique();
+    if (trustPagesFeature && !trustPagesFeature.enabled) {
+      return [];
+    }
+
+    const settingKeys = TRUST_PAGE_SLOTS.flatMap((slot) => [slot.iaKey, slot.mappingKey]);
+    const settings = await Promise.all(settingKeys.map((key) => ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", key))
+      .unique()
+    ));
+    const settingMap = new Map(settings.filter(Boolean).map((setting) => [setting!.key, setting!.value]));
+
+    const slots = TRUST_PAGE_SLOTS
+      .map((slot) => ({
+        slot,
+        enabled: settingMap.get(slot.iaKey) !== false,
+        postId: resolvePostId(settingMap.get(slot.mappingKey)),
+      }))
+      .filter((entry) => entry.enabled && entry.postId);
+
+    const posts = await Promise.all(slots.map((entry) => ctx.db.get(entry.postId!)));
+
+    return slots.flatMap((entry, index) => {
+      const post = posts[index];
+      if (!post || post.status !== "Published") {
+        return [];
+      }
+      return [{
+        key: entry.slot.key,
+        label: entry.slot.defaultTitle,
+        postTitle: post.title,
+        url: entry.slot.slug,
+      }];
+    });
+  },
+  returns: v.array(v.object({
+    key: v.string(),
+    label: v.string(),
+    postTitle: v.string(),
+    url: v.string(),
   })),
 });
 

@@ -13,7 +13,7 @@ import {
 import { ModuleGuard } from '../components/ModuleGuard';
 import { BulkActionBar, SelectCheckbox } from '../components/TableUtilities';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
-import { buildCategoryPath, buildDetailPath, normalizeRouteMode } from '@/lib/ia/route-mode';
+import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { 
   ArrowDown, ArrowUp, Bot, ChevronLeft, ChevronRight, Copy, ExternalLink, Eye, EyeOff, 
   GripVertical, Loader2, Menu, Plus, Sparkles, Trash2
@@ -24,7 +24,7 @@ import { MENU_MAX_LEVEL, resolveMenuMaxDepthLevel } from '@/lib/utils/menu-tree'
 const MODULE_KEY = 'menus';
 const MENU_ITEMS_LIMIT = 500;
 
-type QuickRouteGroup = 'Trang cơ bản' | 'Module' | 'Danh mục';
+type QuickRouteGroup = 'Trang cơ bản' | 'Module' | 'Danh mục' | 'Trang tin cậy';
 
 type QuickRouteOption = {
   group: QuickRouteGroup;
@@ -53,16 +53,19 @@ const MODULE_SITE_ROUTE_CATALOG: Record<string, { label: string; url: string }[]
     { label: 'Checkout', url: '/checkout' },
   ],
   posts: [
-    { label: 'Tất cả bài viết', url: '/posts' },
+    { label: 'Tất cả bài viết', url: buildModuleListPath('posts') },
   ],
   products: [
-    { label: 'Tất cả sản phẩm', url: '/products' },
+    { label: 'Tất cả sản phẩm', url: buildModuleListPath('products') },
   ],
   promotions: [
     { label: 'Khuyến mãi', url: '/promotions' },
   ],
   services: [
-    { label: 'Tất cả dịch vụ', url: '/services' },
+    { label: 'Tất cả dịch vụ', url: buildModuleListPath('services') },
+  ],
+  courses: [
+    { label: 'Tất cả khóa học', url: buildModuleListPath('courses') },
   ],
   wishlist: [
     { label: 'Wishlist', url: '/wishlist' },
@@ -175,6 +178,10 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
   const productCategories = useQuery(api.productCategories.listActive);
   const postCategories = useQuery(api.postCategories.listActive, { limit: 100 });
   const serviceCategories = useQuery(api.serviceCategories.listActive, { limit: 100 });
+  const courseCategories = useQuery(api.courseCategories.listActive, { limit: 100 });
+  const trustPageRoutes = useQuery(api.menus.listTrustPageRoutesForPicker, {});
+  const coursesEnabled = enabledModules?.some(moduleItem => moduleItem.key === 'courses') ?? false;
+  const publishedCourseCount = useQuery(api.courses.countPublished, coursesEnabled ? {} : 'skip');
   const routeModeSetting = useQuery(api.settings.getValue, { key: 'ia_route_mode', defaultValue: 'unified' });
   const routeMode = useMemo(() => normalizeRouteMode(routeModeSetting), [routeModeSetting]);
   const saveMenuItemsBulk = useMutation(api.menus.saveMenuItemsBulk);
@@ -191,8 +198,8 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
   const [quickRouteSearch, setQuickRouteSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pickerStep, setPickerStep] = useState<1 | 2 | 3>(1);
-  const [selectedType, setSelectedType] = useState<'core' | 'module' | 'category' | 'detail' | null>(null);
-  const [selectedModule, setSelectedModule] = useState<'posts' | 'products' | 'services' | null>(null);
+  const [selectedType, setSelectedType] = useState<'core' | 'module' | 'category' | 'trust' | 'detail' | null>(null);
+  const [selectedModule, setSelectedModule] = useState<'posts' | 'products' | 'services' | 'courses' | null>(null);
 
   // AI Import state
   const [isAiImportOpen, setIsAiImportOpen] = useState(false);
@@ -219,6 +226,12 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
   const detailServices = useQuery(
     api.menus.listServicesForPicker,
     selectedModule === 'services' && pickerStep === 3
+      ? { search: quickRouteSearch, limit: 20 }
+      : 'skip'
+  );
+  const detailCourses = useQuery(
+    api.menus.listCoursesForPicker,
+    selectedModule === 'courses' && pickerStep === 3
       ? { search: quickRouteSearch, limit: 20 }
       : 'skip'
   );
@@ -284,6 +297,26 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
       });
     }
 
+    if (enabledKeys.has('courses')) {
+      (courseCategories ?? []).forEach(category => {
+        options.push({
+          group: 'Danh mục',
+          label: category.name,
+          source: 'courses',
+          url: buildCategoryPath({ categorySlug: category.slug, mode: routeMode, moduleKey: 'courses' }),
+        });
+      });
+    }
+
+    (trustPageRoutes ?? []).forEach(route => {
+      options.push({
+        group: 'Trang tin cậy',
+        label: route.label,
+        source: 'trust-pages',
+        url: route.url,
+      });
+    });
+
     const deduped = new Map<string, QuickRouteOption>();
     options.forEach(option => {
       if (!deduped.has(option.url)) {
@@ -292,7 +325,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
     });
 
     return Array.from(deduped.values());
-  }, [enabledModules, postCategories, productCategories, routeMode, serviceCategories]);
+  }, [courseCategories, enabledModules, postCategories, productCategories, routeMode, serviceCategories, trustPageRoutes]);
 
   const filteredQuickRoutes = useMemo(() => {
     const keyword = quickRouteSearch.trim().toLowerCase();
@@ -352,12 +385,45 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
       seen.add(item.url);
       items.push(item);
     };
+    const hasPublishedCourses = enabledKeys.has('courses') && (publishedCourseCount ?? 0) > 0;
+    const appendTrustPages = (scoreBase: number) => {
+      const routes = (trustPageRoutes ?? []).slice(0, maxChildDepth >= 1 ? 6 : 3);
+      if (routes.length === 0) {return;}
+      if (maxChildDepth >= 1) {
+        add({
+          depth: 0,
+          label: 'Chính sách',
+          reasons: ['Có trang tin cậy đã xuất bản từ Trust Pages'],
+          score: scoreBase,
+          url: '#',
+        });
+        routes.forEach((route, index) => {
+          add({
+            depth: 1,
+            label: route.label,
+            reasons: ['Trang chính sách đã map dữ liệu'],
+            score: scoreBase - 1 - index,
+            url: route.url,
+          });
+        });
+        return;
+      }
+      routes.forEach((route, index) => {
+        add({
+          depth: 0,
+          label: route.label,
+          reasons: ['Trang chính sách đã map dữ liệu'],
+          score: scoreBase - index,
+          url: route.url,
+        });
+      });
+    };
 
     if (isUseProductTypeLogic && smartMenuBuilderData && enableProductTypes) {
       const { productTypes, productCategoryTypes, attributeGroups, productTypeAttributeGroups, attributeTerms } = smartMenuBuilderData;
 
       add({ depth: 0, label: 'Trang chủ', reasons: ['Luôn nên có trong menu chính'], score: 100, url: '/' });
-      add({ depth: 0, label: 'Sản phẩm', reasons: ['Khu vực chính'], score: 90, url: '/products' });
+      add({ depth: 0, label: 'Sản phẩm', reasons: ['Khu vực chính'], score: 90, url: buildModuleListPath('products') });
 
       if (maxChildDepth >= 1) {
         productTypes.forEach((pt, ptIndex) => {
@@ -444,11 +510,21 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
       });
 
       if (enabledKeys.has('services')) {
-        add({ depth: 0, label: 'Dịch vụ', reasons: ['Khu vực dịch vụ'], score: 75, url: '/services' });
+        add({ depth: 0, label: 'Dịch vụ', reasons: ['Khu vực dịch vụ'], score: 75, url: buildModuleListPath('services') });
+      }
+      if (hasPublishedCourses) {
+        add({
+          depth: 0,
+          label: 'Khóa học',
+          reasons: [`Có ${publishedCourseCount ?? 0} khóa học đã xuất bản`],
+          score: 73,
+          url: buildModuleListPath('courses'),
+        });
       }
       if (enabledKeys.has('posts')) {
-        add({ depth: 0, label: 'Bài viết', reasons: ['Khu vực bài viết'], score: 70, url: '/posts' });
+        add({ depth: 0, label: 'Bài viết', reasons: ['Khu vực bài viết'], score: 70, url: buildModuleListPath('posts') });
       }
+      appendTrustPages(66);
       add({ depth: 0, label: 'Liên hệ', reasons: ['Nên đặt cuối menu'], score: 65, url: '/contact' });
 
       // Build tree ordering manually or rely on scores.
@@ -459,7 +535,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
       const categoryLimit = maxDepth >= 3 ? 6 : 4;
       const appendCategories = (
         categories: Array<{ name: string; slug: string }> | undefined,
-        moduleKey: 'posts' | 'products' | 'services',
+        moduleKey: 'posts' | 'products' | 'services' | 'courses',
         scoreBase: number,
       ) => {
         if (maxChildDepth < 1) {return;}
@@ -494,7 +570,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
           `${productCategories?.length ?? 0} danh mục sản phẩm có thể làm menu con`,
         ],
         score: 96 + Math.min(12, productCategories?.length ?? 0),
-        url: '/products',
+        url: buildModuleListPath('products'),
       });
       appendCategories(productCategories, 'products', 88);
     }
@@ -508,9 +584,23 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
           `${serviceCategories?.length ?? 0} danh mục dịch vụ có thể làm menu con`,
         ],
         score: 90 + Math.min(8, serviceCategories?.length ?? 0),
-        url: '/services',
+        url: buildModuleListPath('services'),
       });
       appendCategories(serviceCategories, 'services', 78);
+    }
+
+    if (hasPublishedCourses) {
+      add({
+        depth: 0,
+        label: 'Khóa học',
+        reasons: [
+          'Khu vực khóa học đang bật',
+          `${courseCategories?.length ?? 0} danh mục khóa học và ${publishedCourseCount ?? 0} khóa học đã xuất bản`,
+        ],
+        score: 86 + Math.min(8, courseCategories?.length ?? 0),
+        url: buildModuleListPath('courses'),
+      });
+      appendCategories(courseCategories, 'courses', 74);
     }
 
     if (enabledKeys.has('posts')) {
@@ -522,7 +612,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
           `${postCategories?.length ?? 0} danh mục bài viết có thể làm menu con`,
         ],
         score: 82 + Math.min(6, postCategories?.length ?? 0),
-        url: '/posts',
+        url: buildModuleListPath('posts'),
       });
       appendCategories(postCategories, 'posts', 68);
     }
@@ -556,6 +646,8 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
         url: '/cart',
       });
     }
+
+    appendTrustPages(77);
 
     add({
       depth: 0,
@@ -609,7 +701,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
       root,
       ...(childrenByRoot.get(root.url) ?? [])
     ]).slice(0, MENU_ITEMS_LIMIT);
-  }, [enabledModules, maxDepth, postCategories, productCategories, routeMode, serviceCategories, isUseProductTypeLogic, smartMenuBuilderData, enableProductTypes]);
+  }, [courseCategories, enabledModules, maxDepth, postCategories, productCategories, publishedCourseCount, routeMode, serviceCategories, isUseProductTypeLogic, smartMenuBuilderData, enableProductTypes, trustPageRoutes]);
 
   const hasChanges = useMemo(() => {
     const normalize = (items: DraftMenuItem[]) => items.map(item => ({
@@ -961,9 +1053,10 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
 
   const pickerTypeOptions = [
     { type: 'core' as const, label: 'Trang cơ bản', description: 'Trang chủ, Liên hệ...' },
-    { type: 'module' as const, label: 'Module', description: 'Posts, Products, Services...' },
+    { type: 'module' as const, label: 'Module', description: 'Bài viết, Sản phẩm, Dịch vụ, Khóa học...' },
     { type: 'category' as const, label: 'Danh mục', description: 'Category filters' },
-    { type: 'detail' as const, label: 'Chi tiết', description: 'Bài viết, Sản phẩm, Dịch vụ' },
+    { type: 'trust' as const, label: 'Chính sách', description: 'Trust pages đã có dữ liệu' },
+    { type: 'detail' as const, label: 'Chi tiết', description: 'Bài viết, Sản phẩm, Dịch vụ, Khóa học' },
   ];
 
   const detailModuleOptions = [
@@ -985,6 +1078,12 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
       description: 'Chọn 1 dịch vụ cụ thể',
       enabled: enabledModules?.some(moduleItem => moduleItem.key === 'services'),
     },
+    {
+      key: 'courses' as const,
+      label: 'Khóa học chi tiết',
+      description: 'Chọn 1 khóa học cụ thể',
+      enabled: coursesEnabled,
+    },
   ];
 
   const availableDetailModules = detailModuleOptions.filter(option => option.enabled);
@@ -1002,6 +1101,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
     if (selectedType === 'core') {return option.group === 'Trang cơ bản';}
     if (selectedType === 'module') {return option.group === 'Module';}
     if (selectedType === 'category') {return option.group === 'Danh mục';}
+    if (selectedType === 'trust') {return option.group === 'Trang tin cậy';}
     return false;
   });
 
@@ -1009,6 +1109,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
     (selectedModule === 'posts' && detailPosts === undefined)
     || (selectedModule === 'products' && detailProducts === undefined)
     || (selectedModule === 'services' && detailServices === undefined)
+    || (selectedModule === 'courses' && detailCourses === undefined)
   );
 
   const stats = [
@@ -1426,6 +1527,10 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
                       <div className="px-4 py-6 text-sm text-slate-500">Không tìm thấy dịch vụ.</div>
                     )}
 
+                    {!isDetailLoading && selectedModule === 'courses' && (detailCourses?.length ?? 0) === 0 && (
+                      <div className="px-4 py-6 text-sm text-slate-500">Không tìm thấy khóa học.</div>
+                    )}
+
                     {!isDetailLoading && selectedModule === 'posts' && (detailPosts?.length ?? 0) > 0 && (
                       <div className="space-y-1 p-2">
                         {detailPosts?.map(post => (
@@ -1529,6 +1634,43 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
                                   mode: routeMode,
                                   moduleKey: 'services',
                                   recordSlug: service.slug,
+                                })}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {!isDetailLoading && selectedModule === 'courses' && (detailCourses?.length ?? 0) > 0 && (
+                      <div className="space-y-1 p-2">
+                        {detailCourses?.map(course => (
+                          <button
+                            key={course._id}
+                            type="button"
+                            onClick={() => {
+                              handleSelectQuickRoute({
+                                label: course.title,
+                                url: buildDetailPath({
+                                  categorySlug: course.categorySlug,
+                                  mode: routeMode,
+                                  moduleKey: 'courses',
+                                  recordSlug: course.slug,
+                                }),
+                                source: 'courses',
+                                group: 'Module',
+                              });
+                            }}
+                            className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-slate-700 truncate">{course.title}</div>
+                              <div className="text-xs text-slate-500 font-mono truncate">
+                                {buildDetailPath({
+                                  categorySlug: course.categorySlug,
+                                  mode: routeMode,
+                                  moduleKey: 'courses',
+                                  recordSlug: course.slug,
                                 })}
                               </div>
                             </div>
