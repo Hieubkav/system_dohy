@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from 'convex/react';
-import { ChevronDown, Search, Users, TrendingUp, Award } from 'lucide-react';
+import { useMutation, useQuery } from 'convex/react';
+import { ChevronDown, Search, Users, TrendingUp, Award, Edit, Trash2 } from 'lucide-react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import {
@@ -16,9 +16,16 @@ import {
   TableRow,
   Badge,
   Input,
-  Button
+  Button,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
 } from '@/app/admin/components/ui';
 import { generatePaginationItems } from '@/app/admin/components/TableUtilities';
+import { DeleteConfirmDialog } from '@/app/admin/components/DeleteConfirmDialog';
+import { toast } from 'sonner';
 
 const formatDate = (value?: number) => value
   ? new Date(value).toLocaleDateString('vi-VN')
@@ -35,6 +42,18 @@ export function CourseStudentsPanel({ courseId, showCourseColumn = false }: Cour
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+
+  // Mutations
+  const updateStudentStatus = useMutation(api.courses.updateCourseStudentAdmin);
+  const removeStudent = useMutation(api.courses.removeCourseStudentAdmin);
+
+  // States cho Dialogs
+  const [editingStudent, setEditingStudent] = useState<any>(null);
+  const [editStatus, setEditStatus] = useState<'active' | 'revoked'>('active');
+  const [isEditLoading, setIsEditLoading] = useState(false);
+
+  const [deletingStudent, setDeletingStudent] = useState<any>(null);
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -68,6 +87,48 @@ export function CourseStudentsPanel({ courseId, showCourseColumn = false }: Cour
     setDebouncedSearchTerm('');
     setStatus('active');
     setCurrentPage(1);
+  };
+
+  const handleOpenEdit = (student: any) => {
+    setEditingStudent(student);
+    setEditStatus(student.status);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingStudent) return;
+    setIsEditLoading(true);
+    try {
+      await updateStudentStatus({
+        id: editingStudent.studentId,
+        status: editStatus,
+      });
+      toast.success("Đã cập nhật trạng thái học viên");
+      setEditingStudent(null);
+    } catch {
+      toast.error("Không thể cập nhật trạng thái");
+    } finally {
+      setIsEditLoading(false);
+    }
+  };
+
+  const handleOpenDelete = (student: any) => {
+    setDeletingStudent(student);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingStudent) return;
+    setIsDeleteLoading(true);
+    try {
+      await removeStudent({
+        id: deletingStudent.studentId,
+      });
+      toast.success("Đã xóa học viên khỏi khóa học");
+      setDeletingStudent(null);
+    } catch {
+      toast.error("Không thể xóa học viên");
+    } finally {
+      setIsDeleteLoading(false);
+    }
   };
 
   const isTableLoading = result === undefined;
@@ -163,6 +224,7 @@ export function CourseStudentsPanel({ courseId, showCourseColumn = false }: Cour
               <TableHead>Bài gần nhất</TableHead>
               <TableHead>Ngày vào học</TableHead>
               <TableHead>Trạng thái</TableHead>
+              <TableHead className="text-right">Hành động</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -194,11 +256,14 @@ export function CourseStudentsPanel({ courseId, showCourseColumn = false }: Cour
                   <TableCell>
                     <div className="h-5 w-16 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
                   </TableCell>
+                  <TableCell>
+                    <div className="ml-auto h-8 w-20 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+                  </TableCell>
                 </TableRow>
               ))
             ) : students.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={showCourseColumn ? 6 : 5} className="py-8 text-center text-slate-500 dark:text-slate-400 text-sm">
+                <TableCell colSpan={showCourseColumn ? 7 : 6} className="py-8 text-center text-slate-500 dark:text-slate-400 text-sm">
                   Chưa có học viên phù hợp.
                 </TableCell>
               </TableRow>
@@ -236,6 +301,16 @@ export function CourseStudentsPanel({ courseId, showCourseColumn = false }: Cour
                     <Badge variant={student.status === 'active' ? 'success' : 'secondary'}>
                       {student.status === 'active' ? 'Đang học' : 'Đã thu hồi'}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(student)} title="Chỉnh sửa trạng thái">
+                        <Edit size={16} />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleOpenDelete(student)} title="Xóa học viên">
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -290,7 +365,74 @@ export function CourseStudentsPanel({ courseId, showCourseColumn = false }: Cour
           </div>
         )}
       </Card>
+
+      {/* Dialog Chỉnh sửa học viên */}
+      <Dialog open={editingStudent !== null} onOpenChange={(open) => { if (!open) setEditingStudent(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Chỉnh sửa học viên</DialogTitle>
+          </DialogHeader>
+          {editingStudent && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Học viên</label>
+                <div className="font-medium text-slate-900 dark:text-slate-100">{editingStudent.customerName}</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">{editingStudent.customerEmail}</div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Khóa học</label>
+                <div className="text-sm text-slate-700 dark:text-slate-300">{editingStudent.courseTitle}</div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Trạng thái</label>
+                <select
+                  className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 text-slate-700"
+                  value={editStatus}
+                  onChange={(e) => setEditStatus(e.target.value as typeof editStatus)}
+                >
+                  <option value="active">Đang học</option>
+                  <option value="revoked">Đã thu hồi</option>
+                </select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingStudent(null)} disabled={isEditLoading}>Hủy</Button>
+            <Button onClick={handleSaveEdit} disabled={isEditLoading}>
+              {isEditLoading ? "Đang lưu..." : "Lưu thay đổi"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Xóa học viên cascade */}
+      <DeleteConfirmDialog
+        open={deletingStudent !== null}
+        onOpenChange={(open) => { if (!open) setDeletingStudent(null); }}
+        title="Xóa học viên khỏi khóa học"
+        itemName={deletingStudent?.customerName ?? "học viên"}
+        dependencies={
+          deletingStudent && deletingStudent.completedLessonsCount > 0
+            ? [
+                {
+                  label: "Tiến độ học tập (sẽ bị xóa vĩnh viễn)",
+                  count: deletingStudent.completedLessonsCount,
+                  preview: [
+                    {
+                      id: "progress",
+                      name: `Đã học ${deletingStudent.completedLessonsCount}/${deletingStudent.lessonCount} bài học`,
+                    },
+                  ],
+                  hasMore: false,
+                },
+              ]
+            : []
+        }
+        onConfirm={handleConfirmDelete}
+        isLoading={isDeleteLoading}
+      />
     </div>
   );
 }
+
 

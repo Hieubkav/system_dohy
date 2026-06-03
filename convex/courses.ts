@@ -1766,3 +1766,48 @@ export const getCertificateByCode = query({
   ),
 });
 
+export const updateCourseStudentAdmin = mutation({
+  args: {
+    id: v.id("courseStudents"),
+    status: v.union(v.literal("active"), v.literal("revoked")),
+  },
+  handler: async (ctx, args) => {
+    const student = await ctx.db.get(args.id);
+    if (!student) {
+      throw new Error("Học viên không tồn tại");
+    }
+    await ctx.db.patch(args.id, {
+      status: args.status,
+      updatedAt: Date.now(),
+    });
+    return null;
+  },
+  returns: v.null(),
+});
+
+export const removeCourseStudentAdmin = mutation({
+  args: { id: v.id("courseStudents") },
+  handler: async (ctx, args) => {
+    const student = await ctx.db.get(args.id);
+    if (!student) {
+      throw new Error("Học viên không tồn tại");
+    }
+
+    // Thu thập và xóa tất cả courseLessonProgress của học viên này
+    const progresses = await ctx.db
+      .query("courseLessonProgress")
+      .withIndex("by_studentId_and_lessonId", (q) => q.eq("studentId", args.id))
+      .collect();
+
+    for (const p of progresses) {
+      await ctx.db.delete(p._id);
+    }
+
+    // Xóa bản ghi học viên khóa học
+    await ctx.db.delete(args.id);
+    return null;
+  },
+  returns: v.null(),
+});
+
+
