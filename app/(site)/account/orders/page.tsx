@@ -69,8 +69,10 @@ function PaymentReminder({
   totalAmount: number;
   bankInfo: {
     bankName: string;
+    bankCode: string;
     accountName: string;
     accountNumber: string;
+    vietQrTemplate: string;
   };
   tokens: ReturnType<typeof getAccountOrdersColors>;
 }) {
@@ -80,11 +82,17 @@ function PaymentReminder({
 
   const isBankPayment = paymentMethod === 'BankTransfer' || paymentMethod === 'VietQR';
   const transferContent = `DH ${orderNumber}`;
+  const vietQrUrl = isBankPayment && bankInfo.bankCode && bankInfo.accountNumber
+    ? `https://img.vietqr.io/image/${bankInfo.bankCode}-${bankInfo.accountNumber}-${bankInfo.vietQrTemplate}.jpg` +
+      `?amount=${totalAmount}` +
+      `&addInfo=${encodeURIComponent(transferContent)}` +
+      `&accountName=${encodeURIComponent(bankInfo.accountName)}`
+    : null;
 
-  const copyTransferContent = async () => {
+  const copyText = async (value: string, label: string) => {
     try {
-      await navigator.clipboard.writeText(transferContent);
-      toast.success('Đã copy nội dung chuyển khoản.');
+      await navigator.clipboard.writeText(value);
+      toast.success(`Đã copy ${label}.`);
     } catch {
       toast.error('Không thể copy. Vui lòng copy thủ công.');
     }
@@ -111,24 +119,56 @@ function PaymentReminder({
       </div>
 
       {isBankPayment ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-          <OrderMeta label="Ngân hàng" value={bankInfo.bankName} tokens={tokens} />
-          <OrderMeta label="Số tài khoản" value={bankInfo.accountNumber} tokens={tokens} />
-          <OrderMeta label="Chủ tài khoản" value={bankInfo.accountName} tokens={tokens} />
-          <OrderMeta label="Số tiền" value={formatPrice(totalAmount)} tokens={tokens} />
-          <div className="sm:col-span-2 rounded-lg border px-3 py-2 flex items-center justify-between gap-2" style={{ borderColor: tokens.orderExpandedBorder, backgroundColor: tokens.orderCardBg }}>
-            <div className="min-w-0">
-              <div className="text-[10px]" style={{ color: tokens.orderMetaText }}>Nội dung chuyển khoản</div>
-              <div className="font-semibold truncate" style={{ color: tokens.orderValueText }}>{transferContent}</div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[140px_1fr]">
+          {vietQrUrl && (
+            <div className="flex justify-center md:justify-start">
+              <div
+                className="h-[132px] w-[132px] overflow-hidden rounded-xl border bg-white p-2"
+                style={{ borderColor: tokens.orderExpandedBorder }}
+              >
+                <Image
+                  src={vietQrUrl}
+                  alt="QR thanh toán"
+                  width={116}
+                  height={116}
+                  className="h-full w-full object-contain"
+                />
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={copyTransferContent}
-              className="shrink-0 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold"
-              style={{ backgroundColor: tokens.secondaryButtonBg, color: tokens.secondaryButtonText }}
-            >
-              <Copy size={12} /> Copy
-            </button>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            <OrderMeta label="Ngân hàng" value={bankInfo.bankName} tokens={tokens} />
+            <div className="rounded-lg border px-3 py-2 flex items-center justify-between gap-2" style={{ borderColor: tokens.orderExpandedBorder, backgroundColor: tokens.orderCardBg }}>
+              <div className="min-w-0">
+                <div className="text-[10px]" style={{ color: tokens.orderMetaText }}>Số tài khoản</div>
+                <div className="font-semibold truncate" style={{ color: tokens.orderValueText }}>{bankInfo.accountNumber}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { void copyText(bankInfo.accountNumber, 'số tài khoản'); }}
+                className="shrink-0 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold"
+                style={{ backgroundColor: tokens.secondaryButtonBg, color: tokens.secondaryButtonText }}
+              >
+                <Copy size={12} /> Copy
+              </button>
+            </div>
+            <OrderMeta label="Chủ tài khoản" value={bankInfo.accountName} tokens={tokens} />
+            <OrderMeta label="Số tiền" value={formatPrice(totalAmount)} tokens={tokens} />
+            <div className="sm:col-span-2 rounded-lg border px-3 py-2 flex items-center justify-between gap-2" style={{ borderColor: tokens.orderExpandedBorder, backgroundColor: tokens.orderCardBg }}>
+              <div className="min-w-0">
+                <div className="text-[10px]" style={{ color: tokens.orderMetaText }}>Nội dung chuyển khoản</div>
+                <div className="font-semibold truncate" style={{ color: tokens.orderValueText }}>{transferContent}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { void copyText(transferContent, 'nội dung chuyển khoản'); }}
+                className="shrink-0 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold"
+                style={{ backgroundColor: tokens.secondaryButtonBg, color: tokens.secondaryButtonText }}
+              >
+                <Copy size={12} /> Copy
+              </button>
+            </div>
           </div>
         </div>
       ) : (
@@ -345,8 +385,10 @@ export default function AccountOrdersPage() {
   }, [ordersSettings]);
   const bankInfo = useMemo(() => ({
     bankName: getStringSetting(ordersSettingsMap, 'bankName', 'Vietcombank'),
+    bankCode: getStringSetting(ordersSettingsMap, 'bankCode', 'VCB'),
     accountName: getStringSetting(ordersSettingsMap, 'bankAccountName', 'CÔNG TY VIETADMIN'),
     accountNumber: getStringSetting(ordersSettingsMap, 'bankAccountNumber', '0123456789'),
+    vietQrTemplate: getStringSetting(ordersSettingsMap, 'vietQrTemplate', 'compact'),
   }), [ordersSettingsMap]);
 
   const stats = {
