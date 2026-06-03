@@ -759,10 +759,6 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
                     aspectRatio="video"
                   />
                 </CardContent>
-
-        <div className={activeTab === 'students' ? '' : 'hidden'}>
-          <CourseStudentsPanel courseId={courseId} />
-        </div>
               </Card>
             </div>
           </div>
@@ -775,6 +771,11 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
             onDirtyChange={handleCurriculumDirtyChange}
             onSaveRef={curriculumSaveFnRef}
           />
+        </div>
+
+        {/* Tab Students */}
+        <div className={activeTab === 'students' ? '' : 'hidden'}>
+          <CourseStudentsPanel courseId={courseId} />
         </div>
 
         <HomeComponentStickyFooter
