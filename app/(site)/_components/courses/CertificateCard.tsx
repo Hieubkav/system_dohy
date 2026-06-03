@@ -107,7 +107,9 @@ export function CertificateCard({
       >
 
         {/* ══════════════════════════════════════════════════════
-            BACKGROUND LAYER 1 — Fine dot grid
+            BACKGROUND LAYER 1 — Fine diagonal cross-hatch (security paper)
+            #1 most praised certificate pattern: heropatterns.com, Certifier,
+            Canva premium — same aesthetic as banknotes & official documents
         ══════════════════════════════════════════════════════ */}
         <svg
           aria-hidden="true"
@@ -116,15 +118,22 @@ export function CertificateCard({
           preserveAspectRatio="xMidYMid slice"
         >
           <defs>
-            <pattern id="dot-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-              <circle cx="1" cy="1" r="0.8" fill="#a27b4c" fillOpacity="0.14" />
+            {/* Diamond mesh: two sets of diagonal lines at 45° and -45° */}
+            <pattern id="hatch-45" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="10" stroke="#a27b4c" strokeWidth="0.35" strokeOpacity="0.11"/>
+            </pattern>
+            <pattern id="hatch-neg45" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+              <line x1="0" y1="0" x2="0" y2="10" stroke="#a27b4c" strokeWidth="0.35" strokeOpacity="0.08"/>
             </pattern>
             <radialGradient id="vignette-cert" cx="50%" cy="50%" r="65%">
               <stop offset="0%" stopColor="#fdfbf7" stopOpacity="0" />
               <stop offset="100%" stopColor="#c9aa82" stopOpacity="0.25" />
             </radialGradient>
           </defs>
-          <rect width="100%" height="100%" fill="url(#dot-grid)" />
+          {/* Layer cross-hatch: +45° then -45° = diamond mesh */}
+          <rect width="100%" height="100%" fill="url(#hatch-45)" />
+          <rect width="100%" height="100%" fill="url(#hatch-neg45)" />
+          {/* Vignette on top */}
           <rect width="100%" height="100%" fill="url(#vignette-cert)" />
         </svg>
 
