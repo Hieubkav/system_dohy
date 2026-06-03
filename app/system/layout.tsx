@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Toaster } from 'sonner';
+import { CustomToaster } from '@/components/shared/CustomToaster';
 import { I18nProvider, useI18n } from './i18n/context';
 import type { Locale } from './i18n/translations';
 import { SystemAuthProvider, useSystemAuth } from './auth/context';
@@ -309,7 +309,7 @@ export default function SystemLayout({ children }: { children: React.ReactNode }
     <I18nProvider>
       <SystemAuthProvider>
         <SystemLayoutWrapper>{children}</SystemLayoutWrapper>
-        <Toaster position="top-right" richColors />
+        <CustomToaster position="top-right" richColors />
       </SystemAuthProvider>
     </I18nProvider>
   );

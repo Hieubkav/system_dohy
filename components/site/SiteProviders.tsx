@@ -5,8 +5,8 @@ import dynamic from 'next/dynamic';
 import { CustomerAuthProvider } from '@/app/(site)/auth/context';
 import { CartProvider } from '@/lib/cart';
 
-const Toaster = dynamic(
-  () => import('sonner').then((mod) => ({ default: mod.Toaster })),
+const CustomToaster = dynamic(
+  () => import('@/components/shared/CustomToaster').then((mod) => ({ default: mod.CustomToaster })),
   { ssr: false, loading: () => null }
 );
 
@@ -46,7 +46,7 @@ export function SiteProviders({ children }: { children: React.ReactNode }) {
     <CustomerAuthProvider>
       <CartProvider>
         {children}
-        <Toaster richColors position="top-right" />
+        <CustomToaster richColors position="top-right" />
       </CartProvider>
     </CustomerAuthProvider>
   );

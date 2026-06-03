@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
-import { Toaster } from 'sonner';
+import { CustomToaster } from '@/components/shared/CustomToaster';
 import { AdminModulesProvider } from './context/AdminModulesContext';
 import { SidebarProvider } from './context/SidebarContext';
 import { AdminAuthProvider } from './auth/context';
@@ -35,7 +35,7 @@ function AdminLayoutContent({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex font-sans">
-      <Toaster position="top-right" richColors theme={isDarkMode ? 'dark' : 'light'} />
+      <CustomToaster position="top-right" richColors theme={isDarkMode ? 'dark' : 'light'} />
       
       <SidebarProvider>
         <Sidebar mobileMenuOpen={mobileMenuOpen} setMobileMenuOpen={setMobileMenuOpen} />
