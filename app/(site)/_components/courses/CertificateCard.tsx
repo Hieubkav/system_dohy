@@ -277,55 +277,58 @@ export function CertificateCard({
         {/* ═══════════════ Certificate Content ═══════════════ */}
         <div className="h-full flex flex-col items-center text-center relative z-10 py-1 font-cert-sans">
 
-          {/* Header */}
-          <div className="space-y-0.5 mt-1">
-            <div className="flex items-center justify-center gap-2">
-              <span className="h-px w-10 bg-[#a27b4c]/50" />
-              <p className="text-[11px] font-black tracking-[0.3em] text-[#a27b4c] uppercase">DOHY ACADEMY</p>
-              <span className="h-px w-10 bg-[#a27b4c]/50" />
+          {/* ── Top content group: vertically centered in space above footer ── */}
+          <div className="flex-1 w-full flex flex-col items-center justify-center gap-0">
+
+            {/* Header */}
+            <div className="space-y-0.5">
+              <div className="flex items-center justify-center gap-2">
+                <span className="h-px w-10 bg-[#a27b4c]/50" />
+                <p className="text-[11px] font-black tracking-[0.3em] text-[#a27b4c] uppercase">DOHY ACADEMY</p>
+                <span className="h-px w-10 bg-[#a27b4c]/50" />
+              </div>
+              <p className="text-[8px] tracking-[0.12em] text-slate-400 font-bold uppercase">
+                Professional Creative Education &amp; Certification
+              </p>
             </div>
-            <p className="text-[8px] tracking-[0.12em] text-slate-400 font-bold uppercase">
-              Professional Creative Education &amp; Certification
-            </p>
-          </div>
 
-          {/* Title block */}
-          <div className="space-y-1 mt-3">
-            <h1 className="text-xl md:text-2xl font-extrabold tracking-[0.06em] text-slate-800 uppercase">
-              CHỨNG NHẬN HOÀN THÀNH
-            </h1>
-            <p className="text-[10.5px] italic text-slate-400 font-medium">
-              Chứng chỉ này được trân trọng trao tặng cho
-            </p>
-          </div>
+            {/* Title block */}
+            <div className="space-y-1 mt-4">
+              <h1 className="text-xl md:text-2xl font-extrabold tracking-[0.06em] text-slate-800 uppercase">
+                CHỨNG NHẬN HOÀN THÀNH
+              </h1>
+              <p className="text-[10.5px] italic text-slate-400 font-medium">
+                Chứng chỉ này được trân trọng trao tặng cho
+              </p>
+            </div>
 
-          {/* Recipient name — centerpiece */}
-          <div className="mt-4">
-            <h2 className="text-[2.8rem] md:text-[3.2rem] font-black text-[#0f172a] tracking-wide uppercase leading-none drop-shadow-sm">
-              {customerName}
-            </h2>
-            <p className="text-[10px] text-slate-400 font-semibold max-w-sm mx-auto mt-2 leading-relaxed">
-              Đã hoàn thành xuất sắc chương trình đào tạo và đạt tiêu chuẩn tốt nghiệp của khóa học chuyên sâu
-            </p>
-          </div>
+            {/* Recipient name — centerpiece */}
+            <div className="mt-4">
+              <h2 className="text-[2.8rem] md:text-[3.2rem] font-black text-[#0f172a] tracking-wide uppercase leading-none drop-shadow-sm">
+                {customerName}
+              </h2>
+              <p className="text-[10px] text-slate-400 font-semibold max-w-sm mx-auto mt-2 leading-relaxed">
+                Đã hoàn thành xuất sắc chương trình đào tạo và đạt tiêu chuẩn tốt nghiệp của khóa học chuyên sâu
+              </p>
+            </div>
 
-          {/* Course title */}
-          <div className="w-[72%] max-w-[560px] border-y border-[#a27b4c]/30 py-2.5 mt-4">
-            <h3 className="text-[0.95rem] md:text-base font-extrabold text-[#a27b4c] tracking-[0.04em] uppercase leading-tight">
-              {courseTitle}
-            </h3>
-          </div>
+            {/* Course title */}
+            <div className="w-[72%] max-w-[560px] border-y border-[#a27b4c]/30 py-2.5 mt-4">
+              <h3 className="text-[0.95rem] md:text-base font-extrabold text-[#a27b4c] tracking-[0.04em] uppercase leading-tight">
+                {courseTitle}
+              </h3>
+            </div>
 
-          {/* Date */}
-          <div className="text-[8.5px] text-slate-400 uppercase tracking-widest font-extrabold mt-3">
-            Cấp ngày {completedDateStr}
-          </div>
+            {/* Date */}
+            <div className="text-[8.5px] text-slate-400 uppercase tracking-widest font-extrabold mt-3">
+              Cấp ngày {completedDateStr}
+            </div>
 
-          {/* Spacer: đẩy footer xuống đáy */}
-          <div className="flex-1" />
+          </div>{/* end top content group */}
 
           {/* Footer: signature | seal | QR */}
-          <div className="w-full grid grid-cols-3 items-end mt-2 px-2">
+          <div className="w-full grid grid-cols-3 items-end px-2 pb-1">
+
 
             {/* Signature */}
             <div className="flex flex-col justify-end items-center text-center pb-1 gap-0">
