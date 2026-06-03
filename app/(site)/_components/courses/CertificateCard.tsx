@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface CertificateCardProps {
   customerName: string;
@@ -10,6 +10,41 @@ interface CertificateCardProps {
   certificateCode: string;
   currentUrl?: string;
   className?: string;
+}
+
+// ─── Guilloche helper: generates a spirograph/hypotrochoid path ───────────────
+// Formula: x = (R-r)cos(t) + d·cos((R-r)/r · t)
+//          y = (R-r)sin(t) - d·sin((R-r)/r · t)
+function guillochePathD(
+  R: number,
+  r: number,
+  d: number,
+  steps = 1200,
+  cx = 0,
+  cy = 0,
+): string {
+  const points: string[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * Math.PI * 2 * r; // full cycle
+    const x = cx + (R - r) * Math.cos(t) + d * Math.cos(((R - r) / r) * t);
+    const y = cy + (R - r) * Math.sin(t) - d * Math.sin(((R - r) / r) * t);
+    points.push(`${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${y.toFixed(2)}`);
+  }
+  return points.join(' ') + ' Z';
+}
+
+// ─── Rosette helper: N-petal flower via overlapping circles ──────────────────
+function rosettePath(cx: number, cy: number, r: number, petals: number): string {
+  const paths: string[] = [];
+  for (let i = 0; i < petals; i++) {
+    const angle = (i / petals) * Math.PI * 2;
+    const px = cx + r * Math.cos(angle);
+    const py = cy + r * Math.sin(angle);
+    paths.push(`M ${cx} ${cy} A ${r} ${r} 0 0 1 ${px.toFixed(2)} ${py.toFixed(2)}`);
+    // second arc back
+    paths.push(`A ${r} ${r} 0 0 1 ${cx} ${cy}`);
+  }
+  return paths.join(' ');
 }
 
 export function CertificateCard({
@@ -26,6 +61,10 @@ export function CertificateCard({
     year: 'numeric',
   });
 
+  // Pre-compute guilloche paths (expensive but static)
+  const guillocheOuter = useMemo(() => guillochePathD(80, 11, 68, 1800, 0, 0), []);
+  const guillocheInner = useMemo(() => guillochePathD(60, 7, 52, 1800, 0, 0), []);
+
   return (
     <>
       <style jsx global>{`
@@ -39,34 +78,23 @@ export function CertificateCard({
         }
 
         @media print {
-          @page {
-            size: A4 landscape;
-            margin: 0;
-          }
+          @page { size: A4 landscape; margin: 0; }
           html, body {
             background: #ffffff !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            height: 100% !important;
-            overflow: hidden !important;
+            margin: 0 !important; padding: 0 !important;
+            height: 100% !important; overflow: hidden !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
           body * { visibility: hidden !important; }
           .print-container, .print-container * { visibility: visible !important; }
           .print-container {
-            visibility: visible !important;
             position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 297mm !important;
-            height: 210mm !important;
-            padding: 32px !important;
-            margin: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
-            transform: none !important;
-            border-radius: 0 !important;
+            top: 0 !important; left: 0 !important;
+            width: 297mm !important; height: 210mm !important;
+            padding: 32px !important; margin: 0 !important;
+            box-shadow: none !important; border: none !important;
+            transform: none !important; border-radius: 0 !important;
             background-color: #fdfbf7 !important;
             box-sizing: border-box !important;
           }
@@ -77,7 +105,11 @@ export function CertificateCard({
         className={`w-full bg-[#fdfbf7] text-[#0f172a] p-8 md:p-12 shadow-2xl rounded-xl border border-slate-200 relative overflow-hidden print-container select-none ${className}`}
         style={{ aspectRatio: '297 / 210', boxSizing: 'border-box' }}
       >
-        {/* ─── Background decorative pattern ─── */}
+
+        {/* ══════════════════════════════════════════════════════
+            BACKGROUND LAYER 1 — Fine dot grid (heropatterns style)
+            Light, fast, beloved by dev community
+        ══════════════════════════════════════════════════════ */}
         <svg
           aria-hidden="true"
           className="absolute inset-0 w-full h-full pointer-events-none"
@@ -85,47 +117,110 @@ export function CertificateCard({
           preserveAspectRatio="xMidYMid slice"
         >
           <defs>
-            {/* Repeating diamond-lotus tile */}
-            <pattern id="cert-bg-pattern" x="0" y="0" width="48" height="48" patternUnits="userSpaceOnUse">
-              {/* Thin cross lines */}
-              <line x1="24" y1="0" x2="24" y2="48" stroke="#a27b4c" strokeWidth="0.4" strokeOpacity="0.12" />
-              <line x1="0" y1="24" x2="48" y2="24" stroke="#a27b4c" strokeWidth="0.4" strokeOpacity="0.12" />
-              {/* Diagonal */}
-              <line x1="0" y1="0" x2="48" y2="48" stroke="#a27b4c" strokeWidth="0.3" strokeOpacity="0.07" />
-              <line x1="48" y1="0" x2="0" y2="48" stroke="#a27b4c" strokeWidth="0.3" strokeOpacity="0.07" />
-              {/* Center diamond */}
-              <polygon
-                points="24,18 30,24 24,30 18,24"
-                fill="none"
-                stroke="#a27b4c"
-                strokeWidth="0.6"
-                strokeOpacity="0.13"
-              />
-              {/* Tiny dot at intersections */}
-              <circle cx="24" cy="24" r="1" fill="#a27b4c" fillOpacity="0.1" />
-              <circle cx="0" cy="0" r="0.7" fill="#a27b4c" fillOpacity="0.07" />
-              <circle cx="48" cy="0" r="0.7" fill="#a27b4c" fillOpacity="0.07" />
-              <circle cx="0" cy="48" r="0.7" fill="#a27b4c" fillOpacity="0.07" />
-              <circle cx="48" cy="48" r="0.7" fill="#a27b4c" fillOpacity="0.07" />
+            <pattern id="dot-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="0.8" fill="#a27b4c" fillOpacity="0.14" />
             </pattern>
-            {/* Radial vignette: edges slightly darker ivory */}
-            <radialGradient id="cert-vignette" cx="50%" cy="50%" r="70%">
+            {/* Radial vignette: tập trung view vào trung tâm */}
+            <radialGradient id="vignette-cert" cx="50%" cy="50%" r="65%">
               <stop offset="0%" stopColor="#fdfbf7" stopOpacity="0" />
-              <stop offset="100%" stopColor="#e8ddd0" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#c9aa82" stopOpacity="0.28" />
             </radialGradient>
           </defs>
+          <rect width="100%" height="100%" fill="url(#dot-grid)" />
+          <rect width="100%" height="100%" fill="url(#vignette-cert)" />
+        </svg>
 
-          {/* Pattern layer */}
-          <rect width="100%" height="100%" fill="url(#cert-bg-pattern)" />
-          {/* Vignette overlay */}
-          <rect width="100%" height="100%" fill="url(#cert-vignette)" />
+        {/* ══════════════════════════════════════════════════════
+            BACKGROUND LAYER 2 — Guilloche spirograph (bottom-left & top-right)
+            Iconic security-document pattern — #1 on certificates globally
+        ══════════════════════════════════════════════════════ */}
+
+        {/* Guilloche — bottom-left */}
+        <svg
+          aria-hidden="true"
+          className="absolute pointer-events-none"
+          style={{ bottom: '-10%', left: '-8%', width: '38%', opacity: 0.07 }}
+          viewBox="-90 -90 180 180"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d={guillocheOuter} fill="none" stroke="#7f5d34" strokeWidth="0.5" />
+          <path d={guillocheInner} fill="none" stroke="#a27b4c" strokeWidth="0.4" />
+        </svg>
+
+        {/* Guilloche — top-right */}
+        <svg
+          aria-hidden="true"
+          className="absolute pointer-events-none"
+          style={{ top: '-10%', right: '-8%', width: '38%', opacity: 0.07, transform: 'rotate(45deg)' }}
+          viewBox="-90 -90 180 180"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d={guillocheOuter} fill="none" stroke="#7f5d34" strokeWidth="0.5" />
+          <path d={guillocheInner} fill="none" stroke="#a27b4c" strokeWidth="0.4" />
+        </svg>
+
+        {/* ══════════════════════════════════════════════════════
+            BACKGROUND LAYER 3 — Rosette (center-faint watermark)
+            Gothic rose window — popular on Harvard/MIT style certs
+        ══════════════════════════════════════════════════════ */}
+        <svg
+          aria-hidden="true"
+          className="absolute pointer-events-none"
+          style={{
+            top: '50%', left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '42%', opacity: 0.035,
+          }}
+          viewBox="-110 -110 220 220"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* Outer ring */}
+          <circle cx="0" cy="0" r="100" fill="none" stroke="#a27b4c" strokeWidth="1.2" />
+          <circle cx="0" cy="0" r="90" fill="none" stroke="#a27b4c" strokeWidth="0.5" />
+          {/* 12-petal rosette */}
+          {Array.from({ length: 12 }).map((_, i) => {
+            const angle = (i / 12) * Math.PI * 2;
+            const bx = 45 * Math.cos(angle);
+            const by = 45 * Math.sin(angle);
+            return (
+              <circle key={i} cx={bx} cy={by} r="45"
+                fill="none" stroke="#a27b4c" strokeWidth="0.7" strokeOpacity="0.9"
+              />
+            );
+          })}
+          {/* Inner 6-petal */}
+          {Array.from({ length: 6 }).map((_, i) => {
+            const angle = (i / 6) * Math.PI * 2;
+            const bx = 22 * Math.cos(angle);
+            const by = 22 * Math.sin(angle);
+            return (
+              <circle key={i} cx={bx} cy={by} r="22"
+                fill="none" stroke="#7f5d34" strokeWidth="0.6" strokeOpacity="0.8"
+              />
+            );
+          })}
+          {/* Center dot */}
+          <circle cx="0" cy="0" r="5" fill="#a27b4c" fillOpacity="0.6" />
+          <circle cx="0" cy="0" r="2" fill="#7f5d34" fillOpacity="1" />
+          {/* Radial spokes */}
+          {Array.from({ length: 12 }).map((_, i) => {
+            const angle = (i / 12) * Math.PI * 2;
+            return (
+              <line key={i}
+                x1={0} y1={0}
+                x2={(98 * Math.cos(angle)).toFixed(2)}
+                y2={(98 * Math.sin(angle)).toFixed(2)}
+                stroke="#a27b4c" strokeWidth="0.35" strokeOpacity="0.5"
+              />
+            );
+          })}
         </svg>
 
         {/* ─── Double-line ornate frame ─── */}
         <div className="absolute inset-4 border border-[#a27b4c]/25 pointer-events-none" />
         <div className="absolute inset-[22px] border-[2.5px] border-double border-[#a27b4c]/60 pointer-events-none" />
 
-        {/* ─── Corner ornaments (single shape, 4× rotation) ─── */}
+        {/* ─── Corner ornaments ─── */}
         {[
           'top-7 left-7',
           'top-7 right-7 rotate-90',
@@ -147,16 +242,14 @@ export function CertificateCard({
           </svg>
         ))}
 
-        {/* ─── Certificate Content ─── */}
+        {/* ═══════════════ Certificate Content ═══════════════ */}
         <div className="h-full flex flex-col justify-between items-center text-center relative z-10 py-1 font-cert-sans">
 
           {/* Header */}
           <div className="space-y-0.5 mt-1">
             <div className="flex items-center justify-center gap-2">
               <span className="h-px w-10 bg-[#a27b4c]/50" />
-              <p className="text-[11px] font-black tracking-[0.3em] text-[#a27b4c] uppercase">
-                DOHY ACADEMY
-              </p>
+              <p className="text-[11px] font-black tracking-[0.3em] text-[#a27b4c] uppercase">DOHY ACADEMY</p>
               <span className="h-px w-10 bg-[#a27b4c]/50" />
             </div>
             <p className="text-[8px] tracking-[0.12em] text-slate-400 font-bold uppercase">
@@ -164,7 +257,7 @@ export function CertificateCard({
             </p>
           </div>
 
-          {/* Title block — merged, no duplication */}
+          {/* Title block */}
           <div className="space-y-1 mt-1">
             <h1 className="text-xl md:text-2xl font-extrabold tracking-[0.06em] text-slate-800 uppercase">
               CHỨNG NHẬN HOÀN THÀNH
@@ -184,7 +277,7 @@ export function CertificateCard({
             </p>
           </div>
 
-          {/* Course title — elegant border bar */}
+          {/* Course title */}
           <div className="w-[72%] max-w-[560px] border-y border-[#a27b4c]/30 py-2">
             <h3 className="text-[0.95rem] md:text-base font-extrabold text-[#a27b4c] tracking-[0.04em] uppercase leading-tight">
               {courseTitle}
