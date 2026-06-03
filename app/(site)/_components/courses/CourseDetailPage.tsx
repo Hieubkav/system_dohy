@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap, PlayCircle, Star, UserRound, ChevronDown, Lock } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap, PlayCircle, Star, UserRound, ChevronDown, Lock, Play } from 'lucide-react';
 import { RichContent, withFormatMarker } from '@/components/common/RichContent';
 import { useBrandColors } from '@/components/site/hooks';
 import { getCourseLevelLabel } from '@/lib/courses/labels';
@@ -156,12 +156,14 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
 
           {/* Overlay nút Play tròn lớn nếu có video giới thiệu */}
           {hasPromoVideo && (
-            <div className="absolute inset-0 bg-black/20 group-hover/thumb:bg-black/40 transition-colors flex items-center justify-center z-10">
-              <div className="bg-white/90 hover:bg-white text-slate-900 rounded-full p-4 shadow-lg transition-transform duration-300 group-hover/thumb:scale-110 flex items-center justify-center">
-                <PlayCircle size={28} className="text-slate-950 fill-slate-950" style={{ color: brandColor }} />
+            <div className="absolute inset-0 bg-black/35 group-hover/thumb:bg-black/50 transition-colors flex items-center justify-center z-10">
+              <div 
+                className="bg-white/90 text-slate-900 rounded-full shadow-xl transition-all duration-300 group-hover/thumb:scale-110 group-hover/thumb:bg-white flex items-center justify-center w-14 h-14"
+              >
+                <Play size={22} fill={brandColor} style={{ color: brandColor }} className="translate-x-[2px]" />
               </div>
-              <span className="absolute bottom-3 right-3 bg-black/70 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur-sm">
-                Video giới thiệu
+              <span className="absolute bottom-3 right-3 bg-black/75 text-white text-[10px] font-bold px-2.5 py-1 rounded backdrop-blur-sm tracking-wide">
+                Xem giới thiệu
               </span>
             </div>
           )}
