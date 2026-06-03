@@ -6,10 +6,11 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
-import { ArrowLeft, BookOpen, Clock, GraduationCap, PlayCircle, Lock, ChevronRight, ChevronLeft, Download, FileText, ArrowRight, Eye } from 'lucide-react';
+import { ArrowLeft, GraduationCap, PlayCircle, Lock, ChevronRight, ChevronLeft, Download, ArrowRight, Eye } from 'lucide-react';
 import { useBrandColors } from '@/components/site/hooks';
-import { formatPrice, convertToSlug } from '@/lib/courses/courseUtils';
+import { convertToSlug, getRadiusClass, getSmallRadiusClass } from '@/lib/courses/courseUtils';
 import { RichContent, withFormatMarker } from '@/components/common/RichContent';
+import { useLessonDetailConfig } from '@/lib/experiences';
 
 type LessonPageProps = {
   params: Promise<{ slug: string; lessonSlugAndId: string }>;
@@ -19,6 +20,7 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   const { slug, lessonSlugAndId } = use(params);
   const router = useRouter();
   const brandColors = useBrandColors();
+  const config = useLessonDetailConfig();
   const { isAuthenticated, isLoading: authLoading } = useCustomerAuth();
 
   // Parse ID bài học từ slug lai (lessonSlugAndId) dạng tieu-de-bai-hoc--[id]
@@ -37,10 +39,11 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   const lessons = useQuery(api.courses.listLessonsByCourse, course?._id ? { courseId: course._id } : 'skip');
 
   const brandColor = brandColors.primary;
-  const secondaryColor = brandColors.secondary || '';
-  const accent = useMemo(() => {
-    return brandColors.mode === 'dual' && secondaryColor ? secondaryColor : brandColor;
-  }, [brandColor, secondaryColor, brandColors.mode]);
+  const isCompactLayout = config.layoutStyle === 'compact';
+  const isFocusLayout = config.layoutStyle === 'focus';
+  const shouldShowSidebar = config.showSidebar && !isFocusLayout;
+  const radiusClass = getRadiusClass(config.cornerRadius);
+  const smallRadiusClass = getSmallRadiusClass(config.cornerRadius);
 
   // Trạng thái mở rộng accordion ở sidebar bài học
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
@@ -145,11 +148,17 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
         }
       `}</style>
 
-      <div className="w-full max-w-[1600px] flex flex-col lg:flex-row-reverse gap-6 px-4 py-8">
+      <div className={`w-full flex flex-col ${shouldShowSidebar ? 'lg:flex-row-reverse' : ''} ${isFocusLayout ? 'max-w-5xl' : 'max-w-[1600px]'} ${isCompactLayout ? 'gap-4 px-3 py-5' : 'gap-6 px-4 py-8'}`}>
         {/* Cột chính, cách Sidebar một khoảng cách gap-6 hoàn hảo */}
-        <section className="flex-1 min-w-0 flex flex-col gap-6">
+        <section className={`flex-1 min-w-0 flex flex-col ${isCompactLayout ? 'gap-4' : 'gap-6'}`}>
+          {config.showCourseBreadcrumb && !shouldShowSidebar && (
+            <Link href={`/khoa-hoc/${course.slug}`} className="inline-flex w-fit items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors">
+              <ArrowLeft size={12} /> {course.title}
+            </Link>
+          )}
+
           {/* Video Player / Lock Wall */}
-          <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-sm relative">
+          <div className={`aspect-video bg-black ${radiusClass} overflow-hidden shadow-sm relative`}>
             {hasAccess ? (
               embedUrl ? (
                 <iframe
@@ -166,19 +175,19 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
               )
             ) : (
               /* Lock Wall Screen (Premium Blur) */
-              <div className="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center text-center p-6 text-white z-10">
-                <div className="p-4 bg-white/10 rounded-full mb-4 backdrop-blur-md">
+              <div className={`absolute inset-0 flex flex-col items-center justify-center text-center p-6 z-10 ${config.lockWallStyle === 'card' ? 'bg-slate-100 text-slate-900' : 'bg-slate-900/90 text-white'}`}>
+                <div className={`p-4 rounded-full mb-4 ${config.lockWallStyle === 'card' ? 'bg-white shadow-sm' : 'bg-white/10 backdrop-blur-md'}`}>
                   <Lock size={32} className="text-amber-400" />
                 </div>
                 {!isAuthenticated ? (
                   <>
                     <h3 className="text-xl font-bold mb-2">Đăng nhập để xem bài học</h3>
-                    <p className="text-sm text-slate-300 max-w-md mb-6">
+                    <p className={`text-sm max-w-md mb-6 ${config.lockWallStyle === 'card' ? 'text-slate-500' : 'text-slate-300'}`}>
                       Để truy cập nội dung học tập và xem video học thử, vui lòng đăng nhập tài khoản của bạn.
                     </p>
                     <button
                       onClick={() => router.push(`/account/login?redirect=${encodeURIComponent(window.location.pathname)}`)}
-                      className="px-6 py-2.5 font-bold text-sm rounded-lg text-white hover:opacity-90 transition-all flex items-center gap-2 shadow-lg"
+                      className={`px-6 py-2.5 font-bold text-sm text-white hover:opacity-90 transition-all flex items-center gap-2 shadow-lg ${smallRadiusClass}`}
                       style={{ backgroundColor: brandColor }}
                     >
                       Đăng nhập ngay <ArrowRight size={16} />
@@ -187,12 +196,12 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
                 ) : (
                   <>
                     <h3 className="text-xl font-bold mb-2">Bài học chưa được kích hoạt</h3>
-                    <p className="text-sm text-slate-300 max-w-md mb-6">
+                    <p className={`text-sm max-w-md mb-6 ${config.lockWallStyle === 'card' ? 'text-slate-500' : 'text-slate-300'}`}>
                       Đây là nội dung thuộc chương trình khóa học có phí. Vui lòng liên hệ ban quản trị để đăng ký kích hoạt tài khoản của bạn.
                     </p>
                     <Link
                       href={`/contact?subject=${encodeURIComponent(`Đăng ký khóa học: ${course.title}`)}`}
-                      className="px-6 py-2.5 font-bold text-sm rounded-lg text-white hover:opacity-90 transition-all flex items-center gap-2 shadow-lg"
+                      className={`px-6 py-2.5 font-bold text-sm text-white hover:opacity-90 transition-all flex items-center gap-2 shadow-lg ${smallRadiusClass}`}
                       style={{ backgroundColor: brandColor }}
                     >
                       Đăng ký khóa học <GraduationCap size={16} />
@@ -204,18 +213,18 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
           </div>
 
           {/* Lesson Details with Security Lock blur */}
-          <div className="bg-white border border-slate-200 p-6 rounded-xl space-y-6 relative overflow-hidden">
+          <div className={`bg-white border border-slate-200 ${isCompactLayout ? 'p-4 space-y-4' : 'p-6 space-y-6'} ${radiusClass} relative overflow-hidden`}>
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Bài học</span>
                 <h1 className="text-2xl font-bold text-slate-900 mt-1">{lesson.title}</h1>
               </div>
-              {lesson.exerciseLink && hasAccess && (
+              {config.showExerciseDownload && lesson.exerciseLink && hasAccess && (
                 <a
                   href={lesson.exerciseLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white rounded-lg text-xs font-medium text-slate-700 transition shadow-sm"
+                  className={`inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 hover:border-slate-300 bg-white text-xs font-medium text-slate-700 transition shadow-sm ${smallRadiusClass}`}
                 >
                   <Download size={14} className="text-slate-500" /> Tải bài tập thử
                 </a>
@@ -264,6 +273,7 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
           </div>
 
           {/* Bottom Navigation Control */}
+          {config.showLessonNavigation && (
           <div className="flex items-center justify-between border-t border-slate-200 pt-6 mt-4">
             {navigation.prev ? (
               <Link
@@ -291,14 +301,18 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
               </span>
             )}
           </div>
+          )}
         </section>
 
         {/* Sidebar dạng Card Card-style, thẳng hàng Menu trên */}
-        <aside className="w-full lg:w-[380px] shrink-0 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col h-auto lg:h-[calc(100vh-140px)] lg:sticky lg:top-24 overflow-y-auto no-scrollbar">
-          <div className="p-4 border-b border-slate-100 bg-white sticky top-0 z-10 rounded-t-xl">
+        {shouldShowSidebar && (
+        <aside className={`w-full lg:w-[380px] shrink-0 bg-white border border-slate-200 ${radiusClass} shadow-sm flex flex-col h-auto lg:h-[calc(100vh-140px)] lg:sticky lg:top-24 overflow-y-auto no-scrollbar`}>
+          <div className={`p-4 border-b border-slate-100 bg-white sticky top-0 z-10 ${config.cornerRadius === 'none' ? 'rounded-none' : 'rounded-t-xl'}`}>
+            {config.showCourseBreadcrumb && (
             <Link href={`/khoa-hoc/${course.slug}`} className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors mb-2">
               <ArrowLeft size={12} /> {course.title}
             </Link>
+            )}
             <h2 className="font-bold text-slate-950 text-sm">Nội dung khóa học</h2>
           </div>
 
@@ -355,6 +369,7 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
             })}
           </div>
         </aside>
+        )}
       </div>
     </main>
   );

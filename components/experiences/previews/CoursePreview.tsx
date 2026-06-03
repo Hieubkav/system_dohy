@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Bookmark, ChevronDown, Clock, GraduationCap, Search, SlidersHorizontal, Star, UserRound, X } from 'lucide-react';
+import { ArrowLeft, BookOpen, Bookmark, ChevronDown, ChevronLeft, ChevronRight, Clock, Download, Eye, FileText, GraduationCap, Lock, PlayCircle, Search, SlidersHorizontal, Star, UserRound, X, CheckCircle2 } from 'lucide-react';
+import { getRadiusClass, getSmallRadiusClass, formatPrice } from '@/lib/courses/courseUtils';
 
 type DeviceType = 'desktop' | 'tablet' | 'mobile';
 type CoursesListLayoutStyle = 'grid' | 'sidebar' | 'masonry';
@@ -22,22 +23,6 @@ type CoursesListPreviewProps = {
   cornerRadius?: 'none' | 'sm' | 'lg';
 };
 
-const getRadiusClass = (radius?: 'none' | 'sm' | 'lg', type: 'card' | 'input' | 'panel' = 'card') => {
-  if (radius === 'none') return 'rounded-none';
-  if (radius === 'sm') {
-    if (type === 'panel') return 'rounded-xl';
-    return 'rounded-lg';
-  }
-  if (type === 'panel') return 'rounded-2xl';
-  return 'rounded-xl';
-};
-
-const getSmallRadiusClass = (radius?: 'none' | 'sm' | 'lg') => {
-  if (radius === 'none') return 'rounded-none';
-  if (radius === 'sm') return 'rounded';
-  return 'rounded-lg';
-};
-
 const getItemRadiusClass = (radius?: 'none' | 'sm' | 'lg') => {
   if (radius === 'none') return 'rounded-none';
   if (radius === 'sm') return 'rounded';
@@ -50,6 +35,20 @@ type CourseDetailPreviewProps = {
   showInstructor?: boolean;
   showRelated?: boolean;
   showStickyCta?: boolean;
+  brandColor?: string;
+  secondaryColor?: string;
+  colorMode?: 'single' | 'dual';
+  device?: DeviceType;
+  cornerRadius?: 'none' | 'sm' | 'lg';
+};
+
+type LessonDetailPreviewProps = {
+  layoutStyle: 'classic' | 'focus' | 'compact';
+  showSidebar?: boolean;
+  showLessonNavigation?: boolean;
+  showExerciseDownload?: boolean;
+  showCourseBreadcrumb?: boolean;
+  lockWallStyle?: 'overlay' | 'card';
   brandColor?: string;
   secondaryColor?: string;
   colorMode?: 'single' | 'dual';
@@ -787,12 +786,12 @@ export function CourseDetailPreview({
       <section className={`border-b border-slate-100 px-4 ${isModern ? 'py-10 text-white' : 'py-8'}`} style={isModern ? { background: `linear-gradient(135deg, ${brandColor}, ${accent})` } : undefined}>
         <div className="mx-auto max-w-6xl">
           <div className="max-w-4xl space-y-4">
-            <span className="inline-flex rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: isModern ? 'rgba(255,255,255,.18)' : `${brandColor}18`, color: isModern ? '#fff' : brandColor }}>
+            <span className="inline-flex rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: isModern ? 'rgba(255,255,255,.18)' : `${brandColor}12`, color: isModern ? '#fff' : '#334155' }}>
               Frontend · Trung cấp
             </span>
-            <h1 className={`${isMobile ? 'text-3xl' : 'text-5xl'} font-bold leading-tight ${isModern ? 'text-white' : 'text-slate-900'}`}>Lộ trình Next.js thực chiến</h1>
-            <p className={`max-w-2xl text-base ${isModern ? 'text-white/80' : 'text-slate-600'}`}>Xây dựng website thực tế, biết cách tổ chức dữ liệu, tối ưu SEO và đưa sản phẩm lên online.</p>
-            <div className={`flex flex-wrap gap-4 text-sm ${isModern ? 'text-white/80' : 'text-slate-500'}`}>
+            <h1 className={`${isMobile ? 'text-3xl' : 'text-5xl'} font-bold leading-tight mt-2 ${isModern ? 'text-white' : 'text-slate-900'}`}>Lộ trình Next.js thực chiến</h1>
+            <p className={`max-w-2xl text-base mt-2.5 ${isModern ? 'text-white/80' : 'text-slate-600'}`}>Xây dựng website thực tế, biết cách tổ chức dữ liệu, tối ưu SEO và đưa sản phẩm lên online.</p>
+            <div className={`flex flex-wrap gap-4 text-sm mt-3 ${isModern ? 'text-white/80' : 'text-slate-500'}`}>
               <span className="inline-flex items-center gap-1"><BookOpen size={16} />42 bài học</span>
               <span className="inline-flex items-center gap-1"><Clock size={16} />18 giờ</span>
               {showInstructor && <span className="inline-flex items-center gap-1"><UserRound size={16} />Nguyễn Minh Đức</span>}
@@ -804,17 +803,20 @@ export function CourseDetailPreview({
       <main className={`mx-auto grid max-w-6xl gap-6 px-4 py-8 ${showAside ? 'lg:grid-cols-[minmax(0,1fr)_320px]' : 'max-w-4xl mx-auto'}`}>
         <div className="space-y-8">
           <section>
-            <h2 className="mb-3 text-2xl font-bold text-slate-900">Bạn sẽ học được gì?</h2>
+            <h2 className="mb-4 text-2xl font-bold text-slate-900">Bạn sẽ học được gì?</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {['Biết cách tổ chức dự án rõ ràng', 'Tối ưu SEO cho trang học', 'Kết nối dữ liệu động', 'Đưa website lên online'].map((item) => (
-                <div key={item} className={`border border-slate-200 p-3 text-sm text-slate-700 ${smallRadiusClass}`}>{item}</div>
+                <div key={item} className={`flex items-start gap-2 border border-slate-200 p-3 text-sm text-slate-700 ${smallRadiusClass}`}>
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0" style={{ color: brandColor }} />
+                  <span>{item}</span>
+                </div>
               ))}
             </div>
           </section>
 
           {showCurriculum && (
             <section>
-              <h2 className="mb-3 text-2xl font-bold text-slate-900">Nội dung khóa học</h2>
+              <h2 className="mb-4 text-2xl font-bold text-slate-900">Nội dung khóa học</h2>
               <div className="space-y-3">
                 {MOCK_CHAPTERS.map((chapter: MockChapter, index: number) => {
                   const isOpen = openChapters[index] ?? false;
@@ -823,30 +825,44 @@ export function CourseDetailPreview({
                       <button
                         type="button"
                         onClick={() => toggleChapter(index)}
-                        className="flex w-full items-center justify-between text-left focus:outline-none"
+                        className="flex w-full items-center justify-between text-left focus:outline-none py-1"
                       >
                         <div>
-                          <div className="font-semibold text-slate-900">Chương {index + 1}: {chapter.title}</div>
-                          <div className="mt-1 text-xs text-slate-500">{10 + index * 4} bài học · {3 + index} giờ</div>
+                          <h3 className="font-semibold text-slate-900 text-base md:text-lg">
+                            Chương {index + 1}: {chapter.title}
+                          </h3>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {chapter.lessons.length} bài học
+                          </p>
                         </div>
                         <ChevronDown
                           size={18}
-                          className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                          className={`text-slate-400 transition-transform duration-200 shrink-0 ml-4 ${isOpen ? 'rotate-180' : ''}`}
                         />
                       </button>
                       
                       {isOpen && (
-                        <div className="mt-3 divide-y divide-slate-100 border-t border-slate-100 pt-2">
-                          {chapter.lessons.map((lesson: MockLesson) => (
-                            <div key={lesson.order} className="flex items-center justify-between py-2 text-sm text-slate-700">
-                              <span>{index + 1}.{lesson.order}. {lesson.title}</span>
-                              {lesson.order === 1 && (
-                                <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                                  Xem thử
+                        <div className="mt-3 border-t border-slate-100 pt-3 space-y-3">
+                          <div className="divide-y divide-slate-100 pl-4 md:pl-6">
+                            {chapter.lessons.map((lesson: MockLesson) => (
+                              <div
+                                key={lesson.order}
+                                className="flex items-center justify-between gap-3 py-2.5 text-sm text-slate-700 hover:text-slate-900 transition-colors cursor-pointer group/item"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <span className="text-slate-400 font-mono text-xs w-6 shrink-0">{index + 1}.{lesson.order}</span>
+                                  <span className="group-hover/item:underline">{lesson.title}</span>
                                 </span>
-                              )}
-                            </div>
-                          ))}
+                                {lesson.order === 1 ? (
+                                  <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 shrink-0 group-hover/item:bg-emerald-100 transition-colors">
+                                    Học thử
+                                  </span>
+                                ) : (
+                                  <Lock size={12} className="text-slate-300 group-hover/item:text-slate-400 shrink-0" />
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -868,7 +884,7 @@ export function CourseDetailPreview({
                 </div>
                 
                 <p className="text-sm text-slate-500">Học trọn đời</p>
-                <p className="mt-1 text-2xl font-bold" style={{ color: accent }}>2.900.000đ</p>
+                <p className="mt-1 text-2xl font-bold" style={{ color: accent }}>{formatPrice('paid', 2900000)}</p>
                 <button className={`mt-4 w-full px-5 py-3 font-semibold text-white transition hover:opacity-90`} style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
                   Đăng ký học
                 </button>
@@ -895,13 +911,159 @@ export function CourseDetailPreview({
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 p-4 shadow-lg flex items-center justify-between">
           <div>
             <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Học phí</p>
-            <p className="text-lg font-bold" style={{ color: accent }}>2.900.000đ</p>
+            <p className="text-lg font-bold" style={{ color: accent }}>{formatPrice('paid', 2900000)}</p>
           </div>
           <button className={`px-5 py-2.5 text-xs font-bold text-white shadow-sm`} style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
             Đăng ký học
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+export function LessonDetailPreview({
+  layoutStyle,
+  showSidebar = true,
+  showLessonNavigation = true,
+  showExerciseDownload = true,
+  showCourseBreadcrumb = true,
+  lockWallStyle = 'overlay',
+  brandColor = '#4f46e5',
+  secondaryColor,
+  colorMode = 'single',
+  device = 'desktop',
+  cornerRadius = 'lg',
+}: LessonDetailPreviewProps) {
+  const accent = resolveSecondary(brandColor, secondaryColor, colorMode);
+  const isMobile = device === 'mobile';
+  const isCompact = layoutStyle === 'compact';
+  const isFocus = layoutStyle === 'focus';
+  const shouldShowSidebar = showSidebar && !isFocus;
+  const radiusClass = getRadiusClass(cornerRadius);
+  const smallRadiusClass = getSmallRadiusClass(cornerRadius);
+
+  const lessonItems = [
+    { title: 'Làm quen AutoCAD tiêu chuẩn bản vẽ', active: true, preview: true },
+    { title: 'Thiết lập layer, dim và text style', active: false, preview: false },
+    { title: 'Vẽ mặt bằng nội thất cơ bản', active: false, preview: false },
+  ];
+
+  const lockContent = (
+    <div className={`flex h-full flex-col items-center justify-center p-5 text-center ${lockWallStyle === 'card' ? 'bg-slate-100 text-slate-900' : 'bg-slate-900/90 text-white'}`}>
+      <div className={`mb-3 ${smallRadiusClass} p-3 ${lockWallStyle === 'card' ? 'bg-white shadow-sm' : 'bg-white/10 backdrop-blur'}`}>
+        <Lock size={24} className={lockWallStyle === 'card' ? 'text-amber-500' : 'text-amber-400'} />
+      </div>
+      <h3 className="text-sm font-bold">Đăng nhập để xem bài học</h3>
+      <p className={`mt-1 max-w-sm text-xs ${lockWallStyle === 'card' ? 'text-slate-500' : 'text-slate-300'}`}>
+        Mở khóa video, tài liệu và bài tập thực hành trong khóa học.
+      </p>
+      <span className={`mt-4 inline-flex px-4 py-2 text-xs font-bold text-white ${smallRadiusClass}`} style={{ backgroundColor: brandColor }}>
+        Đăng nhập ngay
+      </span>
+    </div>
+  );
+
+  return (
+    <div className="min-h-[640px] bg-slate-50">
+      <div className={`mx-auto flex w-full ${isCompact ? 'max-w-5xl gap-4 px-4 py-5' : 'max-w-6xl gap-5 px-4 py-6'} ${isMobile ? 'flex-col' : 'flex-row-reverse'}`}>
+        <section className={`min-w-0 flex-1 ${isCompact ? 'space-y-4' : 'space-y-5'}`}>
+          {showCourseBreadcrumb && (
+            <div className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
+              <ArrowLeft size={13} /> Khóa học kiến trúc nội thất
+            </div>
+          )}
+
+          <div className={`relative aspect-video overflow-hidden bg-black shadow-sm ${radiusClass}`}>
+            {layoutStyle === 'classic' ? (
+              lockContent
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center gap-2 bg-slate-900 text-slate-400">
+                <PlayCircle size={44} />
+                <p className="text-xs">Preview video bài học</p>
+              </div>
+            )}
+          </div>
+
+          <div className={`relative space-y-5 border border-slate-200 bg-white ${isCompact ? 'p-4' : 'p-5'} ${radiusClass}`}>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Bài học</span>
+                <h1 className={`${isCompact ? 'text-lg' : 'text-xl'} mt-1 font-bold text-slate-900`}>
+                  Bài 1: Làm quen AutoCAD tiêu chuẩn bản vẽ
+                </h1>
+              </div>
+              {showExerciseDownload && (
+                <span className={`inline-flex items-center gap-1.5 border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 shadow-sm ${smallRadiusClass}`}>
+                  <Download size={13} /> Tải bài tập
+                </span>
+              )}
+            </div>
+
+            <div className="relative">
+              <div className={layoutStyle === 'classic' ? 'blur-[1px] opacity-60' : ''}>
+                <div className="prose prose-slate max-w-none text-sm leading-relaxed text-slate-600">
+                  <p>Trong bài học này, học viên làm quen giao diện AutoCAD, quy chuẩn layer, nét vẽ và cách chuẩn bị bản vẽ nội thất theo giáo trình mới.</p>
+                  <ul>
+                    <li>Thiết lập đơn vị, template và workspace.</li>
+                    <li>Nắm logic layer, lineweight và annotation scale.</li>
+                  </ul>
+                </div>
+              </div>
+              {layoutStyle === 'classic' && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className={`border border-slate-200 bg-white/90 p-4 text-center shadow-lg ${radiusClass}`}>
+                    <Eye size={20} className="mx-auto mb-2 text-slate-400" />
+                    <p className="text-xs font-bold text-slate-800">Tài liệu đang bị khóa</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {showLessonNavigation && (
+            <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-xs font-semibold text-slate-600">
+              <span className="inline-flex items-center gap-2 text-slate-300"><ChevronLeft size={15} /> Bài trước</span>
+              <span className="inline-flex items-center gap-2">Bài sau <ChevronRight size={15} /></span>
+            </div>
+          )}
+        </section>
+
+        {shouldShowSidebar && (
+          <aside className={`${isMobile ? 'w-full' : 'w-[300px]'} shrink-0 overflow-hidden border border-slate-200 bg-white shadow-sm ${radiusClass}`}>
+            <div className="border-b border-slate-100 p-4">
+              <div className="mb-2 inline-flex items-center gap-1.5 text-xs text-slate-500">
+                <BookOpen size={13} /> Giáo trình AutoCAD 2025
+              </div>
+              <h2 className="text-sm font-bold text-slate-950">Nội dung khóa học</h2>
+            </div>
+            <div className="divide-y divide-slate-100">
+              <div className="p-4">
+                <h3 className="mb-3 text-xs font-bold text-slate-800">1. Nền tảng bản vẽ</h3>
+                <div className="space-y-1">
+                  {lessonItems.map((item, index) => (
+                    <div
+                      key={item.title}
+                      className={`flex items-start gap-2 border-l-4 px-3 py-2 text-xs ${item.active ? 'bg-slate-100 font-bold text-slate-950' : 'border-l-transparent text-slate-600'}`}
+                      style={item.active ? { borderLeftColor: brandColor } : undefined}
+                    >
+                      <span className="font-mono text-slate-400">1.{index + 1}</span>
+                      <span className="flex-1">{item.title}</span>
+                      {item.preview ? <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-[9px] text-emerald-700">Học thử</span> : <Lock size={11} className="text-slate-400" />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {!isCompact && (
+                <div className="p-4 text-xs text-slate-500">
+                  <FileText size={14} className="mb-2" style={{ color: accent }} />
+                  Chọn chế độ tập trung để ẩn sidebar khi muốn học toàn màn hình.
+                </div>
+              )}
+            </div>
+          </aside>
+        )}
+      </div>
     </div>
   );
 }

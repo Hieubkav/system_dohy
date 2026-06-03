@@ -6,6 +6,7 @@ import { useQuery } from 'convex/react';
 import {
   AlertTriangle,
   Briefcase,
+  BookOpen,
   CalendarDays,
   CreditCard,
   FileText,
@@ -27,6 +28,7 @@ import { useI18n } from '../i18n/context';
 
 const iconMap: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
   FileText,
+  BookOpen,
   Briefcase,
   CalendarDays,
   Package,

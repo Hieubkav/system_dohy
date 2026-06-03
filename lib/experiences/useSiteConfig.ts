@@ -407,6 +407,40 @@ export function useCoursesDetailConfig(): CoursesDetailConfig {
   }, [experienceSetting?.value]);
 }
 
+type LessonDetailConfig = {
+  layoutStyle: 'classic' | 'focus' | 'compact';
+  showSidebar: boolean;
+  showLessonNavigation: boolean;
+  showExerciseDownload: boolean;
+  showCourseBreadcrumb: boolean;
+  lockWallStyle: 'overlay' | 'card';
+  cornerRadius: 'none' | 'sm' | 'lg';
+};
+
+export function useLessonDetailConfig(): LessonDetailConfig {
+  const experienceSetting = useQuery(api.settings.getByKey, { key: 'lesson_detail_ui' });
+
+  return useMemo(() => {
+    const raw = experienceSetting?.value as Partial<LessonDetailConfig> | undefined;
+    const layoutStyle = raw?.layoutStyle === 'focus' || raw?.layoutStyle === 'compact' || raw?.layoutStyle === 'classic'
+      ? raw.layoutStyle
+      : 'classic';
+    const lockWallStyle = raw?.lockWallStyle === 'card' || raw?.lockWallStyle === 'overlay'
+      ? raw.lockWallStyle
+      : 'overlay';
+
+    return {
+      layoutStyle,
+      showSidebar: raw?.showSidebar ?? true,
+      showLessonNavigation: raw?.showLessonNavigation ?? true,
+      showExerciseDownload: raw?.showExerciseDownload ?? true,
+      showCourseBreadcrumb: raw?.showCourseBreadcrumb ?? true,
+      lockWallStyle,
+      cornerRadius: raw?.cornerRadius ?? 'lg',
+    };
+  }, [experienceSetting?.value]);
+}
+
 type CartConfig = {
   layoutStyle: 'drawer' | 'page' | 'table';
   showExpiry: boolean;

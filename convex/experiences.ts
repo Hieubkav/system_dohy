@@ -52,6 +52,12 @@ export const systemExperiences: SystemExperience[] = [
     title: "Chi tiết khóa học",
   },
   {
+    description: "Video bài học, sidebar nội dung, điều hướng bài trước/sau và trạng thái khóa bài học.",
+    href: "/system/experiences/lesson-detail",
+    icon: "BookOpen",
+    title: "Chi tiết bài học",
+  },
+  {
     description: "Layout, filters, search cho danh sách sản phẩm.",
     href: "/system/experiences/products-list",
     icon: "Package",

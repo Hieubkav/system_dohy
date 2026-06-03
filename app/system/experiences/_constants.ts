@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
   AlertTriangle,
+  BookOpen,
   Briefcase,
   CreditCard,
   FileText,
@@ -53,6 +54,24 @@ export const systemExperiences: SystemExperience[] = [
     href: '/system/experiences/services-detail',
     icon: Briefcase,
     title: 'Chi tiết dịch vụ',
+  },
+  {
+    description: 'Layout, filters, search cho danh sách khóa học.',
+    href: '/system/experiences/courses-list',
+    icon: BookOpen,
+    title: 'Danh sách khóa học',
+  },
+  {
+    description: 'Banner đầu trang, lộ trình học, giảng viên và nút đăng ký chi tiết khóa học.',
+    href: '/system/experiences/courses-detail',
+    icon: BookOpen,
+    title: 'Chi tiết khóa học',
+  },
+  {
+    description: 'Video bài học, sidebar nội dung, điều hướng bài trước/sau và trạng thái khóa bài học.',
+    href: '/system/experiences/lesson-detail',
+    icon: BookOpen,
+    title: 'Chi tiết bài học',
   },
   {
     description: 'Layout, filters, search cho danh sách sản phẩm.',

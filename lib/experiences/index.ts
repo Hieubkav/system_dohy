@@ -27,6 +27,7 @@ export {
   useProductsListConfig,
   useCoursesListConfig,
   useCoursesDetailConfig,
+  useLessonDetailConfig,
   useSearchFilterConfig,
   useServicesListConfig,
   useWishlistConfig,
