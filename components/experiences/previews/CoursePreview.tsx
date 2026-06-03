@@ -54,6 +54,7 @@ type CourseDetailPreviewProps = {
   secondaryColor?: string;
   colorMode?: 'single' | 'dual';
   device?: DeviceType;
+  cornerRadius?: 'none' | 'sm' | 'lg';
 };
 
 const MOCK_COURSES = [
@@ -721,14 +722,32 @@ export function CourseDetailPreview({
   secondaryColor,
   colorMode = 'single',
   device = 'desktop',
+  cornerRadius = 'lg',
 }: CourseDetailPreviewProps) {
-  const accent = resolveSecondary(brandColor, secondaryColor, colorMode);
+  const accent = useMemo(() => {
+    if (colorMode === 'single' || !secondaryColor) {
+      return brandColor + 'dd';
+    }
+    return secondaryColor;
+  }, [brandColor, secondaryColor, colorMode]);
+
   const isModern = layoutStyle === 'modern';
   const isMinimal = layoutStyle === 'minimal';
   const isMobile = device === 'mobile';
 
+  const radiusClass = getRadiusClass(cornerRadius);
+  const smallRadiusClass = getSmallRadiusClass(cornerRadius);
+
+  // Quản lý trạng thái Accordion cho Preview
+  const [openChapters, setOpenChapters] = useState<Record<number, boolean>>({ 0: true });
+  const toggleChapter = (index: number) => {
+    setOpenChapters((prev) => ({ ...prev, [index]: !prev[index] }));
+  };
+
+  const showAside = showStickyCta || showRelated;
+
   return (
-    <div className="bg-white">
+    <div className="bg-white relative pb-16 lg:pb-0">
       <section className={`border-b border-slate-100 px-4 ${isModern ? 'py-10 text-white' : 'py-8'}`} style={isModern ? { background: `linear-gradient(135deg, ${brandColor}, ${accent})` } : undefined}>
         <div className="mx-auto max-w-6xl">
           <div className="max-w-4xl space-y-4">
@@ -746,13 +765,13 @@ export function CourseDetailPreview({
         </div>
       </section>
 
-      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <main className={`mx-auto grid max-w-6xl gap-6 px-4 py-8 ${showAside ? 'lg:grid-cols-[minmax(0,1fr)_320px]' : 'max-w-4xl mx-auto'}`}>
         <div className="space-y-8">
           <section>
             <h2 className="mb-3 text-2xl font-bold text-slate-900">Bạn sẽ học được gì?</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {['Biết cách tổ chức dự án rõ ràng', 'Tối ưu SEO cho trang học', 'Kết nối dữ liệu động', 'Đưa website lên online'].map((item) => (
-                <div key={item} className="rounded-lg border border-slate-200 p-3 text-sm text-slate-700">{item}</div>
+                <div key={item} className={`border border-slate-200 p-3 text-sm text-slate-700 ${smallRadiusClass}`}>{item}</div>
               ))}
             </div>
           </section>
@@ -761,37 +780,92 @@ export function CourseDetailPreview({
             <section>
               <h2 className="mb-3 text-2xl font-bold text-slate-900">Nội dung khóa học</h2>
               <div className="space-y-3">
-                {['Nền tảng xây dựng trang', 'Kết nối và hiển thị dữ liệu', 'Đăng nhập, SEO và đưa lên online'].map((chapter, index) => (
-                  <div key={chapter} className="rounded-xl border border-slate-200 p-4">
-                    <div className="font-semibold text-slate-900">Chương {index + 1}: {chapter}</div>
-                    <div className="mt-2 text-sm text-slate-500">{10 + index * 4} bài học · {3 + index} giờ</div>
-                  </div>
-                ))}
+                {MOCK_CHAPTERS.map((chapter, index) => {
+                  const isOpen = openChapters[index] ?? false;
+                  return (
+                    <div key={index} className={`border border-slate-200 bg-white overflow-hidden p-4 ${radiusClass}`}>
+                      <button
+                        type="button"
+                        onClick={() => toggleChapter(index)}
+                        className="flex w-full items-center justify-between text-left focus:outline-none"
+                      >
+                        <div>
+                          <div className="font-semibold text-slate-900">Chương {index + 1}: {chapter.title}</div>
+                          <div className="mt-1 text-xs text-slate-500">{10 + index * 4} bài học · {3 + index} giờ</div>
+                        </div>
+                        <ChevronDown
+                          size={18}
+                          className={`text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+                      
+                      {isOpen && (
+                        <div className="mt-3 divide-y divide-slate-100 border-t border-slate-100 pt-2">
+                          {chapter.lessons.map((lesson) => (
+                            <div key={lesson.order} className="flex items-center justify-between py-2 text-sm text-slate-700">
+                              <span>{index + 1}.{lesson.order}. {lesson.title}</span>
+                              {lesson.order === 1 && (
+                                <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                                  Xem thử
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </section>
           )}
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          {showStickyCta && (
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <p className="text-sm text-slate-500">Học trọn đời</p>
-              <p className="mt-1 text-2xl font-bold" style={{ color: accent }}>2.900.000đ</p>
-              <button className="mt-4 w-full rounded-xl px-5 py-3 font-semibold text-white" style={{ backgroundColor: brandColor }}>Đăng ký học</button>
-            </div>
-          )}
-          {showRelated && (
-            <div className="rounded-2xl border border-slate-200 p-5">
-              <h3 className="font-semibold text-slate-900">Khóa liên quan</h3>
-              <div className="mt-3 space-y-3 text-sm text-slate-600">
-                <p>React căn bản</p>
-                <p>TypeScript nâng cao</p>
-                <p>Thiết kế hệ thống SaaS</p>
+        {showAside && (
+          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+            {showStickyCta && (
+              <div className={`border border-slate-200 bg-white p-5 group ${radiusClass}`}>
+                {/* Thumbnail giả lập với Hover Zoom */}
+                <div className={`mb-4 flex aspect-video items-center justify-center overflow-hidden bg-slate-100 relative ${smallRadiusClass}`}>
+                  <div className="absolute inset-0 transition-transform duration-300 group-hover:scale-105" style={{ background: `linear-gradient(135deg, ${brandColor}22, ${accent}22)` }} />
+                  <GraduationCap size={48} className="relative z-10 transition-transform duration-300 group-hover:scale-105" style={{ color: brandColor }} />
+                </div>
+                
+                <p className="text-sm text-slate-500">Học trọn đời</p>
+                <p className="mt-1 text-2xl font-bold" style={{ color: accent }}>2.900.000đ</p>
+                <button className={`mt-4 w-full px-5 py-3 font-semibold text-white transition hover:opacity-90`} style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
+                  Đăng ký học
+                </button>
               </div>
-            </div>
-          )}
-        </aside>
+            )}
+            {showRelated && (
+              <div className={`border border-slate-200 bg-white p-5 ${radiusClass}`}>
+                <h3 className="font-semibold text-slate-900">Khóa liên quan</h3>
+                <div className="mt-3 space-y-3">
+                  {MOCK_RELATED_PREVIEWS.map((item) => (
+                    <div key={item.slug} className="block text-sm text-slate-600 hover:text-slate-900 cursor-pointer hover:underline">
+                      {item.title}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+        )}
       </main>
+
+      {/* Sticky Bottom CTA cho Mobile */}
+      {showStickyCta && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 p-4 shadow-lg flex items-center justify-between">
+          <div>
+            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Học phí</p>
+            <p className="text-lg font-bold" style={{ color: accent }}>2.900.000đ</p>
+          </div>
+          <button className={`px-5 py-2.5 text-xs font-bold text-white shadow-sm`} style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
+            Đăng ký học
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
   ControlCard,
   DeviceToggle,
   LayoutTabs,
+  SelectRow,
   ToggleRow,
   deviceWidths,
   type DeviceType,
@@ -29,13 +30,14 @@ type CoursesDetailExperienceConfig = {
   showInstructor: boolean;
   showRelated: boolean;
   showStickyCta: boolean;
+  cornerRadius: 'none' | 'sm' | 'lg';
 };
 
 const EXPERIENCE_KEY = 'courses_detail_ui';
 
 const LAYOUTS: LayoutOption<DetailLayoutStyle>[] = [
   { id: 'classic', label: 'Cổ điển', description: 'Banner đầu trang + khung đăng ký' },
-  { id: 'modern', label: 'Hiện đại', description: 'Banner màu chuyển cao cấp' },
+  { id: 'modern', label: 'Hiện đại', description: 'Banner màu chuyển gradient' },
   { id: 'minimal', label: 'Tối giản', description: 'Tập trung nội dung học' },
 ];
 
@@ -45,6 +47,7 @@ const DEFAULT_CONFIG: CoursesDetailExperienceConfig = {
   showInstructor: true,
   showRelated: true,
   showStickyCta: true,
+  cornerRadius: 'lg',
 };
 
 export default function CoursesDetailExperiencePage() {
@@ -113,6 +116,18 @@ export default function CoursesDetailExperiencePage() {
             <ToggleRow label="Giảng viên" checked={config.showInstructor} onChange={(value) => updateConfig('showInstructor', value)} accentColor={brandColor} />
             <ToggleRow label="Khóa liên quan" checked={config.showRelated} onChange={(value) => updateConfig('showRelated', value)} accentColor={brandColor} />
             <ToggleRow label="Nút đăng ký cố định" checked={config.showStickyCta} onChange={(value) => updateConfig('showStickyCta', value)} accentColor={brandColor} />
+            <div className="mt-3 pt-3 border-t border-slate-100">
+              <SelectRow
+                label="Độ bo góc"
+                value={config.cornerRadius ?? 'lg'}
+                options={[
+                  { value: 'lg', label: 'Nhiều (Mặc định)' },
+                  { value: 'sm', label: 'Ít (1/2)' },
+                  { value: 'none', label: 'Không bo' },
+                ]}
+                onChange={(value) => updateConfig('cornerRadius', value as 'none' | 'sm' | 'lg')}
+              />
+            </div>
           </ControlCard>
           <ControlCard title="Module liên quan">
             <ExperienceModuleLink enabled={coursesModule?.enabled ?? false} href="/system/modules/courses" icon={BookOpen} title="Khóa học" colorScheme="purple" />
@@ -155,6 +170,7 @@ export default function CoursesDetailExperiencePage() {
                 secondaryColor={secondaryColor}
                 colorMode={colorMode}
                 device={previewDevice}
+                cornerRadius={config.cornerRadius}
               />
             </BrowserFrame>
           </div>
