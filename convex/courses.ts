@@ -1353,12 +1353,13 @@ export const listCourseStudentsAdmin = query({
     courseId: v.optional(v.id("courses")),
     limit: v.optional(v.number()),
     offset: v.optional(v.number()),
+    search: v.optional(v.string()),
     status: v.optional(v.union(v.literal("active"), v.literal("revoked"))),
   },
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 50, 100);
     const offset = args.offset ?? 0;
-    const fetchLimit = Math.min(offset + limit + 1, 501);
+    const fetchLimit = args.search?.trim() ? 2000 : (offset + limit + 1);
 
     let students: Doc<"courseStudents">[] = [];
     if (args.courseId && args.status) {
@@ -1380,18 +1381,70 @@ export const listCourseStudentsAdmin = query({
       students = await ctx.db.query("courseStudents").take(fetchLimit);
     }
 
-    const page = students.slice(offset, offset + limit);
-    const [customers, courses, lessons] = await Promise.all([
-      Promise.all(Array.from(new Set(page.map((student) => student.customerId))).map((id) => ctx.db.get(id))),
+    // Nếu có search, ta phải fetch customer của toàn bộ students để filter
+    // Nếu không, ta chỉ fetch customer của những students thuộc trang hiện tại (page)
+    const targetStudentsForCustomerFetch = args.search?.trim() ? students : students.slice(offset, offset + limit);
+
+    const uniqueCustomerIds = Array.from(new Set(targetStudentsForCustomerFetch.map((s) => s.customerId)));
+    const customers = await Promise.all(uniqueCustomerIds.map((id) => ctx.db.get(id)));
+    const customerMap = new Map(customers.filter(Boolean).map((c) => [c!._id, c!]));
+
+    // Lọc theo search
+    let filteredStudents = students;
+    if (args.search?.trim()) {
+      const searchLower = args.search.toLowerCase().trim();
+      filteredStudents = students.filter((student) => {
+        const customer = customerMap.get(student.customerId);
+        if (!customer) return false;
+        return (
+          customer.name.toLowerCase().includes(searchLower) ||
+          customer.email.toLowerCase().includes(searchLower) ||
+          customer.phone.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    const totalCount = filteredStudents.length;
+    const page = filteredStudents.slice(offset, offset + limit);
+
+    // Lấy thông tin courses để tính toán stats
+    const allUniqueCourseIds = Array.from(new Set(filteredStudents.map((s) => s.courseId)));
+    const allCourses = await Promise.all(allUniqueCourseIds.map((id) => ctx.db.get(id)));
+    const allCourseMap = new Map(allCourses.filter(Boolean).map((c) => [c!._id, c!]));
+
+    // Tính toán stats trên toàn bộ học viên khớp bộ lọc (trước khi slice)
+    const completedCount = filteredStudents.filter((s) => {
+      const course = allCourseMap.get(s.courseId);
+      const lessonCount = s.lessonCountSnapshot || course?.lessonCount || 0;
+      return lessonCount > 0 && s.completedLessonsCount >= lessonCount;
+    }).length;
+
+    const averageProgress = filteredStudents.length
+      ? Math.round(
+          filteredStudents.reduce((sum, s) => {
+            const course = allCourseMap.get(s.courseId);
+            const lessonCount = s.lessonCountSnapshot || course?.lessonCount || 0;
+            const progress = getProgressPercent(s.completedLessonsCount, lessonCount);
+            return sum + progress;
+          }, 0) / filteredStudents.length
+        )
+      : 0;
+
+    const [courses, lessons] = await Promise.all([
       Promise.all(Array.from(new Set(page.map((student) => student.courseId))).map((id) => ctx.db.get(id))),
       Promise.all(Array.from(new Set(page.map((student) => student.lastLessonId).filter(Boolean))).map((id) => ctx.db.get(id!))),
     ]);
-    const customerMap = new Map(customers.filter(Boolean).map((customer) => [customer!._id, customer!]));
     const courseMap = new Map(courses.filter(Boolean).map((course) => [course!._id, course!]));
     const lessonMap = new Map(lessons.filter(Boolean).map((lesson) => [lesson!._id, lesson!]));
 
     return {
-      hasMore: students.length > offset + limit,
+      hasMore: filteredStudents.length > offset + limit,
+      totalCount,
+      stats: {
+        totalStudents: filteredStudents.length,
+        completedCount,
+        averageProgress,
+      },
       items: page.map((student) => {
         const customer = customerMap.get(student.customerId);
         const course = courseMap.get(student.courseId);
@@ -1419,6 +1472,12 @@ export const listCourseStudentsAdmin = query({
   },
   returns: v.object({
     hasMore: v.boolean(),
+    totalCount: v.number(),
+    stats: v.object({
+      totalStudents: v.number(),
+      completedCount: v.number(),
+      averageProgress: v.number(),
+    }),
     items: v.array(courseStudentAdminDoc),
   }),
 });
