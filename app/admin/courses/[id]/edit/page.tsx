@@ -491,33 +491,6 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
               )}
 
               <Card>
-                <CardHeader><CardTitle className="text-base">Thông tin khóa học</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  {enabledFields.has('instructorName') && (
-                    <div className="space-y-2">
-                      <Label>Giảng viên</Label>
-                      <Input value={instructorName} onChange={(e) => { setInstructorName(e.target.value); }} />
-                    </div>
-                  )}
-                  {enabledFields.has('level') && (
-                    <div className="space-y-2">
-                      <Label>Trình độ</Label>
-                      <select value={level} onChange={(e) => { setLevel(e.target.value as CourseLevel | ''); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
-                        <option value="">Chọn trình độ</option>
-                        {COURSE_LEVEL_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <Label>Thời lượng hiển thị</Label>
-                    <Input value={durationText} onChange={(e) => { setDurationText(e.target.value); }} />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
                 <CardHeader><CardTitle className="text-base">Giá khóa học</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -548,27 +521,6 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
                     <input type="checkbox" checked={isPriceVisible} onChange={(e) => { setIsPriceVisible(e.target.checked); }} className="h-4 w-4 rounded border-slate-300" />
                     <span className="text-sm">Hiển thị giá</span>
                   </label>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader><CardTitle className="text-base">Video giới thiệu</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Loại video</Label>
-                    <select value={introVideoType} onChange={(e) => { setIntroVideoType(e.target.value as VideoType); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
-                      <option value="none">Không có</option>
-                      <option value="youtube">YouTube</option>
-                      <option value="drive">Google Drive</option>
-                      <option value="external">Link ngoài</option>
-                    </select>
-                  </div>
-                  {introVideoType !== 'none' && (
-                    <div className="space-y-2">
-                      <Label>URL video</Label>
-                      <Input value={introVideoUrl} onChange={(e) => { setIntroVideoUrl(e.target.value); }} />
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
@@ -647,6 +599,54 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
                       <input type="checkbox" checked={featured} onChange={(e) => { setFeatured(e.target.checked); }} className="h-4 w-4 rounded border-slate-300" />
                       <span className="text-sm">Khóa học nổi bật</span>
                     </label>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">Thông tin khóa học</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  {enabledFields.has('instructorName') && (
+                    <div className="space-y-2">
+                      <Label>Giảng viên</Label>
+                      <Input value={instructorName} onChange={(e) => { setInstructorName(e.target.value); }} />
+                    </div>
+                  )}
+                  {enabledFields.has('level') && (
+                    <div className="space-y-2">
+                      <Label>Trình độ</Label>
+                      <select value={level} onChange={(e) => { setLevel(e.target.value as CourseLevel | ''); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
+                        <option value="">Chọn trình độ</option>
+                        {COURSE_LEVEL_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label>Thời lượng hiển thị</Label>
+                    <Input value={durationText} onChange={(e) => { setDurationText(e.target.value); }} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">Video giới thiệu</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Loại video</Label>
+                    <select value={introVideoType} onChange={(e) => { setIntroVideoType(e.target.value as VideoType); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
+                      <option value="none">Không có</option>
+                      <option value="youtube">YouTube</option>
+                      <option value="drive">Google Drive</option>
+                      <option value="external">Link ngoài</option>
+                    </select>
+                  </div>
+                  {introVideoType !== 'none' && (
+                    <div className="space-y-2">
+                      <Label>URL video</Label>
+                      <Input value={introVideoUrl} onChange={(e) => { setIntroVideoUrl(e.target.value); }} />
+                    </div>
                   )}
                 </CardContent>
               </Card>

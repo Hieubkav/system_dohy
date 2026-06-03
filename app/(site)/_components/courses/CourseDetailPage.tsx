@@ -237,7 +237,11 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                       >
                         <div>
                           <h3 className="font-semibold text-slate-900">{chapterIndex + 1}. {chapter.title}</h3>
-                          {chapter.summary && <p className="mt-1 text-sm text-slate-500">{chapter.summary}</p>}
+                          {chapter.summary && (
+                            <div className="mt-1 text-sm text-slate-500 prose-sm prose dark:prose-invert max-w-none">
+                              <RichContent content={withFormatMarker('richtext', chapter.summary)} />
+                            </div>
+                          )}
                         </div>
                         <ChevronDown
                           size={18}

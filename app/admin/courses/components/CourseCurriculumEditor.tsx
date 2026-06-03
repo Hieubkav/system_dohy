@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
+import { stripHtml } from '@/lib/seo';
+import { LexicalEditor } from '../../components/LexicalEditor';
 import {
   Button,
   Card,
@@ -61,10 +63,12 @@ export function CourseCurriculumEditor({ courseId }: CourseCurriculumEditorProps
   const [editingChapterId, setEditingChapterId] = useState<string | null>(null);
   const [editChapterTitle, setEditChapterTitle] = useState('');
   const [editChapterSummary, setEditChapterSummary] = useState('');
+  const [isChapterSaving, setIsChapterSaving] = useState(false);
 
   // Add Chapter Form
   const [newChapterTitle, setNewChapterTitle] = useState('');
   const [newChapterSummary, setNewChapterSummary] = useState('');
+  const [newChapterResetKey, setNewChapterResetKey] = useState(0);
   const [isChapterAdding, setIsChapterAdding] = useState(false);
 
   // Add Lesson Form (Inline)
@@ -137,6 +141,7 @@ export function CourseCurriculumEditor({ courseId }: CourseCurriculumEditorProps
       });
       setNewChapterTitle('');
       setNewChapterSummary('');
+      setNewChapterResetKey((prev) => prev + 1);
       setOpenChapters((prev) => ({ ...prev, [id]: true }));
       toast.success('Đã thêm chương mới thành công');
     } catch (err) {
@@ -154,6 +159,7 @@ export function CourseCurriculumEditor({ courseId }: CourseCurriculumEditorProps
 
   const handleSaveChapter = async (chapterId: Id<'courseChapters'>) => {
     if (!editChapterTitle.trim()) {return;}
+    setIsChapterSaving(true);
     try {
       await updateChapter({
         id: chapterId,
@@ -164,6 +170,8 @@ export function CourseCurriculumEditor({ courseId }: CourseCurriculumEditorProps
       toast.success('Đã cập nhật chương học');
     } catch (err) {
       toast.error(getAdminMutationErrorMessage(err, 'Không thể cập nhật chương'));
+    } finally {
+      setIsChapterSaving(false);
     }
   };
 
@@ -530,80 +538,41 @@ export function CourseCurriculumEditor({ courseId }: CourseCurriculumEditorProps
                       {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                     </button>
 
-                    {isEditing ? (
-                      <div className="flex flex-col gap-2 flex-1 max-w-xl">
-                        <Input
-                          value={editChapterTitle}
-                          onChange={(e) => setEditChapterTitle(e.target.value)}
-                          placeholder="Tên chương học..."
-                          className="h-8 py-1"
-                        />
-                        <Input
-                          value={editChapterSummary}
-                          onChange={(e) => setEditChapterSummary(e.target.value)}
-                          placeholder="Mô tả tóm tắt chương học (tùy chọn)..."
-                          className="h-8 py-1 text-xs text-slate-500"
-                        />
-                        <div className="flex gap-2 justify-end">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => setEditingChapterId(null)}
-                          >
-                            Hủy
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="accent"
-                            size="sm"
-                            className="h-7 text-xs bg-indigo-600 hover:bg-indigo-500 text-white"
-                            onClick={() => void handleSaveChapter(chapter._id)}
-                          >
-                            Lưu
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="min-w-0 cursor-pointer flex-1" onClick={() => toggleChapter(chapter._id)}>
-                        <h4 className="font-semibold text-sm sm:text-base text-slate-800 dark:text-slate-200 truncate">
-                          Chương {chapterIdx + 1}: {chapter.title}
-                        </h4>
-                        {chapter.summary && (
-                          <p className="text-xs text-slate-500 truncate mt-0.5">{chapter.summary}</p>
-                        )}
-                      </div>
-                    )}
+                    <div className="min-w-0 cursor-pointer flex-1" onClick={() => toggleChapter(chapter._id)}>
+                      <h4 className="font-semibold text-sm sm:text-base text-slate-800 dark:text-slate-200 truncate">
+                        Chương {chapterIdx + 1}: {chapter.title}
+                      </h4>
+                      {chapter.summary && (
+                        <p className="text-xs text-slate-500 truncate mt-0.5">{stripHtml(chapter.summary)}</p>
+                      )}
+                    </div>
                   </div>
 
-                  {!isEditing && (
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-xs font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-                        {chapterLessons.length} bài
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-indigo-600"
-                        onClick={() => startEditChapter(chapter)}
-                        title="Sửa tên chương"
-                      >
-                        <Edit2 size={14} />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-red-500"
-                        onClick={() => void handleDeleteChapter(chapter._id)}
-                        title="Xóa chương học"
-                      >
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-xs font-medium text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                      {chapterLessons.length} bài
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-400 hover:text-indigo-600"
+                      onClick={() => startEditChapter(chapter)}
+                      title="Sửa tên chương"
+                    >
+                      <Edit2 size={14} />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-400 hover:text-red-500"
+                      onClick={() => void handleDeleteChapter(chapter._id)}
+                      title="Xóa chương học"
+                    >
+                      <Trash2 size={14} />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Chapter Lessons List */}
@@ -824,7 +793,7 @@ export function CourseCurriculumEditor({ courseId }: CourseCurriculumEditorProps
             <Plus size={16} className="text-indigo-600" /> Thêm chương học mới
           </h3>
           <form onSubmit={(e) => void handleAddChapter(e)} className="space-y-3">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4">
               <div className="space-y-1">
                 <Label className="text-xs">Tên chương <span className="text-red-500">*</span></Label>
                 <Input
@@ -835,13 +804,13 @@ export function CourseCurriculumEditor({ courseId }: CourseCurriculumEditorProps
                   className="h-9"
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <Label className="text-xs">Tóm tắt chương (tùy chọn)</Label>
-                <Input
-                  value={newChapterSummary}
-                  onChange={(e) => setNewChapterSummary(e.target.value)}
-                  placeholder="VD: Tổng quan về lập trình căn bản..."
-                  className="h-9"
+                <LexicalEditor
+                  onChange={setNewChapterSummary}
+                  initialContent={newChapterSummary}
+                  folder="chapters"
+                  resetKey={newChapterResetKey}
                 />
               </div>
             </div>
@@ -961,6 +930,62 @@ export function CourseCurriculumEditor({ courseId }: CourseCurriculumEditorProps
               onClick={() => void handleSaveLesson()}
             >
               {isLessonSaving && <Loader2 size={12} className="mr-1 animate-spin" />}
+              Lưu thay đổi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Chapter Modal Dialog */}
+      <Dialog open={editingChapterId !== null} onOpenChange={(open) => !open && setEditingChapterId(null)}>
+        <DialogContent className="max-w-lg w-[95vw] border dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold">Chỉnh sửa chi tiết chương học</DialogTitle>
+          </DialogHeader>
+
+          {editingChapterId && (
+            <div className="space-y-4 py-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Tên chương <span className="text-red-500">*</span></Label>
+                <Input
+                  value={editChapterTitle}
+                  onChange={(e) => setEditChapterTitle(e.target.value)}
+                  placeholder="Nhập tên chương..."
+                  className="h-9 text-xs"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs">Tóm tắt chương</Label>
+                <LexicalEditor
+                  onChange={setEditChapterSummary}
+                  initialContent={editChapterSummary}
+                  folder="chapters"
+                  resetKey={editingChapterId}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setEditingChapterId(null)}
+              className="text-xs"
+            >
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant="accent"
+              size="sm"
+              disabled={isChapterSaving || !editChapterTitle.trim()}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs"
+              onClick={() => void handleSaveChapter(editingChapterId as Id<'courseChapters'>)}
+            >
+              {isChapterSaving && <Loader2 size={12} className="mr-1 animate-spin" />}
               Lưu thay đổi
             </Button>
           </DialogFooter>
