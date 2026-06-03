@@ -293,7 +293,7 @@ export function CertificateCard({
           <div className="w-full grid grid-cols-3 items-end mt-2 px-2">
 
             {/* Signature */}
-            <div className="text-left flex flex-col justify-end pb-1 gap-0">
+            <div className="flex flex-col justify-end items-center text-center pb-1 gap-0">
               <p className="text-[8px] font-extrabold text-slate-700 uppercase tracking-wider">Trần Mạnh Hiếu</p>
               <p className="text-[7px] text-slate-400 uppercase tracking-wider font-bold">Đại diện Dohy Studio</p>
               {/* Great Vibes — #1 certificate signature font */}
@@ -304,6 +304,7 @@ export function CertificateCard({
                 <div className="h-px w-full bg-gradient-to-r from-transparent via-[#a27b4c]/30 to-transparent mt-0.5" />
               </div>
             </div>
+
 
 
 
