@@ -15,7 +15,6 @@ interface CertificateCardProps {
 export function CertificateCard({
   customerName,
   courseTitle,
-  enrolledAt,
   completedAt,
   certificateCode,
   currentUrl,
@@ -31,7 +30,7 @@ export function CertificateCard({
     <>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Pinyon+Script&family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap');
-        
+
         .font-cert-sans {
           font-family: 'Be Vietnam Pro', var(--font-be-vietnam-pro), sans-serif;
         }
@@ -39,7 +38,6 @@ export function CertificateCard({
           font-family: 'Pinyon Script', cursive;
         }
 
-        /* Landscape A4 printing styles */
         @media print {
           @page {
             size: A4 landscape;
@@ -54,15 +52,8 @@ export function CertificateCard({
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          /* Hide EVERYTHING in the body */
-          body * {
-            visibility: hidden !important;
-          }
-          /* Except the print container and its descendants */
-          .print-container, .print-container * {
-            visibility: visible !important;
-          }
-          /* Position print container at top left and scale to fit A4 */
+          body * { visibility: hidden !important; }
+          .print-container, .print-container * { visibility: visible !important; }
           .print-container {
             visibility: visible !important;
             position: absolute !important;
@@ -70,7 +61,7 @@ export function CertificateCard({
             left: 0 !important;
             width: 297mm !important;
             height: 210mm !important;
-            padding: 40px !important;
+            padding: 32px !important;
             margin: 0 !important;
             box-shadow: none !important;
             border: none !important;
@@ -82,153 +73,178 @@ export function CertificateCard({
         }
       `}</style>
 
-      {/* Certificate Frame Outer Box */}
       <div
-        className={`w-full bg-[#fdfbf7] text-[#0f172a] p-12 md:p-16 shadow-2xl rounded-xl border border-slate-200 dark:border-slate-800 relative overflow-hidden print-container select-none ${className}`}
+        className={`w-full bg-[#fdfbf7] text-[#0f172a] p-8 md:p-12 shadow-2xl rounded-xl border border-slate-200 relative overflow-hidden print-container select-none ${className}`}
         style={{ aspectRatio: '297 / 210', boxSizing: 'border-box' }}
       >
-        {/* Background watermark icon */}
-        <div className="absolute inset-0 opacity-[0.018] pointer-events-none flex items-center justify-center">
-          <div className="border-[24px] border-[#a27b4c] w-[82%] h-[82%] rounded-full flex items-center justify-center">
-            <svg className="w-64 h-64 text-[#a27b4c]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-          </div>
-        </div>
+        {/* ─── Background decorative pattern ─── */}
+        <svg
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <defs>
+            {/* Repeating diamond-lotus tile */}
+            <pattern id="cert-bg-pattern" x="0" y="0" width="48" height="48" patternUnits="userSpaceOnUse">
+              {/* Thin cross lines */}
+              <line x1="24" y1="0" x2="24" y2="48" stroke="#a27b4c" strokeWidth="0.4" strokeOpacity="0.12" />
+              <line x1="0" y1="24" x2="48" y2="24" stroke="#a27b4c" strokeWidth="0.4" strokeOpacity="0.12" />
+              {/* Diagonal */}
+              <line x1="0" y1="0" x2="48" y2="48" stroke="#a27b4c" strokeWidth="0.3" strokeOpacity="0.07" />
+              <line x1="48" y1="0" x2="0" y2="48" stroke="#a27b4c" strokeWidth="0.3" strokeOpacity="0.07" />
+              {/* Center diamond */}
+              <polygon
+                points="24,18 30,24 24,30 18,24"
+                fill="none"
+                stroke="#a27b4c"
+                strokeWidth="0.6"
+                strokeOpacity="0.13"
+              />
+              {/* Tiny dot at intersections */}
+              <circle cx="24" cy="24" r="1" fill="#a27b4c" fillOpacity="0.1" />
+              <circle cx="0" cy="0" r="0.7" fill="#a27b4c" fillOpacity="0.07" />
+              <circle cx="48" cy="0" r="0.7" fill="#a27b4c" fillOpacity="0.07" />
+              <circle cx="0" cy="48" r="0.7" fill="#a27b4c" fillOpacity="0.07" />
+              <circle cx="48" cy="48" r="0.7" fill="#a27b4c" fillOpacity="0.07" />
+            </pattern>
+            {/* Radial vignette: edges slightly darker ivory */}
+            <radialGradient id="cert-vignette" cx="50%" cy="50%" r="70%">
+              <stop offset="0%" stopColor="#fdfbf7" stopOpacity="0" />
+              <stop offset="100%" stopColor="#e8ddd0" stopOpacity="0.35" />
+            </radialGradient>
+          </defs>
 
-        {/* Golden Ornate Frame Borders */}
-        <div className="absolute inset-5 border border-[#a27b4c]/30 pointer-events-none"></div>
-        <div className="absolute inset-7 border-[3px] border-double border-[#a27b4c] pointer-events-none"></div>
-
-        {/* Ornate corners decorations SVG (using Deep Bronze Gold) */}
-        <svg className="absolute top-9 left-9 w-16 h-16 text-[#a27b4c] pointer-events-none" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <path d="M 0 0 L 0 40 L 4 40 L 4 4 L 40 4 L 40 0 Z" />
-          <path d="M 8 8 L 8 28 L 10 28 L 10 10 L 28 10 L 28 8 Z" strokeWidth="1"/>
-          <circle cx="12" cy="12" r="2" fill="currentColor"/>
-        </svg>
-        <svg className="absolute top-9 right-9 w-16 h-16 text-[#a27b4c] pointer-events-none transform rotate-90" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <path d="M 0 0 L 0 40 L 4 40 L 4 4 L 40 4 L 40 0 Z" />
-          <path d="M 8 8 L 8 28 L 10 28 L 10 10 L 28 10 L 28 8 Z" strokeWidth="1"/>
-          <circle cx="12" cy="12" r="2" fill="currentColor"/>
-        </svg>
-        <svg className="absolute bottom-9 left-9 w-16 h-16 text-[#a27b4c] pointer-events-none transform -rotate-90" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <path d="M 0 0 L 0 40 L 4 40 L 4 4 L 40 4 L 40 0 Z" />
-          <path d="M 8 8 L 8 28 L 10 28 L 10 10 L 28 10 L 28 8 Z" strokeWidth="1"/>
-          <circle cx="12" cy="12" r="2" fill="currentColor"/>
-        </svg>
-        <svg className="absolute bottom-9 right-9 w-16 h-16 text-[#a27b4c] pointer-events-none transform rotate-180" viewBox="0 0 64 64" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <path d="M 0 0 L 0 40 L 4 40 L 4 4 L 40 4 L 40 0 Z" />
-          <path d="M 8 8 L 8 28 L 10 28 L 10 10 L 28 10 L 28 8 Z" strokeWidth="1"/>
-          <circle cx="12" cy="12" r="2" fill="currentColor"/>
+          {/* Pattern layer */}
+          <rect width="100%" height="100%" fill="url(#cert-bg-pattern)" />
+          {/* Vignette overlay */}
+          <rect width="100%" height="100%" fill="url(#cert-vignette)" />
         </svg>
 
-        {/* Certificate Content Grid */}
-        <div className="h-full flex flex-col justify-between items-center text-center relative z-10 py-1.5 font-cert-sans">
-          
-          {/* Header: Brand Logo & Icon (Bigger and academic-centric) */}
-          <div className="space-y-1 mt-1">
-            {/* Academic Crest/Shield Icon */}
-            <svg className="w-8 h-8 text-[#a27b4c] mx-auto mb-1 drop-shadow-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(162, 123, 76, 0.05)" />
-              <path d="M12 8v8M9 11h6" strokeLinecap="round" />
-            </svg>
-            <div className="flex items-center justify-center gap-2.5">
-              <span className="h-[1px] w-10 bg-[#a27b4c]/65"></span>
-              <p className="text-[13px] font-black tracking-[0.32em] text-[#a27b4c] uppercase">DOHY ACADEMY</p>
-              <span className="h-[1px] w-10 bg-[#a27b4c]/65"></span>
+        {/* ─── Double-line ornate frame ─── */}
+        <div className="absolute inset-4 border border-[#a27b4c]/25 pointer-events-none" />
+        <div className="absolute inset-[22px] border-[2.5px] border-double border-[#a27b4c]/60 pointer-events-none" />
+
+        {/* ─── Corner ornaments (single shape, 4× rotation) ─── */}
+        {[
+          'top-7 left-7',
+          'top-7 right-7 rotate-90',
+          'bottom-7 left-7 -rotate-90',
+          'bottom-7 right-7 rotate-180',
+        ].map((pos, i) => (
+          <svg
+            key={i}
+            aria-hidden="true"
+            className={`absolute ${pos} w-12 h-12 text-[#a27b4c] pointer-events-none`}
+            viewBox="0 0 56 56"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+          >
+            <path d="M0 0 L0 36 L4 36 L4 4 L36 4 L36 0 Z" />
+            <path d="M7 7 L7 24 L9 24 L9 9 L24 9 L24 7 Z" strokeWidth="0.9" />
+            <circle cx="11" cy="11" r="1.8" fill="currentColor" />
+          </svg>
+        ))}
+
+        {/* ─── Certificate Content ─── */}
+        <div className="h-full flex flex-col justify-between items-center text-center relative z-10 py-1 font-cert-sans">
+
+          {/* Header */}
+          <div className="space-y-0.5 mt-1">
+            <div className="flex items-center justify-center gap-2">
+              <span className="h-px w-10 bg-[#a27b4c]/50" />
+              <p className="text-[11px] font-black tracking-[0.3em] text-[#a27b4c] uppercase">
+                DOHY ACADEMY
+              </p>
+              <span className="h-px w-10 bg-[#a27b4c]/50" />
             </div>
-            <p className="text-[9px] tracking-[0.12em] text-slate-400 font-extrabold uppercase">Professional Creative Education & Certification</p>
+            <p className="text-[8px] tracking-[0.12em] text-slate-400 font-bold uppercase">
+              Professional Creative Education &amp; Certification
+            </p>
           </div>
 
-          {/* Certificate Sub-Header (Specifies type clearly) */}
-          <div className="mt-4 space-y-1">
-            <p className="text-[10px] font-black tracking-[0.25em] text-[#a27b4c] uppercase">
-              COURSE COMPLETION CERTIFICATE
-            </p>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-[0.06em] text-slate-800 uppercase">
+          {/* Title block — merged, no duplication */}
+          <div className="space-y-1 mt-1">
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-[0.06em] text-slate-800 uppercase">
               CHỨNG NHẬN HOÀN THÀNH
             </h1>
-            <p className="text-xs italic text-slate-500 font-medium mt-1">
-              Chứng chỉ này được trân trọng trao tặng cho học viên
+            <p className="text-[10.5px] italic text-slate-400 font-medium">
+              Chứng chỉ này được trân trọng trao tặng cho
             </p>
           </div>
 
-          {/* Recipient Name (Centerpiece - Massive and highly prominent) */}
-          <div className="my-2.5">
-            <h2 className="text-4xl md:text-5xl font-black text-[#0f172a] tracking-wide uppercase drop-shadow-sm">
+          {/* Recipient name — centerpiece */}
+          <div className="my-1">
+            <h2 className="text-[2.3rem] md:text-[2.6rem] font-black text-[#0f172a] tracking-wide uppercase leading-none drop-shadow-sm">
               {customerName}
             </h2>
-            <p className="text-xs text-slate-400 font-medium max-w-lg mx-auto leading-relaxed mt-2.5">
+            <p className="text-[10px] text-slate-400 font-semibold max-w-sm mx-auto mt-1.5 leading-relaxed">
               Đã hoàn thành xuất sắc chương trình đào tạo và đạt tiêu chuẩn tốt nghiệp của khóa học chuyên sâu
             </p>
           </div>
 
-          {/* Course Title (Beautifully bordered with no gray background button style) */}
-          <div className="my-2 w-[80%] max-w-[650px] border-y border-[#a27b4c]/30 py-3.5">
-            <h3 className="text-lg md:text-xl font-extrabold text-[#a27b4c] tracking-[0.04em] uppercase">
+          {/* Course title — elegant border bar */}
+          <div className="w-[72%] max-w-[560px] border-y border-[#a27b4c]/30 py-2">
+            <h3 className="text-[0.95rem] md:text-base font-extrabold text-[#a27b4c] tracking-[0.04em] uppercase leading-tight">
               {courseTitle}
             </h3>
           </div>
 
-          {/* Issue Date Details */}
-          <div className="text-[9.5px] text-slate-400 uppercase tracking-widest font-extrabold">
-            <span>Cấp ngày {completedDateStr}</span>
+          {/* Date */}
+          <div className="text-[8.5px] text-slate-400 uppercase tracking-widest font-extrabold">
+            Cấp ngày {completedDateStr}
           </div>
 
-          {/* Bottom Footer Section: Signatures & Verification Seal & QR Code */}
-          <div className="w-full grid grid-cols-3 items-end mt-4 px-4">
-            {/* Left Column: Authorized Signature (More elegant & cursive) */}
-            <div className="text-left space-y-1.5 pb-1">
-              <div className="h-14 flex items-end justify-start relative">
-                {/* Dynamic cursive handwritten signature */}
-                <span className="font-signature-pinyon text-5xl text-blue-900/90 transform -rotate-2 select-none -translate-x-1 translate-y-3 whitespace-nowrap">
+          {/* Footer: signature | seal | QR */}
+          <div className="w-full grid grid-cols-3 items-end mt-2 px-2">
+
+            {/* Signature */}
+            <div className="text-left space-y-0.5 pb-1">
+              <div className="h-10 flex items-end justify-start relative">
+                <span className="font-signature-pinyon text-[2rem] text-blue-900/85 transform -rotate-2 select-none -translate-x-0.5 translate-y-3 whitespace-nowrap">
                   Tran Manh Hieu
                 </span>
-                <div className="absolute bottom-2.5 left-0 right-12 h-[1px] bg-slate-200"></div>
+                <div className="absolute bottom-1.5 left-0 right-8 h-px bg-slate-200" />
               </div>
-              <div>
-                <p className="text-[9.5px] font-extrabold text-slate-800 uppercase tracking-wider">Trần Mạnh Hiếu</p>
-                <p className="text-[8px] text-slate-400 uppercase tracking-wider font-bold">Đại diện Dohy Studio</p>
-              </div>
+              <p className="text-[8px] font-extrabold text-slate-700 uppercase tracking-wider">Trần Mạnh Hiếu</p>
+              <p className="text-[7px] text-slate-400 uppercase tracking-wider font-bold">Đại diện Dohy Studio</p>
             </div>
 
-            {/* Middle Column: Premium Golden Wax Seal (Bigger & Ornate) */}
+            {/* Gold wax seal */}
             <div className="flex justify-center">
-              {/* Embossed Ornate 3D Gold Seal */}
-              <div className="relative h-20 w-20 md:h-22 md:w-22 rounded-full bg-gradient-to-br from-[#f5d7b5] via-[#a27b4c] to-[#7f5d34] shadow-xl border-[3.5px] border-[#fdfbf7] flex items-center justify-center select-none transform hover:scale-105 transition-transform duration-300">
-                {/* Wavy/Teethed Outer Edge Seal decoration */}
-                <div className="absolute inset-0.5 border border-dashed border-[#fdfbf7]/45 rounded-full"></div>
-                <div className="text-center text-[#fdfbf7] space-y-0.5 flex flex-col items-center justify-center">
-                  {/* Ornate badge emblem */}
-                  <svg className="w-6 h-6 drop-shadow text-white/95" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(255,255,255,0.08)"/>
+              <div className="relative h-16 w-16 rounded-full bg-gradient-to-br from-[#f5d7b5] via-[#a27b4c] to-[#7f5d34] shadow-md border-2 border-[#fdfbf7] flex items-center justify-center select-none">
+                <div className="absolute inset-1 border border-dashed border-white/30 rounded-full" />
+                <div className="text-white flex flex-col items-center justify-center gap-0.5">
+                  <svg className="w-5 h-5 drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(255,255,255,0.05)" />
                     <path d="m9 12 2 2 4-4" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  <span className="text-[6.5px] font-black tracking-[0.25em] uppercase leading-none drop-shadow-sm font-cert-sans">VERIFIED</span>
-                  <span className="text-[5.5px] tracking-wider leading-none opacity-80 drop-shadow-sm font-extrabold">DOHY STUDIO</span>
+                  <span className="text-[5px] font-black tracking-[0.25em] uppercase leading-none font-cert-sans">VERIFIED</span>
+                  <span className="text-[4px] tracking-wider leading-none opacity-75 font-bold">DOHY STUDIO</span>
                 </div>
               </div>
             </div>
 
-            {/* Right Column: Bigger QR Code & Scanning Instructions */}
-            <div className="flex flex-col items-end text-right space-y-2 pb-1">
+            {/* QR code */}
+            <div className="flex flex-col items-end text-right space-y-1 pb-1">
               {currentUrl && (
-                <div className="bg-white p-1.5 border border-slate-200 rounded shadow-md">
+                <div className="bg-white p-1 border border-slate-200 rounded shadow-sm">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=${encodeURIComponent(currentUrl)}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=64x64&data=${encodeURIComponent(currentUrl)}`}
                     alt="Verification QR"
-                    className="w-14 h-14 md:w-16 md:h-16 object-contain"
+                    className="w-11 h-11 object-contain"
                   />
                 </div>
               )}
               <div className="space-y-0.5">
-                <p className="text-[7.5px] font-mono text-slate-500 select-all font-bold uppercase leading-none">{certificateCode}</p>
-                <p className="text-[7.5px] text-slate-400 uppercase tracking-wider font-extrabold">Quét xác thực trực tuyến</p>
+                <p className="text-[7px] font-mono text-slate-500 select-all font-bold uppercase leading-none">{certificateCode}</p>
+                <p className="text-[7px] text-slate-400 uppercase tracking-wider font-extrabold">Quét xác thực</p>
               </div>
             </div>
-          </div>
 
+          </div>
         </div>
       </div>
     </>
