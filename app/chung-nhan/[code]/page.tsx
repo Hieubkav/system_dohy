@@ -88,7 +88,7 @@ export default function StandaloneCertificatePage({ params }: CertificatePagePro
         completedAt={certInfo.completedAt}
         certificateCode={certInfo.certificateCode}
         currentUrl={currentUrl}
-        className="max-w-[1400px]"
+        className="max-w-[1000px]"
       />
     </div>
   );

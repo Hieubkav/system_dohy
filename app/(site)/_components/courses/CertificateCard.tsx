@@ -121,7 +121,7 @@ export function CertificateCard({
 
       <div
         className={`w-full bg-[#F8F0DC] text-[#0f172a] p-8 md:p-12 shadow-2xl rounded-xl border border-[#C9A84C]/30 relative overflow-hidden print-container select-none ${className}`}
-        style={{ aspectRatio: '297 / 210', boxSizing: 'border-box' }}
+        style={{ aspectRatio: '297 / 185', boxSizing: 'border-box' }}
       >
 
         {/* ══════════════════════════════════════════════════════
@@ -277,23 +277,23 @@ export function CertificateCard({
         {/* ═══════════════ Certificate Content ═══════════════ */}
         <div className="h-full flex flex-col items-center text-center relative z-10 py-1 font-cert-sans">
 
-          {/* ── Top content group: vertically centered in space above footer ── */}
-          <div className="flex-1 w-full flex flex-col items-center justify-center gap-0">
-
-            {/* Header */}
-            <div className="space-y-0.5">
-              <div className="flex items-center justify-center gap-2">
-                <span className="h-px w-10 bg-[#a27b4c]/50" />
-                <p className="text-[11px] font-black tracking-[0.3em] text-[#a27b4c] uppercase">DOHY ACADEMY</p>
-                <span className="h-px w-10 bg-[#a27b4c]/50" />
-              </div>
-              <p className="text-[8px] tracking-[0.12em] text-slate-400 font-bold uppercase">
-                Professional Creative Education &amp; Certification
-              </p>
+          {/* ── SECTION 1: Header — anchored top ── */}
+          <div className="space-y-0.5 pt-1">
+            <div className="flex items-center justify-center gap-2">
+              <span className="h-px w-10 bg-[#a27b4c]/50" />
+              <p className="text-[11px] font-black tracking-[0.3em] text-[#a27b4c] uppercase">DOHY ACADEMY</p>
+              <span className="h-px w-10 bg-[#a27b4c]/50" />
             </div>
+            <p className="text-[8px] tracking-[0.12em] text-slate-400 font-bold uppercase">
+              Professional Creative Education &amp; Certification
+            </p>
+          </div>
 
-            {/* Title block */}
-            <div className="space-y-1 mt-2">
+          {/* ── SECTION 2: Main content — centered vertically ── */}
+          <div className="flex-1 w-full flex flex-col items-center justify-center">
+
+            {/* Title */}
+            <div className="space-y-0.5">
               <h1 className="text-xl md:text-2xl font-extrabold tracking-[0.06em] text-slate-800 uppercase">
                 CHỨNG NHẬN HOÀN THÀNH
               </h1>
@@ -302,7 +302,7 @@ export function CertificateCard({
               </p>
             </div>
 
-            {/* Recipient name — centerpiece */}
+            {/* Recipient name */}
             <div className="mt-2">
               <h2 className="text-[2.8rem] md:text-[3.2rem] font-black text-[#0f172a] tracking-wide uppercase leading-none drop-shadow-sm">
                 {customerName}
@@ -324,9 +324,9 @@ export function CertificateCard({
               Cấp ngày {completedDateStr}
             </div>
 
-          </div>{/* end top content group */}
+          </div>{/* end SECTION 2 */}
 
-          {/* Footer: signature | seal | QR */}
+          {/* ── SECTION 3: Footer — anchored bottom ── */}
           <div className="w-full grid grid-cols-3 items-end px-2 pb-1">
 
 
