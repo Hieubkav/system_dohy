@@ -107,9 +107,7 @@ export function CertificateCard({
       >
 
         {/* ══════════════════════════════════════════════════════
-            BACKGROUND LAYER 1 — Damask pattern
-            Most praised certificate background by devs (4-fold symmetry,
-            curved petals, seamless tile — used by Canva, Certifier, Harvard-style certs)
+            BACKGROUND LAYER 1 — Fine dot grid
         ══════════════════════════════════════════════════════ */}
         <svg
           aria-hidden="true"
@@ -118,39 +116,18 @@ export function CertificateCard({
           preserveAspectRatio="xMidYMid slice"
         >
           <defs>
-            {/* Classic damask tile: central 4-petal flower + half-petals at edges for seamless tiling */}
-            <pattern id="damask-bg" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-              {/* Large outer diamond connecting mid-edges */}
-              <path d="M40,0 L80,40 L40,80 L0,40 Z" fill="none" stroke="#a27b4c" strokeWidth="0.5" strokeOpacity="0.13"/>
-              {/* Central 4 curved petals */}
-              <path d="M40,40 C37,32 33,24 40,16 C47,24 43,32 40,40Z" fill="#a27b4c" fillOpacity="0.08"/>
-              <path d="M40,40 C43,48 47,56 40,64 C33,56 37,48 40,40Z" fill="#a27b4c" fillOpacity="0.08"/>
-              <path d="M40,40 C32,43 24,47 16,40 C24,33 32,37 40,40Z" fill="#a27b4c" fillOpacity="0.08"/>
-              <path d="M40,40 C48,37 56,33 64,40 C56,47 48,43 40,40Z" fill="#a27b4c" fillOpacity="0.08"/>
-              {/* Half-petals at each edge for seamless tiling */}
-              <path d="M40,0 C37,-8 33,-16 40,-24 C47,-16 43,-8 40,0Z" fill="#a27b4c" fillOpacity="0.08"/>
-              <path d="M40,80 C43,88 47,96 40,104 C33,96 37,88 40,80Z" fill="#a27b4c" fillOpacity="0.08"/>
-              <path d="M0,40 C-8,43 -16,47 -24,40 C-16,33 -8,37 0,40Z" fill="#a27b4c" fillOpacity="0.08"/>
-              <path d="M80,40 C88,37 96,33 104,40 C96,47 88,43 80,40Z" fill="#a27b4c" fillOpacity="0.08"/>
-              {/* Inner small diamond */}
-              <path d="M40,34 L46,40 L40,46 L34,40 Z" fill="none" stroke="#a27b4c" strokeWidth="0.7" strokeOpacity="0.18"/>
-              {/* Center dot */}
-              <circle cx="40" cy="40" r="1.8" fill="#a27b4c" fillOpacity="0.14"/>
-              {/* Corner dots */}
-              <circle cx="0" cy="0" r="1.5" fill="#a27b4c" fillOpacity="0.09"/>
-              <circle cx="80" cy="0" r="1.5" fill="#a27b4c" fillOpacity="0.09"/>
-              <circle cx="0" cy="80" r="1.5" fill="#a27b4c" fillOpacity="0.09"/>
-              <circle cx="80" cy="80" r="1.5" fill="#a27b4c" fillOpacity="0.09"/>
+            <pattern id="dot-grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+              <circle cx="1" cy="1" r="0.8" fill="#a27b4c" fillOpacity="0.14" />
             </pattern>
-            {/* Radial vignette */}
             <radialGradient id="vignette-cert" cx="50%" cy="50%" r="65%">
               <stop offset="0%" stopColor="#fdfbf7" stopOpacity="0" />
               <stop offset="100%" stopColor="#c9aa82" stopOpacity="0.25" />
             </radialGradient>
           </defs>
-          <rect width="100%" height="100%" fill="url(#damask-bg)" />
+          <rect width="100%" height="100%" fill="url(#dot-grid)" />
           <rect width="100%" height="100%" fill="url(#vignette-cert)" />
         </svg>
+
 
         {/* ══════════════════════════════════════════════════════
             BACKGROUND LAYER 2 — Guilloche spirograph (bottom-left & top-right)
