@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Eye, EyeOff, Loader2, Save, Send, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Eye, EyeOff, Loader2, Save, Send, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { getEmailConfigurationStatus } from '@/lib/email-config-status';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -128,6 +129,9 @@ export default function IntegrationsPage() {
     return SETTINGS_KEYS.some((key) => form[key] !== initialForm[key]);
   }, [form, initialForm]);
 
+  const emailStatus = useMemo(() => getEmailConfigurationStatus(form), [form]);
+  const savedEmailStatus = useMemo(() => getEmailConfigurationStatus(initialForm), [initialForm]);
+
   const updateField = (key: SettingsKey, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
@@ -233,6 +237,14 @@ export default function IntegrationsPage() {
       toast.error('Email nhận không hợp lệ.');
       return;
     }
+    if (hasChanges) {
+      toast.error('Vui lòng lưu cấu hình email trước khi gửi thử.');
+      return;
+    }
+    if (!savedEmailStatus.configured) {
+      toast.error(savedEmailStatus.reason);
+      return;
+    }
 
     setIsSending(true);
     try {
@@ -273,6 +285,40 @@ export default function IntegrationsPage() {
         <p className="text-sm text-slate-500 dark:text-slate-400">
           Chọn cách gửi email, nhập thông tin người gửi rồi lưu. Sau đó gửi thử để kiểm tra cấu hình.
         </p>
+      </div>
+
+      <div className={`rounded-3xl border p-4 shadow-sm ${
+        emailStatus.configured
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100'
+          : 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100'
+      }`}>
+        <div className="flex items-start gap-3">
+          {emailStatus.configured ? (
+            <CheckCircle2 size={20} className="mt-0.5 shrink-0" />
+          ) : (
+            <AlertTriangle size={20} className="mt-0.5 shrink-0" />
+          )}
+          <div className="space-y-1">
+            <p className="text-sm font-bold">
+              {emailStatus.configured
+                ? hasChanges
+                  ? `Cấu hình email có vẻ đủ, cần lưu (${emailStatus.label})`
+                  : `Email hệ thống đã cấu hình (${emailStatus.label})`
+                : 'Email hệ thống chưa gửi được'}
+            </p>
+            <p className="text-xs opacity-80">{emailStatus.reason}</p>
+            {hasChanges && (
+              <p className="text-xs opacity-80">
+                Thay đổi chưa lưu sẽ chưa được dùng khi đặt hàng hoặc gửi mail test.
+              </p>
+            )}
+            {!emailStatus.configured && (
+              <p className="text-xs opacity-80">
+                Khi chưa cấu hình, đơn hàng vẫn được tạo và theo dõi trên web; hệ thống sẽ không hứa gửi email cho khách/shop.
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-4">
@@ -622,13 +668,18 @@ export default function IntegrationsPage() {
           />
           <button
             onClick={handleSendTest}
-            disabled={isSending}
+            disabled={isSending || hasChanges || !savedEmailStatus.configured}
             className="min-h-12 flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-2xl transition-colors disabled:opacity-50 cursor-pointer shadow-md"
           >
             {isSending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             {isSending ? 'Đang gửi...' : 'Gửi mail test'}
           </button>
         </div>
+        {(hasChanges || !savedEmailStatus.configured) && (
+          <p className="text-xs text-amber-600 dark:text-amber-400">
+            {hasChanges ? 'Bạn cần lưu thay đổi trước khi gửi thử.' : savedEmailStatus.reason}
+          </p>
+        )}
       </div>
     </div>
   );

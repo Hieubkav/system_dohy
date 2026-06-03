@@ -5,7 +5,7 @@ import { PublicImage as Image } from '@/components/shared/PublicImage';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
-import { ArrowUpRight, CheckCircle2, ChevronDown, Clock, DollarSign, Package, ShoppingBag } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, ChevronDown, Clock, Copy, DollarSign, Package, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -24,6 +24,7 @@ import {
 const formatPrice = (value: number) => new Intl.NumberFormat('vi-VN', { currency: 'VND', style: 'currency' }).format(value);
 
 const TIMELINE_STEPS = ['Đặt hàng', 'Xác nhận', 'Vận chuyển', 'Hoàn thành'];
+const NON_SHIPPING_TIMELINE_STEPS = ['Đặt hàng', 'Xác nhận', 'Hoàn thành'];
 
 const PAYMENT_LABELS: Record<string, string> = {
   COD: 'Thanh toán khi nhận hàng',
@@ -31,6 +32,18 @@ const PAYMENT_LABELS: Record<string, string> = {
   VietQR: 'VietQR',
   CreditCard: 'Thẻ tín dụng',
   EWallet: 'Ví điện tử',
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  Pending: 'Chờ thanh toán',
+  Paid: 'Đã thanh toán',
+  Failed: 'Thanh toán thất bại',
+  Refunded: 'Đã hoàn tiền',
+};
+
+const getStringSetting = (map: Record<string, unknown>, key: string, fallback: string) => {
+  const value = map[key];
+  return typeof value === 'string' && value.trim() ? value : fallback;
 };
 
 function OrderMeta({ label, value, tokens }: { label: string; value: string; tokens: ReturnType<typeof getAccountOrdersColors> }) {
@@ -42,12 +55,140 @@ function OrderMeta({ label, value, tokens }: { label: string; value: string; tok
   );
 }
 
-function Stepper({ step, tokens }: { step: number; tokens: ReturnType<typeof getAccountOrdersColors> }) {
+function PaymentReminder({
+  orderNumber,
+  paymentMethod,
+  paymentStatus,
+  totalAmount,
+  bankInfo,
+  tokens,
+}: {
+  orderNumber: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  totalAmount: number;
+  bankInfo: {
+    bankName: string;
+    accountName: string;
+    accountNumber: string;
+  };
+  tokens: ReturnType<typeof getAccountOrdersColors>;
+}) {
+  if (!paymentMethod || paymentMethod === 'COD') {
+    return null;
+  }
+
+  const isBankPayment = paymentMethod === 'BankTransfer' || paymentMethod === 'VietQR';
+  const transferContent = `DH ${orderNumber}`;
+
+  const copyTransferContent = async () => {
+    try {
+      await navigator.clipboard.writeText(transferContent);
+      toast.success('Đã copy nội dung chuyển khoản.');
+    } catch {
+      toast.error('Không thể copy. Vui lòng copy thủ công.');
+    }
+  };
+
+  return (
+    <div
+      className="rounded-xl border p-3 space-y-3"
+      style={{ backgroundColor: tokens.surface, borderColor: tokens.orderExpandedBorder }}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[10px] uppercase tracking-wide" style={{ color: tokens.orderMetaText }}>Thông tin thanh toán</div>
+          <div className="text-sm font-semibold" style={{ color: tokens.orderValueText }}>
+            {PAYMENT_LABELS[paymentMethod] ?? paymentMethod}
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-[10px]" style={{ color: tokens.orderMetaText }}>Trạng thái</div>
+          <div className="text-xs font-semibold" style={{ color: tokens.orderValueText }}>
+            {PAYMENT_STATUS_LABELS[paymentStatus ?? ''] ?? paymentStatus ?? 'Đang cập nhật'}
+          </div>
+        </div>
+      </div>
+
+      {isBankPayment ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <OrderMeta label="Ngân hàng" value={bankInfo.bankName} tokens={tokens} />
+          <OrderMeta label="Số tài khoản" value={bankInfo.accountNumber} tokens={tokens} />
+          <OrderMeta label="Chủ tài khoản" value={bankInfo.accountName} tokens={tokens} />
+          <OrderMeta label="Số tiền" value={formatPrice(totalAmount)} tokens={tokens} />
+          <div className="sm:col-span-2 rounded-lg border px-3 py-2 flex items-center justify-between gap-2" style={{ borderColor: tokens.orderExpandedBorder, backgroundColor: tokens.orderCardBg }}>
+            <div className="min-w-0">
+              <div className="text-[10px]" style={{ color: tokens.orderMetaText }}>Nội dung chuyển khoản</div>
+              <div className="font-semibold truncate" style={{ color: tokens.orderValueText }}>{transferContent}</div>
+            </div>
+            <button
+              type="button"
+              onClick={copyTransferContent}
+              className="shrink-0 inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold"
+              style={{ backgroundColor: tokens.secondaryButtonBg, color: tokens.secondaryButtonText }}
+            >
+              <Copy size={12} /> Copy
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs" style={{ color: tokens.orderMetaText }}>
+          Bạn có thể kiểm tra lại phương thức và trạng thái thanh toán tại đây khi cần đối chiếu đơn hàng.
+        </p>
+      )}
+    </div>
+  );
+}
+
+type OrderItemSummary = {
+  itemType?: string;
+  isDigital?: boolean;
+  quantity: number;
+};
+
+type OrderShippingSummary = {
+  items: OrderItemSummary[];
+};
+
+const orderRequiresShipping = (order: OrderShippingSummary) =>
+  order.items.some((item) => (item.itemType ?? 'product') === 'product' && !item.isDigital);
+
+const getTimelineLabelsForOrder = (requiresShipping: boolean) =>
+  requiresShipping ? TIMELINE_STEPS : NON_SHIPPING_TIMELINE_STEPS;
+
+const getTimelineStepForOrder = (step: number, requiresShipping: boolean) => {
+  if (requiresShipping) {
+    return step;
+  }
+  if (step <= 1) {
+    return 1;
+  }
+  return step <= 2 ? 2 : 3;
+};
+
+const getOrderQuantityLabel = (items: OrderItemSummary[]) => {
+  const quantity = items.reduce((sum, item) => sum + item.quantity, 0);
+  const itemTypes = new Set(items.map((item) => item.itemType ?? 'product'));
+  if (itemTypes.size === 1) {
+    const [itemType] = Array.from(itemTypes);
+    if (itemType === 'course') {
+      return `${quantity} khóa học`;
+    }
+    if (itemType === 'service') {
+      return `${quantity} dịch vụ`;
+    }
+    return `${quantity} sản phẩm`;
+  }
+  return `${quantity} mục`;
+};
+
+function Stepper({ step, tokens, labels = TIMELINE_STEPS }: { step: number; tokens: ReturnType<typeof getAccountOrdersColors>; labels?: string[] }) {
+  const safeStep = Math.min(Math.max(step, 1), labels.length);
   return (
     <div className="w-full">
       <div className="flex items-center w-full px-2 sm:px-4">
-        {TIMELINE_STEPS.map((label, index) => {
-          const active = index < step;
+        {labels.map((label, index) => {
+          const active = index < safeStep;
           return (
             <React.Fragment key={label}>
               <div className="relative flex flex-col items-center">
@@ -67,14 +208,14 @@ function Stepper({ step, tokens }: { step: number; tokens: ReturnType<typeof get
                   </span>
                 </div>
               </div>
-              {index < TIMELINE_STEPS.length - 1 && (
+              {index < labels.length - 1 && (
                 <div className="flex-1 h-0.5 relative mx-2 sm:mx-4">
                   <div className="absolute inset-0" style={{ backgroundColor: tokens.timelineInactive }} />
                   <div
                     className="absolute inset-0 transition-all duration-700 ease-out origin-left"
                     style={{
                       backgroundColor: tokens.timelineActive,
-                      transform: index + 1 < step ? 'scaleX(1)' : 'scaleX(0)',
+                      transform: index + 1 < safeStep ? 'scaleX(1)' : 'scaleX(0)',
                       transformOrigin: 'left',
                     }}
                   />
@@ -93,7 +234,7 @@ function Stepper({ step, tokens }: { step: number; tokens: ReturnType<typeof get
           Trạng thái hiện tại
         </span>
         <span className="text-sm font-semibold" style={{ color: tokens.timelineMobileValue }}>
-          {TIMELINE_STEPS[step - 1] ?? TIMELINE_STEPS[0]}
+          {labels[safeStep - 1] ?? labels[0]}
         </span>
       </div>
     </div>
@@ -158,6 +299,7 @@ export default function AccountOrdersPage() {
   const { addItem } = useCart();
   const ordersModule = useQuery(api.admin.modules.getModuleByKey, { key: 'orders' });
   const stockFeature = useQuery(api.admin.modules.getModuleFeature, { featureKey: 'enableStock', moduleKey: 'products' });
+  const ordersSettings = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'orders' });
   const cancelOwnOrder = useMutation(api.orders.cancelOwnOrder);
 
   const orders = useQuery(
@@ -194,6 +336,18 @@ export default function AccountOrdersPage() {
 
   const ordersList = useMemo(() => orders ?? [], [orders]);
   const totalOrders = ordersList.length;
+  const ordersSettingsMap = useMemo(() => {
+    const map: Record<string, unknown> = {};
+    (ordersSettings ?? []).forEach((setting) => {
+      map[setting.settingKey] = setting.value;
+    });
+    return map;
+  }, [ordersSettings]);
+  const bankInfo = useMemo(() => ({
+    bankName: getStringSetting(ordersSettingsMap, 'bankName', 'Vietcombank'),
+    accountName: getStringSetting(ordersSettingsMap, 'bankAccountName', 'CÔNG TY VIETADMIN'),
+    accountNumber: getStringSetting(ordersSettingsMap, 'bankAccountNumber', '0123456789'),
+  }), [ordersSettingsMap]);
 
   const stats = {
     totalSpent: ordersList.reduce((sum, order) => sum + order.totalAmount, 0),
@@ -292,6 +446,9 @@ export default function AccountOrdersPage() {
   const drawerPaymentMethod = drawerOrder?.paymentMethod
     ? (PAYMENT_LABELS[drawerOrder.paymentMethod] ?? drawerOrder.paymentMethod)
     : 'Đang cập nhật';
+  const drawerRequiresShipping = drawerOrder ? orderRequiresShipping(drawerOrder) : true;
+  const drawerTimelineLabels = drawerRequiresShipping ? timelineLabels : NON_SHIPPING_TIMELINE_STEPS;
+  const drawerTimelineStep = getTimelineStepForOrder(drawerStatus?.step ?? 1, drawerRequiresShipping);
   const drawerItems = drawerOrder?.items.map((item) => ({
     name: item.productName,
     quantity: item.quantity,
@@ -431,7 +588,7 @@ export default function AccountOrdersPage() {
             tokens={tokens}
           />
           <StatCard
-            label="Sản phẩm đã mua"
+            label="Mục đã mua"
             value={stats.totalItems}
             icon={<ShoppingBag className="w-5 h-5" />}
             tokens={tokens}
@@ -465,12 +622,14 @@ export default function AccountOrdersPage() {
                 const createdAt = new Date(order._creationTime);
                 const statusLabel = statusMap.get(order.status)?.label ?? order.status;
                 const statusStyle = getStatusStyle(order.status);
-                const quantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+                const quantityLabel = getOrderQuantityLabel(order.items);
                 const isExpanded = expandedOrderId === order._id;
                 const paymentLabel = order.paymentMethod ? PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod : 'Chưa chọn';
-                const shippingMethodLabel = order.shippingMethodLabel ?? 'Chưa xác định';
-                const trackingLabel = order.trackingNumber ?? 'Chưa có';
-                const step = statusMap.get(order.status)?.step ?? 1;
+                const requiresShipping = orderRequiresShipping(order);
+                const shippingMethodLabel = requiresShipping ? order.shippingMethodLabel ?? 'Chưa xác định' : 'Không cần vận chuyển';
+                const trackingLabel = requiresShipping ? order.trackingNumber ?? 'Chưa có' : 'Không áp dụng';
+                const step = getTimelineStepForOrder(statusMap.get(order.status)?.step ?? 1, requiresShipping);
+                const timelineLabelsForOrder = getTimelineLabelsForOrder(requiresShipping);
 
                 return (
                   <div
@@ -491,7 +650,7 @@ export default function AccountOrdersPage() {
                         <span className="px-3 py-1 rounded-full text-xs font-semibold border" style={statusStyle}>
                           {statusLabel}
                         </span>
-                        <div className="text-xs" style={{ color: tokens.orderMetaText }}>{quantity} sản phẩm</div>
+                        <div className="text-xs" style={{ color: tokens.orderMetaText }}>{quantityLabel}</div>
                       </div>
                       <ChevronDown
                         className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
@@ -517,7 +676,7 @@ export default function AccountOrdersPage() {
                         >
                           {config.showOrderItems && (
                             <div>
-                              <div className="text-[10px] mb-3 uppercase tracking-wide" style={{ color: tokens.orderMetaText }}>Sản phẩm</div>
+                              <div className="text-[10px] mb-3 uppercase tracking-wide" style={{ color: tokens.orderMetaText }}>Mục trong đơn</div>
                               <div className="space-y-3">
                                 {order.items.map((item, itemIndex) => (
                                   <div key={`${item.productId}-${itemIndex}`} className="flex items-center gap-4">
@@ -586,15 +745,24 @@ export default function AccountOrdersPage() {
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {config.showPaymentMethod && <OrderMeta label="Thanh toán" value={paymentLabel} tokens={tokens} />}
-                            {config.showShippingMethod && <OrderMeta label="Giao hàng" value={shippingMethodLabel} tokens={tokens} />}
-                            {config.showTracking && <OrderMeta label="Tracking" value={trackingLabel} tokens={tokens} />}
+                            {config.showShippingMethod && <OrderMeta label={requiresShipping ? 'Giao hàng' : 'Giao nhận'} value={shippingMethodLabel} tokens={tokens} />}
+                            {config.showTracking && requiresShipping && <OrderMeta label="Tracking" value={trackingLabel} tokens={tokens} />}
                           </div>
 
-                          {config.showShippingAddress && order.shippingAddress && (
+                          <PaymentReminder
+                            orderNumber={order.orderNumber}
+                            paymentMethod={order.paymentMethod}
+                            paymentStatus={order.paymentStatus}
+                            totalAmount={order.totalAmount}
+                            bankInfo={bankInfo}
+                            tokens={tokens}
+                          />
+
+                          {config.showShippingAddress && requiresShipping && order.shippingAddress && (
                             <OrderMeta label="Địa chỉ" value={order.shippingAddress} tokens={tokens} />
                           )}
 
-                          {config.showTimeline && <Stepper step={step} tokens={tokens} />}
+                          {config.showTimeline && <Stepper step={step} tokens={tokens} labels={timelineLabelsForOrder} />}
 
                           <div className="flex flex-wrap justify-end gap-2">
                             <button
@@ -644,7 +812,7 @@ export default function AccountOrdersPage() {
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Mã đơn</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Ngày</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Số SP</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Số mục</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Tổng</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide">Trạng thái</th>
                       <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide">Thao tác</th>
@@ -655,7 +823,7 @@ export default function AccountOrdersPage() {
                       const createdAt = new Date(order._creationTime);
                       const statusLabel = statusMap.get(order.status)?.label ?? order.status;
                       const statusStyle = getStatusStyle(order.status);
-                      const quantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+                      const quantityLabel = getOrderQuantityLabel(order.items);
                       return (
                         <tr
                           key={order._id}
@@ -664,7 +832,7 @@ export default function AccountOrdersPage() {
                         >
                           <td className="px-4 py-3 font-medium" style={{ color: tokens.orderValueText }}>{order.orderNumber}</td>
                           <td className="px-4 py-3" style={{ color: tokens.orderMetaText }}>{createdAt.toLocaleDateString('vi-VN')}</td>
-                      <td className="px-4 py-3" style={{ color: tokens.bodyText }}>{quantity}</td>
+                      <td className="px-4 py-3" style={{ color: tokens.bodyText }}>{quantityLabel}</td>
                           <td className="px-4 py-3 font-semibold" style={{ color: tokens.orderValueText }}>{formatPrice(order.totalAmount)}</td>
                           <td className="px-4 py-3">
                             <span className="px-2.5 py-1 rounded-full text-xs font-semibold border" style={statusStyle}>
@@ -708,7 +876,7 @@ export default function AccountOrdersPage() {
                         </span>
                       </div>
                     <div className="mt-2 text-xs" style={{ color: tokens.orderMetaText }}>
-                      {order.items.reduce((sum, item) => sum + item.quantity, 0)} sản phẩm
+                      {getOrderQuantityLabel(order.items)}
                     </div>
                       <div className="mt-2 flex items-center justify-between text-xs" style={{ color: tokens.orderMetaText }}>
                         <button
@@ -733,8 +901,10 @@ export default function AccountOrdersPage() {
                 const createdAt = new Date(order._creationTime);
                 const statusLabel = statusMap.get(order.status)?.label ?? order.status;
                 const statusStyle = getStatusStyle(order.status);
-                const trackingLabel = order.trackingNumber ?? 'Đang cập nhật';
-                const step = statusMap.get(order.status)?.step ?? 1;
+                const requiresShipping = orderRequiresShipping(order);
+                const trackingLabel = requiresShipping ? order.trackingNumber ?? 'Đang cập nhật' : 'Không áp dụng';
+                const step = getTimelineStepForOrder(statusMap.get(order.status)?.step ?? 1, requiresShipping);
+                const timelineLabelsForOrder = getTimelineLabelsForOrder(requiresShipping);
                 return (
                   <div
                     key={order._id}
@@ -762,22 +932,31 @@ export default function AccountOrdersPage() {
                     </div>
 
                     <div className="p-6 space-y-6">
-                      {config.showTimeline && <Stepper step={step} tokens={tokens} />}
-                      {(config.showPaymentMethod || config.showShippingMethod || config.showShippingAddress) && (
+                      {config.showTimeline && <Stepper step={step} tokens={tokens} labels={timelineLabelsForOrder} />}
+                      {(config.showPaymentMethod || config.showShippingMethod || (config.showShippingAddress && requiresShipping)) && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {config.showPaymentMethod && (
                             <OrderMeta label="Thanh toán" value={order.paymentMethod ?? 'Đang cập nhật'} tokens={tokens} />
                           )}
                           {config.showShippingMethod && (
-                            <OrderMeta label="Giao hàng" value={order.shippingMethodLabel ?? 'Đang cập nhật'} tokens={tokens} />
+                            <OrderMeta label={requiresShipping ? 'Giao hàng' : 'Giao nhận'} value={requiresShipping ? order.shippingMethodLabel ?? 'Đang cập nhật' : 'Không cần vận chuyển'} tokens={tokens} />
                           )}
-                          {config.showShippingAddress && (
+                          {config.showShippingAddress && requiresShipping && (
                             <OrderMeta label="Địa chỉ" value={order.shippingAddress ?? 'Đang cập nhật'} tokens={tokens} />
                           )}
                         </div>
                       )}
+                      <PaymentReminder
+                        orderNumber={order.orderNumber}
+                        paymentMethod={order.paymentMethod}
+                        paymentStatus={order.paymentStatus}
+                        totalAmount={order.totalAmount}
+                        bankInfo={bankInfo}
+                        tokens={tokens}
+                      />
                       {config.showOrderItems && (
                         <div className="space-y-4">
+                          <div className="text-xs font-semibold uppercase" style={{ color: tokens.orderMetaText }}>Mục trong đơn</div>
                           {order.items.map((item, itemIndex) => (
                             <div key={`${item.productId}-${itemIndex}`} className="flex flex-col sm:flex-row gap-4 items-start">
                               <div
@@ -844,7 +1023,7 @@ export default function AccountOrdersPage() {
                       className="px-6 py-4 border-t flex flex-col lg:flex-row lg:items-center justify-between gap-4"
                       style={{ backgroundColor: tokens.surfaceMuted, borderColor: tokens.orderCardDivider }}
                     >
-                      {config.showTracking && (
+                      {config.showTracking && requiresShipping && (
                         <div className="flex flex-wrap items-center gap-3 text-sm" style={{ color: tokens.orderMetaText }}>
                           <span className="font-medium" style={{ color: tokens.orderMetaText }}>Tracking:</span>
                           <span
@@ -1003,15 +1182,25 @@ export default function AccountOrdersPage() {
             showItems={config.showOrderItems}
             showDigitalCredentials
             showTimeline={config.showTimeline}
-            timelineStep={drawerStatus?.step ?? 1}
-            timelineLabels={timelineLabels}
+            timelineStep={drawerTimelineStep}
+            timelineLabels={drawerTimelineLabels}
             showPaymentMethod={config.showPaymentMethod}
             paymentMethod={drawerPaymentMethod}
+            paymentDetails={drawerOrder ? (
+              <PaymentReminder
+                orderNumber={drawerOrder.orderNumber}
+                paymentMethod={drawerOrder.paymentMethod}
+                paymentStatus={drawerOrder.paymentStatus}
+                totalAmount={drawerOrder.totalAmount}
+                bankInfo={bankInfo}
+                tokens={tokens}
+              />
+            ) : undefined}
             showShippingMethod={config.showShippingMethod}
-            shippingMethod={drawerOrder?.shippingMethodLabel ?? 'Đang cập nhật'}
-            showTracking={config.showTracking}
+            shippingMethod={drawerRequiresShipping ? drawerOrder?.shippingMethodLabel ?? 'Đang cập nhật' : 'Không cần vận chuyển'}
+            showTracking={config.showTracking && drawerRequiresShipping}
             tracking={drawerOrder?.trackingNumber ?? 'Đang cập nhật'}
-            showShippingAddress={config.showShippingAddress}
+            showShippingAddress={config.showShippingAddress && drawerRequiresShipping}
             shippingAddress={drawerOrder?.shippingAddress ?? 'Đang cập nhật'}
             allowCancel={drawerStatus?.allowCancel}
             onCancel={drawerOrder ? () => { void handleCancelOrder(drawerOrder._id); setDrawerOrder(null); } : undefined}

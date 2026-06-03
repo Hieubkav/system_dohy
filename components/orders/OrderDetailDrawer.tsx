@@ -89,6 +89,7 @@ type OrderDetailDrawerProps = {
   timelineLabels?: string[];
   showPaymentMethod?: boolean;
   paymentMethod?: string;
+  paymentDetails?: React.ReactNode;
   showShippingMethod?: boolean;
   shippingMethod?: string;
   showTracking?: boolean;
@@ -140,6 +141,7 @@ export function OrderDetailDrawer({
   timelineLabels,
   showPaymentMethod,
   paymentMethod,
+  paymentDetails,
   showShippingMethod,
   shippingMethod,
   showTracking,
@@ -240,7 +242,7 @@ export function OrderDetailDrawer({
 
           {showItems && items && items.length > 0 && (
             <div className="space-y-3">
-              <div className="text-xs font-semibold uppercase" style={{ color: tokens?.sectionTitle ?? '#64748b' }}>Sản phẩm</div>
+              <div className="text-xs font-semibold uppercase" style={{ color: tokens?.sectionTitle ?? '#64748b' }}>Mục trong đơn</div>
               <div className="space-y-3">
                 {items.map((item) => (
                   <div key={`${item.name}-${item.quantity}`} className="flex items-start gap-3">
@@ -314,6 +316,8 @@ export function OrderDetailDrawer({
               )}
             </div>
           )}
+
+          {paymentDetails}
 
           {showShippingAddress && (
             <div>

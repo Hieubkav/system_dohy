@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
 import { useBrandColors } from '@/components/site/hooks';
 import type { Id } from '@/convex/_generated/dataModel';
+import { buildAbsoluteWebUrl, buildPublicOrderLookupPath } from '@/lib/orders/links';
 
 // ─── Utils ──────────────────────────────────────────────────────────────────
 
@@ -219,6 +220,10 @@ function OrderCard({
 }) {
   const [showCancel, setShowCancel] = useState(false);
   const showCancelBtn = canCancelOrder(order.status);
+  const orderLookupPath = buildPublicOrderLookupPath(order.orderNumber);
+  const orderLookupUrl = typeof window === 'undefined'
+    ? orderLookupPath
+    : buildAbsoluteWebUrl(window.location.origin, orderLookupPath);
 
   return (
     <>
@@ -342,6 +347,27 @@ function OrderCard({
               </div>
             </div>
           )}
+
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="font-semibold text-gray-800">Link tra cứu nhanh</p>
+                <p className="truncate font-mono text-[11px] text-gray-500">{orderLookupUrl}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(orderLookupUrl)
+                    .then(() => toast.success('Đã copy link tra cứu!'))
+                    .catch(() => toast.error('Không thể copy. Vui lòng copy thủ công.'));
+                }}
+                className="shrink-0 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-white"
+              >
+                Copy link
+              </button>
+            </div>
+          </div>
 
           {/* Cancel button */}
           {showCancelBtn && (

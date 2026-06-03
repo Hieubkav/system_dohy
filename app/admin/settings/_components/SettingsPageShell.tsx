@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Eye, LayoutTemplate, Loader2, Palette, Save, Send } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Eye, LayoutTemplate, Loader2, Palette, Save, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQuery } from 'convex/react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -18,6 +18,7 @@ import { AiSeoImportDialog } from './AiSeoImportDialog';
 import { SeoBuilderDialog } from './SeoBuilderDialog';
 import { ProductSupplementalContentManager } from './ProductSupplementalContentManager';
 import { ShopConfigAdminContainer } from '@/components/modules/orders/ShopConfigAdminContainer';
+import { getEmailConfigurationStatus } from '@/lib/email-config-status';
 
 type SettingsSection = 'site' | 'contact' | 'seo' | 'advanced';
 type SettingsFormValue = string | boolean;
@@ -154,7 +155,7 @@ const EMAIL_SETTING_KEYS = [
 ] as const;
 const EMAIL_DEFAULTS: Record<(typeof EMAIL_SETTING_KEYS)[number], string> = {
   mail_driver: 'resend',
-  mail_from_email: 'onboarding@resend.dev',
+  mail_from_email: '',
   mail_from_name: 'YourBrand',
   order_notification_emails: '',
 };
@@ -579,6 +580,9 @@ function SettingsContent({ section }: { section: SettingsSection }) {
     }
     return Object.keys(form).some(key => form[key] !== initialForm[key]) || (canEditHeaderMenu && headerConfigHasChanges);
   }, [isShopConfigTab, shopConfigDirty, form, initialForm, canEditHeaderMenu, headerConfigHasChanges]);
+
+  const emailStatus = useMemo(() => getEmailConfigurationStatus(form), [form]);
+  const savedEmailStatus = useMemo(() => getEmailConfigurationStatus(initialForm), [initialForm]);
  
   const isCurrentlySaving = isSaving || (isShopConfigTab && shopConfigSaving);
 
@@ -608,6 +612,14 @@ function SettingsContent({ section }: { section: SettingsSection }) {
     const email = testEmail.trim();
     if (!EMAIL_REGEX.test(email)) {
       toast.error('Email nhận thử không hợp lệ.');
+      return;
+    }
+    if (hasChanges) {
+      toast.error('Vui lòng lưu cấu hình email trước khi gửi thử.');
+      return;
+    }
+    if (!savedEmailStatus.configured) {
+      toast.error('Dev chưa cấu hình email gửi ra. Vui lòng liên hệ dev.');
       return;
     }
 
@@ -2118,6 +2130,31 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                       {/* Cấu hình cột trái (7 cols) */}
                       <div className="lg:col-span-7 space-y-6">
 
+                        <div className={`rounded-xl border p-4 ${
+                          emailStatus.configured
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100'
+                            : 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100'
+                        }`}>
+                          <div className="flex items-start gap-3">
+                            {emailStatus.configured ? (
+                              <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
+                            ) : (
+                              <AlertTriangle size={18} className="mt-0.5 shrink-0" />
+                            )}
+                            <div className="flex-1 space-y-2">
+                              <div>
+                                <p className="text-sm font-bold">
+                                  {emailStatus.configured ? `Email hệ thống đã cấu hình (${emailStatus.label})` : 'Dev chưa cấu hình email gửi ra'}
+                                </p>
+                                <p className="text-xs opacity-80">
+                                  {emailStatus.configured
+                                    ? 'Email gửi đơn hàng đang sẵn sàng.'
+                                    : 'Vui lòng liên hệ dev để bật email hệ thống trước khi dùng gửi thử hoặc thông báo đơn.'}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
 
                         <div className="grid gap-4 sm:grid-cols-2">
                           <div className="space-y-2">
@@ -2155,14 +2192,20 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                               <Button
                                 type="button"
                                 onClick={handleSendTestEmail}
-                                disabled={isSendingTestEmail}
+                                disabled={isSendingTestEmail || hasChanges || !savedEmailStatus.configured}
                                 className="shrink-0"
                               >
                                 {isSendingTestEmail ? <Loader2 size={16} className="mr-2 animate-spin" /> : <Send size={16} className="mr-2" />}
                                 {isSendingTestEmail ? 'Đang gửi...' : 'Gửi thử'}
                               </Button>
                             </div>
-                            <p className="text-xs text-slate-500">Dùng để kiểm tra email gửi ra có đến đúng hộp thư khách hay không.</p>
+                            <p className="text-xs text-slate-500">
+                              {hasChanges
+                                ? 'Lưu thay đổi trước khi gửi thử.'
+                                : savedEmailStatus.configured
+                                  ? 'Dùng để kiểm tra email gửi ra có đến đúng hộp thư khách hay không.'
+                                  : 'Dev chưa cấu hình email gửi ra. Vui lòng liên hệ dev.'}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -2181,7 +2224,9 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                               <div className="flex justify-between text-slate-400">
                                 <span>Từ:</span>
                                 <span className="font-medium text-slate-700 dark:text-slate-300">
-                                  {getStringField('mail_from_name', EMAIL_DEFAULTS.mail_from_name)} &lt;{getStringField('mail_from_email', EMAIL_DEFAULTS.mail_from_email)}&gt;
+                                  {emailStatus.configured
+                                    ? `${getStringField('mail_from_name', EMAIL_DEFAULTS.mail_from_name)} <${getStringField('mail_from_email', EMAIL_DEFAULTS.mail_from_email)}>`
+                                    : 'Dev chưa cấu hình email gửi ra'}
                                 </span>
                               </div>
                               <div className="flex justify-between text-slate-400">

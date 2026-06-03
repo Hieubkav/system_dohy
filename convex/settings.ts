@@ -3,6 +3,7 @@ import type { MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { removeOwnerFilesAndCleanup, syncOwnerFilesAndCleanup } from "./lib/fileService";
+import { EMAIL_CONFIG_SETTING_KEYS, getEmailConfigurationStatus as resolveEmailConfigurationStatus } from "../lib/email-config-status";
 
 const settingDoc = v.object({
   _creationTime: v.number(),
@@ -10,6 +11,13 @@ const settingDoc = v.object({
   group: v.string(),
   key: v.string(),
   value: v.any(),
+});
+
+const emailConfigurationStatusDoc = v.object({
+  configured: v.boolean(),
+  driver: v.union(v.literal("smtp"), v.literal("resend"), v.literal("unknown")),
+  label: v.string(),
+  reason: v.string(),
 });
 
 const SETTING_STORAGE_ID_SUFFIX = "__storageId";
@@ -93,6 +101,28 @@ export const getMultiple = query({
     return result;
   },
   returns: v.record(v.string(), v.any()),
+});
+
+export const getMailConfigurationStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    const settings = await Promise.all(EMAIL_CONFIG_SETTING_KEYS.map((key) =>
+      ctx.db
+        .query("settings")
+        .withIndex("by_key", (q) => q.eq("key", key))
+        .unique()
+    ));
+
+    const values: Record<string, unknown> = {};
+    for (const setting of settings) {
+      if (setting) {
+        values[setting.key] = setting.value;
+      }
+    }
+
+    return resolveEmailConfigurationStatus(values);
+  },
+  returns: emailConfigurationStatusDoc,
 });
 
 export const set = mutation({

@@ -6,11 +6,13 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { CheckCircle2, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
 import { useBrandColors } from '@/components/site/hooks';
 import { getCheckoutColors } from '@/components/site/checkout/colors';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
+import { buildAbsoluteWebUrl, buildPublicOrderLookupPath } from '@/lib/orders/links';
 
 const formatPrice = (value: number) =>
   new Intl.NumberFormat('vi-VN', { currency: 'VND', style: 'currency' }).format(value);
@@ -178,6 +180,12 @@ function ThankYouContent() {
   }
 
   const displayOrderNumber = order?.orderNumber ?? orderNumber ?? '';
+  const orderLookupPath = displayOrderNumber
+    ? buildPublicOrderLookupPath(displayOrderNumber)
+    : '/tra-cuu-don-hang';
+  const orderLookupUrl = typeof window === 'undefined'
+    ? orderLookupPath
+    : buildAbsoluteWebUrl(window.location.origin, orderLookupPath);
 
   return (
     <div
@@ -219,6 +227,74 @@ function ThankYouContent() {
       <p style={{ color: tokens.metaText, fontSize: 14, marginBottom: 24 }}>
         Cảm ơn bạn đã đặt hàng. Chúng tôi sẽ liên hệ sớm nhất.
       </p>
+
+      <div
+        style={{
+          backgroundColor: tokens.surface,
+          border: `1px solid ${tokens.border}`,
+          borderRadius: 16,
+          padding: '16px 18px',
+          marginBottom: 20,
+          textAlign: 'left',
+        }}
+      >
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 12 }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: tokens.heading, marginBottom: 4 }}>
+              Link tra cứu đơn hàng
+            </p>
+            <p style={{ fontSize: 12, color: tokens.metaText, lineHeight: 1.45 }}>
+              Bạn có thể lưu link này để xem trạng thái đơn hàng bất kỳ lúc nào.
+            </p>
+          </div>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            backgroundColor: tokens.surfaceSoft,
+            borderRadius: 10,
+            padding: '8px 10px',
+          }}
+        >
+          <code
+            style={{
+              flex: 1,
+              color: tokens.bodyText,
+              fontSize: 11,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {orderLookupUrl}
+          </code>
+          <button
+            type="button"
+            aria-label="Sao chép link tra cứu đơn hàng"
+            onClick={() => {
+              navigator.clipboard
+                .writeText(orderLookupUrl)
+                .then(() => toast.success('Đã copy link tra cứu đơn hàng.'))
+                .catch(() => toast.error('Không thể copy link. Vui lòng copy thủ công.'));
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 6,
+              borderRadius: 6,
+              color: tokens.iconPrimary,
+              display: 'flex',
+              alignItems: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Copy size={16} />
+          </button>
+        </div>
+      </div>
 
       {/* Claim account password setup card */}
       {showClaimBanner && claimState && (
@@ -431,7 +507,10 @@ function ThankYouContent() {
               type="button"
               aria-label="Sao chép nội dung chuyển khoản"
               onClick={() => {
-                void navigator.clipboard.writeText(transferContent);
+                navigator.clipboard
+                  .writeText(transferContent)
+                  .then(() => toast.success('Đã copy nội dung chuyển khoản.'))
+                  .catch(() => toast.error('Không thể copy. Vui lòng copy thủ công.'));
               }}
               style={{
                 background: 'none',
@@ -454,7 +533,7 @@ function ThankYouContent() {
       {/* Action links */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         <Link
-          href={`/tra-cuu-don-hang?orderNumber=${displayOrderNumber}`}
+          href={orderLookupPath}
           style={{
             display: 'flex',
             alignItems: 'center',

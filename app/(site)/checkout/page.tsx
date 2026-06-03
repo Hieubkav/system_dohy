@@ -920,11 +920,9 @@ function CheckoutContent() {
         toast.error('Không thể tạo đơn hàng.');
         return;
       }
-      setOrderId(result.orderId ?? null);
+      setOrderId(result.orderId ?? result.orderNumber ?? 'created');
       toast.success('Đặt hàng thành công! Đang chuyển hướng...');
-      setTimeout(() => {
-        router.push(`/checkout/thank-you?orderId=${result.orderId ?? ''}&orderNumber=${result.orderNumber ?? ''}`);
-      }, 1500);
+      router.replace(`/checkout/thank-you?orderId=${result.orderId ?? ''}&orderNumber=${result.orderNumber ?? ''}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Không thể tạo đơn hàng.');
     } finally {
@@ -1025,6 +1023,15 @@ function CheckoutContent() {
       <div className="max-w-5xl mx-auto px-4 py-16 text-center">
         <div className="h-6 w-48 rounded-lg animate-pulse mx-auto" style={{ backgroundColor: tokens.surfaceSoft }} />
         <div className="h-4 w-64 rounded-lg animate-pulse mt-3 mx-auto" style={{ backgroundColor: tokens.surfaceSoft }} />
+      </div>
+    );
+  }
+
+  if (orderId) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-16 text-center">
+        <div className="h-6 w-56 rounded-lg animate-pulse mx-auto" style={{ backgroundColor: tokens.surfaceSoft }} />
+        <div className="h-4 w-72 rounded-lg animate-pulse mt-3 mx-auto" style={{ backgroundColor: tokens.surfaceSoft }} />
       </div>
     );
   }

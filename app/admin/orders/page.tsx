@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { ChevronDown, Edit, Eye, Plus, Search, ShoppingBag, Trash2 } from 'lucide-react';
+import { ChevronDown, Copy, Edit, ExternalLink, Eye, Plus, Search, ShoppingBag, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
 import { BulkActionBar, ColumnToggle, generatePaginationItems, SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
@@ -13,6 +13,7 @@ import { ModuleGuard } from '../components/ModuleGuard';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
 import { useOrderStatuses } from '@/lib/experiences';
 import { usePersistedPageSize } from '../components/usePersistedPageSize';
+import { buildAbsoluteWebUrl, buildPublicOrderLookupPath } from '@/lib/orders/links';
 
 const MODULE_KEY = 'orders';
 
@@ -105,6 +106,26 @@ function OrdersContent() {
     if (key.includes('deliver') || key.includes('complete')) return 'success';
     if (key.includes('ship') || key.includes('process')) return 'warning';
     return 'secondary';
+  };
+
+  const buildOrderLookupUrl = (orderNumber: string) => {
+    const path = buildPublicOrderLookupPath(orderNumber);
+    return typeof window === 'undefined'
+      ? path
+      : buildAbsoluteWebUrl(window.location.origin, path);
+  };
+
+  const handleCopyOrderLookupUrl = async (orderNumber: string) => {
+    try {
+      await navigator.clipboard.writeText(buildOrderLookupUrl(orderNumber));
+      toast.success('Đã copy link tra cứu đơn hàng.');
+    } catch {
+      toast.error('Không thể copy link. Vui lòng copy thủ công.');
+    }
+  };
+
+  const handleOpenOrderLookupUrl = (orderNumber: string) => {
+    window.open(buildOrderLookupUrl(orderNumber), '_blank', 'noopener,noreferrer');
   };
 
   const columns = useMemo(() => {
@@ -419,6 +440,8 @@ function OrdersContent() {
                     <div className="flex justify-end gap-2">
                       <Link href={`/admin/orders/${order._id}/edit`}><Button variant="ghost" size="icon" title="Xem chi tiết"><Eye size={16}/></Button></Link>
                       <Link href={`/admin/orders/${order._id}/edit`}><Button variant="ghost" size="icon"><Edit size={16}/></Button></Link>
+                      <Button variant="ghost" size="icon" title="Copy link tra cứu" onClick={async () => handleCopyOrderLookupUrl(order.orderNumber)}><Copy size={16}/></Button>
+                      <Button variant="ghost" size="icon" title="Mở link tra cứu" onClick={() => handleOpenOrderLookupUrl(order.orderNumber)}><ExternalLink size={16}/></Button>
                       <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={ async () => handleDelete(order._id)}><Trash2 size={16}/></Button>
                     </div>
                   </TableCell>

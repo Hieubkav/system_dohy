@@ -9,6 +9,8 @@ import {
   parseOrderStatuses,
   type OrderStatusConfig,
 } from "../lib/orders/statuses";
+import { EMAIL_CONFIG_SETTING_KEYS, getEmailConfigurationStatus } from "../lib/email-config-status";
+import { buildAdminOrderDetailPath, buildPublicOrderLookupPath } from "../lib/orders/links";
 import { internal } from "./_generated/api";
 import {
   getOrderPlacedCustomerTemplate,
@@ -78,6 +80,24 @@ async function resolveOrderNotificationEmails(ctx: MutationCtx): Promise<string>
   return (contactSetting?.value as string) ?? "";
 }
 
+async function getSettingsByKeys(ctx: MutationCtx, keys: string[]) {
+  const uniqueKeys = [...new Set(keys)];
+  const settings = await Promise.all(uniqueKeys.map((key) =>
+    ctx.db
+      .query("settings")
+      .withIndex("by_key", (q) => q.eq("key", key))
+      .unique()
+  ));
+
+  const result: Record<string, unknown> = {};
+  for (const setting of settings) {
+    if (setting) {
+      result[setting.key] = setting.value;
+    }
+  }
+  return result;
+}
+
 async function handleOrderStatusTransition(
   ctx: MutationCtx,
   orderId: Id<"orders">,
@@ -111,12 +131,28 @@ async function handleOrderStatusTransition(
 
   // Chuyển sang Cancelled
   if (isCancelledStatus(newStatus) && !isCancelledStatus(oldStatus)) {
-    const [brandNameSetting, siteUrlSetting] = await Promise.all([
-      ctx.db.query("settings").withIndex("by_key", (q) => q.eq("key", "site_name")).unique(),
-      ctx.db.query("settings").withIndex("by_key", (q) => q.eq("key", "site_url")).unique(),
+    const settings = await getSettingsByKeys(ctx, [
+      "site_name",
+      "site_url",
+      ...EMAIL_CONFIG_SETTING_KEYS,
     ]);
-    const brandName = brandNameSetting?.value ? String(brandNameSetting.value).trim() : "YourBrand";
-    const siteUrl = siteUrlSetting?.value ? String(siteUrlSetting.value).trim() : "http://localhost:3000";
+    const brandName = settings.site_name ? String(settings.site_name).trim() : "YourBrand";
+    const siteUrl = settings.site_url ? String(settings.site_url).trim() : "http://localhost:3000";
+    const emailStatus = getEmailConfigurationStatus(settings);
+
+    if (!emailStatus.configured) {
+      await ctx.db.insert("notifications", {
+        title: "Email hủy đơn chưa gửi",
+        content: `Đơn #${orderDoc.orderNumber} đã đổi trạng thái nhưng chưa gửi email hủy vì ${emailStatus.reason} Admin mở ${buildAdminOrderDetailPath(orderDoc._id)} hoặc gửi khách link ${buildPublicOrderLookupPath(orderDoc.orderNumber)} để tra cứu qua web.`,
+        type: "warning",
+        status: "Sent",
+        targetType: "users",
+        order: Date.now(),
+        readCount: 0,
+        sentAt: Date.now(),
+      });
+      return;
+    }
 
     if (customerDoc.email) {
       const cancelledHtml = getOrderCancelledTemplate(orderDoc, siteUrl, brandName);
@@ -1360,34 +1396,49 @@ export const placeOrder = mutation({
     const orderDoc = await ctx.db.get(orderId);
     const customerDoc = await ctx.db.get(customerId);
     if (orderDoc && customerDoc) {
-      const [siteUrlSetting, brandNameSetting] = await Promise.all([
-        ctx.db.query("settings").withIndex("by_key", (q) => q.eq("key", "site_url")).unique(),
-        ctx.db.query("settings").withIndex("by_key", (q) => q.eq("key", "site_name")).unique(),
+      const settings = await getSettingsByKeys(ctx, [
+        "site_url",
+        "site_name",
+        ...EMAIL_CONFIG_SETTING_KEYS,
       ]);
-      const siteUrl = siteUrlSetting?.value ? String(siteUrlSetting.value).trim() : "http://localhost:3000";
-      const brandName = brandNameSetting?.value ? String(brandNameSetting.value).trim() : "YourBrand";
+      const siteUrl = settings.site_url ? String(settings.site_url).trim() : "http://localhost:3000";
+      const brandName = settings.site_name ? String(settings.site_name).trim() : "YourBrand";
+      const emailStatus = getEmailConfigurationStatus(settings);
 
-      if (customerDoc.email) {
-        const customerHtml = getOrderPlacedCustomerTemplate(orderDoc, siteUrl, brandName);
-        await ctx.scheduler.runAfter(0, internal.email.sendTransactionalEmail, {
-          to: customerDoc.email,
-          subject: `[${brandName}] Xác nhận đơn hàng #${orderDoc.orderNumber}`,
-          html: customerHtml,
-          eventType: "order_placed",
-          orderId: orderDoc._id,
+      if (!emailStatus.configured) {
+        await ctx.db.insert("notifications", {
+          title: "Email hệ thống chưa cấu hình",
+          content: `Đơn #${orderDoc.orderNumber} đã tạo thành công nhưng chưa gửi email vì ${emailStatus.reason} Admin mở ${buildAdminOrderDetailPath(orderDoc._id)} hoặc gửi khách link ${buildPublicOrderLookupPath(orderDoc.orderNumber)} để tra cứu qua web.`,
+          type: "warning",
+          status: "Sent",
+          targetType: "users",
+          order: Date.now(),
+          readCount: 0,
+          sentAt: Date.now(),
         });
-      }
+      } else {
+        if (customerDoc.email) {
+          const customerHtml = getOrderPlacedCustomerTemplate(orderDoc, siteUrl, brandName);
+          await ctx.scheduler.runAfter(0, internal.email.sendTransactionalEmail, {
+            to: customerDoc.email,
+            subject: `[${brandName}] Xác nhận đơn hàng #${orderDoc.orderNumber}`,
+            html: customerHtml,
+            eventType: "order_placed",
+            orderId: orderDoc._id,
+          });
+        }
 
-      const shopEmails = await resolveOrderNotificationEmails(ctx);
-      if (shopEmails) {
-        const shopHtml = getOrderPlacedShopTemplate(orderDoc, customerDoc, siteUrl, brandName);
-        await ctx.scheduler.runAfter(0, internal.email.sendTransactionalEmail, {
-          to: shopEmails,
-          subject: `[${brandName}] Đơn hàng mới #${orderDoc.orderNumber}`,
-          html: shopHtml,
-          eventType: "order_placed_shop",
-          orderId: orderDoc._id,
-        });
+        const shopEmails = await resolveOrderNotificationEmails(ctx);
+        if (shopEmails) {
+          const shopHtml = getOrderPlacedShopTemplate(orderDoc, customerDoc, siteUrl, brandName);
+          await ctx.scheduler.runAfter(0, internal.email.sendTransactionalEmail, {
+            to: shopEmails,
+            subject: `[${brandName}] Đơn hàng mới #${orderDoc.orderNumber}`,
+            html: shopHtml,
+            eventType: "order_placed_shop",
+            orderId: orderDoc._id,
+          });
+        }
       }
     }
 
