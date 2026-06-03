@@ -293,7 +293,7 @@ export function CertificateCard({
             </div>
 
             {/* Title block */}
-            <div className="space-y-1 mt-4">
+            <div className="space-y-1 mt-2">
               <h1 className="text-xl md:text-2xl font-extrabold tracking-[0.06em] text-slate-800 uppercase">
                 CHỨNG NHẬN HOÀN THÀNH
               </h1>
@@ -303,24 +303,24 @@ export function CertificateCard({
             </div>
 
             {/* Recipient name — centerpiece */}
-            <div className="mt-4">
+            <div className="mt-2">
               <h2 className="text-[2.8rem] md:text-[3.2rem] font-black text-[#0f172a] tracking-wide uppercase leading-none drop-shadow-sm">
                 {customerName}
               </h2>
-              <p className="text-[10px] text-slate-400 font-semibold max-w-sm mx-auto mt-2 leading-relaxed">
+              <p className="text-[10px] text-slate-400 font-semibold max-w-sm mx-auto mt-1 leading-relaxed">
                 Đã hoàn thành xuất sắc chương trình đào tạo và đạt tiêu chuẩn tốt nghiệp của khóa học chuyên sâu
               </p>
             </div>
 
             {/* Course title */}
-            <div className="w-[72%] max-w-[560px] border-y border-[#a27b4c]/30 py-2.5 mt-4">
+            <div className="w-[72%] max-w-[560px] border-y border-[#a27b4c]/30 py-1.5 mt-3">
               <h3 className="text-[0.95rem] md:text-base font-extrabold text-[#a27b4c] tracking-[0.04em] uppercase leading-tight">
                 {courseTitle}
               </h3>
             </div>
 
             {/* Date */}
-            <div className="text-[8.5px] text-slate-400 uppercase tracking-widest font-extrabold mt-3">
+            <div className="text-[8.5px] text-slate-400 uppercase tracking-widest font-extrabold mt-2">
               Cấp ngày {completedDateStr}
             </div>
 
