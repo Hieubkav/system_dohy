@@ -128,8 +128,8 @@ export function CourseCurriculumEditor({ courseId }: CourseCurriculumEditorProps
   };
 
   // Chapter CRUD handlers
-  const handleAddChapter = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddChapter = async (e?: React.FormEvent) => {
+    if (e) { e.preventDefault(); }
     if (!newChapterTitle.trim()) {return;}
 
     setIsChapterAdding(true);
@@ -792,7 +792,7 @@ export function CourseCurriculumEditor({ courseId }: CourseCurriculumEditorProps
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-1.5">
             <Plus size={16} className="text-indigo-600" /> Thêm chương học mới
           </h3>
-          <form onSubmit={(e) => void handleAddChapter(e)} className="space-y-3">
+          <div className="space-y-3">
             <div className="grid grid-cols-1 gap-4">
               <div className="space-y-1">
                 <Label className="text-xs">Tên chương <span className="text-red-500">*</span></Label>
@@ -802,6 +802,12 @@ export function CourseCurriculumEditor({ courseId }: CourseCurriculumEditorProps
                   placeholder="Nhập tên chương học..."
                   required
                   className="h-9"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void handleAddChapter();
+                    }
+                  }}
                 />
               </div>
               <div className="space-y-2">
@@ -816,16 +822,17 @@ export function CourseCurriculumEditor({ courseId }: CourseCurriculumEditorProps
             </div>
             <div className="flex justify-end">
               <Button
-                type="submit"
+                type="button"
                 variant="default"
                 disabled={isChapterAdding || !newChapterTitle.trim()}
                 className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-9 px-4"
+                onClick={() => void handleAddChapter()}
               >
                 {isChapterAdding && <Loader2 size={12} className="mr-1 animate-spin" />}
                 Thêm chương
               </Button>
             </div>
-          </form>
+          </div>
         </div>
       </CardContent>
 
