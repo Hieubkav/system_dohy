@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use, useEffect, useMemo, useRef, useState } from 'react';
+import React, { use, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -74,6 +74,14 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
   const [initialized, setInitialized] = useState(false);
   const [editorResetKey, setEditorResetKey] = useState(0);
   const [activeTab, setActiveTab] = useState<'general' | 'curriculum'>('general');
+
+  // Curriculum dirty state (từ CourseCurriculumEditor)
+  const [curriculumIsDirty, setCurriculumIsDirty] = useState(false);
+  const curriculumSaveFnRef = useRef<(() => Promise<void>) | null>(null);
+
+  const handleCurriculumDirtyChange = useCallback((isDirty: boolean) => {
+    setCurriculumIsDirty(isDirty);
+  }, []);
 
   // Ref & State for Dirty State (Phát hiện thay đổi)
   const initialSnapshotRef = useRef<{
@@ -162,10 +170,12 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     metaDescription,
   ]);
 
-  const hasChanges = useMemo(() => {
+  const generalHasChanges = useMemo(() => {
     if (!initialSnapshotRef.current) {return false;}
     return JSON.stringify(initialSnapshotRef.current) !== JSON.stringify(currentSnapshot);
   }, [currentSnapshot, snapshotVersion]);
+
+  const hasChanges = generalHasChanges || curriculumIsDirty;
 
   const enabledFields = useMemo(() => new Set(fieldsData?.map((field) => field.fieldKey) ?? []), [fieldsData]);
   const multiCategoryEnabled = Boolean(settingsData?.find((setting) => setting.settingKey === 'enableMultipleCategories')?.value);
@@ -306,71 +316,82 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
 
     setIsSubmitting(true);
     try {
-      const resolvedMetaTitle = truncateText(title.trim(), 60);
-      const resolvedMetaDescription = truncateText(stripHtml(excerpt || content || ''), 160);
-      await updateCourse({
-        additionalCategoryIds: multiCategoryEnabled
-          ? additionalCategoryIds.filter((item) => item !== categoryId) as Id<'courseCategories'>[]
-          : undefined,
-        categoryId: categoryId as Id<'courseCategories'>,
-        comparePriceAmount: pricingType === 'paid' ? comparePriceAmount : undefined,
-        content,
-        durationText: durationText.trim() || undefined,
-        excerpt: excerpt.trim() || undefined,
-        featured,
-        htmlRender: hasHtmlRender ? (htmlRender.trim() || undefined) : undefined,
-        id: courseId,
-        instructorName: instructorName.trim() || undefined,
-        introVideoType,
-        introVideoUrl: introVideoType !== 'none' ? (introVideoUrl.trim() || undefined) : undefined,
-        isPriceVisible,
-        level: level || undefined,
-        markdownRender: hasMarkdownRender ? (markdownRender.trim() || undefined) : undefined,
-        metaDescription: enabledFields.has('metaDescription') ? (metaDescription.trim() || resolvedMetaDescription || undefined) : undefined,
-        metaTitle: enabledFields.has('metaTitle') ? (metaTitle.trim() || resolvedMetaTitle || undefined) : undefined,
-        priceAmount: pricingType === 'paid' ? priceAmount : undefined,
-        priceNote: priceNote.trim() || undefined,
-        pricingType,
-        renderType,
-        slug: slug.trim() || generateSlug(title),
-        status,
-        thumbnail: thumbnail ?? '',
-        thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
-        title: title.trim(),
-      });
-      toast.success('Đã cập nhật khóa học');
+      // Lưu thông tin chung nếu có thay đổi
+      if (generalHasChanges) {
+        const resolvedMetaTitle = truncateText(title.trim(), 60);
+        const resolvedMetaDescription = truncateText(stripHtml(excerpt || content || ''), 160);
+        await updateCourse({
+          additionalCategoryIds: multiCategoryEnabled
+            ? additionalCategoryIds.filter((item) => item !== categoryId) as Id<'courseCategories'>[]
+            : undefined,
+          categoryId: categoryId as Id<'courseCategories'>,
+          comparePriceAmount: pricingType === 'paid' ? comparePriceAmount : undefined,
+          content,
+          durationText: durationText.trim() || undefined,
+          excerpt: excerpt.trim() || undefined,
+          featured,
+          htmlRender: hasHtmlRender ? (htmlRender.trim() || undefined) : undefined,
+          id: courseId,
+          instructorName: instructorName.trim() || undefined,
+          introVideoType,
+          introVideoUrl: introVideoType !== 'none' ? (introVideoUrl.trim() || undefined) : undefined,
+          isPriceVisible,
+          level: level || undefined,
+          markdownRender: hasMarkdownRender ? (markdownRender.trim() || undefined) : undefined,
+          metaDescription: enabledFields.has('metaDescription') ? (metaDescription.trim() || resolvedMetaDescription || undefined) : undefined,
+          metaTitle: enabledFields.has('metaTitle') ? (metaTitle.trim() || resolvedMetaTitle || undefined) : undefined,
+          priceAmount: pricingType === 'paid' ? priceAmount : undefined,
+          priceNote: priceNote.trim() || undefined,
+          pricingType,
+          renderType,
+          slug: slug.trim() || generateSlug(title),
+          status,
+          thumbnail: thumbnail ?? '',
+          thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
+          title: title.trim(),
+        });
 
-      // Reset snapshot to current values upon successful save
-      initialSnapshotRef.current = {
-        title: title.trim(),
-        slug: slug.trim(),
-        content: content.trim(),
-        excerpt: excerpt.trim(),
-        categoryId: categoryId || '',
-        additionalCategoryIds: [...additionalCategoryIds].sort(),
-        thumbnail: thumbnail || '',
-        thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
-        status,
-        pricingType,
-        priceAmount,
-        comparePriceAmount,
-        priceNote: priceNote.trim(),
-        isPriceVisible,
-        instructorName: instructorName.trim(),
-        level: level || '',
-        durationText: durationText.trim(),
-        introVideoType,
-        introVideoUrl: introVideoUrl.trim(),
-        featured,
-        renderType,
-        markdownRender: markdownRender.trim(),
-        htmlRender: htmlRender.trim(),
-        metaTitle: metaTitle.trim(),
-        metaDescription: metaDescription.trim(),
-      };
-      setSnapshotVersion((prev) => prev + 1);
+        // Reset snapshot sau khi lưu thành công
+        initialSnapshotRef.current = {
+          title: title.trim(),
+          slug: slug.trim(),
+          content: content.trim(),
+          excerpt: excerpt.trim(),
+          categoryId: categoryId || '',
+          additionalCategoryIds: [...additionalCategoryIds].sort(),
+          thumbnail: thumbnail || '',
+          thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
+          status,
+          pricingType,
+          priceAmount,
+          comparePriceAmount,
+          priceNote: priceNote.trim(),
+          isPriceVisible,
+          instructorName: instructorName.trim(),
+          level: level || '',
+          durationText: durationText.trim(),
+          introVideoType,
+          introVideoUrl: introVideoUrl.trim(),
+          featured,
+          renderType,
+          markdownRender: markdownRender.trim(),
+          htmlRender: htmlRender.trim(),
+          metaTitle: metaTitle.trim(),
+          metaDescription: metaDescription.trim(),
+        };
+        setSnapshotVersion((prev) => prev + 1);
+      }
+
+      // Lưu lộ trình học nếu có thay đổi
+      if (curriculumIsDirty && curriculumSaveFnRef.current) {
+        await curriculumSaveFnRef.current();
+      }
+
+      if (generalHasChanges || curriculumIsDirty) {
+        toast.success('Đã lưu thay đổi');
+      }
     } catch (error) {
-      toast.error(getAdminMutationErrorMessage(error, 'Không thể cập nhật khóa học'));
+      toast.error(getAdminMutationErrorMessage(error, 'Không thể lưu thay đổi'));
     } finally {
       setIsSubmitting(false);
     }
@@ -672,7 +693,11 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
           </div>
         ) : (
           <div className="w-full">
-            <CourseCurriculumEditor courseId={courseId} />
+            <CourseCurriculumEditor
+              courseId={courseId}
+              onDirtyChange={handleCurriculumDirtyChange}
+              onSaveRef={curriculumSaveFnRef}
+            />
           </div>
         )}
 
@@ -712,7 +737,9 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
                     <Loader2 size={16} className="mr-2 animate-spin" />
                     Đang lưu...
                   </>
-                ) : (!hasChanges ? 'Đã lưu' : 'Lưu thay đổi')}
+                ) : (!hasChanges ? 'Đã lưu' : (
+                  curriculumIsDirty && !generalHasChanges ? 'Lưu lộ trình' : 'Lưu thay đổi'
+                ))}
               </Button>
             </div>
           </>
