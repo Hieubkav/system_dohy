@@ -10,7 +10,6 @@ import {
   type OrderStatusConfig,
 } from "../lib/orders/statuses";
 import { EMAIL_CONFIG_SETTING_KEYS, getEmailConfigurationStatus } from "../lib/email-config-status";
-import { buildAdminOrderDetailPath, buildPublicOrderLookupPath } from "../lib/orders/links";
 import { internal } from "./_generated/api";
 import {
   getOrderPlacedCustomerTemplate,
@@ -142,8 +141,8 @@ async function handleOrderStatusTransition(
 
     if (!emailStatus.configured) {
       await ctx.db.insert("notifications", {
-        title: "Email hủy đơn chưa gửi",
-        content: `Đơn #${orderDoc.orderNumber} đã đổi trạng thái nhưng chưa gửi email hủy vì ${emailStatus.reason} Admin mở ${buildAdminOrderDetailPath(orderDoc._id)} hoặc gửi khách link ${buildPublicOrderLookupPath(orderDoc.orderNumber)} để tra cứu qua web.`,
+        title: "Cần gửi thông báo thủ công",
+        content: `Đơn #${orderDoc.orderNumber} đã cập nhật trạng thái. Email thông báo chưa được gửi tự động. Vui lòng liên hệ khách qua kênh phù hợp nếu cần.`,
         type: "warning",
         status: "Sent",
         targetType: "users",
@@ -1407,8 +1406,8 @@ export const placeOrder = mutation({
 
       if (!emailStatus.configured) {
         await ctx.db.insert("notifications", {
-          title: "Email hệ thống chưa cấu hình",
-          content: `Đơn #${orderDoc.orderNumber} đã tạo thành công nhưng chưa gửi email vì ${emailStatus.reason} Admin mở ${buildAdminOrderDetailPath(orderDoc._id)} hoặc gửi khách link ${buildPublicOrderLookupPath(orderDoc.orderNumber)} để tra cứu qua web.`,
+          title: "Cần gửi thông báo thủ công",
+          content: `Đơn #${orderDoc.orderNumber} đã tạo thành công. Email thông báo chưa được gửi tự động. Vui lòng xử lý đơn và gửi mã đơn cho khách nếu cần tra cứu.`,
           type: "warning",
           status: "Sent",
           targetType: "users",

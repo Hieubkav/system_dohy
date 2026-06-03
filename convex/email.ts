@@ -212,8 +212,8 @@ async function sendTransactionalEmailInternal(
 
       // Bắn thông báo hệ thống cho Admin biết
       await ctx.runMutation(internal.emailDb.createSystemNotification, {
-        title: "Cảnh báo: Hết quota gửi email Resend",
-        content: `Tất cả các tài khoản Resend đã hết giới hạn gửi trong ngày/tháng. Email đến khách hàng ${args.to} đã bị hoãn. Vui lòng cấu hình thêm tài khoản hoặc nâng cấp gói.`,
+        title: "Cần kiểm tra kênh gửi email",
+        content: `Một số email chưa được gửi tự động do giới hạn gửi. Vui lòng liên hệ dev để kiểm tra.`,
         type: "error",
       });
 

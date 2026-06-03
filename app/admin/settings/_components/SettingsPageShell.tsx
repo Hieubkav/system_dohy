@@ -2144,12 +2144,12 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                             <div className="flex-1 space-y-2">
                               <div>
                                 <p className="text-sm font-bold">
-                                  {emailStatus.configured ? `Email hệ thống đã cấu hình (${emailStatus.label})` : 'Dev chưa cấu hình email gửi ra'}
+                                  {emailStatus.configured ? 'Email gửi ra đã sẵn sàng' : 'Dev chưa cấu hình email gửi ra'}
                                 </p>
                                 <p className="text-xs opacity-80">
                                   {emailStatus.configured
                                     ? 'Email gửi đơn hàng đang sẵn sàng.'
-                                    : 'Vui lòng liên hệ dev để bật email hệ thống trước khi dùng gửi thử hoặc thông báo đơn.'}
+                                    : 'Vui lòng liên hệ dev để bật email gửi ra trước khi dùng gửi thử hoặc thông báo đơn.'}
                                 </p>
                               </div>
                             </div>
