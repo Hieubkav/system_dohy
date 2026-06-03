@@ -324,7 +324,7 @@ export function CertificateCard({
             </div>
 
             {/* QR code */}
-            <div className="flex flex-col items-end text-right pb-1 gap-0 justify-end pr-2">
+            <div className="flex flex-col items-center text-center pb-1 justify-end">
               {currentUrl && (
                 <div className="bg-white p-1 border border-slate-200 rounded shadow-sm">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
