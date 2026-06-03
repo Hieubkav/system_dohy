@@ -298,12 +298,132 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
 }
 
 function CourseDetailSkeleton() {
+  const config = useCoursesDetailConfig();
+  const brandColors = useBrandColors();
+  const brandColor = brandColors.primary;
+  const secondaryColor = brandColors.secondary || '';
+  const colorMode = brandColors.mode || 'single';
+  
+  const accent = useMemo(() => {
+    if (colorMode === 'single' || !secondaryColor) {
+      return brandColor + 'dd';
+    }
+    return secondaryColor;
+  }, [brandColor, secondaryColor, colorMode]);
+
+  const cornerRadius = (config as any).cornerRadius ?? 'lg';
+  const radiusClass = getRadiusClass(cornerRadius);
+  const smallRadiusClass = getSmallRadiusClass(cornerRadius);
+  const isModern = config.layoutStyle === 'modern';
+  const showAside = config.showStickyCta || config.showRelated;
+  const pulseHeaderClass = isModern ? 'bg-white/20' : 'bg-slate-200';
+
   return (
-    <div className="mx-auto max-w-4xl space-y-4 px-4 py-12">
-      <div className="h-6 w-32 animate-pulse rounded bg-slate-200" />
-      <div className="h-12 w-3/4 animate-pulse rounded bg-slate-200" />
-      <div className="h-5 w-full animate-pulse rounded bg-slate-200" />
-      <div className="aspect-video animate-pulse rounded-2xl bg-slate-200" />
+    <div className="min-h-screen bg-white pb-16">
+      {/* Header Skeleton */}
+      <section 
+        className={`border-b border-slate-100 px-4 ${isModern ? 'py-10 text-white' : 'py-8'}`} 
+        style={isModern ? { background: `linear-gradient(135deg, ${brandColor}, ${accent})` } : { backgroundColor: '#f8fafc' }}
+      >
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-4xl space-y-4">
+            <div className={`h-4 w-32 animate-pulse rounded ${pulseHeaderClass}`} />
+            <div className="flex gap-2">
+              <div className={`h-6 w-24 animate-pulse rounded-full ${pulseHeaderClass}`} />
+              <div className={`h-6 w-16 animate-pulse rounded-full ${pulseHeaderClass}`} />
+            </div>
+            <div className="space-y-2.5 max-w-3xl">
+              <div className={`h-10 w-full animate-pulse rounded-md ${pulseHeaderClass}`} />
+              <div className={`h-10 w-2/3 animate-pulse rounded-md ${pulseHeaderClass}`} />
+            </div>
+            <div className="space-y-2 max-w-2xl pt-2">
+              <div className={`h-5 w-full animate-pulse rounded ${pulseHeaderClass}`} />
+              <div className={`h-5 w-5/6 animate-pulse rounded ${pulseHeaderClass}`} />
+            </div>
+            <div className="flex flex-wrap gap-4 pt-3">
+              <div className={`h-5 w-24 animate-pulse rounded-full ${pulseHeaderClass}`} />
+              <div className={`h-5 w-28 animate-pulse rounded-full ${pulseHeaderClass}`} />
+              <div className={`h-5 w-32 animate-pulse rounded-full ${pulseHeaderClass}`} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main grid skeleton */}
+      <section className={`mx-auto grid max-w-7xl gap-6 px-4 py-8 ${showAside ? 'lg:grid-cols-[minmax(0,1fr)_320px]' : 'max-w-4xl mx-auto'}`}>
+        <div className="space-y-8">
+          <div className="space-y-4">
+            <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
+            <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
+            <div className="h-4 w-11/12 animate-pulse rounded bg-slate-200" />
+            <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
+            <div className="h-4 w-4/5 animate-pulse rounded bg-slate-200" />
+            <div className="space-y-2 pt-4">
+              <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
+              <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
+              <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200" />
+            </div>
+          </div>
+
+          <div className="pt-4">
+            <div className="h-7 w-48 animate-pulse rounded bg-slate-200 mb-4" />
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className={`flex items-start gap-2 border border-slate-100 p-3.5 ${smallRadiusClass}`}>
+                  <div className="h-5 w-5 animate-pulse rounded-full bg-slate-200 shrink-0 mt-0.5" />
+                  <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {config.showCurriculum && (
+            <div className="pt-4">
+              <div className="h-7 w-56 animate-pulse rounded bg-slate-200 mb-4" />
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className={`border border-slate-200 bg-white p-5 flex items-center justify-between ${radiusClass}`}>
+                    <div className="space-y-2 w-3/4">
+                      <div className="h-5 w-2/3 animate-pulse rounded bg-slate-200" />
+                      <div className="h-4 w-1/3 animate-pulse rounded bg-slate-200" />
+                    </div>
+                    <div className="h-5 w-5 animate-pulse rounded bg-slate-200 shrink-0" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {showAside && (
+          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+            {config.showStickyCta && (
+              <div className={`border border-slate-200 bg-white p-5 space-y-4 ${radiusClass}`}>
+                <div className={`aspect-video animate-pulse bg-slate-200 ${smallRadiusClass}`} />
+                <div className="space-y-2 pt-2">
+                  <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
+                  <div className="h-8 w-40 animate-pulse rounded bg-slate-200" />
+                </div>
+                <div 
+                  className="h-12 w-full animate-pulse bg-slate-200" 
+                  style={{ borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }} 
+                />
+              </div>
+            )}
+
+            {config.showRelated && (
+              <div className={`border border-slate-200 bg-white p-5 space-y-3.5 ${radiusClass}`}>
+                <div className="h-5 w-36 animate-pulse rounded bg-slate-200" />
+                <div className="space-y-2 pt-2">
+                  <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
+                  <div className="h-4 w-11/12 animate-pulse rounded bg-slate-200" />
+                  <div className="h-4 w-4/5 animate-pulse rounded bg-slate-200" />
+                </div>
+              </div>
+            )}
+          </aside>
+        )}
+      </section>
     </div>
   );
 }
