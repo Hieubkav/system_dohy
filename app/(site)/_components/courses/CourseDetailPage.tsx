@@ -145,7 +145,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         </div>
       </section>
 
-      <section className={`mx-auto grid max-w-7xl gap-6 px-4 py-8 ${isMinimal ? '' : 'lg:grid-cols-[minmax(0,1fr)_320px]'}`}>
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-8">
           <article className="prose prose-slate max-w-none prose-headings:text-slate-900 prose-p:text-slate-600">
             <RichContent content={courseContent} />
@@ -192,21 +192,19 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           )}
         </div>
 
-        {!isMinimal && (
-          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-            {config.showStickyCta && <CtaCard />}
-            {related.length > 0 && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-5">
-                <h3 className="font-semibold text-slate-900">Khóa học liên quan</h3>
-                <div className="mt-3 space-y-3">
-                  {related.map((item) => (
-                    <Link key={item._id} href={`/khoa-hoc/${item.slug}`} className="block text-sm text-slate-600 hover:text-slate-900">{item.title}</Link>
-                  ))}
-                </div>
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          {config.showStickyCta && <CtaCard />}
+          {related.length > 0 && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <h3 className="font-semibold text-slate-900">Khóa học liên quan</h3>
+              <div className="mt-3 space-y-3">
+                {related.map((item) => (
+                  <Link key={item._id} href={`/khoa-hoc/${item.slug}`} className="block text-sm text-slate-600 hover:text-slate-900">{item.title}</Link>
+                ))}
               </div>
-            )}
-          </aside>
-        )}
+            </div>
+          )}
+        </aside>
       </section>
     </main>
   );

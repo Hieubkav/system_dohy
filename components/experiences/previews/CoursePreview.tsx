@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { BookOpen, Bookmark, ChevronDown, Clock, GraduationCap, Search, SlidersHorizontal, Star, UserRound } from 'lucide-react';
+import { BookOpen, Bookmark, ChevronDown, Clock, GraduationCap, Search, SlidersHorizontal, Star, UserRound, X } from 'lucide-react';
 
 type DeviceType = 'desktop' | 'tablet' | 'mobile';
 type CoursesListLayoutStyle = 'grid' | 'sidebar' | 'masonry';
@@ -401,6 +401,7 @@ export function CoursesListPreview({
   const [activeCat, setActiveCat] = useState('Tất cả');
   const [levelVal, setLevelVal] = useState('');
   const [sortByVal, setSortByVal] = useState('newest');
+  const [categoryQuery, setCategoryQuery] = useState('');
 
   // Lọc khóa học giả lập cho Preview thêm sống động
   const processedCourses = useMemo(() => {
@@ -441,50 +442,128 @@ export function CoursesListPreview({
   const courses = layoutStyle === 'masonry' ? processedCourses : processedCourses.slice(0, isMobile ? 2 : 4);
   const visibleCategories = hideEmptyCategories ? MOCK_CATEGORIES.filter((category) => !category.empty) : MOCK_CATEGORIES;
 
+  const filteredCategories = useMemo(() => {
+    const query = categoryQuery.trim().toLowerCase();
+    if (!query) return visibleCategories;
+    return visibleCategories.filter((cat) => cat.label.toLowerCase().includes(query));
+  }, [visibleCategories, categoryQuery]);
+
   const filterPanel = (showSearch || showCategories || showLevelFilter) ? (
-    <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(cornerRadius, 'panel')}`}>
-      <div className={layoutStyle === 'sidebar' ? 'space-y-3.5' : 'flex flex-col gap-3 md:flex-row md:items-center md:justify-between'}>
-        <div className={layoutStyle === 'sidebar' ? 'space-y-3.5 w-full' : 'flex flex-1 flex-col gap-3 md:flex-row md:items-center md:flex-wrap'}>
-          {showSearch && (
-            <div className={layoutStyle === 'sidebar' ? 'relative w-full' : 'relative w-full md:max-w-xs'}>
-              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+    layoutStyle === 'sidebar' ? (
+      <div className="space-y-4">
+        {showSearch && (
+          <div className={`border border-slate-200 bg-white p-3.5 shadow-sm ${getRadiusClass(cornerRadius, 'panel')}`}>
+            <h3 className="font-semibold text-xs text-slate-700 mb-2 flex items-center gap-2">
+              <Search size={12} className="text-slate-400" />
+              Tìm kiếm
+            </h3>
+            <div className="relative">
               <input
                 value={searchVal}
                 onChange={(e) => setSearchVal(e.target.value)}
                 className={`h-9 w-full border border-slate-200 pl-8 pr-2.5 text-xs outline-none focus:border-slate-300 transition-colors ${getSmallRadiusClass(cornerRadius)}`}
                 placeholder="Tìm khóa học..."
               />
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             </div>
-          )}
-        </div>
-        
-        <div className={layoutStyle === 'sidebar' ? 'grid gap-2 grid-cols-1 pt-2 border-t border-slate-100' : 'flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto'}>
-          {showCategories && (
-            <CategoryDropdown
-              value={activeCat}
-              onChange={setActiveCat}
-              options={[
-                { value: 'Tất cả', label: 'Tất cả danh mục' },
-                ...visibleCategories.map((category) => ({ value: category.label, label: category.label })),
-              ]}
-              icon={<Bookmark size={14} className="text-slate-400" />}
-              cornerRadius={cornerRadius}
-            />
-          )}
-          {showLevelFilter && (
-            <CustomDropdown
-              value={levelVal}
-              onChange={setLevelVal}
-              options={[
+          </div>
+        )}
+
+        {showCategories && (
+          <div className={`border border-slate-200 bg-white p-3.5 shadow-sm ${getRadiusClass(cornerRadius, 'panel')}`}>
+            <h3 className="font-semibold text-xs text-slate-700 mb-2 flex items-center gap-2">
+              <Bookmark size={12} className="text-slate-400" />
+              Danh mục khóa học
+            </h3>
+            {visibleCategories.length > 8 && (
+              <div className="relative mb-2">
+                <input
+                  type="text"
+                  placeholder="Tìm nhanh danh mục..."
+                  value={categoryQuery}
+                  onChange={(e) => setCategoryQuery(e.target.value)}
+                  className={`w-full pl-8 pr-8 py-1.5 border border-slate-200 text-[10px] outline-none focus:border-slate-300 transition-colors ${getSmallRadiusClass(cornerRadius)}`}
+                />
+                <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                {categoryQuery && (
+                  <button
+                    onClick={() => setCategoryQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 opacity-60 hover:opacity-100"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+            )}
+            <div className={`space-y-1 ${visibleCategories.length > 8 ? 'max-h-60 overflow-y-auto pr-1' : ''}`}>
+              {(!categoryQuery || 'tất cả danh mục'.includes(categoryQuery.toLowerCase())) && (
+                <button
+                  onClick={() => setActiveCat('Tất cả')}
+                  className={`w-full py-1.5 px-2.5 rounded text-left text-xs transition-colors border border-transparent ${activeCat === 'Tất cả' ? 'font-semibold' : ''}`}
+                  style={activeCat === 'Tất cả'
+                    ? { backgroundColor: `${brandColor}18`, color: brandColor }
+                    : { backgroundColor: 'transparent', color: '#475569' }
+                  }
+                >
+                  Tất cả danh mục
+                </button>
+              )}
+              {filteredCategories.map((cat) => (
+                <button
+                  key={cat.label}
+                  onClick={() => setActiveCat(cat.label)}
+                  className={`w-full py-1.5 px-2.5 rounded text-left text-xs transition-colors border border-transparent ${activeCat === cat.label ? 'font-semibold' : ''}`}
+                  style={activeCat === cat.label
+                    ? { backgroundColor: `${brandColor}18`, color: brandColor }
+                    : { backgroundColor: 'transparent', color: '#475569' }
+                  }
+                >
+                  {cat.label}
+                </button>
+              ))}
+              {visibleCategories.length > 8 && filteredCategories.length === 0 && (
+                <div className="px-2 py-1.5 text-[10px] text-slate-400 text-center">
+                  Không tìm thấy kết quả.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {showLevelFilter && (
+          <div className={`border border-slate-200 bg-white p-3.5 shadow-sm ${getRadiusClass(cornerRadius, 'panel')}`}>
+            <h3 className="font-semibold text-xs text-slate-700 mb-2 flex items-center gap-2">
+              <GraduationCap size={12} className="text-slate-400" />
+              Trình độ
+            </h3>
+            <div className="space-y-1">
+              {[
                 { value: '', label: 'Tất cả trình độ' },
                 { value: 'Cơ bản', label: 'Cơ bản' },
                 { value: 'Trung cấp', label: 'Trung cấp' },
                 { value: 'Nâng cao', label: 'Nâng cao' },
-              ]}
-              icon={<GraduationCap size={14} className="text-slate-400" />}
-              cornerRadius={cornerRadius}
-            />
-          )}
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setLevelVal(opt.value)}
+                  className={`w-full py-1.5 px-2.5 rounded text-left text-xs transition-colors border border-transparent ${levelVal === opt.value ? 'font-semibold' : ''}`}
+                  style={levelVal === opt.value
+                    ? { backgroundColor: `${brandColor}18`, color: brandColor }
+                    : { backgroundColor: 'transparent', color: '#475569' }
+                  }
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className={`border border-slate-200 bg-white p-3.5 shadow-sm ${getRadiusClass(cornerRadius, 'panel')}`}>
+          <h3 className="font-semibold text-xs text-slate-700 mb-2 flex items-center gap-2">
+            <SlidersHorizontal size={12} className="text-slate-400" />
+            Sắp xếp
+          </h3>
           <CustomDropdown
             value={sortByVal}
             onChange={setSortByVal}
@@ -495,12 +574,72 @@ export function CoursesListPreview({
               { value: 'price_asc', label: 'Giá tăng dần' },
               { value: 'price_desc', label: 'Giá giảm dần' },
             ]}
-            icon={<SlidersHorizontal size={14} className="text-slate-400" />}
+            icon={<SlidersHorizontal size={12} className="text-slate-400" />}
             cornerRadius={cornerRadius}
           />
         </div>
       </div>
-    </div>
+    ) : (
+      <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(cornerRadius, 'panel')}`}>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-center md:flex-wrap">
+            {showSearch && (
+              <div className="relative w-full md:max-w-xs">
+                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={searchVal}
+                  onChange={(e) => setSearchVal(e.target.value)}
+                  className={`h-9 w-full border border-slate-200 pl-8 pr-2.5 text-xs outline-none focus:border-slate-300 transition-colors ${getSmallRadiusClass(cornerRadius)}`}
+                  placeholder="Tìm khóa học..."
+                />
+              </div>
+            )}
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
+            {showCategories && (
+              <CategoryDropdown
+                value={activeCat}
+                onChange={setActiveCat}
+                options={[
+                  { value: 'Tất cả', label: 'Tất cả danh mục' },
+                  ...visibleCategories.map((category) => ({ value: category.label, label: category.label })),
+                ]}
+                icon={<Bookmark size={14} className="text-slate-400" />}
+                cornerRadius={cornerRadius}
+              />
+            )}
+            {showLevelFilter && (
+              <CustomDropdown
+                value={levelVal}
+                onChange={setLevelVal}
+                options={[
+                  { value: '', label: 'Tất cả trình độ' },
+                  { value: 'Cơ bản', label: 'Cơ bản' },
+                  { value: 'Trung cấp', label: 'Trung cấp' },
+                  { value: 'Nâng cao', label: 'Nâng cao' },
+                ]}
+                icon={<GraduationCap size={14} className="text-slate-400" />}
+                cornerRadius={cornerRadius}
+              />
+            )}
+            <CustomDropdown
+              value={sortByVal}
+              onChange={setSortByVal}
+              options={[
+                { value: 'newest', label: 'Mới nhất' },
+                { value: 'popular', label: 'Xem nhiều' },
+                { value: 'title', label: 'Tên A-Z' },
+                { value: 'price_asc', label: 'Giá tăng dần' },
+                { value: 'price_desc', label: 'Giá giảm dần' },
+              ]}
+              icon={<SlidersHorizontal size={14} className="text-slate-400" />}
+              cornerRadius={cornerRadius}
+            />
+          </div>
+        </div>
+      </div>
+    )
   ) : null;
 
   return (
@@ -597,7 +736,7 @@ export function CourseDetailPreview({
         </div>
       </section>
 
-      <main className={`mx-auto grid max-w-6xl gap-6 px-4 py-8 ${isMinimal ? '' : 'lg:grid-cols-[minmax(0,1fr)_320px]'}`}>
+      <main className="mx-auto grid max-w-6xl gap-6 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-8">
           <section>
             <h2 className="mb-3 text-2xl font-bold text-slate-900">Bạn sẽ học được gì?</h2>
@@ -623,27 +762,25 @@ export function CourseDetailPreview({
           )}
         </div>
 
-        {!isMinimal && (
-          <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-            {showStickyCta && (
-              <div className="rounded-2xl border border-slate-200 p-5">
-                <p className="text-sm text-slate-500">Học trọn đời</p>
-                <p className="mt-1 text-2xl font-bold" style={{ color: accent }}>2.900.000đ</p>
-                <button className="mt-4 w-full rounded-xl px-5 py-3 font-semibold text-white" style={{ backgroundColor: brandColor }}>Đăng ký học</button>
+        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          {showStickyCta && (
+            <div className="rounded-2xl border border-slate-200 p-5">
+              <p className="text-sm text-slate-500">Học trọn đời</p>
+              <p className="mt-1 text-2xl font-bold" style={{ color: accent }}>2.900.000đ</p>
+              <button className="mt-4 w-full rounded-xl px-5 py-3 font-semibold text-white" style={{ backgroundColor: brandColor }}>Đăng ký học</button>
+            </div>
+          )}
+          {showRelated && (
+            <div className="rounded-2xl border border-slate-200 p-5">
+              <h3 className="font-semibold text-slate-900">Khóa liên quan</h3>
+              <div className="mt-3 space-y-3 text-sm text-slate-600">
+                <p>React căn bản</p>
+                <p>TypeScript nâng cao</p>
+                <p>Thiết kế hệ thống SaaS</p>
               </div>
-            )}
-            {showRelated && (
-              <div className="rounded-2xl border border-slate-200 p-5">
-                <h3 className="font-semibold text-slate-900">Khóa liên quan</h3>
-                <div className="mt-3 space-y-3 text-sm text-slate-600">
-                  <p>React căn bản</p>
-                  <p>TypeScript nâng cao</p>
-                  <p>Thiết kế hệ thống SaaS</p>
-                </div>
-              </div>
-            )}
-          </aside>
-        )}
+            </div>
+          )}
+        </aside>
       </main>
     </div>
   );
