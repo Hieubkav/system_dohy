@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use, useEffect, useMemo, useState } from 'react';
+import React, { use, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -14,7 +14,7 @@ import { QuickCreateCourseCategoryModal } from '@/app/admin/components/QuickCrea
 import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
 import { COURSE_LEVEL_OPTIONS, parseCourseLevel, type CourseLevel } from '@/lib/courses/labels';
 import { stripHtml, truncateText } from '@/lib/seo';
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../../components/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, cn } from '../../../components/ui';
 import { ImageUploader } from '../../../components/ImageUploader';
 import { LexicalEditor } from '../../../components/LexicalEditor';
 
@@ -81,6 +81,98 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
   const [initialized, setInitialized] = useState(false);
   const [editorResetKey, setEditorResetKey] = useState(0);
 
+  // Ref & State for Dirty State (Phát hiện thay đổi)
+  const initialSnapshotRef = useRef<{
+    title: string;
+    slug: string;
+    content: string;
+    excerpt: string;
+    categoryId: string;
+    additionalCategoryIds: string[];
+    thumbnail: string | undefined;
+    thumbnailStorageId: Id<'_storage'> | undefined | null;
+    status: CourseStatus;
+    pricingType: PricingType;
+    priceAmount: number | undefined;
+    comparePriceAmount: number | undefined;
+    priceNote: string;
+    isPriceVisible: boolean;
+    instructorName: string;
+    level: CourseLevel | '';
+    durationText: string;
+    introVideoType: VideoType;
+    introVideoUrl: string;
+    featured: boolean;
+    renderType: RenderType;
+    markdownRender: string;
+    htmlRender: string;
+    metaTitle: string;
+    metaDescription: string;
+  } | null>(null);
+
+  const [snapshotVersion, setSnapshotVersion] = useState(0);
+
+  const currentSnapshot = useMemo(() => {
+    return {
+      title: title.trim(),
+      slug: slug.trim(),
+      content: content.trim(),
+      excerpt: excerpt.trim(),
+      categoryId: categoryId || '',
+      additionalCategoryIds: [...additionalCategoryIds].sort(),
+      thumbnail: thumbnail || '',
+      thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
+      status,
+      pricingType,
+      priceAmount,
+      comparePriceAmount,
+      priceNote: priceNote.trim(),
+      isPriceVisible,
+      instructorName: instructorName.trim(),
+      level: level || '',
+      durationText: durationText.trim(),
+      introVideoType,
+      introVideoUrl: introVideoUrl.trim(),
+      featured,
+      renderType,
+      markdownRender: markdownRender.trim(),
+      htmlRender: htmlRender.trim(),
+      metaTitle: metaTitle.trim(),
+      metaDescription: metaDescription.trim(),
+    };
+  }, [
+    title,
+    slug,
+    content,
+    excerpt,
+    categoryId,
+    additionalCategoryIds,
+    thumbnail,
+    thumbnailStorageId,
+    status,
+    pricingType,
+    priceAmount,
+    comparePriceAmount,
+    priceNote,
+    isPriceVisible,
+    instructorName,
+    level,
+    durationText,
+    introVideoType,
+    introVideoUrl,
+    featured,
+    renderType,
+    markdownRender,
+    htmlRender,
+    metaTitle,
+    metaDescription,
+  ]);
+
+  const hasChanges = useMemo(() => {
+    if (!initialSnapshotRef.current) {return false;}
+    return JSON.stringify(initialSnapshotRef.current) !== JSON.stringify(currentSnapshot);
+  }, [currentSnapshot, snapshotVersion]);
+
   const [newChapterTitle, setNewChapterTitle] = useState('');
   const [newChapterSummary, setNewChapterSummary] = useState('');
   const [selectedChapterId, setSelectedChapterId] = useState('');
@@ -113,7 +205,8 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     setContent(courseData.content);
     setExcerpt(courseData.excerpt ?? '');
     setCategoryId(courseData.categoryId);
-    setAdditionalCategoryIds(additionalCategoryIdsData ?? []);
+    const loadedAddCategoryIds = additionalCategoryIdsData ?? [];
+    setAdditionalCategoryIds(loadedAddCategoryIds);
     setThumbnail(courseData.thumbnail);
     setThumbnailStorageId(courseData.thumbnailStorageId);
     setStatus(courseData.status);
@@ -133,8 +226,38 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     setHtmlRender(courseData.htmlRender ?? '');
     setMetaTitle(courseData.metaTitle ?? '');
     setMetaDescription(courseData.metaDescription ?? '');
+
+    initialSnapshotRef.current = {
+      title: courseData.title.trim(),
+      slug: courseData.slug.trim(),
+      content: courseData.content.trim(),
+      excerpt: (courseData.excerpt ?? '').trim(),
+      categoryId: courseData.categoryId,
+      additionalCategoryIds: [...loadedAddCategoryIds].sort(),
+      thumbnail: courseData.thumbnail || '',
+      thumbnailStorageId: courseData.thumbnail ? (courseData.thumbnailStorageId ?? null) : null,
+      status: courseData.status,
+      pricingType: courseData.pricingType,
+      priceAmount: courseData.priceAmount,
+      comparePriceAmount: courseData.comparePriceAmount,
+      priceNote: (courseData.priceNote ?? '').trim(),
+      isPriceVisible: courseData.isPriceVisible ?? true,
+      instructorName: (courseData.instructorName ?? '').trim(),
+      level: courseData.level ?? '',
+      durationText: (courseData.durationText ?? '').trim(),
+      introVideoType: courseData.introVideoType ?? 'none',
+      introVideoUrl: (courseData.introVideoUrl ?? '').trim(),
+      featured: courseData.featured ?? false,
+      renderType: courseData.renderType ?? 'content',
+      markdownRender: (courseData.markdownRender ?? '').trim(),
+      htmlRender: (courseData.htmlRender ?? '').trim(),
+      metaTitle: (courseData.metaTitle ?? '').trim(),
+      metaDescription: (courseData.metaDescription ?? '').trim(),
+    };
+
     setEditorResetKey((prev) => prev + 1);
     setInitialized(true);
+    setSnapshotVersion((prev) => prev + 1);
   }, [courseData, additionalCategoryIdsData, initialized]);
 
   useEffect(() => {
@@ -242,6 +365,36 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
         title: title.trim(),
       });
       toast.success('Đã cập nhật khóa học');
+
+      // Reset snapshot to current values upon successful save
+      initialSnapshotRef.current = {
+        title: title.trim(),
+        slug: slug.trim(),
+        content: content.trim(),
+        excerpt: excerpt.trim(),
+        categoryId: categoryId || '',
+        additionalCategoryIds: [...additionalCategoryIds].sort(),
+        thumbnail: thumbnail || '',
+        thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
+        status,
+        pricingType,
+        priceAmount,
+        comparePriceAmount,
+        priceNote: priceNote.trim(),
+        isPriceVisible,
+        instructorName: instructorName.trim(),
+        level: level || '',
+        durationText: durationText.trim(),
+        introVideoType,
+        introVideoUrl: introVideoUrl.trim(),
+        featured,
+        renderType,
+        markdownRender: markdownRender.trim(),
+        htmlRender: htmlRender.trim(),
+        metaTitle: metaTitle.trim(),
+        metaDescription: metaDescription.trim(),
+      };
+      setSnapshotVersion((prev) => prev + 1);
     } catch (error) {
       toast.error(getAdminMutationErrorMessage(error, 'Không thể cập nhật khóa học'));
     } finally {
@@ -691,12 +844,13 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
 
         <HomeComponentStickyFooter
           isSubmitting={isSubmitting}
+          hasChanges={hasChanges}
           submitLabel="Lưu thay đổi"
           onCancel={() => { router.push('/admin/courses'); }}
           submitClassName="bg-indigo-600 hover:bg-indigo-500"
         >
           <>
-            <Button type="button" variant="ghost" onClick={() => { router.push('/admin/courses'); }}>Hủy bỏ</Button>
+            <Button type="button" variant="ghost" onClick={() => { router.push('/admin/courses'); }} disabled={isSubmitting}>Hủy bỏ</Button>
             <div className="flex flex-wrap justify-end gap-2">
               <AiEntityImportDialog kind="course" enabledFields={enabledFields} onApply={handleApplyAiCourse} />
               <Button
@@ -709,9 +863,22 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
                 <ExternalLink size={16} />
                 Xem trên web
               </Button>
-              <Button type="submit" variant="accent" disabled={isSubmitting || !title.trim() || !categoryId} className="bg-indigo-600 hover:bg-indigo-500">
-                {isSubmitting && <Loader2 size={16} className="mr-2 animate-spin" />}
-                Lưu thay đổi
+              <Button
+                type="submit"
+                variant="accent"
+                disabled={isSubmitting || !title.trim() || !categoryId || !hasChanges}
+                className={cn(
+                  !hasChanges && !isSubmitting
+                    ? 'bg-slate-300 hover:bg-slate-300 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-800 dark:text-slate-400 cursor-not-allowed'
+                    : 'bg-indigo-600 hover:bg-indigo-500'
+                )}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 size={16} className="mr-2 animate-spin" />
+                    Đang lưu...
+                  </>
+                ) : (!hasChanges ? 'Đã lưu' : 'Lưu thay đổi')}
               </Button>
             </div>
           </>
