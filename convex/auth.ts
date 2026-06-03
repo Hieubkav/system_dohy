@@ -671,7 +671,7 @@ export const requestCustomerPasswordSetup = mutation({
       challengeId,
       message: isEmailConfigured
         ? "Mã xác minh đã được gửi đến email của bạn."
-        : "Hệ thống chưa cấu hình gửi email. Bạn có thể thiết lập mật khẩu trực tiếp mà không cần mã xác minh.",
+        : "",
       otpRequired: isEmailConfigured,
     };
   },

@@ -313,11 +313,11 @@ export default function CustomerLoginPage() {
                   <span>Kích hoạt tài khoản cũ</span>
                 </div>
                 <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-                  Hệ thống tìm thấy lịch sử mua hàng của bạn gắn liền với thông tin liên hệ: <strong>{maskedEmail || identifier}</strong>. {otpRequired ? 'Hãy nhập OTP được gửi để thiết lập mật khẩu đăng nhập.' : 'Vui lòng thiết lập mật khẩu đăng nhập bên dưới để kích hoạt tài khoản.'}
+                  Tài khoản của bạn đã được tìm thấy qua thông tin: <strong>{maskedEmail || identifier}</strong>. {otpRequired ? 'Nhập mã OTP đã được gửi và tạo mật khẩu mới.' : 'Hãy thiết lập mật khẩu mới bên dưới để kích hoạt tài khoản.'}
                 </p>
               </div>
 
-              {otpSentMessage && (
+              {otpRequired && otpSentMessage && (
                 <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                   ✓ {otpSentMessage}
                 </p>
