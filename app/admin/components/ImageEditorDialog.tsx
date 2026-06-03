@@ -24,6 +24,30 @@ import {
 } from '@/lib/products/image-aspect-ratio';
 
 /* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+function formatBytes(bytes: number, decimals = 1): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+function getExtensionFromMime(mime: string): string {
+  if (!mime) return 'UNKNOWN';
+  const parts = mime.split('/');
+  if (parts.length > 1) {
+    const ext = parts[1].toLowerCase();
+    if (ext === 'jpeg') return 'JPG';
+    return ext.toUpperCase();
+  }
+  return mime.toUpperCase();
+}
+
+/* ------------------------------------------------------------------ */
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -170,7 +194,7 @@ export function ImageEditorDialog({
   const [isRemovingBg, setIsRemovingBg] = useState(false);
   const [removeBgProgress, setRemoveBgProgress] = useState(0);
   const [removeBgStage, setRemoveBgStage] = useState('');
-  const [removeBgMode, setRemoveBgMode] = useState<RemoveBgMode>('fast');
+  const [removeBgMode, setRemoveBgMode] = useState<RemoveBgMode>('advanced');
   const [removedBgUrl, setRemovedBgUrl] = useState<string | null>(null);
   const [removedBgBlob, setRemovedBgBlob] = useState<Blob | null>(null);
   const removeBgHandleRef = useRef<RemoveBgHandle | null>(null);
@@ -187,6 +211,49 @@ export function ImageEditorDialog({
 
   // Shared
   const [isApplying, setIsApplying] = useState(false);
+
+  // Metadata of the image being displayed
+  const [imageMeta, setImageMeta] = useState<{ size: number; type: string } | null>(null);
+
+  // Fetch metadata of original image
+  useEffect(() => {
+    let isMounted = true;
+    if (!imageUrl) return;
+
+    fetchImageAsBlob(imageUrl)
+      .then((blob) => {
+        if (isMounted) {
+          setImageMeta({
+            size: blob.size,
+            type: blob.type,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error('[ImageEditor] Failed to fetch image metadata:', err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [imageUrl]);
+
+  const currentMeta = (activeTab === 'removebg' && removedBgBlob)
+    ? { size: removedBgBlob.size, type: removedBgBlob.type }
+    : imageMeta;
+
+  const renderImageMetaInfo = () => {
+    if (!currentMeta) return null;
+    return (
+      <div className="mt-2 text-center">
+        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-200/60 dark:border-slate-700/60 inline-flex items-center gap-1.5 shadow-sm">
+          <span>Định dạng: <strong className="text-slate-700 dark:text-slate-200">{getExtensionFromMime(currentMeta.type)}</strong></span>
+          <span className="text-slate-300 dark:text-slate-700">|</span>
+          <span>Dung lượng: <strong className="text-slate-700 dark:text-slate-200">{formatBytes(currentMeta.size)}</strong></span>
+        </span>
+      </div>
+    );
+  };
 
   // Cleanup blob URL + cancel on unmount
   useEffect(() => {
@@ -623,13 +690,14 @@ export function ImageEditorDialog({
                   />
                 </ReactCrop>
               </div>
+              {renderImageMetaInfo()}
             </div>
           )}
 
           {activeTab === 'removebg' && (
             <div className="space-y-4">
               <p className="text-xs text-slate-500">
-                AI sẽ tự động nhận diện và xóa nền ảnh. Chế độ nâng cao dùng model chính xác hơn, phù hợp logo có gradient/bóng đổ nhưng có thể chậm hơn.
+                AI sẽ tự động nhận diện và tách vật thể/logo ra khỏi nền bằng mô hình học sâu chính xác cao.
               </p>
 
               <div className="flex justify-center bg-[repeating-conic-gradient(#e2e8f0_0%_25%,transparent_0%_50%)] dark:bg-[repeating-conic-gradient(#334155_0%_25%,transparent_0%_50%)] bg-[length:16px_16px] rounded-lg p-3 min-h-[200px] items-center">
@@ -650,6 +718,7 @@ export function ImageEditorDialog({
                   />
                 )}
               </div>
+              {renderImageMetaInfo()}
 
               {/* Progress bar khi đang xử lý */}
               {isRemovingBg && (
@@ -657,7 +726,7 @@ export function ImageEditorDialog({
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span className="flex items-center gap-1.5">
                       <Loader2 size={12} className="animate-spin" />
-                      {removeBgStage || (removeBgMode === 'advanced' ? 'Đang khởi tạo nâng cao...' : 'Đang khởi tạo...')}
+                      {removeBgStage || 'Đang tách nền...'}
                     </span>
                     <span className="font-mono">{removeBgProgress}%</span>
                   </div>
@@ -683,17 +752,7 @@ export function ImageEditorDialog({
               )}
 
               {!removedBgUrl && !isRemovingBg && (
-                <div className="flex flex-wrap justify-center gap-2">
-                  <Button
-                    type="button"
-                    onClick={() => handleRemoveBg('fast')}
-                    disabled={isRemovingBg}
-                    variant="outline"
-                    className="gap-2"
-                  >
-                    <Eraser size={15} />
-                    Xóa nền nhanh
-                  </Button>
+                <div className="flex justify-center">
                   <Button
                     type="button"
                     onClick={() => handleRemoveBg('advanced')}
@@ -701,7 +760,7 @@ export function ImageEditorDialog({
                     className="gap-2"
                   >
                     <Eraser size={15} />
-                    Xóa nền nâng cao
+                    Xóa nền
                   </Button>
                 </div>
               )}
@@ -752,6 +811,7 @@ export function ImageEditorDialog({
                   />
                 </div>
               </div>
+              {renderImageMetaInfo()}
 
               <div className="space-y-4">
                 <div>
