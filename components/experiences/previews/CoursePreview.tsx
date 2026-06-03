@@ -558,26 +558,6 @@ export function CoursesListPreview({
             </div>
           </div>
         )}
-
-        <div className={`border border-slate-200 bg-white p-3.5 shadow-sm ${getRadiusClass(cornerRadius, 'panel')}`}>
-          <h3 className="font-semibold text-xs text-slate-700 mb-2 flex items-center gap-2">
-            <SlidersHorizontal size={12} className="text-slate-400" />
-            Sắp xếp
-          </h3>
-          <CustomDropdown
-            value={sortByVal}
-            onChange={setSortByVal}
-            options={[
-              { value: 'newest', label: 'Mới nhất' },
-              { value: 'popular', label: 'Xem nhiều' },
-              { value: 'title', label: 'Tên A-Z' },
-              { value: 'price_asc', label: 'Giá tăng dần' },
-              { value: 'price_desc', label: 'Giá giảm dần' },
-            ]}
-            icon={<SlidersHorizontal size={12} className="text-slate-400" />}
-            cornerRadius={cornerRadius}
-          />
-        </div>
       </div>
     ) : (
       <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(cornerRadius, 'panel')}`}>
@@ -655,17 +635,56 @@ export function CoursesListPreview({
 
         <div className={layoutStyle === 'sidebar' ? 'grid gap-5 lg:grid-cols-[280px_minmax(0,1fr)]' : ''}>
           {layoutStyle === 'sidebar' && filterPanel}
-          <div className={
-            layoutStyle === 'masonry'
-              ? 'grid gap-5 grid-cols-1'
-              : gridColumns === 4
-                ? 'grid gap-5 grid-cols-2 md:grid-cols-2 lg:grid-cols-4'
-                : 'grid gap-5 grid-cols-1 md:grid-cols-3 lg:grid-cols-3'
-          }>
-            {courses.map((course) => {
-              if (layoutStyle === 'masonry') {
+          
+          <div className="space-y-4 flex-1 min-w-0">
+            {/* Toolbar ngang */}
+            <div className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 mb-2">
+              <p className="text-xs text-slate-500 font-medium">
+                Hiển thị <span className="font-semibold text-slate-700">{courses.length}</span>
+                {processedCourses.length > courses.length && <> / <span className="font-semibold text-slate-700">{processedCourses.length}</span></>} khóa học
+              </p>
+              
+              {layoutStyle === 'sidebar' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-500">Sắp xếp:</span>
+                  <CustomDropdown
+                    value={sortByVal}
+                    onChange={setSortByVal}
+                    options={[
+                      { value: 'newest', label: 'Mới nhất' },
+                      { value: 'popular', label: 'Xem nhiều' },
+                      { value: 'title', label: 'Tên A-Z' },
+                      { value: 'price_asc', label: 'Giá tăng dần' },
+                      { value: 'price_desc', label: 'Giá giảm dần' },
+                    ]}
+                    icon={<SlidersHorizontal size={12} className="text-slate-400" />}
+                    cornerRadius={cornerRadius}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className={
+              layoutStyle === 'masonry'
+                ? 'grid gap-5 grid-cols-1'
+                : gridColumns === 4
+                  ? 'grid gap-5 grid-cols-2 md:grid-cols-2 lg:grid-cols-4'
+                  : 'grid gap-5 grid-cols-1 md:grid-cols-3 lg:grid-cols-3'
+            }>
+              {courses.map((course) => {
+                if (layoutStyle === 'masonry') {
+                  return (
+                    <FeaturedCourseCard
+                      key={course.title}
+                      course={course}
+                      brandColor={brandColor}
+                      secondaryColor={accent}
+                      cornerRadius={cornerRadius}
+                    />
+                  );
+                }
                 return (
-                  <FeaturedCourseCard
+                  <CourseCard
                     key={course.title}
                     course={course}
                     brandColor={brandColor}
@@ -673,17 +692,8 @@ export function CoursesListPreview({
                     cornerRadius={cornerRadius}
                   />
                 );
-              }
-              return (
-                <CourseCard
-                  key={course.title}
-                  course={course}
-                  brandColor={brandColor}
-                  secondaryColor={accent}
-                  cornerRadius={cornerRadius}
-                />
-              );
-            })}
+              })}
+            </div>
           </div>
         </div>
 
