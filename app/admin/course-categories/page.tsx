@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { Edit, FolderTree, Loader2, Plus, Search, Trash2 } from 'lucide-react';
+import { Edit, ExternalLink, FolderTree, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
@@ -73,6 +73,10 @@ function CourseCategoriesContent() {
   const handleDelete = (id: Id<'courseCategories'>) => {
     setDeleteTargetId(id);
     setIsDeleteOpen(true);
+  };
+
+  const openFrontend = (slug: string) => {
+    window.open(`/${slug}`, '_blank');
   };
 
   const handleConfirmDelete = async () => {
@@ -169,6 +173,9 @@ function CourseCategoriesContent() {
                   <TableCell><Badge variant={category.active ? 'default' : 'secondary'}>{category.active ? 'Hoạt động' : 'Ẩn'}</Badge></TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
+                      <Button variant="ghost" size="icon" className="text-blue-600 hover:text-blue-700" title="Xem trên web" onClick={() => { openFrontend(category.slug); }}>
+                        <ExternalLink size={16} />
+                      </Button>
                       <Link href={`/admin/course-categories/${category.id}/edit`}><Button variant="ghost" size="icon"><Edit size={16} /></Button></Link>
                       <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => { handleDelete(category.id); }}><Trash2 size={16} /></Button>
                     </div>
