@@ -300,8 +300,42 @@ export function CourseCurriculumEditor({
       if (srv.chapterId !== l.chapterId) return true;
     }
 
+    // Inline edit lesson form đang mở có thay đổi?
+    if (editingLesson !== null) {
+      const draftLesson = draftLessons.find((l) => l._id === editingLesson.id);
+      if (draftLesson) {
+        const parsedDuration = parseDurationToSeconds(editingLesson.durationInput);
+        if (
+          draftLesson.title !== editingLesson.title.trim() ||
+          draftLesson.videoType !== editingLesson.videoType ||
+          (draftLesson.videoUrl ?? '') !== editingLesson.videoUrl.trim() ||
+          (draftLesson.durationSeconds ?? 0) !== (parsedDuration > 0 ? parsedDuration : 0) ||
+          (draftLesson.description ?? '') !== editingLesson.description.trim() ||
+          (draftLesson.exerciseLink ?? '') !== editingLesson.exerciseLink.trim() ||
+          draftLesson.isPreview !== editingLesson.isPreview
+        ) return true;
+      } else {
+        // Bài học mới (chưa có trong draft) — form đang mở = dirty
+        return true;
+      }
+    }
+
+    // Inline edit chapter form đang mở có thay đổi?
+    if (editingChapterId !== null) {
+      const draftChapter = draftChapters.find((c) => c._id === editingChapterId);
+      if (draftChapter) {
+        if (
+          draftChapter.title !== editChapterTitle.trim() ||
+          (draftChapter.summary ?? '') !== editChapterSummary.trim()
+        ) return true;
+      }
+    }
+
     return false;
-  }, [initialized, serverChapters, serverLessons, draftChapters, draftLessons]);
+  }, [
+    initialized, serverChapters, serverLessons, draftChapters, draftLessons,
+    editingLesson, editingChapterId, editChapterTitle, editChapterSummary,
+  ]);
 
   // ── Notify parent of dirty change ──
   useEffect(() => {
@@ -312,21 +346,53 @@ export function CourseCurriculumEditor({
   const saveDraft = useCallback(async () => {
     if (!serverChapters || !serverLessons) return;
 
+    // Auto-commit any open edit forms into local vars trước khi save
+    let workingChapters = draftChapters;
+    let workingLessons = draftLessons;
+
+    if (editingChapterId !== null && editChapterTitle.trim()) {
+      workingChapters = workingChapters.map((c) =>
+        c._id === editingChapterId
+          ? { ...c, title: editChapterTitle.trim(), summary: editChapterSummary.trim() || undefined }
+          : c
+      );
+      setEditingChapterId(null);
+    }
+
+    if (editingLesson !== null && editingLesson.title.trim()) {
+      const parsedDuration = parseDurationToSeconds(editingLesson.durationInput);
+      workingLessons = workingLessons.map((l) =>
+        l._id === editingLesson.id
+          ? {
+              ...l,
+              title: editingLesson.title.trim(),
+              videoType: editingLesson.videoType,
+              videoUrl: editingLesson.videoUrl.trim() || undefined,
+              durationSeconds: parsedDuration > 0 ? parsedDuration : undefined,
+              description: editingLesson.description.trim() || undefined,
+              exerciseLink: editingLesson.exerciseLink.trim() || undefined,
+              isPreview: editingLesson.isPreview,
+            }
+          : l
+      );
+      setEditingLesson(null);
+    }
+
     // 1. Delete chapters (and their lessons cascade)
-    const chaptersToDelete = draftChapters.filter((c) => c.isDeleted && !c.isNew);
+    const chaptersToDelete = workingChapters.filter((c) => c.isDeleted && !c.isNew);
     for (const ch of chaptersToDelete) {
       await removeChapter({ id: ch._id as Id<'courseChapters'> });
     }
 
     // 2. Delete lessons (only those in non-deleted chapters)
-    const lessonsToDelete = draftLessons.filter((l) => l.isDeleted && !l.isNew && !chaptersToDelete.some((c) => c._id === l.chapterId));
+    const lessonsToDelete = workingLessons.filter((l) => l.isDeleted && !l.isNew && !chaptersToDelete.some((c) => c._id === l.chapterId));
     for (const l of lessonsToDelete) {
       await removeLesson({ id: l._id as Id<'courseLessons'> });
     }
 
     // 3. Create new chapters + map tempId → realId
     const tempToRealChapterId: Record<string, Id<'courseChapters'>> = {};
-    const newChapters = draftChapters.filter((c) => c.isNew && !c.isDeleted);
+    const newChapters = workingChapters.filter((c) => c.isNew && !c.isDeleted);
     for (const ch of newChapters) {
       const realId = await createChapter({
         courseId,
@@ -337,7 +403,7 @@ export function CourseCurriculumEditor({
     }
 
     // 4. Update existing chapters
-    const chaptersToUpdate = draftChapters.filter((c) => !c.isNew && !c.isDeleted);
+    const chaptersToUpdate = workingChapters.filter((c) => !c.isNew && !c.isDeleted);
     for (const ch of chaptersToUpdate) {
       const srv = serverChapters.find((s) => s._id === ch._id);
       if (!srv) continue;
@@ -352,7 +418,7 @@ export function CourseCurriculumEditor({
     }
 
     // 5. Reorder chapters
-    const activeChapters = draftChapters.filter((c) => !c.isDeleted);
+    const activeChapters = workingChapters.filter((c) => !c.isDeleted);
     const chapterOrders = activeChapters.map((ch, idx) => ({
       id: (tempToRealChapterId[ch._id] ?? ch._id) as Id<'courseChapters'>,
       order: idx,
@@ -363,7 +429,7 @@ export function CourseCurriculumEditor({
 
     // 6. Create new lessons (resolve chapter IDs)
     const tempToRealLessonId: Record<string, Id<'courseLessons'>> = {};
-    const newLessons = draftLessons.filter((l) => l.isNew && !l.isDeleted);
+    const newLessons = workingLessons.filter((l) => l.isNew && !l.isDeleted);
     for (const l of newLessons) {
       const realChapterId = tempToRealChapterId[l.chapterId] ?? (l.chapterId as Id<'courseChapters'>);
       const realId = await createLesson({
@@ -381,7 +447,7 @@ export function CourseCurriculumEditor({
     }
 
     // 7. Update existing lessons
-    const lessonsToUpdate = draftLessons.filter((l) => !l.isNew && !l.isDeleted && !chaptersToDelete.some((c) => c._id === l.chapterId));
+    const lessonsToUpdate = workingLessons.filter((l) => !l.isNew && !l.isDeleted && !chaptersToDelete.some((c) => c._id === l.chapterId));
     for (const l of lessonsToUpdate) {
       const srv = serverLessons.find((s) => s._id === l._id);
       if (!srv) continue;
@@ -409,7 +475,7 @@ export function CourseCurriculumEditor({
 
     // 8. Reorder lessons per chapter
     const activeChapterIds = activeChapters.map((c) => tempToRealChapterId[c._id] ?? c._id);
-    const activeLessons = draftLessons.filter((l) => !l.isDeleted);
+    const activeLessons = workingLessons.filter((l) => !l.isDeleted);
 
     const lessonOrders: { id: Id<'courseLessons'>; order: number; chapterId?: Id<'courseChapters'> }[] = [];
     for (const chId of activeChapterIds) {
@@ -441,6 +507,7 @@ export function CourseCurriculumEditor({
     setInitialized(false);
   }, [
     serverChapters, serverLessons, draftChapters, draftLessons, courseId,
+    editingChapterId, editChapterTitle, editChapterSummary, editingLesson,
     createChapter, updateChapter, removeChapter, reorderChapters,
     createLesson, updateLesson, removeLesson, reorderLessons,
   ]);
@@ -842,27 +909,9 @@ export function CourseCurriculumEditor({
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingChapterId(null)}
-                      className="text-xs h-8"
-                    >
-                      Hủy
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="accent"
-                      size="sm"
-                      disabled={!editChapterTitle.trim()}
-                      className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs h-8"
-                      onClick={() => handleSaveChapter(chapter._id)}
-                    >
-                      Xác nhận
-                    </Button>
-                  </div>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 text-right pt-1">
+                    Bấm <span className="font-medium text-indigo-500">Lưu thay đổi</span> ở thanh dưới để lưu
+                  </p>
                 </div>
               );
             }
@@ -1084,27 +1133,9 @@ export function CourseCurriculumEditor({
                               </div>
                             </div>
 
-                            <div className="flex justify-end gap-2 pt-1">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 text-xs text-slate-500 hover:text-slate-700"
-                                onClick={() => setEditingLesson(null)}
-                              >
-                                Hủy
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="accent"
-                                size="sm"
-                                disabled={!editingLesson.title?.trim()}
-                                className="h-7 text-xs bg-indigo-600 hover:bg-indigo-500 text-white"
-                                onClick={handleSaveLesson}
-                              >
-                                Xác nhận
-                              </Button>
-                            </div>
+                            <p className="text-[11px] text-slate-400 dark:text-slate-500 text-right pt-1">
+                              Bấm <span className="font-medium text-indigo-500">Lưu thay đổi</span> ở thanh dưới để lưu
+                            </p>
                           </div>
                         );
                       }
