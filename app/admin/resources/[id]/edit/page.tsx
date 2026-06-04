@@ -442,6 +442,20 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
                 </CardContent>
               </Card>
 
+              {resourceFiltersFeature?.enabled && (
+                <Card>
+                  <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Filter size={16} /> Bộ lọc</CardTitle></CardHeader>
+                  <CardContent>
+                    <ResourceFilterTagsInput
+                      activeFilters={activeFilters ?? []}
+                      allFilterValues={allFilterValues ?? []}
+                      value={selectedValueIds}
+                      onChange={setSelectedValueIds}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
               <Card>
                 <CardHeader><CardTitle className="text-base">Link tải</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
@@ -535,19 +549,6 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
                 </Card>
               )}
 
-              {resourceFiltersFeature?.enabled && (
-                <Card>
-                  <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Filter size={16} /> Bộ lọc</CardTitle></CardHeader>
-                  <CardContent>
-                    <ResourceFilterTagsInput
-                      activeFilters={activeFilters ?? []}
-                      allFilterValues={allFilterValues ?? []}
-                      value={selectedValueIds}
-                      onChange={setSelectedValueIds}
-                    />
-                  </CardContent>
-                </Card>
-              )}
             </div>
           </div>
         )}
