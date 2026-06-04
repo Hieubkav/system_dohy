@@ -213,25 +213,55 @@ export default function ResourceCreatePage() {
               </Card>
             )}
 
-            {enabledFields.has('metaTitle') || enabledFields.has('metaDescription') ? (
+            {(enabledFields.has('metaTitle') || enabledFields.has('metaDescription')) && (
               <Card>
                 <CardHeader><CardTitle className="text-base">SEO</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   {enabledFields.has('metaTitle') && (
                     <div className="space-y-2">
-                      <Label>Tiêu đề SEO</Label>
-                      <Input value={metaTitle} onChange={(e) => { setMetaTitle(e.target.value); }} placeholder="Tự lấy từ tiêu đề nếu bỏ trống" />
+                      <div className="flex items-center justify-between">
+                        <Label>Meta Title</Label>
+                        <span className={`text-xs ${metaTitle.length > 60 ? 'text-red-500' : 'text-slate-400'}`}>
+                          {metaTitle.length}/60
+                        </span>
+                      </div>
+                      <Input
+                        value={metaTitle}
+                        onChange={(e) => { setMetaTitle(e.target.value); }}
+                        placeholder="Lấy theo tiêu đề tài nguyên nếu để trống"
+                      />
                     </div>
                   )}
                   {enabledFields.has('metaDescription') && (
                     <div className="space-y-2">
-                      <Label>Mô tả SEO</Label>
-                      <textarea value={metaDescription} onChange={(e) => { setMetaDescription(e.target.value); }} className="min-h-24 w-full rounded-md border border-slate-200 bg-white p-3 text-sm dark:border-slate-700 dark:bg-slate-800" />
+                      <div className="flex items-center justify-between">
+                        <Label>Meta Description</Label>
+                        <span className={`text-xs ${metaDescription.length > 160 ? 'text-red-500' : 'text-slate-400'}`}>
+                          {metaDescription.length}/160
+                        </span>
+                      </div>
+                      <textarea
+                        value={metaDescription}
+                        onChange={(e) => { setMetaDescription(e.target.value); }}
+                        className="w-full min-h-[90px] rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                        placeholder="Lấy theo mô tả tài nguyên nếu bạn để trống"
+                      />
                     </div>
                   )}
+                  <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm">
+                    <div className="text-blue-600 font-medium truncate">
+                      {metaTitle.trim() || title || 'Tiêu đề tài nguyên'}
+                    </div>
+                    <div className="text-emerald-600 text-xs">
+                      /{categorySlugPreview || 'resources'}/{slug || 'tai-nguyen'}
+                    </div>
+                    <div className="text-slate-600 text-xs mt-1 line-clamp-2">
+                      {metaDescription.trim() || stripHtml(excerpt || content || '') || 'Mô tả ngắn sẽ hiển thị tại đây.'}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            ) : null}
+            )}
           </div>
 
           <div className="space-y-6">
