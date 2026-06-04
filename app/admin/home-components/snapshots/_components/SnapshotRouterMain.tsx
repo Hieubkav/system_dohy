@@ -878,6 +878,7 @@ const partnersSnapshotAdapter: SnapshotAdapter<PartnersSnapshotState> = {
       setShowBorder={(showBorder) => setState((current) => ({ ...current, showBorder }))}
       spacing={state.spacing}
       setSpacing={(spacing) => setState((current) => ({ ...current, spacing }))}
+      selectedStyle={state.style}
     />
   ),
   renderPreview: (state, setState, title, headerConfig, colors, fontStyle, fontClassName) => (

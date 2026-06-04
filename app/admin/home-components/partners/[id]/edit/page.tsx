@@ -367,6 +367,7 @@ export default function PartnersEditPage({
           setShowBorder={setShowBorder}
           spacing={spacing}
           setSpacing={setSpacing}
+          selectedStyle={partnersStyle}
           defaultExpanded={false}
           className="mb-4"
           actions={(

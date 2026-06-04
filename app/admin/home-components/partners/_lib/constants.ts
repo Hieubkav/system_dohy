@@ -1,5 +1,8 @@
 'use client';
 
+import type { ImageAspectRatioInput } from '@/lib/products/image-aspect-ratio';
+import type { PartnersStyle } from '../_types';
+
 export const PARTNERS_STYLES = [
   { id: 'grid' as const, label: 'Grid' },
   { id: 'marquee' as const, label: 'Marquee' },
@@ -9,3 +12,13 @@ export const PARTNERS_STYLES = [
   { id: 'clean' as const, label: 'Clean' },
   { id: 'divider' as const, label: 'Divider' },
 ];
+
+export const PARTNERS_CROP_ASPECT_RATIO_BY_STYLE: Record<PartnersStyle, ImageAspectRatioInput> = {
+  grid: 'wide169',
+  marquee: 'wide169',
+  badge: 'wide169',
+  carousel: 'wide169',
+  logoCloud: 'wide169',
+  clean: 'wide169',
+  divider: 'wide169',
+};

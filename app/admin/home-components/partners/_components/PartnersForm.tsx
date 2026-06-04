@@ -2,11 +2,12 @@ import React from 'react';
 import { Handshake, Settings2 } from 'lucide-react';
 import { Label, cn } from '../../../components/ui';
 import { MultiImageUploader } from '../../../components/MultiImageUploader';
-import type { PartnerItem, PartnersCornerRadius, PartnersLogoSize, PartnersSpacing } from '../_types';
+import type { PartnerItem, PartnersCornerRadius, PartnersLogoSize, PartnersSpacing, PartnersStyle } from '../_types';
 import { CollapsibleSubSection as SubSection } from '../../_shared/components/CollapsibleSubSection';
 import { SectionSpacingControl } from '../../_shared/components/SectionSpacingControl';
 import { useFormSectionsState } from '../../_shared/hooks/useFormSectionsState';
 import { FormSectionsToggleAllButton } from '../../_shared/components/FormSectionsToggleAllButton';
+import { PARTNERS_CROP_ASPECT_RATIO_BY_STYLE } from '../_lib/constants';
 
 const activeSections = ['settings', 'partners'];
 
@@ -21,6 +22,7 @@ export const PartnersForm = ({
   setShowBorder,
   spacing,
   setSpacing,
+  selectedStyle,
   defaultExpanded = true,
   showBorderControl = true,
   className,
@@ -36,12 +38,14 @@ export const PartnersForm = ({
   setShowBorder: (value: boolean) => void;
   spacing: PartnersSpacing;
   setSpacing: (value: PartnersSpacing) => void;
+  selectedStyle?: PartnersStyle;
   defaultExpanded?: boolean;
   showBorderControl?: boolean;
   className?: string;
   actions?: React.ReactNode;
 }) => {
   const { openSections, toggleSection, hasClosedSection, handleToggleAll } = useFormSectionsState(activeSections, defaultExpanded);
+  const cropAspectRatio = selectedStyle ? PARTNERS_CROP_ASPECT_RATIO_BY_STYLE[selectedStyle] : 'wide169';
 
   return (
     <div className={cn('mb-6', className)}>
@@ -123,7 +127,7 @@ export const PartnersForm = ({
               layout="vertical"
               enableCrop
               cropOnUpload={false}
-              cropAspectRatio="square"
+              cropAspectRatio={cropAspectRatio}
               deleteMode="defer"
               imageFit="contain"
             />

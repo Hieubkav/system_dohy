@@ -135,6 +135,7 @@ export default function PartnersCreatePage() {
         showBorderControl={false}
         spacing={spacing}
         setSpacing={setSpacing}
+        selectedStyle={partnersStyle}
         className="mb-3"
         actions={(
           <>
