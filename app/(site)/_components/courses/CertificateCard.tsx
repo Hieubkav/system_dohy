@@ -33,19 +33,7 @@ function guillochePathD(
   return points.join(' ') + ' Z';
 }
 
-// ─── Rosette helper: N-petal flower via overlapping circles ──────────────────
-function rosettePath(cx: number, cy: number, r: number, petals: number): string {
-  const paths: string[] = [];
-  for (let i = 0; i < petals; i++) {
-    const angle = (i / petals) * Math.PI * 2;
-    const px = cx + r * Math.cos(angle);
-    const py = cy + r * Math.sin(angle);
-    paths.push(`M ${cx} ${cy} A ${r} ${r} 0 0 1 ${px.toFixed(2)} ${py.toFixed(2)}`);
-    // second arc back
-    paths.push(`A ${r} ${r} 0 0 1 ${cx} ${cy}`);
-  }
-  return paths.join(' ');
-}
+
 
 // ─── Starburst helper: N-ray notary seal polygon ──────────────────────────────
 // Most praised certificate seal shape (2024 dev community, Certifier, Canva)

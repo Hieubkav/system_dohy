@@ -236,7 +236,6 @@ export function ImageEditorDialog({
   const [isRemovingBg, setIsRemovingBg] = useState(false);
   const [removeBgProgress, setRemoveBgProgress] = useState(0);
   const [removeBgStage, setRemoveBgStage] = useState('');
-  const [removeBgMode, setRemoveBgMode] = useState<RemoveBgMode>('advanced');
   const [removedBgUrl, setRemovedBgUrl] = useState<string | null>(null);
   const [removedBgBlob, setRemovedBgBlob] = useState<Blob | null>(null);
   const removeBgHandleRef = useRef<RemoveBgHandle | null>(null);
@@ -393,7 +392,6 @@ export function ImageEditorDialog({
 
   const handleRemoveBg = useCallback(async (mode: RemoveBgMode) => {
     if (isRemovingBg) return;
-    setRemoveBgMode(mode);
     setIsRemovingBg(true);
     setRemoveBgProgress(0);
     setRemoveBgStage(mode === 'advanced' ? 'Đang tải ảnh cho chế độ nâng cao...' : 'Đang tải ảnh...');

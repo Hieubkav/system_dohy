@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { BookOpen, Loader2, Plus, Filter } from 'lucide-react';
+import { BookOpen, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
@@ -15,10 +15,9 @@ import { QuickCreateCourseCategoryModal } from '@/app/admin/components/QuickCrea
 import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
 import { COURSE_LEVEL_OPTIONS, parseCourseLevel, type CourseLevel } from '@/lib/courses/labels';
 import { stripHtml, truncateText } from '@/lib/seo';
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, Popover, PopoverTrigger, PopoverContent, Checkbox } from '../../components/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../components/ui';
 import { ImageUploader } from '../../components/ImageUploader';
 import { LexicalEditor } from '../../components/LexicalEditor';
-import { AdminImage as Image } from '../../components/AdminImage';
 
 const MODULE_KEY = 'courses';
 

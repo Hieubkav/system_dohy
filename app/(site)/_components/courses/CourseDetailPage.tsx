@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
-import { ArrowLeft, BookOpen, CheckCircle2, Clock, Filter, GraduationCap, PlayCircle, Star, UserRound, ChevronDown, Lock, Play, ShoppingCart, Award } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap, PlayCircle, Star, UserRound, ChevronDown, Lock, Play, ShoppingCart, Award } from 'lucide-react';
 import { RichContent, withFormatMarker } from '@/components/common/RichContent';
 import { useBrandColors } from '@/components/site/hooks';
 import { getCourseLevelLabel } from '@/lib/courses/labels';

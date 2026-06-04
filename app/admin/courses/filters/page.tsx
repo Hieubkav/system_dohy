@@ -22,7 +22,6 @@ import {
 import { DeleteConfirmDialog } from '../../components/DeleteConfirmDialog';
 import { ModuleGuard } from '../../components/ModuleGuard';
 import { SelectCheckbox, SortableHeader, useSortableData } from '../../components/TableUtilities';
-import { AdminImage as Image } from '../../components/AdminImage';
 
 export default function CourseFiltersListPage() {
   return (

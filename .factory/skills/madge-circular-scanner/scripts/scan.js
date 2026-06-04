@@ -29,7 +29,7 @@ let hasMadge = false;
 try {
   require.resolve('madge');
   hasMadge = true;
-} catch (e) {
+} catch {
   hasMadge = false;
 }
 
@@ -40,7 +40,7 @@ if (!hasMadge && fs.existsSync(packageJsonPath)) {
     if (allDeps['madge']) {
       hasMadge = true;
     }
-  } catch (e) {
+  } catch {
     // Ignore JSON parse errors
   }
 }
@@ -98,14 +98,14 @@ function cleanUpAndExit(exitCode) {
       if (existedBefore && fs.existsSync(backupPath)) {
         try {
           fs.copyFileSync(backupPath, destPath);
-        } catch (e) {
-          console.error(`[Scanner] Failed to restore ${file} from backup:`, e.message);
+        } catch (_e) {
+          console.error(`[Scanner] Failed to restore ${file} from backup:`, _e.message);
         }
       } else if (!existedBefore && fs.existsSync(destPath)) {
         try {
           fs.unlinkSync(destPath);
-        } catch (e) {
-          console.error(`[Scanner] Failed to delete temporary file ${file}:`, e.message);
+        } catch (_e) {
+          console.error(`[Scanner] Failed to delete temporary file ${file}:`, _e.message);
         }
       }
     });
@@ -118,8 +118,8 @@ function cleanUpAndExit(exitCode) {
         });
         fs.rmdirSync(backupDir);
       }
-    } catch (e) {
-      console.error('[Scanner] Failed to remove backup directory:', e.message);
+    } catch (_e) {
+      console.error('[Scanner] Failed to remove backup directory:', _e.message);
     }
 
     // Git checkout to fully restore from repo
@@ -129,7 +129,7 @@ function cleanUpAndExit(exitCode) {
         filesToGitCheckout.forEach(file => {
           try {
             execSync(`git checkout -- "${file}"`, { cwd: projectRoot, stdio: 'ignore' });
-          } catch (e) {
+          } catch {
             // Ignore if file is untracked in Git
           }
         });
@@ -197,7 +197,7 @@ try {
     let files;
     try {
       files = fs.readdirSync(dir);
-    } catch (e) {
+    } catch {
       return;
     }
     files.forEach(file => {

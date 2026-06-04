@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -20,7 +20,6 @@ import {
   X
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { stripHtml } from '@/lib/seo';
 import { LexicalEditor } from '../../components/LexicalEditor';
 import {
@@ -640,27 +639,7 @@ export function CourseCurriculumEditor({
     });
   };
 
-  const handleSaveLesson = () => {
-    if (!editingLesson || !editingLesson.title.trim()) return;
-    const parsedDuration = parseDurationToSeconds(editingLesson.durationInput);
-    setDraftLessons((prev) =>
-      prev.map((l) =>
-        l._id === editingLesson.id
-          ? {
-              ...l,
-              title: editingLesson.title.trim(),
-              videoType: editingLesson.videoType,
-              videoUrl: editingLesson.videoUrl.trim() || undefined,
-              durationSeconds: parsedDuration > 0 ? parsedDuration : undefined,
-              description: editingLesson.description.trim() || undefined,
-              exerciseLink: editingLesson.exerciseLink.trim() || undefined,
-              isPreview: editingLesson.isPreview,
-            }
-          : l
-      )
-    );
-    setEditingLesson(null);
-  };
+
 
   const handleDeleteLesson = (lessonId: string) => {
     if (!confirm('Xóa bài học này?')) return;

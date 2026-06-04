@@ -9,7 +9,7 @@ type AdminImageProps = ImageProps & {
   fallback?: React.ReactNode;
 };
 
-export function AdminImage({ alt = '', unoptimized = true, fallback = null, onError, ...props }: AdminImageProps) {
+export function AdminImage({ alt = '', unoptimized: _unoptimized = true, fallback = null, onError, ...props }: AdminImageProps) {
   const [hasError, setHasError] = React.useState(false);
   const { src, ...imageProps } = props;
 
@@ -26,12 +26,12 @@ export function AdminImage({ alt = '', unoptimized = true, fallback = null, onEr
     width,
     height,
     fill,
-    quality,
-    priority,
-    placeholder,
-    blurDataURL,
-    loading,
-    sizes,
+    quality: _quality,
+    priority: _priority,
+    placeholder: _placeholder,
+    blurDataURL: _blurDataURL,
+    loading: _loading,
+    sizes: _sizes,
     ...restProps
   } = imageProps;
 

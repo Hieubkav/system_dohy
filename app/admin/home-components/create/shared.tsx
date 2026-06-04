@@ -4,14 +4,13 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import {
   AlertCircle, Award, Briefcase, Check, FileText, FolderTree,
   Grid, HelpCircle, Image as ImageIcon, LayoutTemplate, MessageSquare, MousePointerClick,
   Package, Phone, ShoppingBag, Star, Tag, UserCircle, User as UserIcon, Users, Zap
 } from 'lucide-react';
-import { formatHex, oklch } from 'culori';
 import { Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../components/ui';
 import { HOME_COMPONENT_BASE_TYPES, HOME_COMPONENT_TYPE_VALUES as BASE_COMPONENT_TYPE_VALUES } from '@/lib/home-components/componentTypes';
 import { HomeComponentStickyFooter } from '../_shared/components/HomeComponentStickyFooter';

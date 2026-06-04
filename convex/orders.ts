@@ -137,8 +137,8 @@ async function handleOrderStatusTransition(
       "site_url",
       ...EMAIL_CONFIG_SETTING_KEYS,
     ]);
-    const brandName = settings.site_name ? String(settings.site_name).trim() : "YourBrand";
-    const siteUrl = settings.site_url ? String(settings.site_url).trim() : "http://localhost:3000";
+    const brandName = settings.site_name ? String(settings.site_name as string).trim() : "YourBrand";
+    const siteUrl = settings.site_url ? String(settings.site_url as string).trim() : "http://localhost:3000";
     const emailStatus = getEmailConfigurationStatus(settings);
 
     if (!emailStatus.configured) {
@@ -1464,8 +1464,8 @@ export const placeOrder = mutation({
         "site_name",
         ...EMAIL_CONFIG_SETTING_KEYS,
       ]);
-      const siteUrl = settings.site_url ? String(settings.site_url).trim() : "http://localhost:3000";
-      const brandName = settings.site_name ? String(settings.site_name).trim() : "YourBrand";
+      const siteUrl = settings.site_url ? String(settings.site_url as string).trim() : "http://localhost:3000";
+      const brandName = settings.site_name ? String(settings.site_name as string).trim() : "YourBrand";
       const emailStatus = getEmailConfigurationStatus(settings);
 
       if (!emailStatus.configured) {

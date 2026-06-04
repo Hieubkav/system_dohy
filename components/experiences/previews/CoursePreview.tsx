@@ -846,7 +846,6 @@ export function CourseDetailPreview({
   }, [brandColor, secondaryColor, colorMode]);
 
   const isModern = layoutStyle === 'modern';
-  const isMinimal = layoutStyle === 'minimal';
   const isMobile = device === 'mobile';
 
   const radiusClass = getRadiusClass(cornerRadius);

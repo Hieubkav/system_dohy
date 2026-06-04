@@ -64,7 +64,7 @@ export default function ResourceCreatePage() {
   const [metaDescription, setMetaDescription] = useState('');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editorResetKey, setEditorResetKey] = useState(0);
+  const [editorResetKey, _setEditorResetKey] = useState(0);
   const [selectedValueIds, setSelectedValueIds] = useState<Id<'resourceFilterValues'>[]>([]);
 
   const enabledFields = useMemo(() => new Set(fieldsData?.map((field) => field.fieldKey) ?? []), [fieldsData]);

@@ -35,7 +35,7 @@ export type RemoveBgOptions = {
 async function runOnMainThread(
   imageBlob: Blob,
   callbacks: RemoveBgCallbacks,
-  options: RemoveBgOptions = {},
+  _options: RemoveBgOptions = {},
 ): Promise<void> {
   try {
     callbacks.onProgress?.('Đang tải model tách nền AI...', 0);
