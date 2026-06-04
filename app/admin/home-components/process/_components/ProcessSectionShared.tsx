@@ -8,7 +8,7 @@ import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
 import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
 import { SectionHeader } from '../../_shared/components/SectionHeader';
 import { deviceWidths, type PreviewDevice } from '../../_shared/hooks/usePreviewDevice';
-import { getProcessColors, type ProcessColorTokens } from '../_lib/colors';
+import { getProcessColors, getAPCATextColor, type ProcessColorTokens } from '../_lib/colors';
 import {
   DEFAULT_PROCESS_CORNER_RADIUS,
   DEFAULT_PROCESS_SPACING,
@@ -57,6 +57,8 @@ interface ProcessSectionSharedProps {
   desktopColumns?: 3 | 4;
   spacing?: ProcessSpacing;
   cornerRadius?: ProcessCornerRadius;
+  circularCtaText?: string;
+  circularCtaLink?: string;
 }
 
 const PROCESS_STYLES: Array<{ id: ProcessStyle; label: string }> = [
@@ -68,17 +70,19 @@ const PROCESS_STYLES: Array<{ id: ProcessStyle; label: string }> = [
   { id: 'compactMinimal', label: 'Compact Minimal' },
   { id: 'grid', label: 'Grid' },
   { id: 'alternating', label: 'Alternating' },
+  { id: 'circular', label: 'Circular (Builder.io)' },
 ];
 
 const PREVIEW_MAX_VISIBLE_BY_STYLE: Record<ProcessStyle, Record<PreviewDevice, number>> = {
   horizontal: { desktop: 4, tablet: 4, mobile: 4 },
-  stepper: { desktop: 4, tablet: 4, mobile: 4 },
+  stepper: { desktop: 8, tablet: 8, mobile: 8 },
   cards: { desktop: 4, tablet: 4, mobile: 4 },
   accordion: { desktop: 4, tablet: 4, mobile: 4 },
   minimal: { desktop: 4, tablet: 4, mobile: 4 },
   compactMinimal: { desktop: 4, tablet: 4, mobile: 4 },
   grid: { desktop: 4, tablet: 4, mobile: 4 },
   alternating: { desktop: 4, tablet: 4, mobile: 4 },
+  circular: { desktop: 8, tablet: 8, mobile: 8 },
 };
 
 const getMaxVisible = (
@@ -237,7 +241,7 @@ const renderHorizontal = ({
 
 const padNumber = (n: number) => String(n).padStart(2, '0');
 
-const renderStepper = ({
+const RenderStepper = ({
   tokens,
   steps,
   sectionTitle,
@@ -1197,6 +1201,192 @@ const renderSectionHeader = ({
   );
 };
 
+const RenderCircular = ({
+  tokens,
+  steps,
+  sectionTitle,
+  context,
+  previewDevice,
+  headerConfig = {},
+  spacing = DEFAULT_PROCESS_SPACING,
+  circularCtaText = '',
+  circularCtaLink = '',
+}: {
+  tokens: ProcessColorTokens;
+  steps: ProcessSharedStep[];
+  sectionTitle: string;
+  context: ProcessSectionContext;
+  previewDevice: PreviewDevice;
+  headerConfig?: HeaderConfig;
+  spacing?: ProcessSpacing;
+  circularCtaText?: string;
+  circularCtaLink?: string;
+}) => {
+  if (steps.length === 0) { return renderEmptyState(tokens); }
+
+  const maxVisible = getMaxVisible('circular', context, previewDevice);
+  const visibleSteps = steps.slice(0, maxVisible);
+  
+  const [activeIndex, setActiveIndex] = React.useState(0);
+  
+  React.useEffect(() => {
+    if (activeIndex >= visibleSteps.length) {
+      setActiveIndex(0);
+    }
+  }, [visibleSteps.length, activeIndex]);
+
+  const activeStep = visibleSteps[activeIndex] || visibleSteps[0];
+
+  if (!activeStep) { return renderEmptyState(tokens); }
+
+  const N = visibleSteps.length;
+  const R = 250;
+  const buttonSize = 110;
+  const center = 250;
+
+  const getStepCoords = (i: number) => {
+    const angle = -90 + i * (360 / N);
+    const angleRad = (angle * Math.PI) / 180;
+    const x = center + R * Math.cos(angleRad) - buttonSize / 2;
+    const y = center + R * Math.sin(angleRad) - buttonSize / 2;
+    return { left: `${x}px`, top: `${y}px` };
+  };
+
+  const subtitleText = headerConfig.subtitle || '';
+  const primaryColor = tokens.primary;
+
+  // Xác định độ tương phản: Nếu màu chính là màu sáng (ví dụ màu vàng, cần chữ tối #0f172a), 
+  // hệ thống sẽ tự động dùng màu nền tối (đen/xám đậm) để tạo tương phản cao cực kỳ bắt mắt.
+  const isPrimaryLight = getAPCATextColor(primaryColor, 16, 700) === '#0f172a';
+
+  const bgCol = isPrimaryLight ? '#090d16' : tokens.neutralBackground;
+  const surfaceCol = isPrimaryLight ? '#121824' : tokens.neutralSurface;
+  const borderCol = isPrimaryLight ? '#1e293b' : tokens.neutralBorder;
+  const textCol = isPrimaryLight ? '#ffffff' : tokens.bodyText;
+  const mutedTextCol = isPrimaryLight ? '#94a3b8' : tokens.mutedText;
+
+  // Lấy nhãn nút CTA từ circularCtaText, nếu không có mới fallback về text mặc định
+  const ctaText = circularCtaText || "BẮT ĐẦU DỰ ÁN";
+
+  return (
+    <div 
+      className={cn(getSectionPadding(context, previewDevice, spacing), "w-full py-16 px-4 md:px-8 transition-colors duration-300")}
+      style={{ backgroundColor: bgCol }}
+    >
+      <div className="mx-auto max-w-[1140px]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          
+          <div className="text-left space-y-6">
+            <h2 
+              className="text-4xl sm:text-5xl lg:text-[61px] font-light leading-tight tracking-wide uppercase font-sans"
+              style={{ color: textCol }}
+            >
+              {sectionTitle || "CÁCH CHÚNG TÔI LÀM VIỆC"}
+            </h2>
+            {subtitleText && (
+              <p 
+                className="text-lg sm:text-xl font-light leading-relaxed max-w-lg"
+                style={{ color: mutedTextCol }}
+              >
+                {subtitleText}
+              </p>
+            )}
+            <div className="pt-2">
+              <a
+                href={circularCtaLink || "#contact"}
+                target="_self"
+                className="inline-flex items-center justify-center px-8 py-4 border font-medium tracking-wide text-sm rounded-lg uppercase transition-all duration-300 hover:bg-opacity-10"
+                style={{ 
+                  color: primaryColor, 
+                  borderColor: primaryColor,
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = primaryColor;
+                  e.currentTarget.style.color = tokens.stepDotText;
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = primaryColor;
+                }}
+              >
+                {ctaText}
+              </a>
+            </div>
+          </div>
+
+          <div className="flex justify-center items-center py-8 lg:py-0 overflow-visible">
+            {/* Wrapper có kích thước vừa vặn chứa toàn bộ vòng tròn 500px + 2 nút lồi 55px (tổng cộng 610px) */}
+            <div className="w-[315px] h-[315px] sm:w-[425px] sm:h-[425px] md:w-[480px] md:h-[480px] lg:w-[490px] lg:h-[490px] xl:w-[610px] xl:h-[610px] flex items-center justify-center overflow-visible relative">
+              <div className="w-[500px] h-[500px] shrink-0 scale-[0.52] sm:scale-[0.70] md:scale-[0.79] lg:scale-[0.80] xl:scale-100 origin-center absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-transform">
+                
+                <div 
+                  className="absolute inset-0 rounded-full border flex flex-col items-center justify-center p-12 text-center transition-all duration-500"
+                  style={{ 
+                    borderColor: primaryColor, 
+                    backgroundColor: surfaceCol,
+                    boxShadow: `0 10px 40px ${primaryColor}0f`,
+                    borderWidth: '3px'
+                  }}
+                >
+                  <div className="mb-4 flex items-center justify-center" style={{ color: primaryColor }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-circle-check">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <path d="m9 12 2 2 4-4"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-medium tracking-wide uppercase mb-3" style={{ color: primaryColor }}>
+                    {activeStep.title || `BƯỚC ${activeIndex + 1}`}
+                  </h3>
+                  <p className="text-sm font-light leading-relaxed max-w-xs" style={{ color: textCol }}>
+                    {activeStep.description || "Mô tả bước này..."}
+                  </p>
+                </div>
+
+                {visibleSteps.map((step, idx) => {
+                  const isActive = activeIndex === idx;
+                  const coords = getStepCoords(idx);
+                  const isImg = step.icon && (/^https?:\/\//i.test(step.icon) || step.icon.startsWith('/'));
+
+                  return (
+                    <button
+                      key={step.key}
+                      onClick={() => setActiveIndex(idx)}
+                      style={{ 
+                        left: coords.left, 
+                        top: coords.top,
+                        borderColor: isActive ? primaryColor : (isPrimaryLight ? `${primaryColor}66` : borderCol),
+                        color: isActive ? tokens.stepDotText : textCol,
+                        backgroundColor: isActive ? primaryColor : surfaceCol,
+                        boxShadow: isActive ? `0 8px 24px ${primaryColor}30` : 'none',
+                        borderWidth: '3px'
+                      }}
+                      className="absolute w-[110px] h-[110px] rounded-full border flex items-center justify-center text-sm font-medium tracking-wider cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-md z-20 focus:outline-none"
+                      aria-label={`Step ${idx + 1}`}
+                    >
+                      {isImg ? (
+                        <img 
+                          src={step.icon} 
+                          alt="" 
+                          className={cn("w-8 h-8 object-contain transition-all", isActive ? "brightness-0 invert" : "")} 
+                        />
+                      ) : (
+                        <span>{step.icon || `Step ${idx + 1}`}</span>
+                      )}
+                    </button>
+                  );
+                })}
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ProcessSectionContent = ({
   steps,
   sectionTitle,
@@ -1208,6 +1398,8 @@ const ProcessSectionContent = ({
   desktopColumns = 4,
   spacing = DEFAULT_PROCESS_SPACING,
   cornerRadius = DEFAULT_PROCESS_CORNER_RADIUS,
+  circularCtaText = '',
+  circularCtaLink = '',
 }: {
   steps: ProcessSharedStep[];
   sectionTitle: string;
@@ -1219,13 +1411,27 @@ const ProcessSectionContent = ({
   desktopColumns?: 3 | 4;
   spacing?: ProcessSpacing;
   cornerRadius?: ProcessCornerRadius;
+  circularCtaText?: string;
+  circularCtaLink?: string;
 }) => {
   if (style === 'horizontal') {
     return renderHorizontal({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius });
   }
 
   if (style === 'stepper') {
-    return renderStepper({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius });
+    return (
+      <RenderStepper
+        context={context}
+        previewDevice={previewDevice}
+        sectionTitle={sectionTitle}
+        steps={steps}
+        tokens={tokens}
+        headerConfig={headerConfig}
+        desktopColumns={desktopColumns}
+        spacing={spacing}
+        cornerRadius={cornerRadius}
+      />
+    );
   }
 
   if (style === 'cards') {
@@ -1246,6 +1452,22 @@ const ProcessSectionContent = ({
 
   if (style === 'alternating') {
     return renderAlternating({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius });
+  }
+
+  if (style === 'circular') {
+    return (
+      <RenderCircular
+        context={context}
+        previewDevice={previewDevice}
+        sectionTitle={sectionTitle}
+        steps={steps}
+        tokens={tokens}
+        headerConfig={headerConfig}
+        spacing={spacing}
+        circularCtaText={circularCtaText}
+        circularCtaLink={circularCtaLink}
+      />
+    );
   }
 
   return renderGrid({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius });
@@ -1279,6 +1501,8 @@ export function ProcessSectionShared({
   desktopColumns = 4,
   spacing = DEFAULT_PROCESS_SPACING,
   cornerRadius = DEFAULT_PROCESS_CORNER_RADIUS,
+  circularCtaText = '',
+  circularCtaLink = '',
 }: ProcessSectionSharedProps) {
   const tokens = React.useMemo(() => getProcessColors(brandColor, secondary, mode), [brandColor, secondary, mode]);
   const selectedStyle = previewStyle ?? style;
@@ -1300,6 +1524,8 @@ export function ProcessSectionShared({
         desktopColumns={desktopColumns}
         spacing={spacing}
         cornerRadius={cornerRadius}
+        circularCtaText={circularCtaText}
+        circularCtaLink={circularCtaLink}
       />
     );
   }
@@ -1330,6 +1556,8 @@ export function ProcessSectionShared({
             desktopColumns={desktopColumns}
             spacing={spacing}
             cornerRadius={cornerRadius}
+            circularCtaText={circularCtaText}
+            circularCtaLink={circularCtaLink}
           />
         </BrowserFrame>
       </PreviewWrapper>

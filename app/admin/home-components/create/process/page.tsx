@@ -74,6 +74,8 @@ export default function ProcessCreatePage() {
   const [style, setStyle] = React.useState<ProcessStyle>('horizontal');
   const [desktopColumns, setDesktopColumns] = React.useState<3 | 4>(4);
   const [cornerRadius, setCornerRadius] = React.useState<ProcessCornerRadius>(DEFAULT_PROCESS_CORNER_RADIUS);
+  const [circularCtaText, setCircularCtaText] = React.useState('');
+  const [circularCtaLink, setCircularCtaLink] = React.useState('');
 
   const normalizedPreviewSteps = React.useMemo(
     () => normalizeProcessRenderSteps(serializeProcessFormSteps(steps)),
@@ -99,6 +101,8 @@ export default function ProcessCreatePage() {
       badgeText: headerState.badgeText,
       spacing: headerState.spacing,
       noVerticalMargin: headerState.spacing === 'none',
+      circularCtaText,
+      circularCtaLink,
     });
   };
 
@@ -185,7 +189,16 @@ export default function ProcessCreatePage() {
         </HomeComponentDisplaySettingsSection>
       </div>
 
-      <ProcessForm steps={steps} onChange={setSteps} secondary={secondary} />
+      <ProcessForm
+        steps={steps}
+        onChange={setSteps}
+        secondary={secondary}
+        style={style}
+        circularCtaText={circularCtaText}
+        circularCtaLink={circularCtaLink}
+        onChangeCircularCtaText={setCircularCtaText}
+        onChangeCircularCtaLink={setCircularCtaLink}
+      />
 
       <ProcessPreview
         steps={normalizedPreviewSteps}
@@ -210,6 +223,8 @@ export default function ProcessCreatePage() {
         desktopColumns={desktopColumns}
         spacing={headerState.spacing}
         cornerRadius={cornerRadius}
+        circularCtaText={circularCtaText}
+        circularCtaLink={circularCtaLink}
       />
     </ComponentFormWrapper>
   );

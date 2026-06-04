@@ -30,6 +30,8 @@ interface ProcessPreviewProps {
   fontClassName?: string;
   desktopColumns?: 3 | 4;
   cornerRadius?: ProcessCornerRadius;
+  circularCtaText?: string;
+  circularCtaLink?: string;
 }
 
 export const ProcessPreview = ({
@@ -55,6 +57,8 @@ export const ProcessPreview = ({
   desktopColumns = 4,
   spacing,
   cornerRadius,
+  circularCtaText,
+  circularCtaLink,
 }: ProcessPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
   const normalizedSteps = React.useMemo(() => normalizeProcessRenderSteps(steps), [steps]);
@@ -88,6 +92,8 @@ export const ProcessPreview = ({
       desktopColumns={desktopColumns}
       spacing={spacing}
       cornerRadius={cornerRadius}
+      circularCtaText={circularCtaText}
+      circularCtaLink={circularCtaLink}
     />
   );
 };

@@ -21,6 +21,7 @@ export function ProcessRuntimeSection({ config, brandColor, secondary, mode, tit
     || config.style === 'compactMinimal'
     || config.style === 'grid'
     || config.style === 'alternating'
+    || config.style === 'circular'
   )
     ? config.style as ProcessStyle
     : 'horizontal';
@@ -54,6 +55,8 @@ export function ProcessRuntimeSection({ config, brandColor, secondary, mode, tit
           desktopColumns={desktopColumns}
           spacing={normalizedConfig.spacing}
           cornerRadius={normalizedConfig.cornerRadius}
+          circularCtaText={normalizedConfig.circularCtaText}
+          circularCtaLink={normalizedConfig.circularCtaLink}
         />
       </div>
     </section>
