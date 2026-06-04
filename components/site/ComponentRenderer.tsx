@@ -2170,6 +2170,15 @@ const GalleryLightbox = ({
 }) => {
   const originalBodyOverflowRef = React.useRef<string | null>(null);
   const isOpen = Boolean(photo?.url);
+  const [imageKey, setImageKey] = React.useState(0);
+  const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
+
+  // Update imageKey on index change for transition
+  React.useEffect(() => {
+    if (typeof currentIndex === 'number') {
+      setImageKey(currentIndex);
+    }
+  }, [currentIndex]);
 
   React.useEffect(() => {
     if (!isOpen) {
@@ -2199,16 +2208,36 @@ const GalleryLightbox = ({
 
   const hasMultiple = photos && photos.length > 1 && onNavigate;
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStartRef.current || !onNavigate) {return;}
+    const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    // Only horizontal swipe if dx > 50px and more horizontal than vertical
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      onNavigate(dx < 0 ? 'next' : 'prev');
+    }
+  };
+
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center animate-in fade-in duration-200"
+      className="fixed inset-0 z-[60] flex items-center justify-center"
       onClick={onClose}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
-      <div className="absolute inset-0 bg-slate-950" onClick={onClose} />
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/95 animate-in fade-in duration-300" />
+
+      {/* Close button */}
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-4 right-4 p-2 rounded-full border transition-colors z-[70]"
+        className="absolute top-3 right-3 md:top-5 md:right-5 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[70] hover:scale-110"
         style={{
           backgroundColor: colors.lightboxControlBg,
           borderColor: colors.lightboxControlBorder,
@@ -2216,13 +2245,15 @@ const GalleryLightbox = ({
         }}
         aria-label="Đóng"
       >
-        <X size={24} />
+        <X size={22} />
       </button>
+
+      {/* Navigation arrows */}
       {hasMultiple && (
         <>
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); onNavigate('prev'); }}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full border flex items-center justify-center transition-colors z-[70]"
+            className="absolute left-2 md:left-5 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[70] hover:scale-110 active:scale-95"
             style={{
               backgroundColor: colors.lightboxControlBg,
               borderColor: colors.lightboxControlBorder,
@@ -2230,11 +2261,11 @@ const GalleryLightbox = ({
             }}
             aria-label="Ảnh trước"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={26} />
           </button>
-          <button 
+          <button
             onClick={(e) => { e.stopPropagation(); onNavigate('next'); }}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full border flex items-center justify-center transition-colors z-[70]"
+            className="absolute right-2 md:right-5 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[70] hover:scale-110 active:scale-95"
             style={{
               backgroundColor: colors.lightboxControlBg,
               borderColor: colors.lightboxControlBorder,
@@ -2242,13 +2273,15 @@ const GalleryLightbox = ({
             }}
             aria-label="Ảnh sau"
           >
-            <ChevronRight size={24} />
+            <ChevronRight size={26} />
           </button>
         </>
       )}
+
+      {/* Counter */}
       {hasMultiple && typeof currentIndex === 'number' && (
         <div
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm z-[70] px-3 py-1 rounded-full border"
+          className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 text-sm z-[70] px-4 py-1.5 rounded-full border font-medium"
           style={{
             backgroundColor: colors.lightboxCounterBg,
             color: colors.lightboxCounterText,
@@ -2258,16 +2291,24 @@ const GalleryLightbox = ({
           {currentIndex + 1} / {photos.length}
         </div>
       )}
-      <div className="relative z-[70] max-w-5xl w-full max-h-[90vh] p-4 flex flex-col items-center justify-center" onClick={e =>{  e.stopPropagation(); }}>
-        <SiteImage 
-          src={photo.url} 
-          alt="Lightbox" 
-          className="max-h-[90vh] max-w-full object-contain shadow-sm animate-in zoom-in-95 duration-300" 
+
+      {/* Image container — near fullscreen */}
+      <div
+        className="relative z-[65] w-full h-full flex items-center justify-center px-14 md:px-20 py-16 md:py-14"
+        onClick={e => { e.stopPropagation(); onClose(); }}
+      >
+        <SiteImage
+          key={imageKey}
+          src={photo.url}
+          alt="Lightbox"
+          className="max-h-full max-w-full object-contain animate-in fade-in zoom-in-95 duration-300"
+          onClick={e => { e.stopPropagation(); }}
         />
       </div>
     </div>
   );
 };
+
 
 // ============ TRUST BADGES / CERTIFICATIONS SECTION ============
 // 6 Styles: grid, cards, stack, wall, carousel, seal
