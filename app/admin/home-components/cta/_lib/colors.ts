@@ -367,14 +367,16 @@ export const getCTAColors = ({
   const primaryPalette = generatePalette(primaryNormalized);
   const secondaryPalette = generatePalette(secondaryColor, primaryPalette.solid);
 
+  const badgeBgSolid = getSolidTint(secondaryPalette.solid, 0.42);
+
   const base: CTAStyleTokens = {
     sectionBg: '#ffffff',
     sectionBorder: '#e2e8f0',
     title: primaryPalette.solid,
     description: '#475569',
-    badgeBg: secondaryPalette.surface,
-    badgeText: secondaryPalette.textInteractive,
-    badgeBorder: '#e2e8f0',
+    badgeBg: badgeBgSolid,
+    badgeText: getAPCATextColor(badgeBgSolid, 12, 600),
+    badgeBorder: secondaryPalette.border,
     primaryButtonBg: primaryPalette.solid,
     primaryButtonText: primaryPalette.textOnSolid,
     primaryButtonBorder: primaryPalette.active,
@@ -388,7 +390,6 @@ export const getCTAColors = ({
   };
 
   if (styleNormalized === 'banner') {
-    const badgeBgSolid = getSolidTint(secondaryPalette.solid, 0.42);
     return {
       ...base,
       sectionBg: primaryPalette.solid,
@@ -400,9 +401,6 @@ export const getCTAColors = ({
         16,
         500,
       ),
-      badgeBg: badgeBgSolid,
-      badgeText: getAPCATextColor(badgeBgSolid, 12, 600),
-      badgeBorder: secondaryPalette.border,
       primaryButtonBg: '#ffffff',
       primaryButtonText: ensureAPCATextColor(primaryPalette.textInteractive, '#ffffff', 14, 700),
       primaryButtonBorder: primaryPalette.active,
