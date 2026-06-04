@@ -1345,6 +1345,21 @@ function StatsSection({ config, brandColor, secondary, mode, title: _title }: { 
     return `flex flex-col ${alignClass}`;
   };
 
+  const getItemAlignClass = (align?: 'left' | 'center' | 'right') => {
+    if (align === 'left') return 'items-start text-left';
+    if (align === 'right') return 'items-end text-right';
+    return 'items-center text-center';
+  };
+
+  const getMediaWrapperClass = (placement?: 'top' | 'left', align?: 'left' | 'center' | 'right') => {
+    if (placement === 'left') {
+      return 'mb-0 flex shrink-0 items-center justify-center self-center';
+    }
+    if (align === 'left') return 'flex justify-start';
+    if (align === 'right') return 'flex justify-end';
+    return 'flex justify-center';
+  };
+
   // Style 1: Thanh ngang - Full width bar với dividers
   if (style === 'horizontal') {
     const colors = getHorizontalColors(brandColor, secondary, mode);
@@ -1353,13 +1368,13 @@ function StatsSection({ config, brandColor, secondary, mode, title: _title }: { 
         <div className="max-w-5xl mx-auto">
           <div 
             className="w-full rounded-lg shadow-sm overflow-hidden border"
-            style={{ backgroundColor: 'white', borderColor: colors.border }}
+            style={{ backgroundColor: colors.sectionBg, borderColor: colors.border }}
           >
             <div className="flex flex-col md:flex-row items-center justify-between divide-y md:divide-y-0 md:divide-x divide-slate-200">
               {items.map((item, idx) => {
                 const IconCmp = item.iconType === 'lucide' && item.iconName ? resolveStatsIconComponent(item.iconName) : null;
                 const iconElement = item.iconType === 'lucide' && IconCmp ? (
-                  <IconCmp size={32} style={{ color: brandColor }} />
+                  <IconCmp size={32} style={{ color: colors.iconColor }} />
                 ) : item.iconType === 'upload' && item.iconUrl ? (
                   <img src={item.iconUrl} alt="" className="w-8 h-8 md:w-11 md:h-11 object-contain" />
                 ) : item.iconType === 'url' && item.iconUrl ? (
@@ -1372,15 +1387,15 @@ function StatsSection({ config, brandColor, secondary, mode, title: _title }: { 
                   className={`flex-1 w-full py-6 px-4 justify-center cursor-default ${getItemContainerClass(mediaPlacement, mediaAlign)}`}
                 >
                   {iconElement && (
-                    <div className={mediaPlacement === 'left' ? 'mb-0 flex shrink-0 items-center justify-center self-center' : 'mb-2'}>
+                    <div className={cn(mediaPlacement === 'left' ? 'mb-0' : 'mb-2', getMediaWrapperClass(mediaPlacement, mediaAlign))}>
                       {iconElement}
                     </div>
                   )}
-                  <div className={mediaPlacement === 'left' ? 'flex-1' : ''}>
-                    <span className="text-3xl md:text-4xl font-bold tracking-tight tabular-nums leading-none mb-1" style={{ color: brandColor }}>
+                  <div className={cn("flex flex-col", mediaPlacement === 'left' ? 'flex-1' : getItemAlignClass(mediaAlign))}>
+                    <span className="text-3xl md:text-4xl font-bold tracking-tight tabular-nums leading-none mb-1" style={{ color: colors.valueColor }}>
                       {item.value}
                     </span>
-                    <h3 className="text-xs font-medium uppercase tracking-wider text-slate-600">
+                    <h3 className="text-xs font-medium uppercase tracking-wider" style={{ color: colors.labelColor }}>
                       {item.label}
                     </h3>
                   </div>
@@ -1404,7 +1419,7 @@ function StatsSection({ config, brandColor, secondary, mode, title: _title }: { 
             {items.map((item, idx) => {
               const IconCmp = item.iconType === 'lucide' && item.iconName ? resolveStatsIconComponent(item.iconName) : null;
               const iconElement = item.iconType === 'lucide' && IconCmp ? (
-                <IconCmp size={28} style={{ color: brandColor }} />
+                <IconCmp size={28} style={{ color: colors.iconColor }} />
               ) : item.iconType === 'upload' && item.iconUrl ? (
                 <img src={item.iconUrl} alt="" className="w-12 h-12 md:w-16 md:h-16 object-cover" />
               ) : item.iconType === 'url' && item.iconUrl ? (
@@ -1418,18 +1433,18 @@ function StatsSection({ config, brandColor, secondary, mode, title: _title }: { 
                 style={{ borderColor: colors.border }}
               >
                 {iconElement && (
-                  <div className={mediaPlacement === 'left' ? 'mb-0 flex shrink-0 items-center justify-center self-center' : 'mb-2'}>
+                  <div className={cn(mediaPlacement === 'left' ? 'mb-0' : 'mb-2', getMediaWrapperClass(mediaPlacement, mediaAlign))}>
                     {iconElement}
                   </div>
                 )}
-                <div className={mediaPlacement === 'left' ? 'flex-1' : ''}>
+                <div className={cn("flex flex-col", mediaPlacement === 'left' ? 'flex-1' : getItemAlignClass(mediaAlign))}>
                   <span 
                     className="text-3xl font-bold mb-1 tracking-tight tabular-nums"
-                    style={{ color: brandColor }}
+                    style={{ color: colors.valueColor }}
                   >
                     {item.value}
                   </span>
-                  <h3 className="text-sm font-semibold text-slate-700">
+                  <h3 className="text-sm font-semibold" style={{ color: colors.labelColor }}>
                     {item.label}
                   </h3>
                   {mediaPlacement !== 'left' && (

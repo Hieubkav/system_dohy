@@ -113,13 +113,20 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
                     ? <img src={item.iconUrl} alt="" className="w-[18px] h-[18px] sm:w-5 sm:h-5 md:w-[26px] md:h-[26px] object-contain" />
                     : null;
                 return (
-                  <div key={idx} className="flex items-center gap-3 justify-center">
+                  <div key={idx} className={cn(getItemContainerClass(mediaPlacement, mediaAlign), "justify-center")}>
                     {iconEl && (
-                      <div className="w-11 h-11 sm:w-12 sm:h-12 md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: colors.iconBg }}>
+                      <div 
+                        className={cn(
+                          "w-11 h-11 sm:w-12 sm:h-12 md:w-[60px] md:h-[60px] rounded-full flex items-center justify-center shrink-0",
+                          mediaPlacement === 'left' ? 'mb-0' : 'mb-2',
+                          getMediaWrapperClass(mediaPlacement, mediaAlign)
+                        )} 
+                        style={{ backgroundColor: colors.iconBg }}
+                      >
                         {iconEl}
                       </div>
                     )}
-                    <div className="flex flex-col">
+                    <div className={cn("flex flex-col", mediaPlacement === 'left' ? '' : getItemAlignClass(mediaAlign))}>
                       <AnimatedValue value={item.value} enabled={enableAnimation} className="text-[18px] sm:text-[19px] md:text-[26px] font-bold tracking-tight tabular-nums leading-none mb-0.5" style={{ color: colors.valueColor }} />
                       <h3 className="text-[10px] md:text-[13px] font-medium leading-tight" style={{ color: colors.labelColor }}>{item.label}</h3>
                     </div>
@@ -152,9 +159,13 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
                     ? <img src={item.iconUrl} alt="" className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 object-contain" />
                     : null;
                 return (
-                  <div key={idx} className="flex items-center gap-3 justify-center py-4 px-4">
-                    {iconEl && <div className="shrink-0">{iconEl}</div>}
-                    <div className="flex flex-col">
+                  <div key={idx} className={cn(getItemContainerClass(mediaPlacement, mediaAlign), "justify-center py-4 px-4")}>
+                    {iconEl && (
+                      <div className={cn("shrink-0", mediaPlacement === 'left' ? 'mb-0' : 'mb-2', getMediaWrapperClass(mediaPlacement, mediaAlign))}>
+                        {iconEl}
+                      </div>
+                    )}
+                    <div className={cn("flex flex-col", mediaPlacement === 'left' ? '' : getItemAlignClass(mediaAlign))}>
                       <AnimatedValue value={item.value} enabled={enableAnimation} className="text-[18px] sm:text-[19px] md:text-[26px] font-bold tracking-tight tabular-nums leading-none mb-0.5" style={{ color: colors.valueColor }} />
                       <h3 className="text-[10px] md:text-[13px] font-medium leading-tight" style={{ color: colors.labelColor }}>{item.label}</h3>
                     </div>

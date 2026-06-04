@@ -201,20 +201,22 @@ export const StatsPreview = ({
                 return (
                   <div
                     key={idx}
-                    className="flex items-center gap-3"
+                    className={cn(getItemContainerClass(mediaPlacement, mediaAlign))}
                   >
                     {iconElement && (
                       <div 
                         className={cn(
                           "rounded-full flex items-center justify-center shrink-0 overflow-hidden",
-                          circleSize
+                          circleSize,
+                          mediaPlacement === 'left' ? 'mb-0' : 'mb-2',
+                          getMediaWrapperClass(mediaPlacement, mediaAlign)
                         )}
                         style={{ backgroundColor: colors.iconBg }}
                       >
                         {iconElement}
                       </div>
                     )}
-                    <div className="flex flex-col">
+                    <div className={cn("flex flex-col", mediaPlacement === 'left' ? '' : getItemAlignClass(mediaAlign))}>
                       <AnimatedValue
                         value={item.value || '0'}
                         enabled={enableAnimation || false}
@@ -286,14 +288,18 @@ export const StatsPreview = ({
                 return (
                   <div
                     key={idx}
-                    className={cn("flex items-center gap-3 justify-center", device === 'mobile' ? 'py-3 px-4' : 'py-4 px-4')}
+                    className={cn(
+                      getItemContainerClass(mediaPlacement, mediaAlign),
+                      "justify-center",
+                      device === 'mobile' ? 'py-3 px-4' : 'py-4 px-4'
+                    )}
                   >
                     {iconElement && (
-                      <div className="shrink-0">
+                      <div className={cn("shrink-0", mediaPlacement === 'left' ? 'mb-0' : 'mb-2', getMediaWrapperClass(mediaPlacement, mediaAlign))}>
                         {iconElement}
                       </div>
                     )}
-                    <div className="flex flex-col">
+                    <div className={cn("flex flex-col", mediaPlacement === 'left' ? '' : getItemAlignClass(mediaAlign))}>
                       <AnimatedValue
                         value={item.value || '0'}
                         enabled={enableAnimation || false}
