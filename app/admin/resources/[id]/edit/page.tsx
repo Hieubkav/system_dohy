@@ -50,6 +50,7 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
   const customersData = useQuery(api.customers.listAll, { limit: 100 });
   const grantAccess = useMutation(api.resources.grantAccess);
   const revokeAccess = useMutation(api.resources.revokeAccess);
+  const removeAccess = useMutation(api.resources.removeAccess);
 
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
@@ -80,6 +81,7 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
   const [activeTab, setActiveTab] = useState<'general' | 'customers'>('general');
   const [selectedValueIds, setSelectedValueIds] = useState<Id<'resourceFilterValues'>[]>([]);
   const [revokingId, setRevokingId] = useState<Id<'resourceCustomers'> | null>(null);
+  const [deletingAccessId, setDeletingAccessId] = useState<Id<'resourceCustomers'> | null>(null);
   const [grantCustomerId, setGrantCustomerId] = useState('');
   const [isGrantingAccess, setIsGrantingAccess] = useState(false);
 
@@ -196,6 +198,19 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
       toast.error(error instanceof Error ? error.message : 'Không thể thu hồi quyền tải');
     } finally {
       setRevokingId(null);
+    }
+  };
+
+  const handleRemoveAccess = async (accessId: Id<'resourceCustomers'>) => {
+    if (!confirm('Xóa hoàn toàn quyền truy cập này của khách hàng? Hành động này sẽ xóa bản ghi khỏi cơ sở dữ liệu.')) {return;}
+    setDeletingAccessId(accessId);
+    try {
+      await removeAccess({ accessId });
+      toast.success('Đã xóa quyền truy cập');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể xóa quyền truy cập');
+    } finally {
+      setDeletingAccessId(null);
     }
   };
 
@@ -585,15 +600,27 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={item.status !== 'active' || revokingId === item.accessId}
-                          onClick={() => { void handleRevokeAccess(item.accessId); }}
-                        >
-                          {revokingId === item.accessId ? 'Đang thu hồi...' : 'Thu hồi'}
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={item.status !== 'active' || revokingId === item.accessId}
+                            onClick={() => { void handleRevokeAccess(item.accessId); }}
+                          >
+                            {revokingId === item.accessId ? 'Đang thu hồi...' : 'Thu hồi'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={deletingAccessId === item.accessId}
+                            onClick={() => { void handleRemoveAccess(item.accessId); }}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
+                          >
+                            {deletingAccessId === item.accessId ? 'Đang xóa...' : 'Xóa'}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

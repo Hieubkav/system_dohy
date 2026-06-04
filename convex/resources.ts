@@ -1004,3 +1004,16 @@ export const revokeAccess = mutation({
   },
   returns: v.null(),
 });
+
+export const removeAccess = mutation({
+  args: { accessId: v.id("resourceCustomers") },
+  handler: async (ctx, args) => {
+    const access = await ctx.db.get(args.accessId);
+    if (!access) {
+      return null;
+    }
+    await ctx.db.delete(args.accessId);
+    return null;
+  },
+  returns: v.null(),
+});
