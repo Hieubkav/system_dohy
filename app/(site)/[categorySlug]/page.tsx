@@ -9,6 +9,7 @@ import PostsPage from '@/app/(site)/posts/page';
 import ServicesPage from '@/app/(site)/services/page';
 import CoursesPage from '@/app/(site)/khoa-hoc/page';
 import ProjectsPage from '@/app/(site)/projects/page';
+import ResourcesPage from '@/app/(site)/resources/page';
 
 interface Props {
   params: Promise<{ categorySlug: string }>;
@@ -78,6 +79,9 @@ export default async function UnifiedCategoryPage({ params }: Props) {
   }
   if (resolvedCategory.moduleKey === 'projects') {
     return <ProjectsPage />;
+  }
+  if (resolvedCategory.moduleKey === 'resources') {
+    return <ResourcesPage />;
   }
 
   notFound();
