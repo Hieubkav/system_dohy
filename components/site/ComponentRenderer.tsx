@@ -2244,7 +2244,7 @@ const GalleryLightbox = ({
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-3 right-3 md:top-5 md:right-5 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[10000] hover:scale-110"
+        className="absolute top-3 right-3 md:top-5 md:right-5 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[10020] hover:scale-110"
         style={{
           backgroundColor: colors.lightboxControlBg,
           borderColor: colors.lightboxControlBorder,
@@ -2259,8 +2259,9 @@ const GalleryLightbox = ({
       {hasMultiple && (
         <>
           <button
+            type="button"
             onClick={(e) => { e.stopPropagation(); onNavigate('prev'); }}
-            className="absolute left-2 md:left-5 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[10000] hover:scale-110 active:scale-95"
+            className="absolute left-2 md:left-5 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[10020] hover:scale-110 active:scale-95"
             style={{
               backgroundColor: colors.lightboxControlBg,
               borderColor: colors.lightboxControlBorder,
@@ -2271,8 +2272,9 @@ const GalleryLightbox = ({
             <ChevronLeft size={26} />
           </button>
           <button
+            type="button"
             onClick={(e) => { e.stopPropagation(); onNavigate('next'); }}
-            className="absolute right-2 md:right-5 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[10000] hover:scale-110 active:scale-95"
+            className="absolute right-2 md:right-5 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[10020] hover:scale-110 active:scale-95"
             style={{
               backgroundColor: colors.lightboxControlBg,
               borderColor: colors.lightboxControlBorder,
@@ -2288,7 +2290,7 @@ const GalleryLightbox = ({
       {/* Counter */}
       {hasMultiple && typeof currentIndex === 'number' && (
         <div
-          className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 text-sm z-[10000] px-4 py-1.5 rounded-full border font-medium"
+          className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 text-sm z-[10020] px-4 py-1.5 rounded-full border font-medium"
           style={{
             backgroundColor: colors.lightboxCounterBg,
             color: colors.lightboxCounterText,
