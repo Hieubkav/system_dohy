@@ -153,7 +153,7 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   const videoEmbedUrl = () => {
     if (!lesson.videoUrl) return null;
     if (lesson.videoType === 'youtube') {
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&\?]*).*/;
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
       const match = lesson.videoUrl.match(regExp);
       const videoId = match && match[2].length === 11 ? match[2] : null;
       return videoId ? `https://www.youtube.com/embed/${videoId}` : null;

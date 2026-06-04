@@ -77,7 +77,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const promoVideoEmbedUrl = useMemo(() => {
     if (!course?.introVideoUrl || course.introVideoType === 'none') return null;
     if (course.introVideoType === 'youtube') {
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&\?]*).*/;
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
       const match = course.introVideoUrl.match(regExp);
       const videoId = match && match[2].length === 11 ? match[2] : null;
       return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
