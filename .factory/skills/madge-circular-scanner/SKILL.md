@@ -25,7 +25,7 @@ Skill này cung cấp kịch bản quét tự động sử dụng thư viện `m
 ## Workflow
 1. **Khởi chạy quét:** Từ thư mục gốc của dự án, chạy lệnh:
    ```bash
-   node .agents/skills/madge-circular-scanner/scripts/scan.js
+   node .factory/skills/madge-circular-scanner/scripts/scan.js
    ```
 2. **Quá trình tự động cài đặt và quét:**
    - Kịch bản sẽ tự động phát hiện package manager của dự án (`bun`, `pnpm`, `yarn`, hoặc `npm`).
