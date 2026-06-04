@@ -25,9 +25,10 @@ const STATUS_LABELS: Record<CartStatus, string> = {
   Converted: 'Đã đặt hàng',
 };
 
-const itemTypeLabel = (itemType?: 'product' | 'service' | 'course') => {
+const itemTypeLabel = (itemType?: 'product' | 'service' | 'course' | 'resource') => {
   if (itemType === 'service') return 'Dịch vụ';
   if (itemType === 'course') return 'Khóa học';
+  if (itemType === 'resource') return 'Tài nguyên';
   return 'Sản phẩm';
 };
 

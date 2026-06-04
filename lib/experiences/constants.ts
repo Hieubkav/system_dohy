@@ -12,6 +12,8 @@ export type ExperienceKey =
   | 'projects_detail_ui'
   | 'courses_list_ui'
   | 'courses_detail_ui'
+  | 'resources_list_ui'
+  | 'resources_detail_ui'
   | 'lesson_detail_ui'
   | 'booking_ui'
   | 'products_list_ui'
@@ -39,6 +41,8 @@ export const EXPERIENCE_COLORS: Record<ExperienceKey, ColorScheme> = {
   projects_detail_ui: 'teal',
   courses_list_ui: 'indigo',
   courses_detail_ui: 'indigo',
+  resources_list_ui: 'teal',
+  resources_detail_ui: 'teal',
   lesson_detail_ui: 'indigo',
   booking_ui: 'indigo',
   products_list_ui: 'emerald',
@@ -73,6 +77,8 @@ export const EXPERIENCE_NAMES: Record<ExperienceKey, string> = {
   projects_detail_ui: 'Projects Detail',
   courses_list_ui: 'Courses List',
   courses_detail_ui: 'Courses Detail',
+  resources_list_ui: 'Resources List',
+  resources_detail_ui: 'Resources Detail',
   lesson_detail_ui: 'Lesson Detail',
   booking_ui: 'Booking',
   products_list_ui: 'Products List',

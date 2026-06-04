@@ -463,6 +463,75 @@ export function useCoursesDetailConfig(): CoursesDetailConfig {
   }, [experienceSetting?.value]);
 }
 
+type ResourcesListConfig = {
+  layoutStyle: 'grid' | 'sidebar' | 'masonry';
+  gridColumns: number;
+  paginationType: PaginationType;
+  showSearch: boolean;
+  showCategories: boolean;
+  hideEmptyCategories: boolean;
+  postsPerPage: number;
+  cornerRadius: 'none' | 'sm' | 'lg';
+};
+
+const normalizeResourcesListLayoutStyle = (value?: string): ResourcesListConfig['layoutStyle'] => {
+  if (value === 'grid' || value === 'sidebar' || value === 'masonry') {return value;}
+  return 'grid';
+};
+
+export function useResourcesListConfig(): ResourcesListConfig {
+  const experienceSetting = useQuery(api.settings.getByKey, { key: 'resources_list_ui' });
+
+  return useMemo(() => {
+    const raw = experienceSetting?.value as {
+      layoutStyle?: ResourcesListConfig['layoutStyle'];
+      gridColumns?: number;
+      layouts?: Partial<Record<ResourcesListConfig['layoutStyle'], Partial<Omit<ResourcesListConfig, 'layoutStyle'>>>>;
+      paginationType?: PaginationType;
+      showSearch?: boolean;
+      showCategories?: boolean;
+      hideEmptyCategories?: boolean;
+      postsPerPage?: number;
+      cornerRadius?: 'none' | 'sm' | 'lg';
+    } | undefined;
+    const layoutStyle = normalizeResourcesListLayoutStyle(raw?.layoutStyle);
+    const layoutConfig = raw?.layouts?.[layoutStyle];
+    return {
+      layoutStyle,
+      gridColumns: raw?.gridColumns ?? 3,
+      paginationType: normalizePaginationType(layoutConfig?.paginationType ?? raw?.paginationType),
+      showSearch: layoutConfig?.showSearch ?? raw?.showSearch ?? true,
+      showCategories: layoutConfig?.showCategories ?? raw?.showCategories ?? true,
+      hideEmptyCategories: raw?.hideEmptyCategories ?? true,
+      postsPerPage: layoutConfig?.postsPerPage ?? raw?.postsPerPage ?? 12,
+      cornerRadius: raw?.cornerRadius ?? 'lg',
+    };
+  }, [experienceSetting?.value]);
+}
+
+type ResourcesDetailConfig = {
+  layoutStyle: 'classic' | 'modern' | 'minimal';
+  showGallery: boolean;
+  showRelated: boolean;
+  showStickyCta: boolean;
+  cornerRadius: 'none' | 'sm' | 'lg';
+};
+
+export function useResourcesDetailConfig(): ResourcesDetailConfig {
+  const experienceSetting = useQuery(api.settings.getByKey, { key: 'resources_detail_ui' });
+
+  return useMemo(() => {
+    const raw = experienceSetting?.value as Partial<ResourcesDetailConfig> | undefined;
+    return {
+      layoutStyle: raw?.layoutStyle ?? 'classic',
+      showGallery: raw?.showGallery ?? true,
+      showRelated: raw?.showRelated ?? true,
+      showStickyCta: raw?.showStickyCta ?? true,
+      cornerRadius: raw?.cornerRadius ?? 'lg',
+    };
+  }, [experienceSetting?.value]);
+}
+
 type LessonDetailConfig = {
   layoutStyle: 'classic' | 'focus' | 'compact';
   showSidebar: boolean;

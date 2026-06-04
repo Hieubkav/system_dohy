@@ -36,11 +36,12 @@ const cartItemDoc = v.object({
   _creationTime: v.number(),
   _id: v.id("cartItems"),
   cartId: v.id("carts"),
-  itemType: v.optional(v.union(v.literal("product"), v.literal("service"), v.literal("course"))),
+  itemType: v.optional(v.union(v.literal("product"), v.literal("service"), v.literal("course"), v.literal("resource"))),
   price: v.number(),
   productId: v.optional(v.id("products")),
   serviceId: v.optional(v.id("services")),
   courseId: v.optional(v.id("courses")),
+  resourceId: v.optional(v.id("resources")),
   productImage: v.optional(v.string()),
   productName: v.string(),
   quantity: v.number(),
@@ -50,28 +51,31 @@ const cartItemDoc = v.object({
 
 const cartAddItemArgs = {
   cartId: v.id("carts"),
-  itemType: v.optional(v.union(v.literal("product"), v.literal("service"), v.literal("course"))),
+  itemType: v.optional(v.union(v.literal("product"), v.literal("service"), v.literal("course"), v.literal("resource"))),
   productId: v.optional(v.id("products")),
   serviceId: v.optional(v.id("services")),
   courseId: v.optional(v.id("courses")),
+  resourceId: v.optional(v.id("resources")),
   quantity: v.number(),
   variantId: v.optional(v.id("productVariants")),
 };
 
 type CartLineItemInput = {
-  itemType?: "product" | "service" | "course";
+  itemType?: "product" | "service" | "course" | "resource";
   productId?: Id<"products">;
   serviceId?: Id<"services">;
   courseId?: Id<"courses">;
+  resourceId?: Id<"resources">;
   variantId?: Id<"productVariants">;
 };
 
 type ResolvedCartItem = {
-  itemType: "product" | "service" | "course";
+  itemType: "product" | "service" | "course" | "resource";
   price: number;
   productId?: Id<"products">;
   serviceId?: Id<"services">;
   courseId?: Id<"courses">;
+  resourceId?: Id<"resources">;
   productImage?: string;
   productName: string;
   variantId?: Id<"productVariants">;
@@ -91,6 +95,9 @@ const isSameCartLine = (a: CartLineItemInput, b: CartLineItemInput) => {
   }
   if (itemType === "service") {
     return a.serviceId === b.serviceId;
+  }
+  if (itemType === "resource") {
+    return a.resourceId === b.resourceId;
   }
   return a.courseId === b.courseId;
 };
@@ -200,6 +207,38 @@ async function resolveCartItem(ctx: MutationCtx, args: CartLineItemInput): Promi
     };
   }
 
+  if (itemType === "resource") {
+    if (!args.resourceId) {
+      return { ok: false, error: "Thiếu tài nguyên cần thêm vào giỏ hàng" };
+    }
+    if (!await isProviderCartCapable(ctx, "resources")) {
+      return { ok: false, error: "Tài nguyên chưa được bật chế độ giỏ hàng và thanh toán" };
+    }
+
+    const resource = await ctx.db.get(args.resourceId);
+    if (!resource || resource.status !== "Published") {
+      return { ok: false, error: "Tài nguyên không tồn tại hoặc chưa được xuất bản" };
+    }
+    if (resource.pricingType === "contact") {
+      return { ok: false, error: "Tài nguyên đang ở chế độ liên hệ, chưa thể thanh toán qua giỏ hàng" };
+    }
+    const price = resource.pricingType === "free" ? 0 : resource.priceAmount;
+    if (price === undefined || price < 0) {
+      return { ok: false, error: "Tài nguyên cần có giá hợp lệ để thanh toán" };
+    }
+
+    return {
+      ok: true,
+      item: {
+        itemType: "resource",
+        price,
+        resourceId: args.resourceId,
+        productImage: resource.thumbnail,
+        productName: resource.title,
+      },
+    };
+  }
+
   if (!args.courseId) {
     return { ok: false, error: "Thiếu khóa học cần thêm vào giỏ hàng" };
   }
@@ -238,7 +277,7 @@ export const getCommerceCapabilities = query({
   handler: async (ctx) => resolveCommerceCapabilities(ctx),
   returns: v.object({
     providers: v.array(v.object({
-      provider: v.union(v.literal("products"), v.literal("services"), v.literal("courses")),
+      provider: v.union(v.literal("products"), v.literal("services"), v.literal("courses"), v.literal("resources")),
       moduleEnabled: v.boolean(),
       commerceMode: v.union(v.literal("off"), v.literal("cart"), v.literal("contact"), v.literal("affiliate")),
       cartCapable: v.boolean(),
@@ -567,7 +606,7 @@ export const mergeCart = mutation({
 
         if (existingItem) {
           const itemType = item.itemType ?? "product";
-          const newQty = itemType === "course"
+          const newQty = itemType === "course" || itemType === "resource"
             ? COURSE_CART_QUANTITY
             : existingItem.quantity + item.quantity;
 
@@ -599,7 +638,7 @@ export const mergeCart = mutation({
           existingItem.subtotal = existingItem.price * newQty;
           await ctx.db.delete(item._id);
         } else {
-          const quantity = (item.itemType ?? "product") === "course" ? COURSE_CART_QUANTITY : item.quantity;
+          const quantity = (item.itemType ?? "product") === "course" || item.itemType === "resource" ? COURSE_CART_QUANTITY : item.quantity;
           const subtotal = item.price * quantity;
           await ctx.db.patch(item._id, {
             cartId: customerCart._id,
@@ -685,8 +724,8 @@ export const addItem = mutation({
       .collect();
     const existingItem = cartItems.find((cartItem) => isSameCartLine(cartItem, item));
 
-    const requestedQuantity = item.itemType === "course" ? COURSE_CART_QUANTITY : args.quantity;
-    const targetQuantity = item.itemType === "course"
+    const requestedQuantity = item.itemType === "course" || item.itemType === "resource" ? COURSE_CART_QUANTITY : args.quantity;
+    const targetQuantity = item.itemType === "course" || item.itemType === "resource"
       ? COURSE_CART_QUANTITY
       : (existingItem?.quantity ?? 0) + requestedQuantity;
     if (item.itemType === "product" && stockCheckEnabled) {
@@ -719,6 +758,7 @@ export const addItem = mutation({
       productId: item.productId,
       serviceId: item.serviceId,
       courseId: item.courseId,
+      resourceId: item.resourceId,
       productImage: item.productImage,
       productName: item.productName,
       quantity: requestedQuantity,
@@ -777,7 +817,7 @@ export const updateItemQuantity = mutation({
     }
 
     const itemType = item.itemType ?? "product";
-    const nextQuantity = itemType === "course" && args.quantity > 0
+    const nextQuantity = (itemType === "course" || itemType === "resource") && args.quantity > 0
       ? COURSE_CART_QUANTITY
       : args.quantity;
 
@@ -839,7 +879,7 @@ async function recalculateCart(ctx: MutationCtx, cartId: Id<"carts">) {
     .collect();
 
   const normalizedItems = await Promise.all(items.map(async (item) => {
-    const quantity = (item.itemType ?? "product") === "course" ? COURSE_CART_QUANTITY : item.quantity;
+    const quantity = (item.itemType ?? "product") === "course" || item.itemType === "resource" ? COURSE_CART_QUANTITY : item.quantity;
     const subtotal = item.price * quantity;
     if (item.quantity !== quantity || item.subtotal !== subtotal) {
       await ctx.db.patch(item._id, { quantity, subtotal });

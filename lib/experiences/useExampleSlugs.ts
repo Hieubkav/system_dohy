@@ -43,6 +43,11 @@ export function useExampleCourseSlug(): string | null {
   return courses?.[0]?.slug ?? null;
 }
 
+export function useExampleResourceSlug(): string | null {
+  const resources = useQuery(api.resources.searchPublished, { limit: 1 });
+  return resources?.[0]?.slug ?? null;
+}
+
 /**
  * Hook to get example post category slug for preview links
  */

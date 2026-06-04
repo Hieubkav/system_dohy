@@ -17,9 +17,10 @@ const formatVND = (value: number) => new Intl.NumberFormat('vi-VN', {
   style: 'currency',
   currency: 'VND',
 }).format(value);
-const itemTypeLabel = (itemType?: 'product' | 'service' | 'course') => {
+const itemTypeLabel = (itemType?: 'product' | 'service' | 'course' | 'resource') => {
   if (itemType === 'service') return 'Dịch vụ';
   if (itemType === 'course') return 'Khóa học';
+  if (itemType === 'resource') return 'Tài nguyên';
   return 'Sản phẩm';
 };
 
@@ -160,7 +161,7 @@ export function CartDrawer() {
             <div className="text-sm text-center py-8" style={{ color: tokens.metaText }}>Giỏ hàng đang trống.</div>
           )}
           {items.map(item => {
-            const isCourse = item.itemType === 'course';
+            const isSingleQuantity = item.itemType === 'course' || item.itemType === 'resource';
             return (
             <div key={item._id} className="flex gap-3 py-3 border-b last:border-0" style={{ borderColor: tokens.itemDivider }}>
               <div className="w-16 h-16 rounded-lg flex-shrink-0 overflow-hidden" style={{ backgroundColor: tokens.thumbBg }}>
@@ -178,9 +179,9 @@ export function CartDrawer() {
                 )}
                 <p className="text-sm font-semibold mt-0.5" style={{ color: tokens.priceText }}>{formatVND(item.price)}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  {isCourse ? (
+                  {isSingleQuantity ? (
                     <span className="rounded-full px-2 py-1 text-xs font-medium" style={{ backgroundColor: tokens.surfaceSoft, color: tokens.metaText }}>
-                      1 khóa học
+                      1 {item.itemType === 'resource' ? 'tài nguyên' : 'khóa học'}
                     </span>
                   ) : (
                     <>

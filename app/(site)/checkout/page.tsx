@@ -16,9 +16,10 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { useCart } from '@/lib/cart';
 
 const formatPrice = (value: number) => new Intl.NumberFormat('vi-VN', { currency: 'VND', style: 'currency' }).format(value);
-const itemTypeLabel = (itemType?: 'product' | 'service' | 'course') => {
+const itemTypeLabel = (itemType?: 'product' | 'service' | 'course' | 'resource') => {
   if (itemType === 'service') return 'Dịch vụ';
   if (itemType === 'course') return 'Khóa học';
+  if (itemType === 'resource') return 'Tài nguyên';
   return 'Sản phẩm';
 };
 
@@ -188,6 +189,7 @@ type CheckoutItemPolicy = {
   canUseCod: boolean;
   hasCourseItems: boolean;
   hasDigitalProductItems: boolean;
+  hasResourceItems: boolean;
   hasServiceItems: boolean;
   hasShippableItems: boolean;
   isPending: boolean;
@@ -231,7 +233,7 @@ const buildCheckoutPolicy = (params: {
   directProductType?: string | null;
   fromCart: boolean;
   cartItems: Array<{
-    itemType?: 'product' | 'service' | 'course';
+    itemType?: 'product' | 'service' | 'course' | 'resource';
     productId?: Id<'products'>;
   }>;
   cartProductTypeMap: Map<Id<'products'>, string>;
@@ -243,6 +245,7 @@ const buildCheckoutPolicy = (params: {
         canUseCod: false,
         hasCourseItems: false,
         hasDigitalProductItems: false,
+        hasResourceItems: false,
         hasServiceItems: false,
         hasShippableItems: true,
         isPending: true,
@@ -253,6 +256,7 @@ const buildCheckoutPolicy = (params: {
       canUseCod: !isDigital,
       hasCourseItems: false,
       hasDigitalProductItems: isDigital,
+      hasResourceItems: false,
       hasServiceItems: false,
       hasShippableItems: !isDigital,
       isPending: false,
@@ -261,15 +265,17 @@ const buildCheckoutPolicy = (params: {
 
   const productItems = params.cartItems.filter((item) => (item.itemType ?? 'product') === 'product' && item.productId);
   const hasCourseItems = params.cartItems.some((item) => item.itemType === 'course');
+  const hasResourceItems = params.cartItems.some((item) => item.itemType === 'resource');
   const hasServiceItems = params.cartItems.some((item) => item.itemType === 'service');
   const hasDigitalProductItems = productItems.some((item) => params.cartProductTypeMap.get(item.productId!) === 'digital');
   const hasPhysicalProductItems = productItems.some((item) => (params.cartProductTypeMap.get(item.productId!) ?? 'physical') !== 'digital');
   const hasShippableItems = params.cartProductsPending || hasPhysicalProductItems;
 
   return {
-    canUseCod: !params.cartProductsPending && hasShippableItems && !hasCourseItems && !hasServiceItems && !hasDigitalProductItems,
+    canUseCod: !params.cartProductsPending && hasShippableItems && !hasCourseItems && !hasResourceItems && !hasServiceItems && !hasDigitalProductItems,
     hasCourseItems,
     hasDigitalProductItems,
+    hasResourceItems,
     hasServiceItems,
     hasShippableItems,
     isPending: params.cartProductsPending,
@@ -677,9 +683,10 @@ function CheckoutContent() {
         productId: item.productId,
         serviceId: item.serviceId,
         courseId: item.courseId,
+        resourceId: item.resourceId,
         productName: item.productName,
         price: item.price,
-        quantity: item.itemType === 'course' ? 1 : item.quantity,
+        quantity: item.itemType === 'course' || item.itemType === 'resource' ? 1 : item.quantity,
         variantId: item.variantId,
         variantTitle: item.variantId ? cartVariantTitleMap.get(item.variantId) || undefined : undefined,
       }));
@@ -706,7 +713,7 @@ function CheckoutContent() {
         id: item._id,
         type: itemTypeLabel(item.itemType),
         name: item.productName,
-        quantity: item.itemType === 'course' ? 1 : item.quantity,
+        quantity: item.itemType === 'course' || item.itemType === 'resource' ? 1 : item.quantity,
         price: item.price,
         image: item.productImage ?? undefined,
         variantTitle: item.variantId ? cartVariantTitleMap.get(item.variantId) || undefined : undefined,
@@ -1060,13 +1067,15 @@ function CheckoutContent() {
 
   const noShippingNotice = checkoutItemPolicy.hasCourseItems
     ? 'Khóa học sẽ được xử lý theo tài khoản/email sau khi thanh toán, không cần giao hàng.'
-    : checkoutItemPolicy.hasServiceItems
+    : checkoutItemPolicy.hasResourceItems
+      ? 'Tài nguyên sẽ được mở quyền tải trong tài khoản sau khi thanh toán, không cần giao hàng.'
+      : checkoutItemPolicy.hasServiceItems
       ? 'Đơn dịch vụ chỉ cần thông tin liên hệ để tư vấn/xác nhận lịch, không cần giao hàng.'
       : checkoutItemPolicy.hasDigitalProductItems
         ? 'Sản phẩm số sẽ được gửi qua email/tài khoản sau khi thanh toán, không cần giao hàng.'
         : 'Đơn hàng này không cần giao hàng.';
   const codPolicyNotice = hiddenCodByPolicy
-    ? 'COD chỉ áp dụng khi toàn bộ đơn là sản phẩm vật lý cần giao hàng. Đơn có khóa học, dịch vụ hoặc sản phẩm số cần thanh toán chuyển khoản/VietQR/thẻ/ví.'
+    ? 'COD chỉ áp dụng khi toàn bộ đơn là sản phẩm vật lý cần giao hàng. Đơn có khóa học, tài nguyên, dịch vụ hoặc sản phẩm số cần thanh toán chuyển khoản/VietQR/thẻ/ví.'
     : null;
   const isPaymentBlocked = isPaymentEnabled && availablePaymentMethods.length === 0;
 

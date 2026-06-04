@@ -23,6 +23,8 @@ import { ProductSeeder } from './products.seeder';
 import { ProjectCategorySeeder } from './projectCategories.seeder';
 import { ProjectSeeder } from './projects.seeder';
 import { PromotionsSeeder } from './promotions.seeder';
+import { ResourceCategorySeeder } from './resourceCategories.seeder';
+import { ResourceSeeder } from './resources.seeder';
 import { RolesSeeder } from './roles.seeder';
 import { ServiceCategorySeeder } from './serviceCategories.seeder';
 import { ServiceSeeder } from './services.seeder';
@@ -58,6 +60,8 @@ export const SEEDER_REGISTRY: Record<string, SeederConstructor> = {
   projectCategories: ProjectCategorySeeder,
   projects: ProjectSeeder,
   promotions: PromotionsSeeder,
+  resourceCategories: ResourceCategorySeeder,
+  resources: ResourceSeeder,
   roles: RolesSeeder,
   serviceCategories: ServiceCategorySeeder,
   services: ServiceSeeder,

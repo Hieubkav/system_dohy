@@ -14,6 +14,7 @@ export {
   useExampleServiceSlug,
   useExampleProjectSlug,
   useExampleCourseSlug,
+  useExampleResourceSlug,
   useExamplePostCategorySlug,
 } from './useExampleSlugs';
 export {
@@ -30,6 +31,8 @@ export {
   useCoursesDetailConfig,
   useProjectsListConfig,
   useProjectsDetailConfig,
+  useResourcesListConfig,
+  useResourcesDetailConfig,
   useLessonDetailConfig,
   useSearchFilterConfig,
   useServicesListConfig,

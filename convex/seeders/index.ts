@@ -18,6 +18,8 @@ export { CourseSeeder } from './courses.seeder';
 export { CourseCategorySeeder } from './courseCategories.seeder';
 export { ProjectSeeder } from './projects.seeder';
 export { ProjectCategorySeeder } from './projectCategories.seeder';
+export { ResourceSeeder } from './resources.seeder';
+export { ResourceCategorySeeder } from './resourceCategories.seeder';
 export { AnalyticsSeeder } from './analytics.seeder';
 export { CommentsSeeder } from './comments.seeder';
 export { ContactInboxSeeder } from './contactInbox.seeder';

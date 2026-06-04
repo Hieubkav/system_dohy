@@ -27,7 +27,8 @@ import {
   Calendar, 
   Eye, 
   Compass,
-  Heart
+  Heart,
+  Download
 } from 'lucide-react';
 import { useSearchFilterConfig } from '@/lib/experiences';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
@@ -45,6 +46,8 @@ const formatCoursePrice = (pricingType: string, price?: number) => {
   if (pricingType === 'contact' || !price) return 'Liên hệ';
   return formatPrice(price);
 };
+
+const formatResourcePrice = formatCoursePrice;
 
 // Component Skeleton
 function SearchPageSkeleton() {
@@ -188,7 +191,7 @@ function SearchContent() {
   
   // URL Params
   const query = searchParams.get('q') || '';
-  const activeTab = (searchParams.get('tab') || 'product') as 'product' | 'post' | 'service' | 'course';
+  const activeTab = (searchParams.get('tab') || 'product') as 'product' | 'post' | 'service' | 'course' | 'resource';
   const viewMode = (searchParams.get('view') || 'grid') as 'grid' | 'list';
   const sortBy = (searchParams.get('sort') || 'newest') as 'newest' | 'oldest' | 'popular' | 'price_asc' | 'price_desc' | 'name';
   
@@ -197,12 +200,14 @@ function SearchContent() {
   const bCat = searchParams.get('b_cat') || '';
   const sCat = searchParams.get('s_cat') || '';
   const cCat = searchParams.get('c_cat') || '';
+  const rCat = searchParams.get('r_cat') || '';
   
   // Pages
   const pPage = Number(searchParams.get('p_page')) || 1;
   const bPage = Number(searchParams.get('b_page')) || 1;
   const sPage = Number(searchParams.get('s_page')) || 1;
   const cPage = Number(searchParams.get('c_page')) || 1;
+  const rPage = Number(searchParams.get('r_page')) || 1;
   
   const itemsPerPage = 12;
 
@@ -257,6 +262,7 @@ function SearchContent() {
   const postsModule = useQuery(api.admin.modules.getModuleByKey, { key: 'posts' });
   const servicesModule = useQuery(api.admin.modules.getModuleByKey, { key: 'services' });
   const coursesModule = useQuery(api.admin.modules.getModuleByKey, { key: 'courses' });
+  const resourcesModule = useQuery(api.admin.modules.getModuleByKey, { key: 'resources' });
   const wishlistModule = useQuery(api.admin.modules.getModuleByKey, { key: 'wishlist' });
   const commerceCapabilities = useQuery(api.cart.getCommerceCapabilities, {});
   const toggleWishlist = useMutation(api.wishlist.toggle);
@@ -266,7 +272,8 @@ function SearchContent() {
   const isPostsEnabled = postsModule?.enabled ?? false;
   const isServicesEnabled = servicesModule?.enabled ?? false;
   const isCoursesEnabled = coursesModule?.enabled ?? false;
-  const isModulesLoading = productsModule === undefined || postsModule === undefined || servicesModule === undefined || coursesModule === undefined;
+  const isResourcesEnabled = resourcesModule?.enabled ?? false;
+  const isModulesLoading = productsModule === undefined || postsModule === undefined || servicesModule === undefined || coursesModule === undefined || resourcesModule === undefined;
 
   // Derived button visibility flags (respects experience config + module status)
   const canUseWishlist = (wishlistModule?.enabled ?? false) && searchFilterConfig.showWishlistButton;
@@ -279,6 +286,7 @@ function SearchContent() {
   const postCategories = useQuery(api.postCategories.listActive, { limit: 50 });
   const serviceCategories = useQuery(api.serviceCategories.listActive, { limit: 50 });
   const courseCategories = useQuery(api.courseCategories.listActive, { limit: 50 });
+  const resourceCategories = useQuery(api.resourceCategories.listActive, { limit: 50 });
 
   const productCategoryMap = useMemo(() => new Map<string, string>(productCategories?.map((c: any) => [c._id, c.name]) || []), [productCategories]);
   const productCategorySlugMap = useMemo(() => new Map<string, string>(productCategories?.map((c: any) => [c._id, c.slug]) || []), [productCategories]);
@@ -290,6 +298,8 @@ function SearchContent() {
   const serviceCategorySlugMap = useMemo(() => new Map<string, string>(serviceCategories?.map((c: any) => [c._id, c.slug]) || []), [serviceCategories]);
   const courseCategoryMap = useMemo(() => new Map<string, string>(courseCategories?.map((c: any) => [c._id, c.name]) || []), [courseCategories]);
   const courseCategorySlugMap = useMemo(() => new Map<string, string>(courseCategories?.map((c: any) => [c._id, c.slug]) || []), [courseCategories]);
+  const resourceCategoryMap = useMemo(() => new Map<string, string>(resourceCategories?.map((c: any) => [c._id, c.name]) || []), [resourceCategories]);
+  const resourceCategorySlugMap = useMemo(() => new Map<string, string>(resourceCategories?.map((c: any) => [c._id, c.slug]) || []), [resourceCategories]);
 
   // Fetch counts
   const prodCount = useQuery(api.products.countPublished, isProductsEnabled ? {
@@ -310,6 +320,11 @@ function SearchContent() {
   const courseCount = useQuery(api.courses.countPublished, isCoursesEnabled ? {
     search: query || undefined,
     categoryId: cCat ? (cCat as Id<'courseCategories'>) : undefined
+  } : 'skip');
+
+  const resourceCount = useQuery(api.resources.countPublished, isResourcesEnabled ? {
+    search: query || undefined,
+    categoryId: rCat ? (rCat as Id<'resourceCategories'>) : undefined
   } : 'skip');
 
   // Fetch results based on active tab
@@ -345,6 +360,14 @@ function SearchContent() {
     sortBy: sortBy as any
   } : 'skip');
 
+  const resources = useQuery(api.resources.listPublishedWithOffset, (activeTab === 'resource' && isResourcesEnabled) ? {
+    search: query || undefined,
+    categoryId: rCat ? (rCat as Id<'resourceCategories'>) : undefined,
+    limit: itemsPerPage,
+    offset: (rPage - 1) * itemsPerPage,
+    sortBy: (sortBy === 'name' ? 'title' : sortBy) as any
+  } : 'skip');
+
   // Loading States
   const isLoading = 
     isModulesLoading ||
@@ -352,27 +375,30 @@ function SearchContent() {
     (activeTab === 'post' && isPostsEnabled && posts === undefined) ||
     (activeTab === 'service' && isServicesEnabled && services === undefined) ||
     (activeTab === 'course' && isCoursesEnabled && courses === undefined) ||
+    (activeTab === 'resource' && isResourcesEnabled && resources === undefined) ||
     (isProductsEnabled && prodCount === undefined) ||
     (isPostsEnabled && postCount === undefined) ||
     (isServicesEnabled && svcCount === undefined) ||
-    (isCoursesEnabled && courseCount === undefined);
+    (isCoursesEnabled && courseCount === undefined) ||
+    (isResourcesEnabled && resourceCount === undefined);
 
   // Auto-switch tab if current tab is disabled
   useEffect(() => {
     if (isModulesLoading) return;
 
-    const availableTabs: ('product' | 'post' | 'service' | 'course')[] = [];
+    const availableTabs: ('product' | 'post' | 'service' | 'course' | 'resource')[] = [];
     if (isProductsEnabled) availableTabs.push('product');
     if (isPostsEnabled) availableTabs.push('post');
     if (isServicesEnabled) availableTabs.push('service');
     if (isCoursesEnabled) availableTabs.push('course');
+    if (isResourcesEnabled) availableTabs.push('resource');
 
     if (availableTabs.length > 0 && !availableTabs.includes(activeTab)) {
       const params = new URLSearchParams(searchParams.toString());
       params.set('tab', availableTabs[0]);
       router.replace(`${pathname}?${params.toString()}`);
     }
-  }, [isProductsEnabled, isPostsEnabled, isServicesEnabled, isCoursesEnabled, isModulesLoading, activeTab, router, pathname, searchParams]);
+  }, [isProductsEnabled, isPostsEnabled, isServicesEnabled, isCoursesEnabled, isResourcesEnabled, isModulesLoading, activeTab, router, pathname, searchParams]);
 
   // Search Submit Handler
   const handleSearchSubmit = (e?: React.FormEvent) => {
@@ -389,6 +415,7 @@ function SearchContent() {
     params.delete('b_page');
     params.delete('s_page');
     params.delete('c_page');
+    params.delete('r_page');
     router.push(`${pathname}?${params.toString()}`);
   };
 
@@ -400,16 +427,17 @@ function SearchContent() {
     params.delete('b_page');
     params.delete('s_page');
     params.delete('c_page');
+    params.delete('r_page');
     router.push(`${pathname}?${params.toString()}`);
   };
 
   // Tab switch handler
-  const handleTabChange = (tab: 'product' | 'post' | 'service' | 'course') => {
+  const handleTabChange = (tab: 'product' | 'post' | 'service' | 'course' | 'resource') => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', tab);
     // Reset sort if switching off products since products has unique price sorts
     const currentSort = params.get('sort');
-    if (tab !== 'product' && tab !== 'course' && (currentSort === 'price_asc' || currentSort === 'price_desc')) {
+    if (tab !== 'product' && tab !== 'course' && tab !== 'resource' && (currentSort === 'price_asc' || currentSort === 'price_desc')) {
       params.set('sort', 'newest');
     }
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
@@ -445,10 +473,14 @@ function SearchContent() {
       if (val) params.set('s_cat', val);
       else params.delete('s_cat');
       params.delete('s_page');
-    } else {
+    } else if (activeTab === 'course') {
       if (val) params.set('c_cat', val);
       else params.delete('c_cat');
       params.delete('c_page');
+    } else {
+      if (val) params.set('r_cat', val);
+      else params.delete('r_cat');
+      params.delete('r_page');
     }
     router.push(`${pathname}?${params.toString()}`);
   };
@@ -462,8 +494,10 @@ function SearchContent() {
       params.set('b_page', page.toString());
     } else if (activeTab === 'service') {
       params.set('s_page', page.toString());
-    } else {
+    } else if (activeTab === 'course') {
       params.set('c_page', page.toString());
+    } else {
+      params.set('r_page', page.toString());
     }
     router.push(`${pathname}?${params.toString()}`);
     
@@ -529,6 +563,13 @@ function SearchContent() {
     recordSlug: course.slug
   });
 
+  const getResourceDetailHref = (resource: any) => buildDetailPath({
+    categorySlug: resourceCategorySlugMap.get(resource.categoryId) || 'resources',
+    mode: routeMode,
+    moduleKey: 'resources',
+    recordSlug: resource.slug
+  });
+
   // Wishlist IDs for current products (to show filled heart)
   const productIds = useMemo(() => products?.map((p: any) => p._id) ?? [], [products]);
   const wishlistProductIds = useQuery(
@@ -571,8 +612,10 @@ function SearchContent() {
       ? (postCount ?? 0)
       : activeTab === 'service'
         ? (svcCount ?? 0)
-        : (courseCount ?? 0);
-  const currentPage = activeTab === 'product' ? pPage : activeTab === 'post' ? bPage : activeTab === 'service' ? sPage : cPage;
+        : activeTab === 'course'
+          ? (courseCount ?? 0)
+          : (resourceCount ?? 0);
+  const currentPage = activeTab === 'product' ? pPage : activeTab === 'post' ? bPage : activeTab === 'service' ? sPage : activeTab === 'course' ? cPage : rPage;
   const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
   // Current active categories options
@@ -580,10 +623,11 @@ function SearchContent() {
     if (activeTab === 'product') return productCategories || [];
     if (activeTab === 'post') return postCategories || [];
     if (activeTab === 'service') return serviceCategories || [];
-    return courseCategories || [];
-  }, [activeTab, productCategories, postCategories, serviceCategories, courseCategories]);
+    if (activeTab === 'course') return courseCategories || [];
+    return resourceCategories || [];
+  }, [activeTab, productCategories, postCategories, serviceCategories, courseCategories, resourceCategories]);
 
-  const activeCategoryVal = activeTab === 'product' ? pCat : activeTab === 'post' ? bCat : activeTab === 'service' ? sCat : cCat;
+  const activeCategoryVal = activeTab === 'product' ? pCat : activeTab === 'post' ? bCat : activeTab === 'service' ? sCat : activeTab === 'course' ? cCat : rCat;
 
   return (
     <div className="max-w-[1600px] mx-auto px-2 sm:px-4 py-6 md:py-10">
@@ -723,6 +767,29 @@ function SearchContent() {
               </span>
             </button>
           )}
+          {isResourcesEnabled && (
+            <button
+              type="button"
+              onClick={() => handleTabChange('resource')}
+              className="flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap"
+              style={{
+                borderColor: activeTab === 'resource' ? primaryColor : 'transparent',
+                color: activeTab === 'resource' ? primaryColor : '#64748b'
+              }}
+            >
+              <Download size={16} />
+              Tài nguyên
+              <span
+                className="text-xs px-2 py-0.5 rounded-full font-bold transition-all"
+                style={{
+                  backgroundColor: activeTab === 'resource' ? primaryColor + '15' : '#f1f5f9',
+                  color: activeTab === 'resource' ? primaryColor : '#475569'
+                }}
+              >
+                {resourceCount ?? 0}
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Filters Toolbar */}
@@ -747,7 +814,7 @@ function SearchContent() {
                 <option value="oldest">Cũ nhất</option>
                 <option value="popular">Phổ biến</option>
                 <option value="name">Tên A-Z</option>
-                {(activeTab === 'product' || activeTab === 'course') && (
+                {(activeTab === 'product' || activeTab === 'course' || activeTab === 'resource') && (
                   <>
                     <option value="price_asc">Giá tăng dần</option>
                     <option value="price_desc">Giá giảm dần</option>
@@ -812,6 +879,7 @@ function SearchContent() {
                   params.delete('b_cat');
                   params.delete('s_cat');
                   params.delete('c_cat');
+                  params.delete('r_cat');
                   router.push(`${pathname}?${params.toString()}`);
                 }}
                 className="inline-flex items-center text-xs font-semibold px-4 py-2 border rounded-xl hover:bg-slate-50 transition-colors"
@@ -1360,6 +1428,113 @@ function SearchContent() {
                           <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
                             <BookOpen size={12} />
                             {course.lessonCount || 0} bài
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )
+            )}
+
+            {/* Tab: Resources */}
+            {activeTab === 'resource' && resources && (
+              viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {resources.map((resource: any) => (
+                    <Link
+                      key={resource._id}
+                      href={getResourceDetailHref(resource)}
+                      className="group flex flex-col h-full bg-white rounded-2xl border border-slate-100 overflow-hidden transition-all duration-300 hover:border-slate-200 hover:shadow-lg hover:-translate-y-1"
+                    >
+                      <div className="aspect-video w-full relative overflow-hidden bg-slate-50 border-b border-slate-100/50">
+                        {resource.thumbnail ? (
+                          <Image
+                            src={resource.thumbnail}
+                            alt={resource.title}
+                            width={360}
+                            height={200}
+                            mode="thumb"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2 bg-gradient-to-br from-slate-50 to-slate-100">
+                            <Download size={32} />
+                            <span className="text-[10px] font-medium text-slate-400">Tài nguyên</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-5 flex-1 flex flex-col">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-2 block">
+                          {resourceCategoryMap.get(resource.categoryId) || 'Tài nguyên'}
+                        </span>
+                        <h3 className="font-semibold text-slate-800 text-base line-clamp-2 mb-3 group-hover:text-slate-900 transition-colors">
+                          {resource.title}
+                        </h3>
+                        <p className="text-slate-400 text-xs line-clamp-3 mb-4 flex-1">
+                          {resource.excerpt || 'Xem chi tiết và tải tài nguyên.'}
+                        </p>
+
+                        <div className="pt-4 border-t border-slate-50 flex items-center justify-between gap-3">
+                          <span className="text-sm font-bold" style={{ color: primaryColor }}>
+                            {formatResourcePrice(resource.pricingType, resource.priceAmount)}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                            <Download size={12} />
+                            Tải xuống
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {resources.map((resource: any) => (
+                    <Link
+                      key={resource._id}
+                      href={getResourceDetailHref(resource)}
+                      className="group flex gap-4 md:gap-6 bg-white p-4 rounded-2xl border border-slate-100 transition-all duration-300 hover:border-slate-200 hover:shadow-md"
+                    >
+                      <div className="w-28 md:w-44 aspect-video relative overflow-hidden bg-slate-50 rounded-xl shrink-0 border border-slate-100">
+                        {resource.thumbnail ? (
+                          <Image
+                            src={resource.thumbnail}
+                            alt={resource.title}
+                            width={180}
+                            height={100}
+                            mode="thumb"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-1 bg-gradient-to-br from-slate-50 to-slate-100">
+                            <Download size={24} />
+                            <span className="text-[8px] font-medium text-slate-400">Tài nguyên</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0 flex flex-col justify-between">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1 block">
+                            {resourceCategoryMap.get(resource.categoryId) || 'Tài nguyên'}
+                          </span>
+                          <h3 className="font-semibold text-slate-800 text-sm md:text-base line-clamp-1 mb-1 group-hover:text-slate-900 transition-colors">
+                            {resource.title}
+                          </h3>
+                          <p className="text-slate-400 text-xs line-clamp-2">
+                            {resource.excerpt || 'Xem chi tiết và tải tài nguyên.'}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
+                          <span className="text-sm md:text-base font-bold" style={{ color: primaryColor }}>
+                            {formatResourcePrice(resource.pricingType, resource.priceAmount)}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                            <Download size={12} />
+                            Tải xuống
                           </span>
                         </div>
                       </div>

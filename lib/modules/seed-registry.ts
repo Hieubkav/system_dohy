@@ -146,6 +146,18 @@ export const SEED_MODULE_METADATA: Record<string, SeedModuleMetadata> = {
     description: 'Dự án, video giới thiệu và thư viện ảnh',
     name: 'Projects',
   },
+  resourceCategories: {
+    category: 'content',
+    defaultQuantity: 5,
+    description: 'Danh mục tài nguyên',
+    name: 'Resource Categories',
+  },
+  resources: {
+    category: 'content',
+    defaultQuantity: 15,
+    description: 'Thư viện tài nguyên tải xuống',
+    name: 'Resources',
+  },
   promotions: {
     category: 'marketing',
     defaultQuantity: 5,

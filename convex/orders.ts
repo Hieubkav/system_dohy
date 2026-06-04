@@ -18,6 +18,7 @@ import {
 } from "./emailTemplates";
 import { isProviderCartCapable, type CommerceProviderKey } from "./lib/commerce";
 import { syncCourseStudentsForOrder } from "./lib/courseEnrollment";
+import { syncResourceCustomersForOrder } from "./lib/resourceAccess";
 
 const orderStatus = v.string();
 
@@ -182,11 +183,12 @@ async function handleOrderStatusTransition(
 }
 
 const orderItemValidator = v.object({
-  itemType: v.optional(v.union(v.literal("product"), v.literal("service"), v.literal("course"))),
+  itemType: v.optional(v.union(v.literal("product"), v.literal("service"), v.literal("course"), v.literal("resource"))),
   price: v.number(),
   productId: v.optional(v.id("products")),
   serviceId: v.optional(v.id("services")),
   courseId: v.optional(v.id("courses")),
+  resourceId: v.optional(v.id("resources")),
   productImage: v.optional(v.string()),
   productName: v.string(),
   quantity: v.number(),
@@ -209,11 +211,12 @@ type VariantPricingSetting = "product" | "variant";
 type VariantStockSetting = "product" | "variant";
 
 type OrderItemInput = {
-  itemType?: "product" | "service" | "course";
+  itemType?: "product" | "service" | "course" | "resource";
   price: number;
   productId?: Id<"products">;
   serviceId?: Id<"services">;
   courseId?: Id<"courses">;
+  resourceId?: Id<"resources">;
   productImage?: string;
   productName: string;
   quantity: number;
@@ -263,8 +266,8 @@ const validateOrderFulfillmentPolicy = (params: {
 };
 
 const isSameOrderLine = (
-  a: Pick<OrderItemInput, "itemType" | "productId" | "serviceId" | "courseId" | "variantId">,
-  b: Pick<OrderItemInput, "itemType" | "productId" | "serviceId" | "courseId" | "variantId">
+  a: Pick<OrderItemInput, "itemType" | "productId" | "serviceId" | "courseId" | "resourceId" | "variantId">,
+  b: Pick<OrderItemInput, "itemType" | "productId" | "serviceId" | "courseId" | "resourceId" | "variantId">
 ) => {
   const itemType = getOrderItemType(a);
   if (itemType !== getOrderItemType(b)) {
@@ -275,6 +278,9 @@ const isSameOrderLine = (
   }
   if (itemType === "service") {
     return a.serviceId === b.serviceId;
+  }
+  if (itemType === "resource") {
+    return a.resourceId === b.resourceId;
   }
   return a.courseId === b.courseId;
 };
@@ -392,6 +398,36 @@ async function normalizeOrderItems(
       };
     }
 
+    if (itemType === "resource") {
+      if (!item.resourceId) {
+        throw new Error("Resource not found");
+      }
+      const resource = await ctx.db.get(item.resourceId);
+      if (!resource || resource.status !== "Published") {
+        throw new Error("Resource not found");
+      }
+      if (resource.pricingType === "contact") {
+        throw new Error("Tài nguyên đang ở chế độ liên hệ, chưa thể thanh toán");
+      }
+      const price = resource.pricingType === "free" ? 0 : resource.priceAmount;
+      if (price === undefined || price < 0) {
+        throw new Error(`Giá tài nguyên ${resource.title} không hợp lệ`);
+      }
+      return {
+        ...item,
+        itemType: "resource",
+        price,
+        productImage: item.productImage ?? resource.thumbnail ?? undefined,
+        productName: resource.title,
+        quantity: 1,
+        variantId: undefined,
+        variantTitle: undefined,
+        isDigital: false,
+        digitalDeliveryType: undefined,
+        digitalCredentials: undefined,
+      };
+    }
+
     if (!item.courseId) {
       throw new Error("Course not found");
     }
@@ -422,8 +458,17 @@ async function normalizeOrderItems(
   }));
 
   const seenCourseIds = new Set<string>();
+  const seenResourceIds = new Set<string>();
   return normalizedItems.filter((item) => {
-    if (getOrderItemType(item) !== "course" || !item.courseId) {
+    const itemType = getOrderItemType(item);
+    if (itemType === "resource" && item.resourceId) {
+      if (seenResourceIds.has(item.resourceId)) {
+        return false;
+      }
+      seenResourceIds.add(item.resourceId);
+      return true;
+    }
+    if (itemType !== "course" || !item.courseId) {
       return true;
     }
     if (seenCourseIds.has(item.courseId)) {
@@ -542,14 +587,16 @@ async function validateCheckoutCommerce(ctx: MutationCtx, items: OrderItemInput[
       requiredProviders.add("products");
     } else if (itemType === "service") {
       requiredProviders.add("services");
-    } else {
+    } else if (itemType === "course") {
       requiredProviders.add("courses");
+    } else if (itemType === "resource") {
+      requiredProviders.add("resources");
     }
   }
 
   for (const provider of requiredProviders) {
     if (!await isProviderCartCapable(ctx, provider)) {
-      const label = provider === "products" ? "Sản phẩm" : provider === "services" ? "Dịch vụ" : "Khóa học";
+      const label = provider === "products" ? "Sản phẩm" : provider === "services" ? "Dịch vụ" : provider === "resources" ? "Tài nguyên" : "Khóa học";
       throw new Error(`${label} chưa được bật chế độ giỏ hàng và thanh toán`);
     }
   }
@@ -921,6 +968,7 @@ export const create = mutation({
       status: defaultStatus,
     });
     await syncCourseStudentsForOrder(ctx, orderId);
+    await syncResourceCustomersForOrder(ctx, orderId);
 
     if (stockCheckEnabled) {
       if (variantStock === "variant") {
@@ -962,6 +1010,7 @@ export const update = mutation({
     }
     if ((args.status && args.status !== oldOrder.status) || args.paymentStatus !== undefined) {
       await syncCourseStudentsForOrder(ctx, args.id);
+      await syncResourceCustomersForOrder(ctx, args.id);
     }
     return null;
   },
@@ -980,6 +1029,7 @@ export const updateStatus = mutation({
 
     await handleOrderStatusTransition(ctx, args.id, oldOrder.status, args.status);
     await syncCourseStudentsForOrder(ctx, args.id);
+    await syncResourceCustomersForOrder(ctx, args.id);
     return null;
   },
   returns: v.null(),
@@ -990,6 +1040,7 @@ export const updatePaymentStatus = mutation({
   handler: async (ctx, args) => {
     await OrdersModel.updatePaymentStatus(ctx, args);
     await syncCourseStudentsForOrder(ctx, args.id);
+    await syncResourceCustomersForOrder(ctx, args.id);
     return null;
   },
   returns: v.null(),
@@ -1053,6 +1104,7 @@ export const cancel = mutation({
     // Gửi email hủy đơn hàng
     await handleOrderStatusTransition(ctx, args.id, order.status, cancelledStatus.key);
     await syncCourseStudentsForOrder(ctx, args.id);
+    await syncResourceCustomersForOrder(ctx, args.id);
     return null;
   },
   returns: v.null(),
@@ -1102,6 +1154,7 @@ export const cancelOwnOrder = mutation({
     // Gửi email hủy đơn hàng
     await handleOrderStatusTransition(ctx, order._id, order.status, cancelledStatus.key);
     await syncCourseStudentsForOrder(ctx, order._id);
+    await syncResourceCustomersForOrder(ctx, order._id);
 
     const stockCheckEnabled = await isStockCheckEnabled(ctx);
     if (stockCheckEnabled) {
@@ -1345,6 +1398,7 @@ export const placeOrder = mutation({
       isDigitalOrder,
     });
     await syncCourseStudentsForOrder(ctx, orderId);
+    await syncResourceCustomersForOrder(ctx, orderId);
 
     // Lưu promotion usage sau khi đã có orderId hợp lệ
     if (args.promotionId) {
@@ -1492,6 +1546,7 @@ export const cancelByCustomer = mutation({
     // Gửi email hủy đơn hàng
     await handleOrderStatusTransition(ctx, order._id, order.status, cancelledStatus.key, { notifyShopOnCancel: true });
     await syncCourseStudentsForOrder(ctx, order._id);
+    await syncResourceCustomersForOrder(ctx, order._id);
 
     const stockCheckEnabled = await isStockCheckEnabled(ctx);
     if (stockCheckEnabled) {

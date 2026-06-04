@@ -70,7 +70,7 @@ function makeTempId(): string {
 
 function getYouTubeVideoId(url: string): string | null {
   if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&\?]*).*/;
   const match = url.match(regExp);
   return (match && match[2].length === 11) ? match[2] : null;
 }
@@ -694,7 +694,7 @@ export function CourseCurriculumEditor({
     if (dragType !== 'chapter' || dragId === targetId) return;
 
     setDraftChapters((prev) => {
-      const active = [...prev.filter((c) => !c.isDeleted)].sort((a, b) => a.order - b.order);
+      const active = prev.filter((c) => !c.isDeleted).sort((a, b) => a.order - b.order);
       const deleted = prev.filter((c) => c.isDeleted);
       const dragIndex = active.findIndex((c) => c._id === dragId);
       const targetIndex = active.findIndex((c) => c._id === targetId);

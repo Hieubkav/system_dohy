@@ -2,11 +2,11 @@
 
 import React, { useMemo, useState } from 'react';
 import { AdminImage as Image } from '@/app/admin/components/AdminImage';
-import { Briefcase, FileText, GraduationCap, Package } from 'lucide-react';
+import { Briefcase, FileText, FolderOpen, GraduationCap, Package } from 'lucide-react';
 import { cn } from './ui';
 import { isValidImageSrc } from '@/lib/utils/image';
 
-type AdminEntityImageVariant = 'post' | 'service' | 'product' | 'course' | 'project';
+type AdminEntityImageVariant = 'post' | 'service' | 'product' | 'course' | 'project' | 'resource';
 
 type AdminEntityImageProps = {
   alt: string;
@@ -21,6 +21,7 @@ const FALLBACKS: Record<AdminEntityImageVariant, { icon: typeof FileText; label:
   post: { icon: FileText, label: 'Bài viết' },
   product: { icon: Package, label: 'Sản phẩm' },
   project: { icon: Briefcase, label: 'Dự án' },
+  resource: { icon: FolderOpen, label: 'Tài nguyên' },
   course: { icon: GraduationCap, label: 'Khóa học' },
   service: { icon: Briefcase, label: 'Dịch vụ' },
 };

@@ -20,12 +20,14 @@ import PostsPage from '../_components/posts/PostsPage';
 import ServicesPage from '../_components/services/ServicesPage';
 import CoursesPage from '../_components/courses/CoursesPage';
 import ProjectsPage from '@/app/(site)/projects/page';
+import ResourcesPage from '../_components/resources/ResourcesPage';
 
 import ProductDetailPage from '../_components/details/ProductDetailPage';
 import PostDetailPage from '../_components/details/PostDetailPage';
 import ServiceDetailPage from '../_components/details/ServiceDetailPage';
 import CourseDetailPage from '@/app/(site)/_components/courses/CourseDetailPage';
 import ProjectDetailPage from '@/app/(site)/projects/[slug]/page';
+import ResourceDetailPage from '@/app/(site)/_components/resources/ResourceDetailPage';
 
 interface Props {
   params: Promise<{ slugs: string[] }>;
@@ -229,6 +231,41 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       });
     }
 
+    if (resolvedContext.moduleKey === 'resources') {
+      const resource = await client.query(api.resources.getById, { id: resolvedContext.recordId as Id<'resources'> });
+      if (!resource) {
+        return buildSeoMetadata({
+          contact,
+          descriptionOverride: 'Tài nguyên không tồn tại hoặc đã bị xóa.',
+          entityExists: false,
+          pathname: canonicalPath,
+          routeType: 'detail',
+          seo,
+          site,
+          social,
+          titleOverride: 'Không tìm thấy tài nguyên',
+        });
+      }
+      return buildSeoMetadata({
+        contact,
+        descriptionOverride: (resource.metaDescription ?? resource.excerpt) ?? seo.seo_description,
+        entity: {
+          content: resource.content,
+          excerpt: resource.excerpt,
+          image: resource.thumbnail,
+          metaDescription: resource.metaDescription,
+          metaTitle: resource.metaTitle,
+          title: resource.title,
+        },
+        pathname: canonicalPath,
+        routeType: 'detail',
+        seo,
+        site,
+        social,
+        titleOverride: resource.metaTitle ?? resource.title,
+      });
+    }
+
     if (resolvedContext.moduleKey === 'projects') {
       const project = await client.query(api.projects.getById, { id: resolvedContext.recordId as Id<'projects'> });
       if (!project) {
@@ -333,6 +370,9 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
     }
     if (resolvedContext.moduleKey === 'courses') {
       return <CoursesPage />;
+    }
+    if (resolvedContext.moduleKey === 'resources') {
+      return <ResourcesPage />;
     }
     if (resolvedContext.moduleKey === 'projects') {
       return <ProjectsPage />;
@@ -504,6 +544,28 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
         <>
           <JsonLd data={breadcrumbSchema} />
           <CourseDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} />
+        </>
+      );
+    }
+
+    if (resolvedContext.moduleKey === 'resources') {
+      const [resource, category] = await Promise.all([
+        client.query(api.resources.getById, { id: resolvedContext.recordId as Id<'resources'> }),
+        client.query(api.resourceCategories.getById, { id: resolvedContext.categoryId as Id<'resourceCategories'> }),
+      ]);
+      if (!resource) {notFound();}
+
+      const resourceUrl = `${baseUrl}${canonicalPath}`;
+      const breadcrumbSchema = generateBreadcrumbSchema([
+        { name: 'Trang chủ', url: baseUrl },
+        { name: category?.name ?? 'Tài nguyên', url: `${baseUrl}/${resolvedContext.categorySlug}` },
+        { name: resource.title, url: resourceUrl },
+      ]);
+
+      return (
+        <>
+          <JsonLd data={breadcrumbSchema} />
+          <ResourceDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} />
         </>
       );
     }

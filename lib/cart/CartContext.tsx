@@ -10,11 +10,12 @@ import { useCustomerAuth } from '@/app/(site)/auth/context';
 type CartItem = {
   _id: Id<'cartItems'>;
   cartId: Id<'carts'>;
-  itemType?: 'product' | 'service' | 'course';
+  itemType?: 'product' | 'service' | 'course' | 'resource';
   price: number;
   productId?: Id<'products'>;
   serviceId?: Id<'services'>;
   courseId?: Id<'courses'>;
+  resourceId?: Id<'resources'>;
   productImage?: string;
   productName: string;
   quantity: number;
@@ -54,6 +55,10 @@ type CartContextValue = {
     } | {
       itemType: 'course';
       courseId: Id<'courses'>;
+      quantity?: number;
+    } | {
+      itemType: 'resource';
+      resourceId: Id<'resources'>;
       quantity?: number;
     },
     quantity?: number,
@@ -103,7 +108,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     cart?._id ? { cartId: cart._id } : 'skip'
   );
   const normalizedItems = useMemo(() => (items ?? []).map((item) => {
-    if ((item.itemType ?? 'product') !== 'course') {
+    if ((item.itemType ?? 'product') !== 'course' && item.itemType !== 'resource') {
       return item;
     }
     return {
@@ -198,6 +203,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       itemType: 'course';
       courseId: Id<'courses'>;
       quantity?: number;
+    } | {
+      itemType: 'resource';
+      resourceId: Id<'resources'>;
+      quantity?: number;
     },
     quantity = 1,
     variantId?: Id<'productVariants'>,
@@ -217,7 +226,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         : {
             cartId: activeCartId,
             ...itemInput,
-            quantity: itemInput.itemType === 'course' ? 1 : (itemInput.quantity ?? quantity),
+            quantity: itemInput.itemType === 'course' || itemInput.itemType === 'resource' ? 1 : (itemInput.quantity ?? quantity),
             variantId: itemInput.itemType === 'product' ? (itemInput.variantId ?? variantId) : undefined,
           };
       return addItemMutation(payload);

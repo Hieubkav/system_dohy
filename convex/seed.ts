@@ -41,8 +41,9 @@ export const seedModules = mutation({
       { category: "marketing" as const, dependencies: ["products", "orders"], dependencyType: "all" as const, description: "Quản lý mã giảm giá, voucher", enabled: false, icon: "Megaphone", isCore: false, key: "promotions", name: "Khuyến mãi", order: 16 },
       { category: "marketing" as const, description: "Báo cáo và phân tích dữ liệu", enabled: true, icon: "BarChart3", isCore: false, key: "analytics", name: "Thống kê", order: 17 },
       { category: "content" as const, description: "Quản lý dịch vụ và danh mục dịch vụ", enabled: true, icon: "Briefcase", isCore: false, key: "services", name: "Dịch vụ", order: 18 },
-      { category: "system" as const, description: "Bảng Kanban quản lý công việc nội bộ", enabled: true, icon: "LayoutGrid", isCore: false, key: "kanban", name: "Kanban Board", order: 19 },
-      { category: "commerce" as const, dependencies: ["services"], dependencyType: "all" as const, description: "Quản lý lịch hẹn và đặt lịch", enabled: true, icon: "CalendarDays", isCore: false, key: "bookings", name: "Đặt lịch", order: 20 },
+      { category: "content" as const, description: "Quản lý tài nguyên, link tải và quyền truy cập", enabled: true, icon: "FileText", isCore: false, key: "resources", name: "Tài nguyên", order: 19 },
+      { category: "system" as const, description: "Bảng Kanban quản lý công việc nội bộ", enabled: true, icon: "LayoutGrid", isCore: false, key: "kanban", name: "Kanban Board", order: 20 },
+      { category: "commerce" as const, dependencies: ["services"], dependencyType: "all" as const, description: "Quản lý lịch hẹn và đặt lịch", enabled: true, icon: "CalendarDays", isCore: false, key: "bookings", name: "Đặt lịch", order: 21 },
     ];
 
     for (const mod of modules) {
@@ -94,7 +95,7 @@ export const seedPresets = mutation({
       },
       {
         description: "Shop đầy đủ: giỏ hàng, wishlist, khuyến mãi",
-        enabledModules: ["posts", "comments", "media", "products", "orders", "cart", "wishlist", "customers", "users", "roles", "settings", "menus", "homepage", "contactInbox", "notifications", "promotions", "analytics"],
+        enabledModules: ["posts", "comments", "media", "products", "orders", "cart", "wishlist", "resources", "customers", "users", "roles", "settings", "menus", "homepage", "contactInbox", "notifications", "promotions", "analytics"],
         isDefault: true,
         key: "ecommerce-full",
         name: "eCommerce Full",

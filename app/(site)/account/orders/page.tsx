@@ -215,6 +215,9 @@ const getOrderQuantityLabel = (items: OrderItemSummary[]) => {
     if (itemType === 'course') {
       return `${quantity} khóa học`;
     }
+    if (itemType === 'resource') {
+      return `${quantity} tài nguyên`;
+    }
     if (itemType === 'service') {
       return `${quantity} dịch vụ`;
     }
@@ -342,6 +345,7 @@ export default function AccountOrdersPage() {
   const stockFeature = useQuery(api.admin.modules.getModuleFeature, { featureKey: 'enableStock', moduleKey: 'products' });
   const ordersSettings = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'orders' });
   const cancelOwnOrder = useMutation(api.orders.cancelOwnOrder);
+  const requestResourceDownload = useMutation(api.resources.requestDownload);
 
   const orders = useQuery(
     api.orders.listAllByCustomer,
@@ -457,9 +461,11 @@ export default function AccountOrdersPage() {
         ? await addItem({ itemType: 'service', serviceId: item.serviceId, quantity: item.quantity }, undefined, undefined, { silent: true })
         : itemType === 'course' && item.courseId
           ? await addItem({ itemType: 'course', courseId: item.courseId, quantity: 1 }, undefined, undefined, { silent: true })
-          : item.productId
-            ? await addItem(item.productId as Id<'products'>, item.quantity, item.variantId, { silent: true })
-            : false;
+          : itemType === 'resource' && item.resourceId
+            ? await addItem({ itemType: 'resource', resourceId: item.resourceId, quantity: 1 }, undefined, undefined, { silent: true })
+            : item.productId
+              ? await addItem(item.productId as Id<'products'>, item.quantity, item.variantId, { silent: true })
+              : false;
       if (ok) {
         availableItems.push(item);
       } else {
@@ -482,6 +488,25 @@ export default function AccountOrdersPage() {
       } else {
         toast.error('Không thể thêm một số sản phẩm vào giỏ hàng.');
       }
+    }
+  };
+
+  const handleDownloadResource = async (resourceId?: Id<'resources'>) => {
+    if (!resourceId) {return;}
+    if (!token) {
+      openLoginModal();
+      return;
+    }
+    try {
+      const result = await requestResourceDownload({ resourceId, token });
+      if (result.ok && result.url) {
+        window.open(result.url, '_blank', 'noopener,noreferrer');
+        toast.success('Đang mở link tải');
+        return;
+      }
+      toast.error(result.reason === 'purchase_required' ? 'Bạn chưa có quyền tải tài nguyên này.' : 'Không thể tải tài nguyên.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể tải tài nguyên.');
     }
   };
 
@@ -745,12 +770,14 @@ export default function AccountOrdersPage() {
                               <div className="text-[10px] mb-3 uppercase tracking-wide" style={{ color: tokens.orderMetaText }}>Mục trong đơn</div>
                               <div className="space-y-3">
                                 {order.items.map((item, itemIndex) => {
-                                  const learningHref = (item.itemType ?? 'product') === 'course'
+                                  const itemType = item.itemType ?? 'product';
+                                  const learningHref = itemType === 'course'
                                     ? getCourseLearningHref(item.courseId)
                                     : null;
+                                  const canDownloadResource = itemType === 'resource' && item.resourceId;
 
                                   return (
-                                    <div key={`${item.productId}-${itemIndex}`} className="flex items-center gap-4">
+                                    <div key={`${item.productId ?? item.serviceId ?? item.courseId ?? item.resourceId}-${itemIndex}`} className="flex items-center gap-4">
                                       <div
                                         className="h-12 w-12 rounded-md border overflow-hidden flex items-center justify-center"
                                         style={{ borderColor: tokens.orderItemThumbBorder, backgroundColor: tokens.orderItemThumbBg }}
@@ -783,6 +810,16 @@ export default function AccountOrdersPage() {
                                             Vào học
                                           </Link>
                                         )}
+                                        {canDownloadResource && (
+                                          <button
+                                            type="button"
+                                            onClick={() => { void handleDownloadResource(item.resourceId); }}
+                                            className="mt-2 inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold"
+                                            style={{ backgroundColor: tokens.primaryButtonBg, color: tokens.primaryButtonText }}
+                                          >
+                                            Tải lại
+                                          </button>
+                                        )}
                                       </div>
                                       <div className="text-sm font-semibold" style={{ color: tokens.priceText }}>
                                         {formatPrice(item.price * item.quantity)}
@@ -799,7 +836,7 @@ export default function AccountOrdersPage() {
                               <div className="text-[10px] mb-3 uppercase tracking-wide" style={{ color: tokens.orderMetaText }}>Digital credentials</div>
                               <div className="space-y-4">
                                 {order.items.filter((item) => item.isDigital && item.digitalCredentials?.deliveredAt).map((item, itemIndex) => (
-                                  <div key={`${item.productId}-digital-${itemIndex}`} className="space-y-2">
+                                  <div key={`${item.productId ?? item.serviceId ?? item.courseId ?? item.resourceId}-digital-${itemIndex}`} className="space-y-2">
                                     <div className="text-sm font-semibold" style={{ color: tokens.orderValueText }}>{item.productName}</div>
                                     <DigitalCredentialsDisplay
                                       type={item.digitalDeliveryType ?? 'custom'}
@@ -1039,12 +1076,14 @@ export default function AccountOrdersPage() {
                         <div className="space-y-4">
                           <div className="text-xs font-semibold uppercase" style={{ color: tokens.orderMetaText }}>Mục trong đơn</div>
                           {order.items.map((item, itemIndex) => {
-                            const learningHref = (item.itemType ?? 'product') === 'course'
+                            const itemType = item.itemType ?? 'product';
+                            const learningHref = itemType === 'course'
                               ? getCourseLearningHref(item.courseId)
                               : null;
+                            const canDownloadResource = itemType === 'resource' && item.resourceId;
 
                             return (
-                              <div key={`${item.productId}-${itemIndex}`} className="flex flex-col sm:flex-row gap-4 items-start">
+                              <div key={`${item.productId ?? item.serviceId ?? item.courseId ?? item.resourceId}-${itemIndex}`} className="flex flex-col sm:flex-row gap-4 items-start">
                                 <div
                                   className="w-16 h-16 rounded-lg border overflow-hidden flex items-center justify-center"
                                   style={{ borderColor: tokens.orderItemThumbBorder, backgroundColor: tokens.orderItemThumbBg }}
@@ -1076,6 +1115,16 @@ export default function AccountOrdersPage() {
                                         Vào học
                                       </Link>
                                     )}
+                                    {canDownloadResource && (
+                                      <button
+                                        type="button"
+                                        onClick={() => { void handleDownloadResource(item.resourceId); }}
+                                        className="mt-2 inline-flex items-center rounded-md px-3 py-1.5 text-xs font-semibold"
+                                        style={{ backgroundColor: tokens.primaryButtonBg, color: tokens.primaryButtonText }}
+                                      >
+                                        Tải lại
+                                      </button>
+                                    )}
                                   </div>
                                   <div className="text-base font-semibold" style={{ color: tokens.priceText }}>{formatPrice(item.price * item.quantity)}</div>
                                 </div>
@@ -1089,7 +1138,7 @@ export default function AccountOrdersPage() {
                           <div className="text-xs font-semibold uppercase" style={{ color: tokens.orderMetaText }}>Digital credentials</div>
                           <div className="space-y-4">
                             {order.items.filter((item) => item.isDigital && item.digitalCredentials?.deliveredAt).map((item, itemIndex) => (
-                              <div key={`${item.productId}-digital-timeline-${itemIndex}`} className="space-y-2">
+                              <div key={`${item.productId ?? item.serviceId ?? item.courseId ?? item.resourceId}-digital-timeline-${itemIndex}`} className="space-y-2">
                                 <div className="text-sm font-semibold" style={{ color: tokens.orderValueText }}>{item.productName}</div>
                                 <DigitalCredentialsDisplay
                                   type={item.digitalDeliveryType ?? 'custom'}

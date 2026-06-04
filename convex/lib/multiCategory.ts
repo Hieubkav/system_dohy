@@ -5,7 +5,7 @@ export const MULTI_CATEGORY_SETTING_KEY = "enableMultipleCategories";
 
 export async function isMultiCategoryEnabled(
   ctx: QueryCtx | MutationCtx,
-  moduleKey: "posts" | "products" | "services" | "courses" | "projects",
+  moduleKey: "posts" | "products" | "services" | "courses" | "projects" | "resources",
 ) {
   const setting = await ctx.db
     .query("moduleSettings")
@@ -113,6 +113,25 @@ export async function syncCourseCategoryAssignments(
   ));
 }
 
+export async function syncResourceCategoryAssignments(
+  ctx: MutationCtx,
+  resourceId: Id<"resources">,
+  primaryCategoryId: Id<"resourceCategories">,
+  additionalCategoryIds?: Id<"resourceCategories">[],
+) {
+  const categoryIds = uniqueIds([primaryCategoryId, ...(additionalCategoryIds ?? [])]);
+  const existing = await ctx.db
+    .query("resourceCategoryAssignments")
+    .withIndex("by_resource", (q) => q.eq("resourceId", resourceId))
+    .collect();
+  const next = new Set(categoryIds);
+  await Promise.all(existing.filter((item) => !next.has(item.categoryId)).map((item) => ctx.db.delete(item._id)));
+  const existingSet = new Set(existing.map((item) => item.categoryId));
+  await Promise.all(categoryIds.filter((categoryId) => !existingSet.has(categoryId)).map((categoryId) =>
+    ctx.db.insert("resourceCategoryAssignments", { categoryId, resourceId, createdAt: Date.now() })
+  ));
+}
+
 export async function listPostAdditionalCategoryIds(ctx: QueryCtx, postId: Id<"posts">, primaryCategoryId: Id<"postCategories">) {
   const rows = await ctx.db.query("postCategoryAssignments").withIndex("by_post", (q) => q.eq("postId", postId)).collect();
   return rows.map((row) => row.categoryId).filter((categoryId) => categoryId !== primaryCategoryId);
@@ -135,6 +154,11 @@ export async function listProjectAdditionalCategoryIds(ctx: QueryCtx, projectId:
 
 export async function listCourseAdditionalCategoryIds(ctx: QueryCtx, courseId: Id<"courses">, primaryCategoryId: Id<"courseCategories">) {
   const rows = await ctx.db.query("courseCategoryAssignments").withIndex("by_course", (q) => q.eq("courseId", courseId)).collect();
+  return rows.map((row) => row.categoryId).filter((categoryId) => categoryId !== primaryCategoryId);
+}
+
+export async function listResourceAdditionalCategoryIds(ctx: QueryCtx, resourceId: Id<"resources">, primaryCategoryId: Id<"resourceCategories">) {
+  const rows = await ctx.db.query("resourceCategoryAssignments").withIndex("by_resource", (q) => q.eq("resourceId", resourceId)).collect();
   return rows.map((row) => row.categoryId).filter((categoryId) => categoryId !== primaryCategoryId);
 }
 
@@ -200,5 +224,18 @@ export async function mergeCoursesByCategoryAssignments(
   const assignedCourses = await Promise.all(assignments.map((item) => ctx.db.get(item.courseId)));
   const map = new Map<Id<"courses">, Doc<"courses">>();
   [...primaryCourses, ...assignedCourses.filter((item): item is Doc<"courses"> => Boolean(item))].forEach((course) => map.set(course._id, course));
+  return Array.from(map.values());
+}
+
+export async function mergeResourcesByCategoryAssignments(
+  ctx: QueryCtx,
+  categoryId: Id<"resourceCategories">,
+  primaryResources: Doc<"resources">[],
+  limit: number,
+) {
+  const assignments = await ctx.db.query("resourceCategoryAssignments").withIndex("by_category", (q) => q.eq("categoryId", categoryId)).take(limit);
+  const assignedResources = await Promise.all(assignments.map((item) => ctx.db.get(item.resourceId)));
+  const map = new Map<Id<"resources">, Doc<"resources">>();
+  [...primaryResources, ...assignedResources.filter((item): item is Doc<"resources"> => Boolean(item))].forEach((resource) => map.set(resource._id, resource));
   return Array.from(map.values());
 }

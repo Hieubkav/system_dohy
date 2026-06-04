@@ -1,6 +1,6 @@
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
-export type CommerceProviderKey = "products" | "services" | "courses";
+export type CommerceProviderKey = "products" | "services" | "courses" | "resources";
 export type CommerceMode = "off" | "cart" | "contact" | "affiliate";
 
 export type CommerceProviderCapability = {
@@ -22,7 +22,7 @@ export type CommerceCapabilities = {
 
 type CommerceCtx = QueryCtx | MutationCtx;
 
-const PROVIDERS: CommerceProviderKey[] = ["products", "services", "courses"];
+const PROVIDERS: CommerceProviderKey[] = ["products", "services", "courses", "resources"];
 
 const normalizeCommerceMode = (value: unknown, fallback: CommerceMode): CommerceMode => {
   if (value === "cart" || value === "contact" || value === "affiliate" || value === "off") {

@@ -12,7 +12,7 @@ type SuggestionItem = {
   id: string;
   title: string;
   thumbnail?: string | null;
-  type: 'post' | 'product' | 'service' | 'course';
+  type: 'post' | 'product' | 'service' | 'course' | 'resource';
   url: string;
 };
 
@@ -26,6 +26,7 @@ type AutocompleteResult = {
   products: SuggestionGroup;
   services: SuggestionGroup;
   courses: SuggestionGroup;
+  resources: SuggestionGroup;
 };
 
 export type HeaderSearchAutocompleteProps = {
@@ -35,6 +36,7 @@ export type HeaderSearchAutocompleteProps = {
   searchPosts: boolean;
   searchServices: boolean;
   searchCourses?: boolean;
+  searchResources?: boolean;
   className?: string;
   inputClassName?: string;
   inputStyle?: React.CSSProperties;
@@ -55,6 +57,7 @@ export function HeaderSearchAutocomplete({
   searchPosts,
   searchServices,
   searchCourses = false,
+  searchResources = false,
   className,
   inputClassName,
   inputStyle,
@@ -116,7 +119,7 @@ export function HeaderSearchAutocomplete({
     }
   }, [autoFocus, disabled]);
 
-  const canSearch = searchProducts || searchPosts || searchServices || searchCourses;
+  const canSearch = searchProducts || searchPosts || searchServices || searchCourses || searchResources;
   const shouldSearch = !disabled && debouncedQuery.length >= 1 && canSearch;
 
   const results = useQuery(api.search.autocomplete, shouldSearch
@@ -126,6 +129,7 @@ export function HeaderSearchAutocomplete({
       searchProducts,
       searchServices,
       searchCourses,
+      searchResources,
       limit: 5,
     }
     : 'skip');
@@ -138,7 +142,8 @@ export function HeaderSearchAutocomplete({
     { key: 'posts', label: 'Bài viết', icon: FileText, items: data?.posts?.items ?? [], total: data?.posts?.total ?? 0 },
     { key: 'services', label: 'Dịch vụ', icon: Briefcase, items: data?.services?.items ?? [], total: data?.services?.total ?? 0 },
     { key: 'courses', label: 'Khóa học', icon: BookOpen, items: data?.courses?.items ?? [], total: data?.courses?.total ?? 0 },
-  ]), [data?.courses, data?.posts, data?.products, data?.services]);
+    { key: 'resources', label: 'Tài nguyên', icon: FileText, items: data?.resources?.items ?? [], total: data?.resources?.total ?? 0 },
+  ]), [data?.courses, data?.posts, data?.products, data?.resources, data?.services]);
 
   const hasResults = sections.some(section => section.items.length > 0);
   

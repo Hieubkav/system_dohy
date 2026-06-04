@@ -29,6 +29,7 @@ const RESERVED_SLUGS = new Set([
   "products",
   "promotions",
   "posts",
+  "resources",
   "return-policy",
   "services",
   "shipping",
@@ -41,12 +42,12 @@ const RESERVED_SLUGS = new Set([
   "wishlist",
 ]);
 
-type SlugTable = "posts" | "products" | "services" | "courses" | "projects" | "postCategories" | "productCategories" | "serviceCategories" | "courseCategories" | "projectCategories";
-type SlugId = Id<"posts"> | Id<"products"> | Id<"services"> | Id<"courses"> | Id<"projects"> | Id<"postCategories"> | Id<"productCategories"> | Id<"serviceCategories"> | Id<"courseCategories"> | Id<"projectCategories">;
+type SlugTable = "posts" | "products" | "services" | "courses" | "projects" | "resources" | "postCategories" | "productCategories" | "serviceCategories" | "courseCategories" | "projectCategories" | "resourceCategories";
+type SlugId = Id<"posts"> | Id<"products"> | Id<"services"> | Id<"courses"> | Id<"projects"> | Id<"resources"> | Id<"postCategories"> | Id<"productCategories"> | Id<"serviceCategories"> | Id<"courseCategories"> | Id<"projectCategories"> | Id<"resourceCategories">;
 
 const TABLES_BY_SCOPE: Record<SlugScope, SlugTable[]> = {
-  record: ["posts", "products", "services", "courses", "projects"],
-  category: ["postCategories", "productCategories", "serviceCategories", "courseCategories", "projectCategories"],
+  record: ["posts", "products", "services", "courses", "projects", "resources"],
+  category: ["postCategories", "productCategories", "serviceCategories", "courseCategories", "projectCategories", "resourceCategories"],
 };
 
 const normalizeSlug = (value: string) => value.trim().toLowerCase();

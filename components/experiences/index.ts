@@ -15,6 +15,7 @@ export { PostsListPreview, ProductsListPreview } from './previews/ListPreview';
 export { ServicesListPreview } from './previews/ServicesListPreview';
 export { ProjectsListPreview, ProjectDetailPreview } from './previews/ProjectPreview';
 export { CoursesListPreview, CourseDetailPreview, LessonDetailPreview } from './previews/CoursePreview';
+export { ResourcesListPreview, ResourceDetailPreview } from './previews/ResourcePreview';
 export { PostDetailPreview, ServiceDetailPreview } from './previews/DetailPreview';
 export { ContactPreview } from './previews/ContactPreview';
 export { ErrorPagesPreview } from './previews/ErrorPagesPreview';

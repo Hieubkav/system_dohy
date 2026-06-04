@@ -13,9 +13,10 @@ import { useCartConfig } from '@/lib/experiences';
 import type { Id } from '@/convex/_generated/dataModel';
 
 const formatPrice = (value: number) => new Intl.NumberFormat('vi-VN', { currency: 'VND', style: 'currency' }).format(value);
-const itemTypeLabel = (itemType?: 'product' | 'service' | 'course') => {
+const itemTypeLabel = (itemType?: 'product' | 'service' | 'course' | 'resource') => {
   if (itemType === 'service') return 'Dịch vụ';
   if (itemType === 'course') return 'Khóa học';
+  if (itemType === 'resource') return 'Tài nguyên';
   return 'Sản phẩm';
 };
 
@@ -102,11 +103,11 @@ export default function CartPage() {
     await updateQuantity(itemId, quantity);
   };
   const renderQuantityControl = (item: (typeof items)[number], size: 'table' | 'sm' | 'md') => {
-    if (item.itemType === 'course') {
+    if (item.itemType === 'course' || item.itemType === 'resource') {
       return (
         <div className="flex items-center gap-2">
           <span className="rounded-full px-2 py-1 text-xs font-medium" style={{ backgroundColor: tokens.surfaceSoft, color: tokens.metaText }}>
-            1 khóa học
+            1 {item.itemType === 'resource' ? 'tài nguyên' : 'khóa học'}
           </span>
         </div>
       );
