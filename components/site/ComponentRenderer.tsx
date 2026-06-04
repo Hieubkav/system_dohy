@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { createPortal } from 'react-dom';
 import useEmblaCarousel from 'embla-carousel-react';
 import { PublicImage as Image } from '@/components/shared/PublicImage';
 import dynamic from 'next/dynamic';
@@ -2168,10 +2169,16 @@ const GalleryLightbox = ({
   onNavigate?: (direction: 'prev' | 'next') => void;
   colors: GalleryColorTokens;
 }) => {
+  const [mounted, setMounted] = React.useState(false);
   const originalBodyOverflowRef = React.useRef<string | null>(null);
   const isOpen = Boolean(photo?.url);
   const [imageKey, setImageKey] = React.useState(0);
   const touchStartRef = React.useRef<{ x: number; y: number } | null>(null);
+
+  React.useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   // Update imageKey on index change for transition
   React.useEffect(() => {
@@ -2204,7 +2211,7 @@ const GalleryLightbox = ({
     };
   }, [isOpen, onClose, onNavigate]);
 
-  if (!photo || !photo.url) {return null;}
+  if (!photo || !photo.url || !mounted) {return null;}
 
   const hasMultiple = photos && photos.length > 1 && onNavigate;
 
@@ -2223,9 +2230,9 @@ const GalleryLightbox = ({
     }
   };
 
-  return (
+  const lightboxContent = (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center"
+      className="fixed inset-0 z-[9999] flex items-center justify-center"
       onClick={onClose}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
@@ -2237,7 +2244,7 @@ const GalleryLightbox = ({
       <button
         type="button"
         onClick={onClose}
-        className="absolute top-3 right-3 md:top-5 md:right-5 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[70] hover:scale-110"
+        className="absolute top-3 right-3 md:top-5 md:right-5 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[10000] hover:scale-110"
         style={{
           backgroundColor: colors.lightboxControlBg,
           borderColor: colors.lightboxControlBorder,
@@ -2253,7 +2260,7 @@ const GalleryLightbox = ({
         <>
           <button
             onClick={(e) => { e.stopPropagation(); onNavigate('prev'); }}
-            className="absolute left-2 md:left-5 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[70] hover:scale-110 active:scale-95"
+            className="absolute left-2 md:left-5 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[10000] hover:scale-110 active:scale-95"
             style={{
               backgroundColor: colors.lightboxControlBg,
               borderColor: colors.lightboxControlBorder,
@@ -2265,7 +2272,7 @@ const GalleryLightbox = ({
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onNavigate('next'); }}
-            className="absolute right-2 md:right-5 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[70] hover:scale-110 active:scale-95"
+            className="absolute right-2 md:right-5 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full border flex items-center justify-center transition-all z-[10000] hover:scale-110 active:scale-95"
             style={{
               backgroundColor: colors.lightboxControlBg,
               borderColor: colors.lightboxControlBorder,
@@ -2281,7 +2288,7 @@ const GalleryLightbox = ({
       {/* Counter */}
       {hasMultiple && typeof currentIndex === 'number' && (
         <div
-          className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 text-sm z-[70] px-4 py-1.5 rounded-full border font-medium"
+          className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 text-sm z-[10000] px-4 py-1.5 rounded-full border font-medium"
           style={{
             backgroundColor: colors.lightboxCounterBg,
             color: colors.lightboxCounterText,
@@ -2294,7 +2301,7 @@ const GalleryLightbox = ({
 
       {/* Image container — near fullscreen */}
       <div
-        className="relative z-[65] w-full h-full flex items-center justify-center px-14 md:px-20 py-16 md:py-14"
+        className="relative z-[10000] w-full h-full flex items-center justify-center px-14 md:px-20 py-16 md:py-14"
         onClick={e => { e.stopPropagation(); onClose(); }}
       >
         <SiteImage
@@ -2307,6 +2314,8 @@ const GalleryLightbox = ({
       </div>
     </div>
   );
+
+  return createPortal(lightboxContent, document.body);
 };
 
 
