@@ -30,6 +30,11 @@ export function useExampleServiceSlug(): string | null {
   return services?.[0]?.slug ?? null;
 }
 
+export function useExampleProjectSlug(): string | null {
+  const projects = useQuery(api.projects.searchPublished, { limit: 1 });
+  return projects?.[0]?.slug ?? null;
+}
+
 /**
  * Hook to get example course slug for preview links
  */

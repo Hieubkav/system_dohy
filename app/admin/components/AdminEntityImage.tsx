@@ -6,7 +6,7 @@ import { Briefcase, FileText, GraduationCap, Package } from 'lucide-react';
 import { cn } from './ui';
 import { isValidImageSrc } from '@/lib/utils/image';
 
-type AdminEntityImageVariant = 'post' | 'service' | 'product' | 'course';
+type AdminEntityImageVariant = 'post' | 'service' | 'product' | 'course' | 'project';
 
 type AdminEntityImageProps = {
   alt: string;
@@ -20,6 +20,7 @@ type AdminEntityImageProps = {
 const FALLBACKS: Record<AdminEntityImageVariant, { icon: typeof FileText; label: string }> = {
   post: { icon: FileText, label: 'Bài viết' },
   product: { icon: Package, label: 'Sản phẩm' },
+  project: { icon: Briefcase, label: 'Dự án' },
   course: { icon: GraduationCap, label: 'Khóa học' },
   service: { icon: Briefcase, label: 'Dịch vụ' },
 };

@@ -333,6 +333,62 @@ export function useServicesListConfig(): ServicesListConfig {
   }, [experienceSetting?.value]);
 }
 
+type ProjectsListConfig = {
+  layoutStyle: 'grid' | 'sidebar' | 'masonry';
+  filterPosition: 'sidebar' | 'top' | 'none';
+  paginationType: PaginationType;
+  showSearch: boolean;
+  showCategories: boolean;
+  hideEmptyCategories: boolean;
+  postsPerPage: number;
+  showClientName: boolean;
+  showIntroVideo: boolean;
+};
+
+export function useProjectsListConfig(): ProjectsListConfig {
+  const experienceSetting = useQuery(api.settings.getByKey, { key: 'projects_list_ui' });
+
+  return useMemo(() => {
+    const raw = experienceSetting?.value as Partial<ProjectsListConfig> | undefined;
+    return {
+      layoutStyle: raw?.layoutStyle ?? 'grid',
+      filterPosition: raw?.filterPosition ?? 'top',
+      paginationType: normalizePaginationType(raw?.paginationType),
+      showSearch: raw?.showSearch ?? true,
+      showCategories: raw?.showCategories ?? true,
+      hideEmptyCategories: raw?.hideEmptyCategories ?? true,
+      postsPerPage: raw?.postsPerPage ?? 12,
+      showClientName: raw?.showClientName ?? true,
+      showIntroVideo: raw?.showIntroVideo ?? true,
+    };
+  }, [experienceSetting?.value]);
+}
+
+type ProjectsDetailConfig = {
+  layoutStyle: 'classic' | 'modern' | 'minimal';
+  showGallery: boolean;
+  showIntroVideo: boolean;
+  showRelated: boolean;
+  showShare: boolean;
+  showClientName: boolean;
+};
+
+export function useProjectsDetailConfig(): ProjectsDetailConfig {
+  const experienceSetting = useQuery(api.settings.getByKey, { key: 'projects_detail_ui' });
+
+  return useMemo(() => {
+    const raw = experienceSetting?.value as Partial<ProjectsDetailConfig> | undefined;
+    return {
+      layoutStyle: raw?.layoutStyle ?? 'classic',
+      showGallery: raw?.showGallery ?? true,
+      showIntroVideo: raw?.showIntroVideo ?? true,
+      showRelated: raw?.showRelated ?? true,
+      showShare: raw?.showShare ?? true,
+      showClientName: raw?.showClientName ?? true,
+    };
+  }, [experienceSetting?.value]);
+}
+
 type CoursesListConfig = {
   layoutStyle: 'grid' | 'sidebar' | 'masonry';
   gridColumns: number;

@@ -1,5 +1,5 @@
 export type RouteMode = 'unified' | 'namespace';
-export type RoutableModuleKey = 'posts' | 'products' | 'services' | 'courses';
+export type RoutableModuleKey = 'posts' | 'products' | 'services' | 'courses' | 'projects';
 
 export const normalizeRouteMode = (value?: unknown): RouteMode => (
   value === 'namespace' ? 'namespace' : 'unified'

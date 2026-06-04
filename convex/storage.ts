@@ -219,6 +219,8 @@ export const deleteImage = mutation({
     const products = await ctx.db.query("products").take(maxScan);
     const posts = await ctx.db.query("posts").take(maxScan);
     const services = await ctx.db.query("services").take(maxScan);
+    const courses = await ctx.db.query("courses").take(maxScan);
+    const projects = await ctx.db.query("projects").take(maxScan);
     const settings = await ctx.db.query("settings").take(maxScan);
     const homeComponents = await ctx.db.query("homeComponents").take(maxScan);
     const storageUrl = await ctx.storage.getUrl(args.storageId);
@@ -247,12 +249,28 @@ export const deleteImage = mutation({
       || valueMatchesStorage(service.markdownRender, storageIdValue, storageUrl)
       || valueMatchesStorage(service.htmlRender, storageIdValue, storageUrl)
     );
+    const isUsedInCourses = courses.some((course) =>
+      valueMatchesStorage(course.thumbnailStorageId, storageIdValue, storageUrl)
+      || valueMatchesStorage(course.thumbnail, storageIdValue, storageUrl)
+      || valueMatchesStorage(course.content, storageIdValue, storageUrl)
+      || valueMatchesStorage(course.markdownRender, storageIdValue, storageUrl)
+      || valueMatchesStorage(course.htmlRender, storageIdValue, storageUrl)
+    );
+    const isUsedInProjects = projects.some((project) =>
+      valueMatchesStorage(project.thumbnailStorageId, storageIdValue, storageUrl)
+      || valueMatchesStorage(project.imageStorageIds, storageIdValue, storageUrl)
+      || valueMatchesStorage(project.thumbnail, storageIdValue, storageUrl)
+      || valueMatchesStorage(project.images, storageIdValue, storageUrl)
+      || valueMatchesStorage(project.content, storageIdValue, storageUrl)
+      || valueMatchesStorage(project.markdownRender, storageIdValue, storageUrl)
+      || valueMatchesStorage(project.htmlRender, storageIdValue, storageUrl)
+    );
     const isUsedInSettings = settings.some((setting) => valueMatchesStorage(setting.value, storageIdValue, storageUrl));
     const isUsedInHomeComponents = homeComponents.some((component) =>
       valueMatchesStorage(component.config, storageIdValue, storageUrl)
     );
 
-    if (isUsedInProducts || isUsedInPosts || isUsedInServices || isUsedInSettings || isUsedInHomeComponents) {
+    if (isUsedInProducts || isUsedInPosts || isUsedInServices || isUsedInCourses || isUsedInProjects || isUsedInSettings || isUsedInHomeComponents) {
       throw new Error("File đang được sử dụng bởi một thành phần khác");
     }
 
@@ -288,6 +306,8 @@ export const cleanupStorageIfUnreferenced = mutation({
     const products = await ctx.db.query("products").take(maxScan);
     const posts = await ctx.db.query("posts").take(maxScan);
     const services = await ctx.db.query("services").take(maxScan);
+    const courses = await ctx.db.query("courses").take(maxScan);
+    const projects = await ctx.db.query("projects").take(maxScan);
     const settings = await ctx.db.query("settings").take(maxScan);
     const homeComponents = await ctx.db.query("homeComponents").take(maxScan);
     const storageUrl = await ctx.storage.getUrl(args.storageId);
@@ -296,6 +316,8 @@ export const cleanupStorageIfUnreferenced = mutation({
     const hitScanLimit = products.length === maxScan
       || posts.length === maxScan
       || services.length === maxScan
+      || courses.length === maxScan
+      || projects.length === maxScan
       || settings.length === maxScan
       || homeComponents.length === maxScan;
     if (hitScanLimit) {
@@ -325,12 +347,28 @@ export const cleanupStorageIfUnreferenced = mutation({
       || valueMatchesStorage(service.markdownRender, storageIdValue, storageUrl)
       || valueMatchesStorage(service.htmlRender, storageIdValue, storageUrl)
     );
+    const isUsedInCourses = courses.some((course) =>
+      valueMatchesStorage(course.thumbnailStorageId, storageIdValue, storageUrl)
+      || valueMatchesStorage(course.thumbnail, storageIdValue, storageUrl)
+      || valueMatchesStorage(course.content, storageIdValue, storageUrl)
+      || valueMatchesStorage(course.markdownRender, storageIdValue, storageUrl)
+      || valueMatchesStorage(course.htmlRender, storageIdValue, storageUrl)
+    );
+    const isUsedInProjects = projects.some((project) =>
+      valueMatchesStorage(project.thumbnailStorageId, storageIdValue, storageUrl)
+      || valueMatchesStorage(project.imageStorageIds, storageIdValue, storageUrl)
+      || valueMatchesStorage(project.thumbnail, storageIdValue, storageUrl)
+      || valueMatchesStorage(project.images, storageIdValue, storageUrl)
+      || valueMatchesStorage(project.content, storageIdValue, storageUrl)
+      || valueMatchesStorage(project.markdownRender, storageIdValue, storageUrl)
+      || valueMatchesStorage(project.htmlRender, storageIdValue, storageUrl)
+    );
     const isUsedInSettings = settings.some((setting) => valueMatchesStorage(setting.value, storageIdValue, storageUrl));
     const isUsedInHomeComponents = homeComponents.some((component) =>
       valueMatchesStorage(component.config, storageIdValue, storageUrl)
     );
 
-    if (isUsedInProducts || isUsedInPosts || isUsedInServices || isUsedInSettings || isUsedInHomeComponents) {
+    if (isUsedInProducts || isUsedInPosts || isUsedInServices || isUsedInCourses || isUsedInProjects || isUsedInSettings || isUsedInHomeComponents) {
       return { deleted: false, reason: "referenced" as const };
     }
 

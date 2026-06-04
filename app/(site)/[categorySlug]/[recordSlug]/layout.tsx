@@ -161,7 +161,43 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     });
   }
 
-  const post = await client.query(api.posts.getById, { id: resolvedDetail.recordId });
+  if (resolvedDetail.moduleKey === 'projects') {
+    const project = await client.query(api.projects.getById, { id: resolvedDetail.recordId as Id<'projects'> });
+    if (!project) {
+      return buildSeoMetadata({
+        contact,
+        descriptionOverride: 'Dự án không tồn tại hoặc đã bị xóa.',
+        entityExists: false,
+        pathname: canonicalPath,
+        routeType: 'detail',
+        seo,
+        site,
+        social,
+        titleOverride: 'Không tìm thấy dự án',
+      });
+    }
+
+    return buildSeoMetadata({
+      contact,
+      entity: {
+        content: project.content,
+        excerpt: project.excerpt,
+        metaDescription: project.metaDescription,
+        metaTitle: project.metaTitle,
+        thumbnail: project.thumbnail,
+        title: project.title,
+      },
+      entityExists: true,
+      pathname: canonicalPath,
+      routeType: 'detail',
+      seo,
+      site,
+      social,
+      titleOverride: project.metaTitle ?? project.title,
+    });
+  }
+
+  const post = await client.query(api.posts.getById, { id: resolvedDetail.recordId as Id<'posts'> });
   if (!post) {
     return buildSeoMetadata({
       contact,
@@ -342,7 +378,29 @@ export default async function UnifiedDetailLayout({ params, children }: Props) {
     );
   }
 
-  const post = await client.query(api.posts.getById, { id: resolvedDetail.recordId });
+  if (resolvedDetail.moduleKey === 'projects') {
+    const [project, category] = await Promise.all([
+      client.query(api.projects.getById, { id: resolvedDetail.recordId as Id<'projects'> }),
+      client.query(api.projectCategories.getById, { id: resolvedDetail.categoryId as Id<'projectCategories'> }),
+    ]);
+    if (!project) {return children;}
+
+    const projectUrl = `${baseUrl}${canonicalPath}`;
+    const breadcrumbSchema = generateBreadcrumbSchema([
+      { name: 'Trang chủ', url: baseUrl },
+      { name: category?.name ?? 'Dự án', url: `${baseUrl}/${resolvedDetail.categorySlug}` },
+      { name: project.title, url: projectUrl },
+    ]);
+
+    return (
+      <>
+        <JsonLd data={breadcrumbSchema} />
+        {children}
+      </>
+    );
+  }
+
+  const post = await client.query(api.posts.getById, { id: resolvedDetail.recordId as Id<'posts'> });
   if (!post) {return children;}
 
   const category = await client.query(api.postCategories.getById, { id: post.categoryId });

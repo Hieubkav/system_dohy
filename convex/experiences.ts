@@ -34,6 +34,18 @@ export const systemExperiences: SystemExperience[] = [
     title: "Đặt lịch",
   },
   {
+    description: "Layout, filter, khách hàng và video cho danh sách dự án.",
+    href: "/system/experiences/projects-list",
+    icon: "Briefcase",
+    title: "Danh sách dự án",
+  },
+  {
+    description: "Hero, video giới thiệu, gallery và dự án liên quan.",
+    href: "/system/experiences/projects-detail",
+    icon: "Briefcase",
+    title: "Chi tiết dự án",
+  },
+  {
     description: "Layout, author info, comments cho chi tiết dịch vụ.",
     href: "/system/experiences/services-detail",
     icon: "Briefcase",

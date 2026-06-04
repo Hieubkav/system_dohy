@@ -62,9 +62,9 @@ const SEEDERS: Record<string, new (ctx: GenericMutationCtx<DataModel>) => BaseSe
 // ============================================================
 
 export const DEPENDENCY_LEVELS: Record<number, string[]> = {
-  0: ['roles', 'postCategories', 'productCategories', 'serviceCategories', 'courseCategories', 'settings', 'media', 'adminModules', 'systemPresets'],
+  0: ['roles', 'postCategories', 'productCategories', 'serviceCategories', 'courseCategories', 'projectCategories', 'settings', 'media', 'adminModules', 'systemPresets'],
   1: ['users', 'customers'],
-  2: ['posts', 'products', 'services', 'courses', 'menus', 'homepage', 'subscriptions'],
+  2: ['posts', 'products', 'services', 'courses', 'projects', 'menus', 'homepage', 'subscriptions'],
   3: ['comments', 'orders', 'cart', 'wishlist', 'promotions'],
   4: ['analytics', 'notifications'],
 };

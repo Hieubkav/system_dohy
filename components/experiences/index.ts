@@ -13,6 +13,7 @@ export { CheckoutPreview } from './previews/CheckoutPreview';
 export { CommentsRatingPreview } from './previews/CommentsRatingPreview';
 export { PostsListPreview, ProductsListPreview } from './previews/ListPreview';
 export { ServicesListPreview } from './previews/ServicesListPreview';
+export { ProjectsListPreview, ProjectDetailPreview } from './previews/ProjectPreview';
 export { CoursesListPreview, CourseDetailPreview, LessonDetailPreview } from './previews/CoursePreview';
 export { PostDetailPreview, ServiceDetailPreview } from './previews/DetailPreview';
 export { ContactPreview } from './previews/ContactPreview';

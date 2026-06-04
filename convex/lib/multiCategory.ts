@@ -5,7 +5,7 @@ export const MULTI_CATEGORY_SETTING_KEY = "enableMultipleCategories";
 
 export async function isMultiCategoryEnabled(
   ctx: QueryCtx | MutationCtx,
-  moduleKey: "posts" | "products" | "services" | "courses",
+  moduleKey: "posts" | "products" | "services" | "courses" | "projects",
 ) {
   const setting = await ctx.db
     .query("moduleSettings")
@@ -75,6 +75,25 @@ export async function syncServiceCategoryAssignments(
   ));
 }
 
+export async function syncProjectCategoryAssignments(
+  ctx: MutationCtx,
+  projectId: Id<"projects">,
+  primaryCategoryId: Id<"projectCategories">,
+  additionalCategoryIds?: Id<"projectCategories">[],
+) {
+  const categoryIds = uniqueIds([primaryCategoryId, ...(additionalCategoryIds ?? [])]);
+  const existing = await ctx.db
+    .query("projectCategoryAssignments")
+    .withIndex("by_project", (q) => q.eq("projectId", projectId))
+    .take(1000);
+  const next = new Set(categoryIds);
+  await Promise.all(existing.filter((item) => !next.has(item.categoryId)).map((item) => ctx.db.delete(item._id)));
+  const existingSet = new Set(existing.map((item) => item.categoryId));
+  await Promise.all(categoryIds.filter((categoryId) => !existingSet.has(categoryId)).map((categoryId) =>
+    ctx.db.insert("projectCategoryAssignments", { categoryId, createdAt: Date.now(), projectId })
+  ));
+}
+
 export async function syncCourseCategoryAssignments(
   ctx: MutationCtx,
   courseId: Id<"courses">,
@@ -106,6 +125,11 @@ export async function listProductAdditionalCategoryIds(ctx: QueryCtx, productId:
 
 export async function listServiceAdditionalCategoryIds(ctx: QueryCtx, serviceId: Id<"services">, primaryCategoryId: Id<"serviceCategories">) {
   const rows = await ctx.db.query("serviceCategoryAssignments").withIndex("by_service", (q) => q.eq("serviceId", serviceId)).collect();
+  return rows.map((row) => row.categoryId).filter((categoryId) => categoryId !== primaryCategoryId);
+}
+
+export async function listProjectAdditionalCategoryIds(ctx: QueryCtx, projectId: Id<"projects">, primaryCategoryId: Id<"projectCategories">) {
+  const rows = await ctx.db.query("projectCategoryAssignments").withIndex("by_project", (q) => q.eq("projectId", projectId)).take(1000);
   return rows.map((row) => row.categoryId).filter((categoryId) => categoryId !== primaryCategoryId);
 }
 
@@ -150,6 +174,19 @@ export async function mergeServicesByCategoryAssignments(
   const assignedServices = await Promise.all(assignments.map((item) => ctx.db.get(item.serviceId)));
   const map = new Map<Id<"services">, Doc<"services">>();
   [...primaryServices, ...assignedServices.filter((item): item is Doc<"services"> => Boolean(item))].forEach((service) => map.set(service._id, service));
+  return Array.from(map.values());
+}
+
+export async function mergeProjectsByCategoryAssignments(
+  ctx: QueryCtx,
+  categoryId: Id<"projectCategories">,
+  primaryProjects: Doc<"projects">[],
+  limit: number,
+) {
+  const assignments = await ctx.db.query("projectCategoryAssignments").withIndex("by_category", (q) => q.eq("categoryId", categoryId)).take(limit);
+  const assignedProjects = await Promise.all(assignments.map((item) => ctx.db.get(item.projectId)));
+  const map = new Map<Id<"projects">, Doc<"projects">>();
+  [...primaryProjects, ...assignedProjects.filter((item): item is Doc<"projects"> => Boolean(item))].forEach((project) => map.set(project._id, project));
   return Array.from(map.values());
 }
 

@@ -566,6 +566,46 @@ export const listServicesForPicker = query({
   })),
 });
 
+export const listProjectsForPicker = query({
+  args: {
+    search: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit ?? 20, 50);
+    const projects = await ctx.db
+      .query("projects")
+      .withIndex("by_status_publishedAt", (q) => q.eq("status", "Published"))
+      .order("desc")
+      .take(limit);
+
+    const categories = await Promise.all(projects.map((project) => ctx.db.get(project.categoryId)));
+    const categoryMap = new Map(categories.filter(Boolean).map((cat) => [cat!._id, cat!]));
+
+    const formatProject = (project: Doc<"projects">) => ({
+      _id: project._id,
+      title: project.title,
+      slug: project.slug,
+      categorySlug: categoryMap.get(project.categoryId)?.slug ?? "",
+    });
+
+    if (args.search?.trim()) {
+      const searchLower = args.search.toLowerCase();
+      return projects
+        .filter((project) => project.title.toLowerCase().includes(searchLower))
+        .map(formatProject);
+    }
+
+    return projects.map(formatProject);
+  },
+  returns: v.array(v.object({
+    _id: v.id("projects"),
+    title: v.string(),
+    slug: v.string(),
+    categorySlug: v.string(),
+  })),
+});
+
 export const listCoursesForPicker = query({
   args: {
     search: v.optional(v.string()),

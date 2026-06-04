@@ -16,6 +16,8 @@ export { ServiceSeeder } from './services.seeder';
 export { ServiceCategorySeeder } from './serviceCategories.seeder';
 export { CourseSeeder } from './courses.seeder';
 export { CourseCategorySeeder } from './courseCategories.seeder';
+export { ProjectSeeder } from './projects.seeder';
+export { ProjectCategorySeeder } from './projectCategories.seeder';
 export { AnalyticsSeeder } from './analytics.seeder';
 export { CommentsSeeder } from './comments.seeder';
 export { ContactInboxSeeder } from './contactInbox.seeder';

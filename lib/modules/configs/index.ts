@@ -14,6 +14,7 @@ export { notificationsModule } from './notifications.config';
  export { ordersModule } from './orders.config';
  export { postsModule } from './posts.config';
 export { productsModule } from './products.config';
+export { projectsModule } from './projects.config';
 export { promotionsModule } from './promotions.config';
  export { rolesModule } from './roles.config';
 export { servicesModule } from './services.config';

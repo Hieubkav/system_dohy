@@ -156,6 +156,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
     if (pathname.startsWith('/admin/courses') || pathname.startsWith('/admin/course-categories')) {
       return 'Khóa học';
     }
+    if (pathname.startsWith('/admin/projects') || pathname.startsWith('/admin/project-categories')) {
+      return 'Dự án';
+    }
     if (
       pathname.startsWith('/admin/products') ||
       pathname.startsWith('/admin/categories') ||
@@ -200,6 +203,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   const showPostComments = isModuleEnabled('posts') && isModuleEnabled('comments');
   // Services section
   const showCoursesSection = isModuleEnabled('courses');
+  const showProjectsSection = isModuleEnabled('projects');
   const showServicesSection = isModuleEnabled('services');
   const showBookingsSection = isModuleEnabled('bookings');
   const showCommerceSection = isModuleEnabled('products') || isModuleEnabled('customers') || isModuleEnabled('orders') || isModuleEnabled('wishlist');
@@ -218,7 +222,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   const productTypesEnabled = Boolean(productSettings?.find(setting => setting.settingKey === 'enableProductTypes')?.value);
 
   const analyticsSectionItemCount = showAnalyticsSection ? 1 : 0;
-  const contentSectionItemCount = Number(showPostsSection) + Number(showCoursesSection) + Number(showServicesSection);
+  const contentSectionItemCount = Number(showPostsSection) + Number(showCoursesSection) + Number(showProjectsSection) + Number(showServicesSection);
   const commerceSectionItemCount = showCommerceSection ? 1 : 0;
   const mediaSectionItemCount = showMediaSection ? 1 : 0;
   const marketingSectionItemCount = Number(showNotificationsSection) + Number(showPromotionsSection);
@@ -390,9 +394,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
             )}
 
             {/* Services Section */}
-            {showServicesSection && (
+            {showProjectsSection && (
               <div className={getSectionClassName(showContentTitle)}>
                 {!showPostsSection && !showCoursesSection && showContentTitle && <div className="px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Nội dung</div>}
+                <SidebarItem
+                  icon={Briefcase}
+                  label="Dự án"
+                  href="/admin/projects"
+                  active={isActive('/admin/projects') || isActive('/admin/project-categories')}
+                  isCollapsed={isSidebarCollapsed}
+                  isExpanded={currentExpandedMenu === 'Dự án'}
+                  onToggle={() =>{  handleMenuToggle('Dự án'); }}
+                  pathname={pathname}
+                  isModuleEnabled={isModuleEnabled}
+                  subItems={[
+                    { href: '/admin/projects', label: 'Tất cả dự án', moduleKey: 'projects' },
+                    { href: '/admin/project-categories', label: 'Danh mục dự án', moduleKey: 'projects' },
+                  ]}
+                />
+              </div>
+            )}
+
+            {/* Services Section */}
+            {showServicesSection && (
+              <div className={getSectionClassName(showContentTitle)}>
+                {!showPostsSection && !showCoursesSection && !showProjectsSection && showContentTitle && <div className="px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Nội dung</div>}
                 <SidebarItem 
                   icon={Briefcase} 
                   label="Dịch vụ" 

@@ -24,7 +24,7 @@ import { ImageSourceActions } from './ImageSourceActions';
 export interface ImageItem {
   id: string | number;
   url: string;
-  storageId?: Id<'_storage'>;
+  storageId?: Id<'_storage'> | null;
   [key: string]: unknown; // Allow extra fields like link, title, etc.
 }
 
@@ -470,7 +470,7 @@ export function MultiImageUploader<T extends ImageItem>({
 
   const handleUrlChange = useCallback((itemId: string | number, url: string) => {
     applyItems(itemsRef.current.map(item => 
-      item.id === itemId ? { ...item, [imageKey]: url, storageId: undefined } as T : item
+      item.id === itemId ? { ...item, [imageKey]: url, storageId: null } as T : item
     ));
     clearBroken(itemId);
   }, [imageKey, applyItems, clearBroken]);

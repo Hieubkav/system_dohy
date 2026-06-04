@@ -314,6 +314,20 @@ async function resolveMediaUsageMap(
     collectUsageMatches(usageMap, candidates, "courses", record, "htmlRender", record.htmlRender);
   });
 
+  const projectCategories = fullScan ? await ctx.db.query("projectCategories").collect() : trimUsageRecords(await ctx.db.query("projectCategories").take(MAX_USAGE_SCAN_PER_TABLE + 1), scanState);
+  projectCategories.forEach(record => collectUsageMatches(usageMap, candidates, "projectCategories", record, "thumbnail", record.thumbnail));
+
+  const projects = fullScan ? await ctx.db.query("projects").collect() : trimUsageRecords(await ctx.db.query("projects").take(MAX_USAGE_SCAN_PER_TABLE + 1), scanState);
+  projects.forEach(record => {
+    collectUsageMatches(usageMap, candidates, "projects", record, "thumbnailStorageId", record.thumbnailStorageId);
+    collectUsageMatches(usageMap, candidates, "projects", record, "imageStorageIds", record.imageStorageIds);
+    collectUsageMatches(usageMap, candidates, "projects", record, "thumbnail", record.thumbnail);
+    collectUsageMatches(usageMap, candidates, "projects", record, "images", record.images);
+    collectUsageMatches(usageMap, candidates, "projects", record, "content", record.content);
+    collectUsageMatches(usageMap, candidates, "projects", record, "markdownRender", record.markdownRender);
+    collectUsageMatches(usageMap, candidates, "projects", record, "htmlRender", record.htmlRender);
+  });
+
   const promotions = fullScan ? await ctx.db.query("promotions").collect() : trimUsageRecords(await ctx.db.query("promotions").take(MAX_USAGE_SCAN_PER_TABLE + 1), scanState);
   promotions.forEach(record => {
     collectUsageMatches(usageMap, candidates, "promotions", record, "thumbnail", record.thumbnail);

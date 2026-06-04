@@ -1171,6 +1171,78 @@ export default defineSchema({
     .index("by_category", ["categoryId"])
     .index("by_service_category", ["serviceId", "categoryId"]),
 
+  // 27-project. projectCategories - Danh mục dự án (Hierarchical)
+  projectCategories: defineTable({
+    active: v.boolean(),
+    description: v.optional(v.string()),
+    name: v.string(),
+    order: v.number(),
+    parentId: v.optional(v.id("projectCategories")),
+    slug: v.string(),
+    thumbnail: v.optional(v.string()),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_parent", ["parentId"])
+    .index("by_parent_order", ["parentId", "order"])
+    .index("by_active", ["active"]),
+
+  // 27-project. projects - Dự án
+  projects: defineTable({
+    title: v.string(),
+    slug: v.string(),
+    content: v.string(),
+    renderType: v.optional(v.union(
+      v.literal("content"),
+      v.literal("markdown"),
+      v.literal("html")
+    )),
+    markdownRender: v.optional(v.string()),
+    htmlRender: v.optional(v.string()),
+    excerpt: v.optional(v.string()),
+    thumbnail: v.optional(v.string()),
+    thumbnailStorageId: v.optional(v.union(v.id("_storage"), v.null())),
+    categoryId: v.id("projectCategories"),
+    introVideoType: v.optional(v.union(
+      v.literal("none"),
+      v.literal("youtube"),
+      v.literal("drive"),
+      v.literal("external")
+    )),
+    introVideoUrl: v.optional(v.string()),
+    images: v.optional(v.array(v.string())),
+    imageStorageIds: v.optional(v.array(v.union(v.id("_storage"), v.null()))),
+    clientName: v.optional(v.string()),
+    projectUrl: v.optional(v.string()),
+    completedAt: v.optional(v.number()),
+    status: v.union(
+      v.literal("Published"),
+      v.literal("Draft"),
+      v.literal("Archived")
+    ),
+    views: v.number(),
+    publishedAt: v.optional(v.number()),
+    order: v.number(),
+    featured: v.optional(v.boolean()),
+    metaTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_category_status", ["categoryId", "status"])
+    .index("by_status_publishedAt", ["status", "publishedAt"])
+    .index("by_status_views", ["status", "views"])
+    .index("by_status_order", ["status", "order"])
+    .index("by_status_featured", ["status", "featured"])
+    .searchIndex("search_title", { filterFields: ["status", "categoryId"], searchField: "title" }),
+
+  projectCategoryAssignments: defineTable({
+    categoryId: v.id("projectCategories"),
+    createdAt: v.number(),
+    projectId: v.id("projects"),
+  })
+    .index("by_project", ["projectId"])
+    .index("by_category", ["categoryId"])
+    .index("by_project_category", ["projectId", "categoryId"]),
+
   // 27-course. courseCategories - Danh mục khóa học (Hierarchical)
   courseCategories: defineTable({
     active: v.boolean(),
