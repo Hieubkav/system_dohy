@@ -5037,7 +5037,7 @@ export const FeaturesPreview = ({ items, brandColor: _brandColor, secondary, mod
 
 // ============ PROCESS/HOW IT WORKS PREVIEW ============
 // 7 Professional Styles: Horizontal, Stepper, Cards, Accordion, Minimal, Grid, Alternating
-export type ProcessStyle = 'horizontal' | 'stepper' | 'cards' | 'accordion' | 'minimal' | 'compactMinimal' | 'grid' | 'alternating';
+export type ProcessStyle = 'horizontal' | 'stepper' | 'cards' | 'accordion' | 'minimal' | 'compactMinimal' | 'grid' | 'alternating' | 'circular';
 
 export const ProcessPreview = ({
   steps,

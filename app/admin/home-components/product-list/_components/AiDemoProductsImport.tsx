@@ -872,7 +872,7 @@ const PROCESS_IMPORT_CONFIG: GenericImportConfig<ProcessFormStep> = {
   itemLabel: 'bước',
   metaKeys: ['icon'],
   nameKey: 'title',
-  promptIntro: 'Hãy tạo danh sách các bước quy trình cho website doanh nghiệp tiếng Việt theo số lượng tôi yêu cầu. Tối đa 4 bước.',
+  promptIntro: 'Hãy tạo danh sách các bước quy trình cho website doanh nghiệp tiếng Việt theo số lượng tôi yêu cầu. Tối đa 8 bước.',
   rootKey: 'steps',
 };
 
