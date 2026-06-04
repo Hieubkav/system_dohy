@@ -37,6 +37,7 @@ function CourseFilterCreateContent() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [active, setActive] = useState(true);
+  const [copyToPartner, setCopyToPartner] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,8 +48,8 @@ function CourseFilterCreateContent() {
 
   // Dirty state detection
   const hasChanges = useMemo(() => {
-    return name.trim() !== '' || slug.trim() !== '' || active !== true;
-  }, [name, slug, active]);
+    return name.trim() !== '' || slug.trim() !== '' || active !== true || copyToPartner !== true;
+  }, [name, slug, active, copyToPartner]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +64,7 @@ function CourseFilterCreateContent() {
         active,
         name: name.trim(),
         slug: slug.trim(),
+        copyToPartner,
       });
       toast.success('Đã thêm bộ lọc mới thành công');
       router.push('/admin/courses/filters');
@@ -125,6 +127,19 @@ function CourseFilterCreateContent() {
                 <option value="active">Hoạt động</option>
                 <option value="inactive">Ẩn</option>
               </select>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <input
+                id="copy-to-partner"
+                type="checkbox"
+                checked={copyToPartner}
+                onChange={(e) => setCopyToPartner(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              <Label htmlFor="copy-to-partner" className="font-normal cursor-pointer select-none text-slate-600 dark:text-slate-400">
+                Đồng thời tạo một bản sao bộ lọc tương tự bên Tài nguyên
+              </Label>
             </div>
           </CardContent>
         </Card>

@@ -64,8 +64,16 @@ export const create = mutation({
     slug: v.string(),
     icon: v.optional(v.string()),
     iconStorageId: v.optional(v.union(v.id("_storage"), v.null())),
+    copyToPartner: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => ctx.db.insert("resourceFilters", args),
+  handler: async (ctx, args) => {
+    const { copyToPartner, ...filterData } = args;
+    const filterId = await ctx.db.insert("resourceFilters", filterData);
+    if (copyToPartner) {
+      await ctx.db.insert("courseFilters", filterData);
+    }
+    return filterId;
+  },
   returns: v.id("resourceFilters"),
 });
 
@@ -200,23 +208,132 @@ export const createValue = mutation({
     order: v.optional(v.number()),
     icon: v.optional(v.string()),
     iconStorageId: v.optional(v.union(v.id("_storage"), v.null())),
+    copyToPartner: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    let nextOrder = args.order;
+    const { copyToPartner, ...valueData } = args;
+    let nextOrder = valueData.order;
     if (nextOrder === undefined) {
       const lastValue = await ctx.db
         .query("resourceFilterValues")
-        .withIndex("by_filter", (q) => q.eq("filterId", args.filterId))
+        .withIndex("by_filter", (q) => q.eq("filterId", valueData.filterId))
         .collect()
         .then(res => res.sort((a, b) => b.order - a.order)[0]);
       nextOrder = lastValue ? lastValue.order + 1 : 0;
     }
-    return ctx.db.insert("resourceFilterValues", {
-      ...args,
+    const valueId = await ctx.db.insert("resourceFilterValues", {
+      ...valueData,
       order: nextOrder,
     });
+
+    if (copyToPartner) {
+      const parentFilter = await ctx.db.get(valueData.filterId);
+      if (parentFilter) {
+        const partnerFilter = await ctx.db
+          .query("courseFilters")
+          .withIndex("by_slug", (q) => q.eq("slug", parentFilter.slug))
+          .unique();
+        if (partnerFilter) {
+          const existingPartnerValue = await ctx.db
+            .query("courseFilterValues")
+            .withIndex("by_filter", (q) => q.eq("filterId", partnerFilter._id))
+            .collect()
+            .then(res => res.find(v => v.slug === valueData.slug));
+
+          if (!existingPartnerValue) {
+            let partnerNextOrder = valueData.order;
+            if (partnerNextOrder === undefined) {
+              const partnerLastValue = await ctx.db
+                .query("courseFilterValues")
+                .withIndex("by_filter", (q) => q.eq("filterId", partnerFilter._id))
+                .collect()
+                .then(res => res.sort((a, b) => b.order - a.order)[0]);
+              partnerNextOrder = partnerLastValue ? partnerLastValue.order + 1 : 0;
+            }
+            await ctx.db.insert("courseFilterValues", {
+              filterId: partnerFilter._id,
+              name: valueData.name,
+              slug: valueData.slug,
+              active: valueData.active,
+              order: partnerNextOrder,
+              icon: valueData.icon,
+              iconStorageId: valueData.iconStorageId,
+            });
+          }
+        }
+      }
+    }
+
+    return valueId;
   },
   returns: v.id("resourceFilterValues"),
+});
+
+export const copyValuesToPartner = mutation({
+  args: {
+    filterId: v.id("resourceFilters"),
+  },
+  handler: async (ctx, args) => {
+    const parentFilter = await ctx.db.get(args.filterId);
+    if (!parentFilter) {
+      throw new Error("Không tìm thấy bộ lọc nguồn");
+    }
+
+    const partnerFilter = await ctx.db
+      .query("courseFilters")
+      .withIndex("by_slug", (q) => q.eq("slug", parentFilter.slug))
+      .unique();
+
+    if (!partnerFilter) {
+      throw new Error(`Không tìm thấy bộ lọc đối tác có cùng slug "${parentFilter.slug}" bên Khóa học. Vui lòng tạo bộ lọc bên Khóa học trước.`);
+    }
+
+    const sourceValues = await ctx.db
+      .query("resourceFilterValues")
+      .withIndex("by_filter", (q) => q.eq("filterId", args.filterId))
+      .collect();
+
+    const targetValues = await ctx.db
+      .query("courseFilterValues")
+      .withIndex("by_filter", (q) => q.eq("filterId", partnerFilter._id))
+      .collect();
+
+    const targetValuesMap = new Map(targetValues.map(v => [v.slug, v]));
+
+    let copiedCount = 0;
+    let updatedCount = 0;
+
+    for (const sv of sourceValues) {
+      const existingTv = targetValuesMap.get(sv.slug);
+      if (existingTv) {
+        await ctx.db.patch(existingTv._id, {
+          name: sv.name,
+          active: sv.active,
+          order: sv.order,
+          icon: sv.icon,
+          iconStorageId: sv.iconStorageId,
+        });
+        updatedCount++;
+      } else {
+        await ctx.db.insert("courseFilterValues", {
+          filterId: partnerFilter._id,
+          name: sv.name,
+          slug: sv.slug,
+          active: sv.active,
+          order: sv.order,
+          icon: sv.icon,
+          iconStorageId: sv.iconStorageId,
+        });
+        copiedCount++;
+      }
+    }
+
+    return { copiedCount, updatedCount };
+  },
+  returns: v.object({
+    copiedCount: v.number(),
+    updatedCount: v.number(),
+  }),
 });
 
 export const updateValue = mutation({

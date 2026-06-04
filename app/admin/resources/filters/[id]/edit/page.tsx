@@ -115,6 +115,7 @@ function ResourceFilterEditContent({ id }: { id: Id<'resourceFilters'> }) {
   const updateValue = useMutation(api.resourceFilters.updateValue);
   const removeValue = useMutation(api.resourceFilters.removeValue);
   const reorderValues = useMutation(api.resourceFilters.reorderValue);
+  const copyValuesToPartner = useMutation(api.resourceFilters.copyValuesToPartner);
 
   // Group filter states (cha)
   const [name, setName] = useState('');
@@ -134,7 +135,9 @@ function ResourceFilterEditContent({ id }: { id: Id<'resourceFilters'> }) {
   const [valOrder, setValOrder] = useState(0);
   const [valIcon, setValIcon] = useState('');
   const [valIconStorageId, setValIconStorageId] = useState<Id<'_storage'> | null>(null);
+  const [copyToPartner, setCopyToPartner] = useState(true);
   const [isSavingValue, setIsSavingValue] = useState(false);
+  const [isCopyingValues, setIsCopyingValues] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -235,6 +238,7 @@ function ResourceFilterEditContent({ id }: { id: Id<'resourceFilters'> }) {
     setValOrder(0);
     setValIcon('');
     setValIconStorageId(null);
+    setCopyToPartner(true);
     setIsModalOpen(true);
   };
 
@@ -248,6 +252,21 @@ function ResourceFilterEditContent({ id }: { id: Id<'resourceFilters'> }) {
     setValIcon(val.icon ?? '');
     setValIconStorageId(val.iconStorageId ?? null);
     setIsModalOpen(true);
+  };
+
+  const handleCopyValues = async () => {
+    if (!confirm("Bạn có chắc chắn muốn sao chép toàn bộ giá trị lọc hiện tại sang bộ lọc Khóa học đối tác? (Các giá trị trùng slug sẽ bị cập nhật đè, các giá trị khác được thêm mới).")) {
+      return;
+    }
+    setIsCopyingValues(true);
+    try {
+      const res = await copyValuesToPartner({ filterId: id });
+      toast.success(`Đã sao chép thành công: Thêm mới ${res.copiedCount}, Cập nhật ${res.updatedCount} giá trị sang Khóa học.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Có lỗi xảy ra khi sao chép");
+    } finally {
+      setIsCopyingValues(false);
+    }
   };
 
   // Save Filter Value (con)
@@ -279,6 +298,7 @@ function ResourceFilterEditContent({ id }: { id: Id<'resourceFilters'> }) {
           slug: valSlug.trim(),
           icon: valIcon || undefined,
           iconStorageId: valIconStorageId || undefined,
+          copyToPartner,
         });
         toast.success('Đã thêm giá trị bộ lọc mới thành công');
       }
@@ -407,9 +427,22 @@ function ResourceFilterEditContent({ id }: { id: Id<'resourceFilters'> }) {
                   Thêm và chỉnh sửa các giá trị con (ví dụ: AutoCAD, Revit). Logo/Icon sẽ đi kèm với các giá trị này.
                 </p>
               </div>
-              <Button type="button" size="sm" onClick={handleAddValue} className="gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white">
-                <Plus size={14} /> Thêm giá trị
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyValues}
+                  disabled={isCopyingValues}
+                  className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/20"
+                >
+                  {isCopyingValues && <Loader2 size={14} className="animate-spin mr-1.5" />}
+                  Sao chép sang Khóa học
+                </Button>
+                <Button type="button" size="sm" onClick={handleAddValue} className="gap-1.5 bg-indigo-600 hover:bg-indigo-500 text-white">
+                  <Plus size={14} /> Thêm giá trị
+                </Button>
+              </div>
             </div>
 
             <div className="border border-slate-100 dark:border-slate-800 rounded-md overflow-hidden">
@@ -506,6 +539,21 @@ function ResourceFilterEditContent({ id }: { id: Id<'resourceFilters'> }) {
                   <option value="inactive">Ẩn</option>
                 </select>
               </div>
+
+              {!editingValueId && (
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    id="copy-val-to-partner"
+                    type="checkbox"
+                    checked={copyToPartner}
+                    onChange={(e) => setCopyToPartner(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                  />
+                  <Label htmlFor="copy-val-to-partner" className="font-normal cursor-pointer select-none text-slate-600 dark:text-slate-400">
+                    Đồng thời tạo giá trị này bên bộ lọc Khóa học (nếu có)
+                  </Label>
+                </div>
+              )}
 
               <div className="space-y-1.5 pt-2">
                 <Label>Logo / Icon giá trị</Label>
