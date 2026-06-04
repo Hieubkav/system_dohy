@@ -211,6 +211,9 @@ function SearchContent() {
   
   const itemsPerPage = 12;
 
+  // Track if we have already checked and auto-switched tabs for the current query
+  const lastCheckedQueryRef = React.useRef<string | null>(null);
+
   // Local Search Input state
   const [searchInput, setSearchInput] = useState(query);
   
@@ -399,6 +402,82 @@ function SearchContent() {
       router.replace(`${pathname}?${params.toString()}`);
     }
   }, [isProductsEnabled, isPostsEnabled, isServicesEnabled, isCoursesEnabled, isResourcesEnabled, isModulesLoading, activeTab, router, pathname, searchParams]);
+
+  // Reset lastCheckedQueryRef when query changes
+  useEffect(() => {
+    lastCheckedQueryRef.current = null;
+  }, [query]);
+
+  // Auto-switch to the first tab with results if the current tab has 0 results
+  useEffect(() => {
+    if (isModulesLoading) return;
+
+    // Ensure all counts for enabled modules are loaded
+    if (
+      (isProductsEnabled && prodCount === undefined) ||
+      (isPostsEnabled && postCount === undefined) ||
+      (isServicesEnabled && svcCount === undefined) ||
+      (isCoursesEnabled && courseCount === undefined) ||
+      (isResourcesEnabled && resourceCount === undefined)
+    ) {
+      return;
+    }
+
+    if (lastCheckedQueryRef.current !== query) {
+      const counts = {
+        product: isProductsEnabled ? (prodCount ?? 0) : 0,
+        post: isPostsEnabled ? (postCount ?? 0) : 0,
+        service: isServicesEnabled ? (svcCount ?? 0) : 0,
+        course: isCoursesEnabled ? (courseCount ?? 0) : 0,
+        resource: isResourcesEnabled ? (resourceCount ?? 0) : 0,
+      };
+
+      // Switch only if the active tab has 0 results
+      if (counts[activeTab] === 0) {
+        const tabsOrder: ('product' | 'post' | 'service' | 'course' | 'resource')[] = [
+          'product',
+          'post',
+          'service',
+          'course',
+          'resource',
+        ];
+
+        const tabWithResults = tabsOrder.find((t) => {
+          if (t === 'product' && !isProductsEnabled) return false;
+          if (t === 'post' && !isPostsEnabled) return false;
+          if (t === 'service' && !isServicesEnabled) return false;
+          if (t === 'course' && !isCoursesEnabled) return false;
+          if (t === 'resource' && !isResourcesEnabled) return false;
+          return counts[t] > 0;
+        });
+
+        if (tabWithResults && tabWithResults !== activeTab) {
+          const params = new URLSearchParams(searchParams.toString());
+          params.set('tab', tabWithResults);
+          router.replace(`${pathname}?${params.toString()}`);
+        }
+      }
+
+      lastCheckedQueryRef.current = query;
+    }
+  }, [
+    query,
+    isProductsEnabled,
+    isPostsEnabled,
+    isServicesEnabled,
+    isCoursesEnabled,
+    isResourcesEnabled,
+    isModulesLoading,
+    activeTab,
+    prodCount,
+    postCount,
+    svcCount,
+    courseCount,
+    resourceCount,
+    router,
+    pathname,
+    searchParams,
+  ]);
 
   // Search Submit Handler
   const handleSearchSubmit = (e?: React.FormEvent) => {
