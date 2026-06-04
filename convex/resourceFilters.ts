@@ -26,15 +26,37 @@ const filterValueDoc = v.object({
   iconStorageId: v.optional(v.union(v.id("_storage"), v.null())),
 });
 
+const filterWithCountDoc = v.object({
+  _creationTime: v.number(),
+  _id: v.id("resourceFilters"),
+  active: v.boolean(),
+  description: v.optional(v.string()),
+  name: v.string(),
+  order: v.optional(v.number()),
+  slug: v.string(),
+  icon: v.optional(v.string()),
+  iconStorageId: v.optional(v.union(v.id("_storage"), v.null())),
+  valuesCount: v.number(),
+});
+
 export const listAll = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const limit = args.limit ?? 100;
-    return ctx.db
+    const filters = await ctx.db
       .query("resourceFilters")
       .take(limit);
+    return Promise.all(
+      filters.map(async (filter) => {
+        const values = await ctx.db
+          .query("resourceFilterValues")
+          .withIndex("by_filter", (q) => q.eq("filterId", filter._id))
+          .collect();
+        return { ...filter, valuesCount: values.length };
+      })
+    );
   },
-  returns: v.array(filterDoc),
+  returns: v.array(filterWithCountDoc),
 });
 
 export const listActive = query({

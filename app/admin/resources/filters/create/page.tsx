@@ -40,7 +40,6 @@ function ResourceFilterCreateContent() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [active, setActive] = useState(true);
-  const [copyToPartner, setCopyToPartner] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,8 +67,8 @@ function ResourceFilterCreateContent() {
     if (creationMode === 'copy') {
       return selectedPartnerSlug !== '';
     }
-    return name.trim() !== '' || slug.trim() !== '' || active !== true || copyToPartner !== true;
-  }, [name, slug, active, copyToPartner, creationMode, selectedPartnerSlug]);
+    return name.trim() !== '' || slug.trim() !== '' || active !== true;
+  }, [name, slug, active, creationMode, selectedPartnerSlug]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +83,6 @@ function ResourceFilterCreateContent() {
         active,
         name: name.trim(),
         slug: slug.trim(),
-        copyToPartner: creationMode === 'new' ? copyToPartner : false,
         copyValuesFromPartnerSlug: creationMode === 'copy' && selectedPartnerSlug ? selectedPartnerSlug : undefined,
       });
       toast.success('Đã thêm bộ lọc mới thành công');
@@ -213,25 +211,10 @@ function ResourceFilterCreateContent() {
               </select>
             </div>
 
-            {creationMode === 'new' ? (
-              <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <input
-                  id="copy-to-partner"
-                  type="checkbox"
-                  checked={copyToPartner}
-                  onChange={(e) => setCopyToPartner(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                />
-                <Label htmlFor="copy-to-partner" className="font-normal cursor-pointer select-none text-slate-600 dark:text-slate-400">
-                  Đồng thời tạo một bản sao bộ lọc tương tự bên Khóa học
-                </Label>
+            {creationMode === 'copy' && selectedPartnerSlug && (
+              <div className="rounded-md bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 p-3 text-xs text-indigo-600 dark:text-indigo-400">
+                Hệ thống sẽ tự động sao chép toàn bộ các giá trị con (bao gồm ảnh/icon và thứ tự) từ bộ lọc Khóa học sang bộ lọc mới tạo.
               </div>
-            ) : (
-              selectedPartnerSlug && (
-                <div className="rounded-md bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 p-3 text-xs text-indigo-600 dark:text-indigo-400">
-                  Hệ thống sẽ tự động sao chép toàn bộ các giá trị con (bao gồm ảnh/icon và thứ tự) từ bộ lọc Khóa học sang bộ lọc mới tạo.
-                </div>
-              )
             )}
           </CardContent>
         </Card>

@@ -158,6 +158,7 @@ function CourseFiltersContent() {
                 </TableHead>
                 <SortableHeader label="Tên bộ lọc" sortKey="name" sortConfig={sortConfig} onSort={(key) => { setSortConfig((prev) => ({ direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc', key })); }} />
                 <SortableHeader label="Slug" sortKey="slug" sortConfig={sortConfig} onSort={(key) => { setSortConfig((prev) => ({ direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc', key })); }} />
+                <SortableHeader label="Số giá trị" sortKey="valuesCount" sortConfig={sortConfig} onSort={(key) => { setSortConfig((prev) => ({ direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc', key })); }} />
                 <SortableHeader label="Trạng thái" sortKey="active" sortConfig={sortConfig} onSort={(key) => { setSortConfig((prev) => ({ direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc', key })); }} />
                 <TableHead className="text-right">Hành động</TableHead>
               </TableRow>
@@ -168,6 +169,9 @@ function CourseFiltersContent() {
                   <TableCell><SelectCheckbox checked={selectedIds.includes(filter.id)} onChange={() => { toggleSelectItem(filter.id); }} /></TableCell>
                   <TableCell className="font-medium">{filter.name}</TableCell>
                   <TableCell className="font-mono text-sm text-slate-500">{filter.slug}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="tabular-nums">{filter.valuesCount}</Badge>
+                  </TableCell>
                   <TableCell>
                     <Badge variant={filter.active ? 'success' : 'secondary'}>
                       {filter.active ? 'Hoạt động' : 'Ẩn'}
@@ -187,7 +191,7 @@ function CourseFiltersContent() {
               ))}
               {sortedData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="py-8 text-center text-slate-500">
+                  <TableCell colSpan={6} className="py-8 text-center text-slate-500">
                     {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có bộ lọc nào'}
                   </TableCell>
                 </TableRow>
