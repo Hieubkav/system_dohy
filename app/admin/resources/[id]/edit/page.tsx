@@ -51,6 +51,7 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
   const grantAccess = useMutation(api.resources.grantAccess);
   const revokeAccess = useMutation(api.resources.revokeAccess);
   const removeAccess = useMutation(api.resources.removeAccess);
+  const activateAccess = useMutation(api.resources.activateAccess);
 
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
@@ -82,6 +83,7 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
   const [selectedValueIds, setSelectedValueIds] = useState<Id<'resourceFilterValues'>[]>([]);
   const [revokingId, setRevokingId] = useState<Id<'resourceCustomers'> | null>(null);
   const [deletingAccessId, setDeletingAccessId] = useState<Id<'resourceCustomers'> | null>(null);
+  const [activatingAccessId, setActivatingAccessId] = useState<Id<'resourceCustomers'> | null>(null);
   const [grantCustomerId, setGrantCustomerId] = useState('');
   const [isGrantingAccess, setIsGrantingAccess] = useState(false);
 
@@ -211,6 +213,19 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
       toast.error(error instanceof Error ? error.message : 'Không thể xóa quyền truy cập');
     } finally {
       setDeletingAccessId(null);
+    }
+  };
+
+  const handleActivateAccess = async (accessId: Id<'resourceCustomers'>) => {
+    if (!confirm('Cấp lại quyền tải tài nguyên cho khách hàng này?')) {return;}
+    setActivatingAccessId(accessId);
+    try {
+      await activateAccess({ accessId });
+      toast.success('Đã cấp lại quyền tải tài nguyên');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể cấp lại quyền tải');
+    } finally {
+      setActivatingAccessId(null);
     }
   };
 
@@ -601,15 +616,28 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={item.status !== 'active' || revokingId === item.accessId}
-                            onClick={() => { void handleRevokeAccess(item.accessId); }}
-                          >
-                            {revokingId === item.accessId ? 'Đang thu hồi...' : 'Thu hồi'}
-                          </Button>
+                          {item.status === 'active' ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={revokingId === item.accessId}
+                              onClick={() => { void handleRevokeAccess(item.accessId); }}
+                            >
+                              {revokingId === item.accessId ? 'Đang thu hồi...' : 'Thu hồi'}
+                            </Button>
+                          ) : (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={activatingAccessId === item.accessId}
+                              onClick={() => { void handleActivateAccess(item.accessId); }}
+                              className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 dark:border-emerald-900/30 dark:hover:bg-emerald-900/20"
+                            >
+                              {activatingAccessId === item.accessId ? 'Đang cấp lại...' : 'Cấp lại'}
+                            </Button>
+                          )}
                           <Button
                             type="button"
                             variant="ghost"

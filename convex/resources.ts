@@ -1017,3 +1017,16 @@ export const removeAccess = mutation({
   },
   returns: v.null(),
 });
+
+export const activateAccess = mutation({
+  args: { accessId: v.id("resourceCustomers") },
+  handler: async (ctx, args) => {
+    const access = await ctx.db.get(args.accessId);
+    if (!access) {
+      return null;
+    }
+    await ctx.db.patch(args.accessId, { status: "active", updatedAt: Date.now() });
+    return null;
+  },
+  returns: v.null(),
+});
