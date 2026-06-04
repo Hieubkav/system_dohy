@@ -1,7 +1,6 @@
 'use client';
 
 import React, { use, useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { ExternalLink, FileText, Filter, Loader2, Plus } from 'lucide-react';
@@ -43,6 +42,7 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
   const fieldsData = useQuery(api.admin.modules.listEnabledModuleFields, { moduleKey: MODULE_KEY });
   const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: MODULE_KEY });
   const resourceFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: MODULE_KEY, featureKey: 'enableResourceFilters' });
+  const featuredFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: MODULE_KEY, featureKey: 'enableFeatured' });
   const activeFilters = useQuery(api.resourceFilters.listActive, {});
   const allFilterValues = useQuery(api.resourceFilters.listAllValues, {});
   const assignedFilters = useQuery(api.resourceFilters.listByResource, { resourceId });
@@ -247,9 +247,6 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
               <p className="mt-1 text-sm text-slate-500">Cập nhật nội dung, link tải và danh sách khách đã có quyền.</p>
             </div>
           </div>
-          <Link href={frontendHref} target="_blank" className="inline-flex">
-            <Button type="button" variant="outline" className="gap-2"><ExternalLink size={16} /> Xem ngoài site</Button>
-          </Link>
         </div>
 
         <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">
@@ -482,24 +479,31 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
                       items={galleryItems}
                       onChange={setGalleryItems}
                       folder="resources"
+                      naming={{ entityName: slug.trim() || 'resource', style: 'slug-index' }}
+                      namingIndexOffset={1}
+                      imageKey="url"
+                      aspectRatio="video"
                       columns={2}
                       addButtonText="Thêm ảnh"
-                      emptyText="Chưa có ảnh gallery"
+                      emptyText="Chưa có ảnh trong thư viện"
                       deleteMode="defer"
+                      layout="vertical"
                     />
                   </CardContent>
                 </Card>
               )}
 
-              <Card>
-                <CardHeader><CardTitle className="text-base">Tuỳ chọn</CardTitle></CardHeader>
-                <CardContent>
-                  <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                    <input type="checkbox" checked={featured} onChange={(e) => { setFeatured(e.target.checked); }} />
-                    Đánh dấu nổi bật
-                  </label>
-                </CardContent>
-              </Card>
+              {featuredFeature?.enabled && (
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Tuỳ chọn</CardTitle></CardHeader>
+                  <CardContent>
+                    <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                      <input type="checkbox" checked={featured} onChange={(e) => { setFeatured(e.target.checked); }} />
+                      Đánh dấu nổi bật
+                    </label>
+                  </CardContent>
+                </Card>
+              )}
 
               {resourceFiltersFeature?.enabled && (
                 <Card>
@@ -600,14 +604,33 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
         )}
 
         <HomeComponentStickyFooter
-          hasChanges={true}
           isSubmitting={isSubmitting}
           onCancel={() => router.push('/admin/resources')}
-          onClickSave={() => { void handleSubmit(); }}
           submitLabel="Lưu thay đổi"
-          submittingLabel="Đang lưu..."
-          submitType="button"
-        />
+        >
+          <>
+            <Button type="button" variant="ghost" onClick={() => router.push('/admin/resources')} disabled={isSubmitting}>Hủy bỏ</Button>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => window.open(frontendHref, '_blank')}
+                disabled={!slug.trim()}
+                title="Xem ngoài site"
+              >
+                <ExternalLink size={16} />
+              </Button>
+              <Button
+                type="submit"
+                variant="accent"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+              </Button>
+            </div>
+          </>
+        </HomeComponentStickyFooter>
       </form>
     </>
   );

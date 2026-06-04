@@ -37,6 +37,7 @@ export default function ResourceCreatePage() {
   const fieldsData = useQuery(api.admin.modules.listEnabledModuleFields, { moduleKey: MODULE_KEY });
   const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: MODULE_KEY });
   const resourceFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: MODULE_KEY, featureKey: 'enableResourceFilters' });
+  const featuredFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: MODULE_KEY, featureKey: 'enableFeatured' });
   const activeFilters = useQuery(api.resourceFilters.listActive, {});
   const allFilterValues = useQuery(api.resourceFilters.listAllValues, {});
 
@@ -367,24 +368,31 @@ export default function ResourceCreatePage() {
                     items={galleryItems}
                     onChange={setGalleryItems}
                     folder="resources"
+                    naming={{ entityName: slug.trim() || 'resource', style: 'slug-index' }}
+                    namingIndexOffset={1}
+                    imageKey="url"
+                    aspectRatio="video"
                     columns={2}
                     addButtonText="Thêm ảnh"
-                    emptyText="Chưa có ảnh gallery"
+                    emptyText="Chưa có ảnh trong thư viện"
                     deleteMode="defer"
+                    layout="vertical"
                   />
                 </CardContent>
               </Card>
             )}
 
-            <Card>
-              <CardHeader><CardTitle className="text-base">Tuỳ chọn</CardTitle></CardHeader>
-              <CardContent className="space-y-3">
-                <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                  <input type="checkbox" checked={featured} onChange={(e) => { setFeatured(e.target.checked); }} />
-                  Đánh dấu nổi bật
-                </label>
-              </CardContent>
-            </Card>
+            {featuredFeature?.enabled && (
+              <Card>
+                <CardHeader><CardTitle className="text-base">Tuỳ chọn</CardTitle></CardHeader>
+                <CardContent className="space-y-3">
+                  <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <input type="checkbox" checked={featured} onChange={(e) => { setFeatured(e.target.checked); }} />
+                    Đánh dấu nổi bật
+                  </label>
+                </CardContent>
+              </Card>
+            )}
 
             {resourceFiltersFeature?.enabled && (
               <Card>
