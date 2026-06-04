@@ -85,19 +85,7 @@ export const PartnersForm = ({
                 <option value="largest">Lớn nhất</option>
               </select>
             </div>
-            {showBorderControl && (
-              <div className="space-y-2">
-                <Label>Border card</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                  value={showBorder ? 'show' : 'hide'}
-                  onChange={(event) => { setShowBorder(event.target.value === 'show'); }}
-                >
-                  <option value="show">Có border</option>
-                  <option value="hide">Bỏ border</option>
-                </select>
-              </div>
-            )}
+
           </div>
         </SubSection>
 

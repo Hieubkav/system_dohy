@@ -230,11 +230,11 @@ export const getPartnersLogoBoxClassName = (
   }
 
   if (layout === 'compact') {
-    if (logoSize === 'small') { return showName ? 'h-8 md:h-10' : 'h-10 md:h-12'; }
-    if (logoSize === 'large') { return showName ? 'h-12 md:h-14' : 'h-14 md:h-16'; }
-    if (logoSize === 'veryLarge') { return showName ? 'h-14 md:h-16' : 'h-16 md:h-20'; }
-    if (logoSize === 'largest') { return showName ? 'h-16 md:h-20' : 'h-20 md:h-24'; }
-    return showName ? 'h-10 md:h-12' : 'h-12 md:h-14';
+    if (logoSize === 'small') { return showName ? 'h-10 md:h-12' : 'h-12 md:h-14'; }
+    if (logoSize === 'large') { return showName ? 'h-16 md:h-20' : 'h-20 md:h-24'; }
+    if (logoSize === 'veryLarge') { return showName ? 'h-20 md:h-24' : 'h-24 md:h-28'; }
+    if (logoSize === 'largest') { return showName ? 'h-24 md:h-28' : 'h-28 md:h-32'; }
+    return showName ? 'h-14 md:h-16' : 'h-16 md:h-20';
   }
 
   if (layout === 'marquee') {
@@ -260,6 +260,14 @@ export const getPartnersLogoBoxClassName = (
     return 'h-9 w-[80px] md:h-10 md:w-[100px]';
   }
 
+  if (layout === 'logoCloud') {
+    if (logoSize === 'small') { return 'max-h-[90px]'; }
+    if (logoSize === 'large') { return 'max-h-[140px]'; }
+    if (logoSize === 'veryLarge') { return 'max-h-[160px]'; }
+    if (logoSize === 'largest') { return 'max-h-[180px]'; }
+    return 'max-h-[120px]';
+  }
+
   if (logoSize === 'small') { return 'max-h-[60px]'; }
   if (logoSize === 'large') { return 'max-h-[96px]'; }
   if (logoSize === 'veryLarge') { return 'max-h-[112px]'; }
@@ -281,18 +289,18 @@ export const getPartnersLogoCardClassName = (
   }
 
   if (showName) {
-    if (logoSize === 'small') { return 'w-[130px] flex-col gap-2 p-3 md:w-[150px] md:p-4'; }
-    if (logoSize === 'large') { return 'w-[170px] flex-col gap-2 p-4 md:w-[190px] md:p-5'; }
-    if (logoSize === 'veryLarge') { return 'w-[190px] flex-col gap-2.5 p-5 md:w-[220px] md:p-6'; }
-    if (logoSize === 'largest') { return 'w-[220px] flex-col gap-3 p-5 md:w-[250px] md:p-7'; }
-    return 'w-[150px] flex-col gap-2 p-4 md:w-[170px] md:p-5';
+    if (logoSize === 'small') { return 'w-[110px] flex-col gap-1 p-1.5 md:w-[130px] md:p-2'; }
+    if (logoSize === 'large') { return 'w-[150px] flex-col gap-1.5 p-2 md:w-[170px] md:p-2.5'; }
+    if (logoSize === 'veryLarge') { return 'w-[170px] flex-col gap-2 p-2.5 md:w-[190px] md:p-3'; }
+    if (logoSize === 'largest') { return 'w-[190px] flex-col gap-2.5 p-2.5 md:w-[220px] md:p-3'; }
+    return 'w-[130px] flex-col gap-1 p-1.5 md:w-[150px] md:p-2';
   }
 
-  if (logoSize === 'small') { return 'w-[110px] p-3 md:w-[130px] md:p-4'; }
-  if (logoSize === 'large') { return 'w-[140px] p-4 md:w-[170px] md:p-5'; }
-  if (logoSize === 'veryLarge') { return 'w-[170px] p-5 md:w-[200px] md:p-6'; }
-  if (logoSize === 'largest') { return 'w-[200px] p-5 md:w-[240px] md:p-7'; }
-  return 'w-[120px] p-4 md:w-[140px] md:p-5';
+  if (logoSize === 'small') { return 'w-[90px] p-1 md:w-[110px] md:p-1.5'; }
+  if (logoSize === 'large') { return 'w-[130px] p-1.5 md:w-[150px] md:p-2'; }
+  if (logoSize === 'veryLarge') { return 'w-[150px] p-2 md:w-[170px] md:p-2.5'; }
+  if (logoSize === 'largest') { return 'w-[170px] p-2 md:w-[200px] md:p-2.5'; }
+  return 'w-[110px] p-1 md:w-[130px] md:p-1.5';
 };
 
 export const getPartnersLogoFallbackSize = (

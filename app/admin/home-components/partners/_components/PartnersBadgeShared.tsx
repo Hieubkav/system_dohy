@@ -128,12 +128,9 @@ export const PartnersBadgeShared = ({
                   onMouseLeave={(event) => { event.currentTarget.style.borderColor = ''; }}
                   {...linkProps}
                 >
-                  <div className={cn(
-                    'flex w-full items-center justify-center',
-                    logoBoxClassName,
-                  )}>
+                  <div className="flex w-full items-center justify-center">
                     {item.url
-                      ? renderImage(item, 'h-full w-auto max-w-full object-contain')
+                      ? renderImage(item, 'w-full h-auto object-contain')
                       : <ImageIcon size={fallbackIconSize} className="text-slate-300" />}
                   </div>
                   {showName && (

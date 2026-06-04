@@ -14,11 +14,11 @@ export const PARTNERS_STYLES = [
 ];
 
 export const PARTNERS_CROP_ASPECT_RATIO_BY_STYLE: Record<PartnersStyle, ImageAspectRatioInput> = {
-  grid: 'wide169',
-  marquee: 'wide169',
-  badge: 'wide169',
-  carousel: 'wide169',
-  logoCloud: 'wide169',
-  clean: 'wide169',
-  divider: 'wide169',
+  grid: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
+  marquee: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
+  badge: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
+  carousel: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
+  logoCloud: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
+  clean: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
+  divider: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
 };
