@@ -412,48 +412,31 @@ function SearchContent() {
   useEffect(() => {
     if (isModulesLoading) return;
 
+    // Define search modules configuration for unified and clean logic
+    const searchModules = [
+      { key: 'product', enabled: isProductsEnabled, count: prodCount },
+      { key: 'post', enabled: isPostsEnabled, count: postCount },
+      { key: 'service', enabled: isServicesEnabled, count: svcCount },
+      { key: 'course', enabled: isCoursesEnabled, count: courseCount },
+      { key: 'resource', enabled: isResourcesEnabled, count: resourceCount },
+    ] as const;
+
     // Ensure all counts for enabled modules are loaded
-    if (
-      (isProductsEnabled && prodCount === undefined) ||
-      (isPostsEnabled && postCount === undefined) ||
-      (isServicesEnabled && svcCount === undefined) ||
-      (isCoursesEnabled && courseCount === undefined) ||
-      (isResourcesEnabled && resourceCount === undefined)
-    ) {
-      return;
-    }
+    const isCountsLoading = searchModules.some((m) => m.enabled && m.count === undefined);
+    if (isCountsLoading) return;
 
     if (lastCheckedQueryRef.current !== query) {
-      const counts = {
-        product: isProductsEnabled ? (prodCount ?? 0) : 0,
-        post: isPostsEnabled ? (postCount ?? 0) : 0,
-        service: isServicesEnabled ? (svcCount ?? 0) : 0,
-        course: isCoursesEnabled ? (courseCount ?? 0) : 0,
-        resource: isResourcesEnabled ? (resourceCount ?? 0) : 0,
-      };
+      const activeModule = searchModules.find((m) => m.key === activeTab);
+      const activeCount = activeModule?.count ?? 0;
 
       // Switch only if the active tab has 0 results
-      if (counts[activeTab] === 0) {
-        const tabsOrder: ('product' | 'post' | 'service' | 'course' | 'resource')[] = [
-          'product',
-          'post',
-          'service',
-          'course',
-          'resource',
-        ];
+      if (activeCount === 0) {
+        // Find the first enabled tab that has results
+        const tabWithResults = searchModules.find((m) => m.enabled && (m.count ?? 0) > 0);
 
-        const tabWithResults = tabsOrder.find((t) => {
-          if (t === 'product' && !isProductsEnabled) return false;
-          if (t === 'post' && !isPostsEnabled) return false;
-          if (t === 'service' && !isServicesEnabled) return false;
-          if (t === 'course' && !isCoursesEnabled) return false;
-          if (t === 'resource' && !isResourcesEnabled) return false;
-          return counts[t] > 0;
-        });
-
-        if (tabWithResults && tabWithResults !== activeTab) {
+        if (tabWithResults && tabWithResults.key !== activeTab) {
           const params = new URLSearchParams(searchParams.toString());
-          params.set('tab', tabWithResults);
+          params.set('tab', tabWithResults.key);
           router.replace(`${pathname}?${params.toString()}`);
         }
       }
