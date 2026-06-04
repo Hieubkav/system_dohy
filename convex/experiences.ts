@@ -64,6 +64,18 @@ export const systemExperiences: SystemExperience[] = [
     title: "Chi tiết khóa học",
   },
   {
+    description: "Layout, filters, search cho danh sách tài nguyên.",
+    href: "/system/experiences/resources-list",
+    icon: "FileText",
+    title: "Danh sách tài nguyên",
+  },
+  {
+    description: "Gallery, quyền tải, tài nguyên liên quan và CTA chi tiết tài nguyên.",
+    href: "/system/experiences/resources-detail",
+    icon: "FileText",
+    title: "Chi tiết tài nguyên",
+  },
+  {
     description: "Video bài học, sidebar nội dung, điều hướng bài trước/sau và trạng thái khóa bài học.",
     href: "/system/experiences/lesson-detail",
     icon: "BookOpen",
