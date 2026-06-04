@@ -65,12 +65,36 @@ export const create = mutation({
     icon: v.optional(v.string()),
     iconStorageId: v.optional(v.union(v.id("_storage"), v.null())),
     copyToPartner: v.optional(v.boolean()),
+    copyValuesFromPartnerSlug: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { copyToPartner, ...filterData } = args;
+    const { copyToPartner, copyValuesFromPartnerSlug, ...filterData } = args;
     const filterId = await ctx.db.insert("courseFilters", filterData);
     if (copyToPartner) {
       await ctx.db.insert("resourceFilters", filterData);
+    }
+    if (copyValuesFromPartnerSlug) {
+      const partnerFilter = await ctx.db
+        .query("resourceFilters")
+        .withIndex("by_slug", (q) => q.eq("slug", copyValuesFromPartnerSlug))
+        .unique();
+      if (partnerFilter) {
+        const partnerValues = await ctx.db
+          .query("resourceFilterValues")
+          .withIndex("by_filter", (q) => q.eq("filterId", partnerFilter._id))
+          .collect();
+        for (const pv of partnerValues) {
+          await ctx.db.insert("courseFilterValues", {
+            filterId,
+            name: pv.name,
+            slug: pv.slug,
+            active: pv.active,
+            order: pv.order,
+            icon: pv.icon,
+            iconStorageId: pv.iconStorageId,
+          });
+        }
+      }
     }
     return filterId;
   },
@@ -457,3 +481,27 @@ export async function syncCourseFilterAssignments(
       })
   );
 }
+
+export const listUnmappedPartnerFilters = query({
+  args: {},
+  handler: async (ctx) => {
+    const currentFilters = await ctx.db.query("courseFilters").collect();
+    const currentSlugs = new Set(currentFilters.map((f) => f.slug));
+
+    const partnerFilters = await ctx.db.query("resourceFilters").collect();
+    return partnerFilters.filter((pf) => !currentSlugs.has(pf.slug));
+  },
+  returns: v.array(
+    v.object({
+      _creationTime: v.number(),
+      _id: v.id("resourceFilters"),
+      active: v.boolean(),
+      description: v.optional(v.string()),
+      name: v.string(),
+      order: v.optional(v.number()),
+      slug: v.string(),
+      icon: v.optional(v.string()),
+      iconStorageId: v.optional(v.union(v.id("_storage"), v.null())),
+    })
+  ),
+});

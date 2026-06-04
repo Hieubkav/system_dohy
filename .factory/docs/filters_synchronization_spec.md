@@ -1,134 +1,109 @@
 # I. Primer
 
 ## 1. TL;DR kiểu Feynman
-* **Vấn đề**: Bộ lọc tài nguyên và bộ lọc khóa học có cấu trúc giống nhau nhưng hoạt động ở hai bảng dữ liệu khác nhau. Việc thiết kế đồng bộ hai chiều liên tục (Real-time Sync) rất dễ gây lỗi đúp, vòng lặp vô hạn và rủi ro vô tình xóa mất dữ liệu gán lọc của module còn lại.
-* **Giải pháp**: Thay đổi thiết kế thành **Sao chép một lần và hoạt động độc lập (One-time Copy / Independent Mode)**:
-  * **Khi tạo bộ lọc mới**: Có tùy chọn tạo thêm một bộ lọc giống hệt bên module kia. Sau khi tạo, hai bộ lọc này hoạt động hoàn toàn độc lập.
-  * **Khi quản lý giá trị lọc (Filter Values)**: Có nút bấm chủ động `"Sao chép toàn bộ giá trị sang đối tác"` (hoặc checkbox tạo đồng thời lúc thêm value). Hệ thống chỉ thực hiện sao chép dữ liệu tĩnh tại thời điểm nhấn nút, không duy trì kết nối tự động.
-* **Lợi ích**: Cực kỳ an toàn, loại bỏ hoàn toàn nguy cơ vòng lặp đệ quy, giữ cho code đơn giản (KISS) và admin vẫn chủ động kiểm soát được dữ liệu của từng bên.
+* **Vấn đề**: Việc chỉ có một checkbox "Tạo bản sao tương tự" khi tạo mới bộ lọc chưa đáp ứng tốt nhu cầu liên kết. Nếu bên Khóa học đã có bộ lọc `"Phần mềm"` với 10 giá trị lọc con, khi sang bên Tài nguyên, quản trị viên muốn có thể chọn "liên kết" với bộ lọc đó và tự động copy toàn bộ 10 giá trị con sang, chứ không muốn tạo mới hoàn toàn rồi nhập lại từ đầu.
+* **Giải pháp**: Xây dựng UI/UX nâng cao tại trang Tạo bộ lọc mới:
+  * Cho phép chọn 2 phương thức: `"Tạo mới hoàn toàn"` hoặc `"Sao chép & Liên kết từ bộ lọc đối tác"`.
+  * Nếu chọn "Sao chép & Liên kết", hệ thống hiển thị Dropdown danh sách các bộ lọc bên Khóa học (hoặc Tài nguyên) chưa có ở bên này.
+  * Khi chọn một bộ lọc đối tác, hệ thống tự động điền Tên, khóa cứng Slug (để đồng nhất liên kết mềm) và tự động sao chép toàn bộ các giá trị lọc con sang sau khi tạo thành công.
+* **Lợi ích**: UI/UX vô cùng thông minh, tự động phát hiện dữ liệu chéo, giúp admin thiết lập bộ lọc chéo chỉ với 2 click chuột mà không lo bị lệch dữ liệu.
 
 ## 2. Elaboration & Self-Explanation
-Thay vì tạo ra một cơ chế phức tạp theo dõi thay đổi (Change Tracking) và đồng bộ thời gian thực hai chiều giữa `courseFilters` và `resourceFilters`, chúng ta chuyển sang mô hình **Tạo đúp tại chỗ (Double-write on action)** và **Sao chép thủ công chủ động (Active Copy-over)**.
+Chúng ta sẽ triển khai cơ chế **"Nhập dữ liệu từ đối tác (Partner Import on Creation)"** song song với chế độ tạo mới thông thường:
 
-* **Khi Tạo mới**: Giao diện cung cấp một checkbox `"Tạo bộ lọc tương tự cho [Khóa học/Tài nguyên]"`. Khi tích chọn, client sẽ gửi yêu cầu và backend Convex sẽ insert bản ghi vào cả hai bảng. Hai bản ghi này có ID độc lập.
-* **Khi Chỉnh sửa / Quản lý giá trị**: 
-  * Khi admin thêm một giá trị lọc (ví dụ: thêm `"Figma"`), admin có thể tích chọn `"Thêm giá trị này sang bộ lọc đối tác"`. Backend sẽ tìm bộ lọc cùng slug ở bên kia để insert thêm một bản ghi giá trị lọc tương ứng.
-  * Thêm nút `"Đồng bộ giá trị sang đối tác"` (Copy values to partner) ở trang chi tiết bộ lọc. Khi nhấn nút này, hệ thống sẽ đọc toàn bộ danh sách giá trị lọc hiện tại của bộ lọc này, sau đó sao chép (hoặc cập nhật đè) sang bộ lọc có cùng slug ở bảng bên kia.
-* **Khi Xóa**: Việc xóa bộ lọc hoặc giá trị lọc ở bên này sẽ **không bao giờ tự động xóa** bên kia. Điều này đảm bảo an toàn tuyệt đối cho các khóa học hoặc tài nguyên đã được gán các bộ lọc này từ trước.
+* **Tầng Backend (Convex)**:
+  * Viết query `listUnmappedPartnerFilters` ở cả hai file API. Query này sẽ lấy toàn bộ danh sách bộ lọc của bảng đối diện, sau đó lọc bỏ những bộ lọc đã có slug trùng khớp ở bảng hiện tại. Kết quả trả về là danh sách các bộ lọc "chưa được đồng nhất".
+  * Cập nhật mutation `create` để nhận tham số `copyValuesFromPartnerSlug?: string`. Khi tham số này được gửi lên, backend sau khi insert bộ lọc mới sẽ truy vấn toàn bộ các giá trị lọc (`FilterValues`) thuộc bộ lọc đối tác có slug tương ứng, rồi insert bản sao của chúng vào bảng giá trị lọc hiện tại.
+* **Tầng Giao diện (UI Admin)**:
+  * Tại trang `create/page.tsx` ở cả 2 module:
+    * Thêm state `creationMode` (`'new'` | `'copy'`) hiển thị dưới dạng Radio tabs hoặc Select.
+    * Mặc định là `'new'` (Tạo mới hoàn toàn).
+    * Khi chọn `'copy'` (Sao chép & Liên kết từ bộ lọc đối tác có sẵn):
+      * Gọi query `listUnmappedPartnerFilters` để hiển thị trong một `<select>` dropdown.
+      * Khi admin chọn một bộ lọc từ dropdown, ta tự động set state `name` thành tên bộ lọc đó, set state `slug` thành slug bộ lọc đó và set input slug thành `disabled={true}` để khóa cứng slug, đảm bảo liên kết chéo qua slug hoạt động hoàn hảo.
+      * Tự động gửi cờ `copyValuesFromPartnerSlug` lên mutation tạo khi submit.
 
 ## 3. Concrete Examples & Analogies
 * **Ví dụ cụ thể**:
-  * Admin tạo bộ lọc `"Độ khó"` bên Tài nguyên và tích chọn `"Tạo bộ lọc tương tự cho Khóa học"`. Hệ thống tạo 1 bản ghi `"Độ khó"` bên `resourceFilters` và 1 bản ghi `"Độ khó"` bên `courseFilters`.
-  * Sau đó, admin chỉnh sửa bộ lọc `"Độ khó"` bên Tài nguyên, thêm giá trị `"Cơ bản"`. Tại Dialog thêm, admin tích `"Thêm giá trị này sang bộ lọc Khóa học"`. Hệ thống insert `"Cơ bản"` cho cả hai bên.
-  * Nếu admin xóa giá trị `"Cơ bản"` bên Tài nguyên, giá trị `"Cơ bản"` bên Khóa học **vẫn được giữ nguyên**, không bị ảnh hưởng.
-* **Hình ảnh tương đồng**: Giống như việc bạn có hai quyển sổ tay ghi chép (sổ Khóa học và sổ Tài nguyên). Khi bạn viết một đề mục mới ở trang đầu quyển sổ này, bạn dùng giấy than để in đè đề mục đó sang quyển sổ kia. Tuy nhiên, sau đó hai quyển sổ hoạt động hoàn toàn độc lập: bạn có thể tẩy xóa hoặc ghi thêm chi tiết vào quyển sổ này mà không làm rách hay ảnh hưởng gì đến quyển sổ kia.
+  * Bên Khóa học đã có bộ lọc `"Ngôn ngữ lập trình"` (slug: `ngon-ngu-lap-trinh`) chứa các giá trị: `Javascript`, `Python`, `Go`.
+  * Admin sang bên Tài nguyên tạo bộ lọc, chọn `"Sao chép & Liên kết từ Khóa học"`. Dropdown hiển thị `"Ngôn ngữ lập trình"`. Admin click chọn.
+  * Input Tên tự động điền `"Ngôn ngữ lập trình"`, Input Slug điền `"ngon-ngu-lap-trinh"` và bị khóa không cho sửa.
+  * Admin nhấn "Tạo bộ lọc". Bộ lọc mới được tạo bên Tài nguyên và tự động có sẵn 3 giá trị con: `Javascript`, `Python`, `Go` mà không cần nhập thủ công.
+* **Hình ảnh tương đồng**: Giống như việc bạn có 2 phòng trưng bày (Phòng Khóa học và Phòng Tài nguyên). Ở phòng Khóa học đã có một kệ sách chứa đầy sách Figma, Photoshop. Khi bạn muốn làm một kệ tương tự ở phòng Tài nguyên, thay vì mua kệ trống rồi đi nhặt từng cuốn sách xếp vào, bạn gọi thợ đóng một chiếc kệ giống hệt và bê nguyên bộ sách mẫu Figma, Photoshop ở phòng bên kia đặt sang.
 
 # II. Audit Summary (Tóm tắt kiểm tra)
 
-* Hai bảng dữ liệu `courseFilters` và `resourceFilters` có cấu trúc hoàn toàn trùng khớp và độc lập về mặt vật lý.
-* Các mutation trong Convex hiện tại (`convex/courseFilters.ts` và `convex/resourceFilters.ts`) đã hỗ trợ tốt các thao tác CRUD cơ bản và đã có sẵn các API `copyCourseFiltersToResources` để phục vụ việc sao chép thủ công hàng loạt.
-* Hệ thống pre-commit và tsc hoạt động tốt, đảm bảo chất lượng code.
+* Các bảng `courseFilters` và `resourceFilters` có cấu trúc tương thích 100%.
+* Chúng ta đã có sẵn mutation `copyValuesToPartner` viết ở bước trước để copy values cho bộ lọc đã có sẵn. Ý tưởng mở rộng mutation `create` để copy values ngay khi tạo mới là hoàn toàn khả thi và nhất quán về mặt kiến trúc.
 
 # III. Root Cause & Counter-Hypothesis (Nguyên nhân gốc & Giả thuyết đối chứng)
 
-* **Vấn đề của thiết kế cũ (Real-time Sync)**:
-  * Rủi ro vòng lặp đệ quy lớn (A gọi B, B gọi ngược lại A).
-  * Việc xóa một bộ lọc ở bên này có thể kéo theo việc xóa bộ lọc bên kia, gây mất liên kết dữ liệu hàng loạt của các Khóa học đang chạy trên production.
-* **Giải pháp thay thế (One-time Copy / Independent Mode)**:
-  * Khắc phục triệt để các rủi ro trên.
-  * Đảm bảo tính đơn giản trong mã nguồn (KISS), dễ bảo trì và dễ hiểu đối với các lập trình viên khác tham gia dự án.
+* **Hạn chế của UI cũ**: Checkbox "Tạo đúp" chỉ giúp ích khi tạo mới đồng thời cả 2 bên. Trong trường hợp một bên đã có dữ liệu trước (ví dụ Khóa học đã chạy lâu năm có sẵn rất nhiều bộ lọc), khi admin muốn tạo bộ lọc tương tự cho Tài nguyên, UI cũ không hỗ trợ nhập lại nhanh dữ liệu có sẵn, bắt buộc admin phải gõ tay hoặc chạy tool copy đồng loạt rất thiếu linh hoạt.
+* **Giải pháp Dropdown liên kết**: Giải quyết triệt để vấn đề này, tăng tốc độ thiết lập dữ liệu và đảm bảo slug của hai bên trùng khớp tuyệt đối.
 
 # IV. Proposal (Đề xuất)
 
 ## 1. Tầng Database & API (Convex)
-a) **Cập nhật mutation Tạo bộ lọc (`create`)**:
-   * Nhận thêm tham số `copyToPartner?: boolean`.
-   * Nếu `true`, backend sẽ thực hiện insert bản ghi vào bảng hiện tại, đồng thời insert một bản ghi tương tự (cùng name, slug, active, description, v.v.) vào bảng đối tác. Hai bản ghi hoạt động độc lập và không liên kết ID với nhau.
+a) **Thêm Query `listUnmappedPartnerFilters`**:
+   * Trong `convex/resourceFilters.ts`: Trả về danh sách `courseFilters` có slug chưa tồn tại ở `resourceFilters`.
+   * Trong `convex/courseFilters.ts`: Trả về danh sách `resourceFilters` có slug chưa tồn tại ở `courseFilters`.
 
-b) **Cập nhật mutation Tạo giá trị lọc (`createValue`)**:
-   * Nhận thêm tham số `copyToPartner?: boolean`.
-   * Nếu `true`, backend sẽ insert giá trị lọc hiện tại. Đồng thời, tìm kiếm bộ lọc có cùng slug với filter cha ở bảng đối tác. Nếu tìm thấy, backend sẽ insert một giá trị lọc tương tự (cùng name, slug, active, order) vào bộ lọc đối tác đó.
-
-c) **Thêm mutation Sao chép toàn bộ giá trị lọc (`copyValuesToPartner`)**:
-   * Nhận vào `filterId` của bộ lọc hiện tại.
-   * Tìm bộ lọc đối tác có cùng slug ở bảng đối diện.
-   * Lấy toàn bộ danh sách các giá trị lọc hiện có của bộ lọc hiện tại.
-   * Thực hiện đồng bộ (ghi đè hoặc bổ sung nếu chưa có) các giá trị lọc này sang bộ lọc đối tác để đảm bảo danh sách giá trị của hai bên trùng khớp hoàn toàn tại thời điểm bấm nút.
+b) **Cập nhật mutation `create`**:
+   * Nhận thêm tham số `copyValuesFromPartnerSlug?: v.optional(v.string())`.
+   * Nếu có tham số này, sau khi insert bộ lọc mới, truy vấn toàn bộ các giá trị lọc (`FilterValues`) thuộc bộ lọc đối tác có slug đó và insert bản sao sang bảng giá trị của module hiện tại.
 
 ## 2. Giao diện Admin (UI)
 a) **Trang tạo mới bộ lọc (`create/page.tsx`)**:
-   * Thêm Checkbox: `"Tạo thêm một bộ lọc tương tự cho [Khóa học / Tài nguyên]"`.
-   * Khi submit, gửi kèm tham số `copyToPartner: true` lên API.
-
-b) **Trang chỉnh sửa bộ lọc (`[id]/edit/page.tsx`)**:
-   * **Phần Thông tin chung bộ lọc**: Không cần tự động đồng bộ khi sửa đổi thông tin chung (để hai bên độc lập).
-   * **Phần danh sách giá trị lọc (Filter Values)**:
-     * Cạnh nút "Thêm giá trị", bổ sung một nút bấm phụ: `"Sao chép giá trị sang [Khóa học / Tài nguyên]"`.
-     * Khi click nút này, hệ thống sẽ gọi mutation `copyValuesToPartner` để sao chép nhanh toàn bộ cấu trúc giá trị lọc hiện tại sang bộ lọc đối tác có cùng slug.
-     * Khi click "Thêm giá trị" (mở Dialog), bổ sung checkbox `"Thêm giá trị này sang bộ lọc đối tác (nếu có)"`. Mặc định bật.
+   * Thêm lựa chọn "Phương thức tạo bộ lọc":
+     * `[o] Tạo mới hoàn toàn`
+     * `[o] Sao chép & Liên kết từ bộ lọc Khóa học (Tài nguyên) có sẵn`
+   * Khi chọn "Sao chép & Liên kết":
+     * Hiển thị Dropdown danh sách các bộ lọc chưa liên kết từ query `listUnmappedPartnerFilters`.
+     * Khi thay đổi Select: Cập nhật Tên, Slug từ bộ lọc đối tác được chọn và khóa cứng trường Slug (`disabled`).
+     * Khi nhấn submit, gọi mutation `create` với cờ `copyValuesFromPartnerSlug`.
+   * Khi chọn "Tạo mới hoàn toàn":
+     * Giao diện hoạt động như cũ (cho phép gõ Tên, Slug, Trạng thái và có checkbox tạo đúp sang đối tác).
 
 # V. Files Impacted (Tệp bị ảnh hưởng)
 
 ## 1. Nhóm Backend & API (Convex)
-* `Sửa:` [convex/resourceFilters.ts](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/convex/resourceFilters.ts): Cập nhật `create`, `createValue` và bổ sung mutation `copyValuesToPartner` để hỗ trợ sao chép dữ liệu sang `courseFilters`.
-* `Sửa:` [convex/courseFilters.ts](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/convex/courseFilters.ts): Cập nhật tương tự để hỗ trợ sao chép dữ liệu sang `resourceFilters`.
+* `Sửa:` [convex/resourceFilters.ts](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/convex/resourceFilters.ts): Bổ sung query `listUnmappedPartnerFilters` và cập nhật mutation `create` hỗ trợ `copyValuesFromPartnerSlug`.
+* `Sửa:` [convex/courseFilters.ts](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/convex/courseFilters.ts): Bổ sung tương tự để hỗ trợ đồng bộ ngược lại.
 
 ## 2. Nhóm Giao diện (UI Admin)
-* `Sửa:` [app/admin/resources/filters/create/page.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/app/admin/resources/filters/create/page.tsx): Thêm Checkbox tạo đúp bộ lọc tài nguyên.
-* `Sửa:` [app/admin/resources/filters/[id]/edit/page.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/app/admin/resources/filters/%5Bid%5D/edit/page.tsx): Thêm nút "Sao chép giá trị sang Khóa học", thêm checkbox tạo đúp trong Dialog thêm giá trị lọc.
-* `Sửa:` [app/admin/courses/filters/create/page.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/app/admin/courses/filters/create/page.tsx): Thêm Checkbox tạo đúp bộ lọc khóa học.
-* `Sửa:` [app/admin/courses/filters/[id]/edit/page.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/app/admin/courses/filters/%5Bid%5D/edit/page.tsx): Thêm nút "Sao chép giá trị sang Tài nguyên", thêm checkbox tạo đúp trong Dialog thêm giá trị lọc.
+* `Sửa:` [app/admin/resources/filters/create/page.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/app/admin/resources/filters/create/page.tsx): Thiết kế lại giao diện Form để hỗ trợ chế độ Sao chép & Liên kết kèm theo Dropdown chọn bộ lọc Khóa học.
+* `Sửa:` [app/admin/courses/filters/create/page.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/app/admin/courses/filters/create/page.tsx): Thiết kế lại tương tự để hỗ trợ Dropdown chọn bộ lọc Tài nguyên.
 
 # VI. Execution Preview (Xem trước thực thi)
 
-1. **Bước 1**: Cập nhật Convex API (`resourceFilters.ts` và `courseFilters.ts`) hỗ trợ tham số `copyToPartner` và bổ sung mutation `copyValuesToPartner`.
-2. **Bước 2**: Chỉnh sửa màn hình tạo bộ lọc (`create/page.tsx`) ở cả hai module để thêm checkbox tạo đúp bộ lọc.
-3. **Bước 3**: Chỉnh sửa màn hình edit bộ lọc (`edit/page.tsx`) ở cả hai module để thêm nút "Sao chép giá trị sang đối tác" và checkbox trong Dialog thêm giá trị.
-4. **Bước 4**: Kiểm thử biên dịch TypeScript bằng `tsc --noEmit`.
+1. **Bước 1**: Thêm query `listUnmappedPartnerFilters` và nâng cấp mutation `create` ở cả 2 tệp API Convex.
+2. **Bước 2**: Thiết kế lại giao diện trang `create/page.tsx` ở cả 2 module để tích hợp Dropdown lựa chọn bộ lọc đối tác và logic khóa cứng Slug.
+3. **Bước 3**: Kiểm tra kiểu dữ liệu TypeScript.
 
 # VII. Verification Plan (Kế hoạch kiểm chứng)
 
 ### Automated Tests
-* Chạy lệnh `bunx tsc --noEmit` để đảm bảo toàn bộ mã TypeScript không bị lỗi kiểu dữ liệu.
+* Chạy `bunx tsc --noEmit` để đảm bảo không lỗi kiểu dữ liệu.
 
 ### Manual Verification
-1. **Tạo bộ lọc**:
-   * Tạo bộ lọc `"Kỹ năng"` bên Tài nguyên, tích `"Tạo bộ lọc tương tự cho Khóa học"`.
-   * Xác nhận bộ lọc `"Kỹ năng"` xuất hiện ở cả hai danh sách.
-   * Thử sửa tên bộ lọc bên Tài nguyên thành `"Kỹ năng chuyên môn"`. Xác nhận bên Khóa học **không bị đổi theo** (hai bên độc lập).
-2. **Thêm giá trị lọc**:
-   * Vào sửa bộ lọc `"Kỹ năng"` bên Tài nguyên, thêm giá trị `"Figma"`, tích `"Thêm giá trị này sang bộ lọc đối tác"`.
-   * Xác nhận bên Khóa học cũng tự động nhận giá trị `"Figma"`.
-3. **Sao chép hàng loạt giá trị lọc**:
-   * Thêm tiếp các giá trị `"Sketch"`, `"Adobe XD"` bên Tài nguyên nhưng **không** chọn thêm sang đối tác.
-   * Nhấn nút `"Sao chép giá trị sang Khóa học"`.
-   * Kiểm tra bên Khóa học, xác nhận toàn bộ danh sách giá trị lọc hiện tại đã được đồng bộ trùng khớp với bên Tài nguyên.
-4. **Xóa dữ liệu**:
-   * Xóa giá trị `"Sketch"` bên Tài nguyên. Xác nhận bên Khóa học **vẫn giữ nguyên** giá trị `"Sketch"` (độc lập, không bị xóa theo).
+1. **Liên kết bộ lọc**:
+   * Bên Khóa học đã có sẵn bộ lọc `"Độ khó"` (slug: `do-kho`) chứa 3 giá trị `Dễ`, `Trung bình`, `Khó`.
+   * Vào trang tạo mới bộ lọc Tài nguyên, chọn phương thức `"Sao chép & Liên kết"`. Chọn bộ lọc `"Độ khó"` trong dropdown.
+   * Xác nhận Tên và Slug tự động được điền và Slug bị disable.
+   * Nhấn "Tạo bộ lọc", sau đó vào trang edit bộ lọc vừa tạo, xác nhận 3 giá trị `Dễ`, `Trung bình`, `Khó` đã tự động được import thành công.
 
 # VIII. Todo
 
-- [ ] Cập nhật API Convex `convex/resourceFilters.ts` để hỗ trợ sao chép dữ liệu sang `courseFilters`.
-- [ ] Cập nhật API Convex `convex/courseFilters.ts` để hỗ trợ sao chép dữ liệu sang `resourceFilters`.
-- [ ] Chỉnh sửa giao diện tạo bộ lọc tài nguyên `app/admin/resources/filters/create/page.tsx` bổ sung Checkbox tùy chọn sao chép.
-- [ ] Chỉnh sửa giao diện chi tiết bộ lọc tài nguyên `app/admin/resources/filters/[id]/edit/page.tsx` bổ sung nút "Sao chép giá trị" và checkbox Dialog.
-- [ ] Chỉnh sửa giao diện tạo bộ lọc khóa học `app/admin/courses/filters/create/page.tsx` bổ sung Checkbox tùy chọn sao chép.
-- [ ] Chỉnh sửa giao diện chi tiết bộ lọc khóa học `app/admin/courses/filters/[id]/edit/page.tsx` bổ sung nút "Sao chép giá trị" và checkbox Dialog.
-- [ ] Chạy lệnh `bunx tsc --noEmit` kiểm tra lỗi kiểu dữ liệu.
+- [ ] Cập nhật API Convex `convex/resourceFilters.ts` (thêm query `listUnmappedPartnerFilters`, cập nhật `create`)
+- [ ] Cập nhật API Convex `convex/courseFilters.ts` (thêm query `listUnmappedPartnerFilters`, cập nhật `create`)
+- [ ] Thiết kế lại giao diện Tạo bộ lọc tài nguyên `app/admin/resources/filters/create/page.tsx` bổ sung Dropdown liên kết bộ lọc Khóa học.
+- [ ] Thiết kế lại giao diện Tạo bộ lọc khóa học `app/admin/courses/filters/create/page.tsx` bổ sung Dropdown liên kết bộ lọc Tài nguyên.
+- [ ] Chạy lệnh `bunx tsc --noEmit` xác minh kiểu dữ liệu.
+- [ ] Commit code thay đổi.
 
 # IX. Acceptance Criteria (Tiêu chí chấp nhận)
 
-* Tính năng sao chép hoạt động tốt tại thời điểm tương tác (Tạo mới bộ lọc / Tạo mới giá trị / Nhấn nút sao chép toàn bộ).
-* Không có cơ chế đồng bộ tự động ngầm hai chiều (sửa/xóa một bên không ảnh hưởng bên kia sau khi đã sao chép).
-* Không xảy ra lỗi đệ quy hay lỗi hệ thống ở Convex backend.
-* Không có lỗi TypeScript (`tsc --noEmit` hoàn thành không lỗi).
-
-# X. Risk / Rollback (Rủi ro / Hoàn tác)
-
-* **Rủi ro trùng lặp khóa chính**: Khi sao chép giá trị lọc sang đối tác, cần kiểm tra xem giá trị lọc có slug trùng đã tồn tại chưa để tránh lỗi ghi đúp khóa chính.
-  * *Giải pháp*: Trong API `copyValuesToPartner`, thực hiện kiểm tra và chỉ insert những giá trị có slug chưa tồn tại, hoặc patch cập nhật đè thay vì insert mới.
-* **Hoàn tác**: Sử dụng `git checkout` để khôi phục các tệp tin nếu xảy ra lỗi.
-
-# XI. Out of Scope (Ngoài phạm vi)
-
-* Đồng bộ hóa dữ liệu lịch sử (các khóa học/tài nguyên đã gán bộ lọc từ trước sẽ không được tự động gán lại).
+* Trang tạo bộ lọc có giao diện trực quan cho phép admin chọn giữa tạo mới hoàn toàn hoặc sao chép từ bộ lọc đối tác có sẵn.
+* Khi sao chép bộ lọc đối tác, toàn bộ giá trị lọc con phải được nhân bản thành công sang bảng đối diện tương ứng.
+* Slug của bộ lọc được sao chép phải trùng khớp tuyệt đối và bị khóa không cho sửa trên giao diện tạo để giữ tính liên kết.
+* `tsc --noEmit` hoàn thành không lỗi.

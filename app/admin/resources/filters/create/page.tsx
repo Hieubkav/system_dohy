@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Filter, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -33,7 +33,10 @@ export default function ResourceFilterCreatePage() {
 function ResourceFilterCreateContent() {
   const router = useRouter();
   const createFilter = useMutation(api.resourceFilters.create);
+  const partnerFilters = useQuery(api.resourceFilters.listUnmappedPartnerFilters, {});
 
+  const [creationMode, setCreationMode] = useState<'new' | 'copy'>('new');
+  const [selectedPartnerSlug, setSelectedPartnerSlug] = useState('');
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [active, setActive] = useState(true);
@@ -46,10 +49,27 @@ function ResourceFilterCreateContent() {
     setSlug(convertToSlug(value));
   };
 
+  const handlePartnerFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedPartnerSlug(val);
+    const filter = partnerFilters?.find((f) => f.slug === val);
+    if (filter) {
+      setName(filter.name);
+      setSlug(filter.slug);
+      setActive(filter.active);
+    } else {
+      setName('');
+      setSlug('');
+    }
+  };
+
   // Dirty state detection
   const hasChanges = useMemo(() => {
+    if (creationMode === 'copy') {
+      return selectedPartnerSlug !== '';
+    }
     return name.trim() !== '' || slug.trim() !== '' || active !== true || copyToPartner !== true;
-  }, [name, slug, active, copyToPartner]);
+  }, [name, slug, active, copyToPartner, creationMode, selectedPartnerSlug]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +84,8 @@ function ResourceFilterCreateContent() {
         active,
         name: name.trim(),
         slug: slug.trim(),
-        copyToPartner,
+        copyToPartner: creationMode === 'new' ? copyToPartner : false,
+        copyValuesFromPartnerSlug: creationMode === 'copy' && selectedPartnerSlug ? selectedPartnerSlug : undefined,
       });
       toast.success('Đã thêm bộ lọc mới thành công');
       router.push('/admin/resources/filters');
@@ -92,6 +113,66 @@ function ResourceFilterCreateContent() {
       <form onSubmit={handleSubmit}>
         <Card className="max-w-xl">
           <CardContent className="space-y-4 p-6">
+            <div className="flex gap-4 border-b border-slate-100 dark:border-slate-800 pb-3 mb-2">
+              <button
+                type="button"
+                className={cn(
+                  "pb-2 text-sm font-semibold border-b-2 transition-colors",
+                  creationMode === 'new'
+                    ? "border-indigo-600 text-indigo-600"
+                    : "border-transparent text-slate-400 hover:text-slate-600"
+                )}
+                onClick={() => {
+                  setCreationMode('new');
+                  setName('');
+                  setSlug('');
+                  setSelectedPartnerSlug('');
+                }}
+              >
+                Tạo mới hoàn toàn
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  "pb-2 text-sm font-semibold border-b-2 transition-colors",
+                  creationMode === 'copy'
+                    ? "border-indigo-600 text-indigo-600"
+                    : "border-transparent text-slate-400 hover:text-slate-600"
+                )}
+                onClick={() => {
+                  setCreationMode('copy');
+                  setName('');
+                  setSlug('');
+                  setSelectedPartnerSlug('');
+                }}
+              >
+                Sao chép & Liên kết từ Khóa học
+              </button>
+            </div>
+
+            {creationMode === 'copy' && (
+              <div className="space-y-2">
+                <Label htmlFor="partner-filter">Chọn bộ lọc từ Khóa học <span className="text-red-500">*</span></Label>
+                <select
+                  id="partner-filter"
+                  value={selectedPartnerSlug}
+                  onChange={handlePartnerFilterChange}
+                  className="w-full h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                  required
+                >
+                  <option value="">-- Chọn bộ lọc đối tác để copy --</option>
+                  {partnerFilters?.map((f) => (
+                    <option key={f._id} value={f.slug}>
+                      {f.name} ({f.slug})
+                    </option>
+                  ))}
+                </select>
+                {partnerFilters && partnerFilters.length === 0 && (
+                  <p className="text-xs text-amber-500 font-medium">Tất cả bộ lọc của Khóa học đã được liên kết sang.</p>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="filter-name">Tên bộ lọc <span className="text-red-500">*</span></Label>
               <Input
@@ -100,7 +181,8 @@ function ResourceFilterCreateContent() {
                 onChange={handleNameChange}
                 placeholder="Ví dụ: Phần mềm, Cấp độ..."
                 required
-                autoFocus
+                disabled={creationMode === 'copy'}
+                autoFocus={creationMode === 'new'}
               />
             </div>
 
@@ -113,6 +195,7 @@ function ResourceFilterCreateContent() {
                 placeholder="ví dụ: phan-mem"
                 className="font-mono text-sm"
                 required
+                disabled={creationMode === 'copy'}
               />
             </div>
 
@@ -123,24 +206,33 @@ function ResourceFilterCreateContent() {
                 value={active ? 'active' : 'inactive'}
                 onChange={(e) => setActive(e.target.value === 'active')}
                 className="w-full h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                disabled={creationMode === 'copy'}
               >
                 <option value="active">Hoạt động</option>
                 <option value="inactive">Ẩn</option>
               </select>
             </div>
 
-            <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <input
-                id="copy-to-partner"
-                type="checkbox"
-                checked={copyToPartner}
-                onChange={(e) => setCopyToPartner(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-              />
-              <Label htmlFor="copy-to-partner" className="font-normal cursor-pointer select-none text-slate-600 dark:text-slate-400">
-                Đồng thời tạo một bản sao bộ lọc tương tự bên Khóa học
-              </Label>
-            </div>
+            {creationMode === 'new' ? (
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <input
+                  id="copy-to-partner"
+                  type="checkbox"
+                  checked={copyToPartner}
+                  onChange={(e) => setCopyToPartner(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                />
+                <Label htmlFor="copy-to-partner" className="font-normal cursor-pointer select-none text-slate-600 dark:text-slate-400">
+                  Đồng thời tạo một bản sao bộ lọc tương tự bên Khóa học
+                </Label>
+              </div>
+            ) : (
+              selectedPartnerSlug && (
+                <div className="rounded-md bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30 p-3 text-xs text-indigo-600 dark:text-indigo-400">
+                  Hệ thống sẽ tự động sao chép toàn bộ các giá trị con (bao gồm ảnh/icon và thứ tự) từ bộ lọc Khóa học sang bộ lọc mới tạo.
+                </div>
+              )
+            )}
           </CardContent>
         </Card>
 
