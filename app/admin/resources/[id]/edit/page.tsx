@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use, useEffect, useMemo, useState } from 'react';
+import React, { use, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { ExternalLink, FileText, Filter, Loader2, Plus } from 'lucide-react';
@@ -86,6 +86,34 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
   const [activatingAccessId, setActivatingAccessId] = useState<Id<'resourceCustomers'> | null>(null);
   const [grantCustomerId, setGrantCustomerId] = useState('');
   const [isGrantingAccess, setIsGrantingAccess] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('saved');
+  const [snapshotVersion, setSnapshotVersion] = useState(0);
+
+  const initialSnapshotRef = useRef<{
+    title: string;
+    slug: string;
+    content: string;
+    excerpt: string;
+    categoryId: string;
+    additionalCategoryIds: string[];
+    thumbnail: string;
+    thumbnailStorageId: Id<'_storage'> | null | undefined;
+    galleryImages: string[];
+    downloadUrl: string;
+    status: ResourceStatus;
+    pricingType: PricingType;
+    priceAmount: number | undefined;
+    comparePriceAmount: number | undefined;
+    priceNote: string;
+    isPriceVisible: boolean;
+    featured: boolean;
+    renderType: RenderType;
+    markdownRender: string;
+    htmlRender: string;
+    metaTitle: string;
+    metaDescription: string;
+    selectedValueIds: Id<'resourceFilterValues'>[];
+  } | null>(null);
 
   const enabledFields = useMemo(() => new Set(fieldsData?.map((field) => field.fieldKey) ?? []), [fieldsData]);
   const multiCategoryEnabled = Boolean(settingsData?.find((setting) => setting.settingKey === 'enableMultipleCategories')?.value);
@@ -102,6 +130,48 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
     () => customersData?.filter((customer) => !activeAccessCustomerIds.has(customer._id)) ?? [],
     [activeAccessCustomerIds, customersData]
   );
+
+  const currentSnapshot = useMemo(() => ({
+    title: title.trim(),
+    slug: slug.trim(),
+    content,
+    excerpt: excerpt.trim(),
+    categoryId,
+    additionalCategoryIds,
+    thumbnail: thumbnail ?? '',
+    thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
+    galleryImages: galleryItems.map((item) => item.url).filter(Boolean),
+    downloadUrl: downloadUrl.trim(),
+    status,
+    pricingType,
+    priceAmount,
+    comparePriceAmount,
+    priceNote: priceNote.trim(),
+    isPriceVisible,
+    featured,
+    renderType,
+    markdownRender: markdownRender.trim(),
+    htmlRender: htmlRender.trim(),
+    metaTitle: metaTitle.trim(),
+    metaDescription: metaDescription.trim(),
+    selectedValueIds,
+  }), [title, slug, content, excerpt, categoryId, additionalCategoryIds,
+    thumbnail, thumbnailStorageId, galleryItems, downloadUrl, status,
+    pricingType, priceAmount, comparePriceAmount, priceNote, isPriceVisible,
+    featured, renderType, markdownRender, htmlRender, metaTitle, metaDescription,
+    selectedValueIds]);
+
+  const hasChanges = useMemo(() => {
+    if (!initialized || !initialSnapshotRef.current) { return false; }
+    return JSON.stringify(initialSnapshotRef.current) !== JSON.stringify(currentSnapshot);
+  }, [currentSnapshot, snapshotVersion, initialized]);
+
+  useEffect(() => {
+    if (saveStatus === 'saving') { return; }
+    if (hasChanges && saveStatus === 'saved') { setSaveStatus('idle'); return; }
+    if (!hasChanges && saveStatus === 'idle') { setSaveStatus('saved'); }
+  }, [hasChanges, saveStatus]);
+
 
   useEffect(() => {
     if (!resourceData || additionalCategoryIdsData === undefined || assignedFilters === undefined || initialized) {return;}
@@ -133,6 +203,32 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
     setMetaDescription(resourceData.metaDescription ?? '');
     setSelectedValueIds(assignedFilters.map((item) => item._id));
     setEditorResetKey((prev) => prev + 1);
+    initialSnapshotRef.current = {
+      title: resourceData.title.trim(),
+      slug: resourceData.slug.trim(),
+      content: resourceData.content,
+      excerpt: (resourceData.excerpt ?? '').trim(),
+      categoryId: resourceData.categoryId,
+      additionalCategoryIds: additionalCategoryIdsData,
+      thumbnail: resourceData.thumbnail ?? '',
+      thumbnailStorageId: resourceData.thumbnail ? (resourceData.thumbnailStorageId ?? null) : null,
+      galleryImages: (resourceData.images ?? []).filter(Boolean),
+      downloadUrl: resourceData.downloadUrl.trim(),
+      status: resourceData.status,
+      pricingType: resourceData.pricingType,
+      priceAmount: resourceData.priceAmount,
+      comparePriceAmount: resourceData.comparePriceAmount,
+      priceNote: (resourceData.priceNote ?? '').trim(),
+      isPriceVisible: resourceData.isPriceVisible !== false,
+      featured: resourceData.featured ?? false,
+      renderType: resourceData.renderType ?? 'content',
+      markdownRender: (resourceData.markdownRender ?? '').trim(),
+      htmlRender: (resourceData.htmlRender ?? '').trim(),
+      metaTitle: (resourceData.metaTitle ?? '').trim(),
+      metaDescription: (resourceData.metaDescription ?? '').trim(),
+      selectedValueIds: assignedFilters.map((item) => item._id),
+    };
+    setSnapshotVersion((prev) => prev + 1);
     setInitialized(true);
   }, [additionalCategoryIdsData, assignedFilters, initialized, resourceData]);
 
@@ -149,6 +245,7 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
     if (!title.trim() || !categoryId || !downloadUrl.trim()) {return;}
 
     setIsSubmitting(true);
+    setSaveStatus('saving');
     try {
       const resolvedMetaTitle = truncateText(title.trim(), 60);
       const resolvedMetaDescription = truncateText(stripHtml(excerpt || content || ''), 160);
@@ -182,8 +279,12 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
         thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
         title: title.trim(),
       });
+      initialSnapshotRef.current = { ...currentSnapshot };
+      setSnapshotVersion((prev) => prev + 1);
+      setSaveStatus('saved');
       toast.success('Đã cập nhật tài nguyên');
     } catch (error) {
+      setSaveStatus('idle');
       toast.error(getAdminMutationErrorMessage(error, 'Không thể cập nhật tài nguyên'));
     } finally {
       setIsSubmitting(false);
@@ -680,9 +781,14 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
               <Button
                 type="submit"
                 variant="accent"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !hasChanges}
+                className={!hasChanges && !isSubmitting
+                  ? 'bg-slate-300 hover:bg-slate-300 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-800 dark:text-slate-400'
+                  : undefined}
               >
-                {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+                {isSubmitting || saveStatus === 'saving'
+                  ? 'Đang lưu...'
+                  : (saveStatus === 'saved' && !hasChanges ? 'Đã lưu' : 'Lưu thay đổi')}
               </Button>
             </div>
           </>
