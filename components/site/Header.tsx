@@ -427,7 +427,6 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
   const [flyoutDirection, setFlyoutDirection] = useState<Record<string, 'left' | 'right'>>({});
   const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deepMenuTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const userMenuRef = useRef<HTMLDivElement | null>(null);
   const navRef = useRef<HTMLDivElement | null>(null);
   const headerRowRef = useRef<HTMLDivElement | null>(null);
   const brandBlockRef = useRef<HTMLAnchorElement | null>(null);
@@ -440,7 +439,11 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
 
   useEffect(() => {
     const handleClick = (event: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const isInside = Array.from(document.querySelectorAll('.user-menu-container')).some(
+        el => el.contains(target)
+      );
+      if (!isInside) {
         setUserMenuOpen(false);
       }
     };
@@ -686,7 +689,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
   }, [logout, router]);
 
   const renderUserMenu = (variant: 'text' | 'icon', textClassName = '') => (
-    <div className="relative" ref={userMenuRef}>
+    <div className="relative user-menu-container">
       <button
         onClick={() => { setUserMenuOpen(prev => !prev); }}
         className={cn(
