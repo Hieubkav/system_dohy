@@ -61,7 +61,7 @@ Vấn đề cốt lõi là các component `ServiceList` hiện tại được th
      * Dùng grid tự thích ứng số cột (`desktopColumns` 3 hoặc 4).
      * Card dùng `rounded-sm` (2px), padding `p-3`, viền siêu mỏng.
      * Nếu nền tối: card background là `bg-zinc-900/60`, border `border-zinc-800`, hover border `border-zinc-700`, title `text-zinc-100`, description `text-zinc-400`.
-     * If nền sáng: card background là `bg-white`, border `border-zinc-200`, hover border `border-zinc-300`, title `text-zinc-900`, description `text-zinc-600`.
+     * Nếu nền sáng: card background là `bg-white`, border `border-zinc-200`, hover border `border-zinc-300`, title `text-zinc-900`, description `text-zinc-600`.
      * Tag badge: nhỏ gọn, vuông góc `rounded-sm`, chữ in hoa `text-[9px] font-bold uppercase tracking-wider`.
      * Có hiệu ứng reveal on hover cho icon `ArrowUpRight`.
 3. **Cập nhật Preview Admin:**
@@ -102,7 +102,7 @@ Vấn đề cốt lõi là các component `ServiceList` hiện tại được th
 * Mở trang edit của component service-list: `http://localhost:3000/admin/home-components/service-list/mx73epcmhabhhwcvhk0yp2ayr98803yt/edit`.
 * Kiểm tra:
   * Trong select box "Kiểu hiển thị" của preview, có xuất hiện thêm tùy chọn **Kanban**.
-  * Khi chọn **Kanban**, màu nền của khung preview có tự động chuyển sang màu đen thui đồng bộ với trang chủ.
+  * Khi chọn **Kanban**, màu nền của khung preview phải tự động chuyển sang màu đen thui đồng bộ với trang chủ.
   * Các card dịch vụ hiển thị theo phong cách tối giản: nền card tối (xám đậm/bán trong suốt), viền mỏng tối màu, chữ màu sáng, tag vuông vắn nhỏ gọn, và icon mũi tên hiện rõ khi hover vào card.
   * Đổi màu nền trang chủ về **Màu trắng (White)** hoặc màu sáng khác, kiểm tra xem card có tự động quay về tông sáng (nền trắng, chữ đen, viền xám sáng) để giữ tính thẩm mỹ không.
   * Ra ngoài trang chủ `http://localhost:3000/` để kiểm tra xem component hiển thị đúng như trong preview của admin.

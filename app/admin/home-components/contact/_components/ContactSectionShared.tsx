@@ -1047,30 +1047,43 @@ const renderKanban = ({
   const hasForm = Boolean(config.showForm);
   const hasMap = Boolean(config.showMap);
 
-  // Override tokens for true dark/light monochrome Kanban styling
+  // Tự động tính toán độ tương phản chữ (trắng/đen) trên nền màu primary của nút gửi
+  const isPrimaryDark = React.useMemo(() => {
+    const color = (tokens.primary || '').trim();
+    if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+      const r = Number.parseInt(color.slice(1, 3), 16);
+      const g = Number.parseInt(color.slice(3, 5), 16);
+      const b = Number.parseInt(color.slice(5, 7), 16);
+      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      return luma < 128;
+    }
+    return false;
+  }, [tokens.primary]);
+
+  // Cấu hình tokens màu sắc cho style Kanban (đồng bộ thương hiệu, tối ưu độ tương phản nền tối)
   const kanbanTokens = {
     ...tokens,
-    valueText: isDarkBg ? '#f4f4f5' : '#18181b', // zinc-100 or zinc-900
-    labelText: isDarkBg ? '#a1a1aa' : '#52525b', // zinc-400 or zinc-600
-    iconTintColor: isDarkBg ? '#f4f4f5' : '#18181b',
+    valueText: isDarkBg ? '#ffffff' : '#18181b', // Màu chữ giá trị sáng rõ trên nền tối
+    labelText: isDarkBg ? '#a1a1aa' : '#52525b', // Màu chữ nhãn dễ đọc
+    iconTintColor: tokens.primary, // Icon mang màu thương hiệu
     iconTintBackground: isDarkBg ? '#27272a' : '#f4f4f5',
-    primary: isDarkBg ? '#f4f4f5' : '#18181b',
+    primary: tokens.primary,
     formBackground: 'transparent',
     formBorder: isDarkBg ? '#27272a' : '#e4e4e7',
     formFieldBackground: isDarkBg ? '#09090b' : '#ffffff',
-    formFieldText: isDarkBg ? '#f4f4f5' : '#09090b',
+    formFieldText: isDarkBg ? '#ffffff' : '#09090b',
     formFieldBorder: isDarkBg ? '#27272a' : '#e4e4e7',
-    formFieldPlaceholder: isDarkBg ? '#52525b' : '#a1a1aa',
-    formFieldFocus: isDarkBg ? '#3f3f46' : '#a1a1aa',
-    formButtonBackground: isDarkBg ? '#f4f4f5' : '#18181b',
-    formButtonText: isDarkBg ? '#09090b' : '#ffffff',
-    formButtonBorder: isDarkBg ? '#f4f4f5' : '#18181b',
-    formTitle: isDarkBg ? '#f4f4f5' : '#09090b',
-    formDescription: isDarkBg ? '#71717a' : '#52525b',
+    formFieldPlaceholder: isDarkBg ? '#71717a' : '#a1a1aa',
+    formFieldFocus: tokens.primary, // Focus input sáng màu thương hiệu
+    formButtonBackground: tokens.primary, // Nút gửi mang màu chính thương hiệu thay vì trắng toát
+    formButtonText: isPrimaryDark ? '#ffffff' : '#09090b', // Tự động chọn chữ trắng hoặc đen
+    formButtonBorder: tokens.primary,
+    formTitle: isDarkBg ? '#ffffff' : '#09090b',
+    formDescription: isDarkBg ? '#a1a1aa' : '#52525b',
     formHelperText: isDarkBg ? '#a1a1aa' : '#71717a',
-    formAccent: isDarkBg ? '#f4f4f5' : '#18181b',
+    formAccent: tokens.primary,
     mapPlaceholderBg: isDarkBg ? '#18181b' : '#f4f4f5',
-    mapPlaceholderIcon: isDarkBg ? '#52525b' : '#a1a1aa',
+    mapPlaceholderIcon: isDarkBg ? '#a1a1aa' : '#a1a1aa',
   };
 
   let columnsCount = 1;
@@ -1115,17 +1128,18 @@ const renderKanban = ({
             {contactItems.map((item) => (
               <div
                 key={item.id}
-                className="flex items-start gap-2.5 p-2.5 border rounded-sm transition-all duration-200 group"
+                className="flex items-start gap-2.5 p-2.5 border rounded-sm transition-all duration-200 group border-l-[3px]"
                 style={{
-                  backgroundColor: isDarkBg ? 'rgba(24, 24, 27, 0.4)' : '#ffffff',
+                  backgroundColor: isDarkBg ? '#18181b' : '#ffffff', // Nền xám sẫm đục giúp card nổi bật trên nền đen
                   borderColor: isDarkBg ? '#27272a' : '#e4e4e7',
+                  borderLeftColor: tokens.primary, // Viền trái tag mang màu thương hiệu
                 }}
               >
                 <div className="shrink-0 mt-0.5" style={{ color: kanbanTokens.primary }}>
                   {renderContactIcon(item.icon, 14)}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="font-bold text-[10px] uppercase tracking-wider mb-0.5" style={{ color: isDarkBg ? '#71717a' : '#52525b' }}>{item.label}</h4>
+                  <h4 className="font-bold text-[10px] uppercase tracking-wider mb-0.5" style={{ color: isDarkBg ? '#a1a1aa' : '#52525b' }}>{item.label}</h4>
                   {renderItemValue(item, kanbanTokens, isPreview, 'text-xs font-semibold leading-relaxed')}
                 </div>
               </div>
@@ -1137,17 +1151,22 @@ const renderKanban = ({
               <div className="flex items-center gap-1.5 flex-wrap">
                 {activeSocials.map((social, idx) => {
                   const Icon = getSocialIconComponent(social.platform);
+                  const original = SOCIAL_ORIGINAL_COLORS[social.platform];
+                  const bg = original?.bg || (isDarkBg ? '#18181b' : '#ffffff');
+                  const border = original?.bg || (isDarkBg ? '#27272a' : '#e4e4e7');
+                  const color = original?.icon || (isDarkBg ? '#f4f4f5' : '#18181b');
+
                   return (
                     <a
                       key={`${social.id}-${social.platform}-${idx}`}
                       href={resolveSocialHref(social)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-7 h-7 rounded-sm border flex items-center justify-center transition-all duration-200 hover:scale-105 opacity-80 hover:opacity-100"
+                      className="w-7 h-7 rounded-sm border flex items-center justify-center transition-all duration-200 hover:scale-105 hover:opacity-95"
                       style={{
-                        backgroundColor: isDarkBg ? '#18181b' : '#ffffff',
-                        borderColor: isDarkBg ? '#27272a' : '#e4e4e7',
-                        color: isDarkBg ? '#f4f4f5' : '#18181b',
+                        backgroundColor: bg,
+                        borderColor: border,
+                        color: color,
                       }}
                       aria-label={social.platform || 'social'}
                     >
@@ -1174,11 +1193,11 @@ const renderKanban = ({
                 " [&_input]:rounded-none [&_textarea]:rounded-none [&_button]:rounded-none [&_input]:text-xs [&_textarea]:text-xs [&_button]:text-xs",
                 " [&_input]:px-2.5 [&_textarea]:px-2.5 [&_input]:py-2 [&_textarea]:py-2 [&_button]:py-2.5",
                 isDarkBg 
-                  ? "[&_input]:bg-[#09090b] [&_textarea]:bg-[#09090b] [&_input]:border-zinc-800 [&_textarea]:border-zinc-800 [&_input]:text-zinc-100 [&_textarea]:text-zinc-100 [&_button]:bg-zinc-100 [&_button]:text-zinc-950 hover:[&_button]:bg-zinc-200 [&_svg]:hidden"
-                  : "[&_input]:bg-white [&_textarea]:bg-white [&_input]:border-zinc-200 [&_textarea]:border-zinc-200 [&_input]:text-zinc-900 [&_textarea]:text-zinc-900 [&_button]:bg-zinc-900 [&_button]:text-white hover:[&_button]:bg-zinc-800 [&_svg]:hidden"
+                  ? "[&_input]:bg-[#09090b] [&_textarea]:bg-[#09090b] [&_input]:border-zinc-800 [&_textarea]:border-zinc-800 [&_input]:text-zinc-100 [&_textarea]:text-zinc-100 hover:[&_button]:opacity-90 [&_svg]:hidden"
+                  : "[&_input]:bg-white [&_textarea]:bg-white [&_input]:border-zinc-200 [&_textarea]:border-zinc-200 [&_input]:text-zinc-900 [&_textarea]:text-zinc-900 hover:[&_button]:opacity-90 [&_svg]:hidden"
               )}
               style={{
-                backgroundColor: isDarkBg ? 'rgba(24, 24, 27, 0.2)' : '#ffffff',
+                backgroundColor: isDarkBg ? '#18181b' : '#ffffff', // Card form nổi bật
                 borderColor: isDarkBg ? '#27272a' : '#e4e4e7',
               }}
             >
@@ -1212,7 +1231,7 @@ const renderKanban = ({
               className="border rounded-sm flex-1 overflow-hidden relative min-h-[220px]"
               style={{
                 borderColor: isDarkBg ? '#27272a' : '#e4e4e7',
-                backgroundColor: isDarkBg ? 'rgba(24, 24, 27, 0.4)' : '#ffffff',
+                backgroundColor: isDarkBg ? '#18181b' : '#ffffff', // Card bản đồ đồng nhất
               }}
             >
               {renderMapOrPlaceholder({ mapData, fallbackEmbed: config.mapEmbed, tokens: kanbanTokens, className: 'absolute inset-0', isPreview })}

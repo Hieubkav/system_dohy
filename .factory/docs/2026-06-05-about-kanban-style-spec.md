@@ -104,7 +104,7 @@ Component `About` hiện có các style (`classic`, `bento`, `minimal`, v.v.) đ
   * Trong select box "Kiểu hiển thị" của preview, có xuất hiện thêm tùy chọn **Mẫu tối giản Kanban (Layout 9)**.
   * Khi chọn **Mẫu tối giản Kanban (Layout 9)**, màu nền của khung preview có tự động chuyển sang màu đen thui đồng bộ với trang chủ.
   * Các khối giới thiệu hiển thị theo phong cách tối giản: nền tối mỏng, viền tối mỏng, chữ màu sáng, và icon mũi tên hiện rõ khi hover vào card.
-  * Đổi màu nền trang chủ về **Màu trắng (White)** hoặc màu sáng khác, kiểm tra xem card có tự động quay về tông sáng (nền trắng, chữ đen, viền xám sáng) để giữ tính thẩm mỹ không.
+  * Đổi màu nền trang chủ về **Màu trắng (White)** hoặc màu sáng khác, kiểm tra xem card có tự động quay về tông sáng (nền sáng, chữ đen, viền xám sáng) để giữ tính thẩm mỹ không.
   * Ra ngoài trang chủ `http://localhost:3000/` để kiểm tra xem component hiển thị đúng như trong preview của admin.
 
 # VIII. Todo
