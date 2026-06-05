@@ -9,13 +9,13 @@ import {
   type SectionSpacing,
 } from '../../_shared/types/sectionSpacing';
 
-export type PartnersStyle = 'grid' | 'marquee' | 'badge' | 'carousel' | 'clean' | 'divider' | 'logoCloud';
+export type PartnersStyle = 'grid' | 'marquee' | 'badge' | 'carousel' | 'clean' | 'divider' | 'logoCloud' | 'glassLogoCloud';
 export type PartnersAlign = 'left' | 'center' | 'right';
 export type PartnersDisplayMode = 'withName' | 'logoOnly';
 export type PartnersHeaderAlign = 'left' | 'center' | 'right';
 export type PartnersCornerRadius = 'none' | 'sm' | 'lg';
 export type PartnersLogoSize = 'small' | 'normal' | 'large' | 'veryLarge' | 'largest';
-export type PartnersLogoSizeLayout = 'grid' | 'compact' | 'marquee' | 'clean' | 'logoCloud';
+export type PartnersLogoSizeLayout = 'grid' | 'compact' | 'marquee' | 'clean' | 'logoCloud' | 'glassLogoCloud';
 export type PartnersSpacing = SectionSpacing;
 
 export interface PartnerItem extends ImageItem {
@@ -24,6 +24,8 @@ export interface PartnerItem extends ImageItem {
   link: string;
   name?: string;
 }
+
+export type PartnersLogoColorMode = 'color' | 'grayscale' | 'white';
 
 export interface PartnersConfig extends SectionHeaderConfig {
   items: PartnerItem[];
@@ -35,6 +37,7 @@ export interface PartnersConfig extends SectionHeaderConfig {
   logoSize: PartnersLogoSize;
   showBorder: boolean;
   spacing: PartnersSpacing;
+  logoColorMode?: PartnersLogoColorMode;
 }
 
 export const DEFAULT_PARTNERS_ALIGN: PartnersAlign = 'center';
@@ -62,10 +65,11 @@ export const DEFAULT_PARTNERS_CONFIG: Partial<PartnersConfig> = {
   showBorder: DEFAULT_PARTNERS_SHOW_BORDER,
   spacing: DEFAULT_PARTNERS_SPACING,
   style: 'grid',
+  logoColorMode: 'grayscale',
 };
 
 export const normalizePartnersStyle = (value: unknown): PartnersStyle => {
-  if (value === 'grid' || value === 'marquee' || value === 'badge' || value === 'carousel' || value === 'clean' || value === 'divider' || value === 'logoCloud') {
+  if (value === 'grid' || value === 'marquee' || value === 'badge' || value === 'carousel' || value === 'clean' || value === 'divider' || value === 'logoCloud' || value === 'glassLogoCloud') {
     return value;
   }
 
@@ -136,7 +140,7 @@ export const normalizePartnersSpacing = normalizeSectionSpacing;
 
 export const getPartnersSectionSpacingClassName = (
   spacing: PartnersSpacing = DEFAULT_PARTNERS_SPACING,
-  variant: 'grid' | 'default' | 'marquee' | 'marqueeSkip' | 'siteOuter' | 'logoCloud' | 'empty' = 'default',
+  variant: 'grid' | 'default' | 'marquee' | 'marqueeSkip' | 'siteOuter' | 'logoCloud' | 'glassLogoCloud' | 'empty' = 'default',
   skipHeader = false,
 ) => {
   if (variant === 'default' && !skipHeader) {
@@ -150,7 +154,7 @@ export const getPartnersSectionSpacingClassName = (
     if (variant === 'marquee') { return 'py-5 md:py-7'; }
     if (variant === 'marqueeSkip') { return 'py-4 md:py-6'; }
     if (variant === 'siteOuter') { return 'py-4'; }
-    if (variant === 'logoCloud') { return 'py-3 md:py-5'; }
+    if (variant === 'logoCloud' || variant === 'glassLogoCloud') { return 'py-3 md:py-5'; }
     if (variant === 'empty') { return 'py-3'; }
     return skipHeader ? 'pb-3 md:pb-5' : 'py-3 md:py-5';
   }
@@ -159,7 +163,7 @@ export const getPartnersSectionSpacingClassName = (
   if (variant === 'marquee') { return 'py-10 md:py-14'; }
   if (variant === 'marqueeSkip') { return 'py-8 md:py-12'; }
   if (variant === 'siteOuter') { return 'py-8'; }
-  if (variant === 'logoCloud') { return 'py-6 md:py-10'; }
+  if (variant === 'logoCloud' || variant === 'glassLogoCloud') { return 'py-6 md:py-10'; }
   if (variant === 'empty') { return 'py-6'; }
   return skipHeader ? 'pb-6 md:pb-10' : 'py-6 md:py-10';
 };
@@ -260,7 +264,7 @@ export const getPartnersLogoBoxClassName = (
     return 'h-9 w-[80px] md:h-10 md:w-[100px]';
   }
 
-  if (layout === 'logoCloud') {
+  if (layout === 'logoCloud' || layout === 'glassLogoCloud') {
     if (logoSize === 'small') { return 'max-h-[90px]'; }
     if (logoSize === 'large') { return 'max-h-[140px]'; }
     if (logoSize === 'veryLarge') { return 'max-h-[160px]'; }
@@ -314,7 +318,7 @@ export const getPartnersLogoFallbackSize = (
       ? 28
       : layout === 'clean'
         ? (showName ? 24 : 36)
-        : layout === 'logoCloud'
+        : (layout === 'logoCloud' || layout === 'glassLogoCloud')
           ? 32
           : (showName ? 32 : 40);
 

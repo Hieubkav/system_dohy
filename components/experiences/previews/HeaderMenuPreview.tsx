@@ -1632,7 +1632,6 @@ export function HeaderMenuPreview({
   // Lấy cảm hứng từ dự án dohy: nền tối backdrop-blur, pill sticky, social icons
   const darkGlassPillBg = 'rgba(0,0,0,0.65)';
   const darkGlassNavText = '#ffffff';
-  const darkGlassAccentText = '#FFD700';
 
 
 

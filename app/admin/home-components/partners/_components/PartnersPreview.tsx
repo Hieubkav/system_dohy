@@ -9,7 +9,7 @@ import { Button, cn } from '../../../components/ui';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { getPreviewDeviceClass } from '../../_shared/lib/previewResponsive';
 import { PARTNERS_STYLES } from '../_lib/constants';
-import { DEFAULT_PARTNERS_DISPLAY_MODE, DEFAULT_PARTNERS_LOGO_SIZE, DEFAULT_PARTNERS_SHOW_BORDER, DEFAULT_PARTNERS_SPACING, getPartnersSectionSpacingClassName, type PartnerItem, type PartnersAlign, type PartnersCornerRadius, type PartnersDisplayMode, type PartnersLogoSize, type PartnersSpacing, type PartnersStyle } from '../_types';
+import { DEFAULT_PARTNERS_DISPLAY_MODE, DEFAULT_PARTNERS_LOGO_SIZE, DEFAULT_PARTNERS_SHOW_BORDER, DEFAULT_PARTNERS_SPACING, getPartnersSectionSpacingClassName, type PartnerItem, type PartnersAlign, type PartnersCornerRadius, type PartnersDisplayMode, type PartnersLogoSize, type PartnersSpacing, type PartnersStyle, type PartnersLogoColorMode } from '../_types';
 import { getPartnersColors, type PartnersBrandMode } from '../_lib/colors';
 import { PartnersMarqueeShared } from './PartnersMarqueeShared';
 import { PartnersBadgeShared } from './PartnersBadgeShared';
@@ -18,6 +18,7 @@ import { PartnersCleanShared } from './PartnersCleanShared';
 import { PartnersDividerShared } from './PartnersDividerShared';
 import { PartnersGridShared } from './PartnersGridShared';
 import { PartnersLogoCloudShared } from './PartnersLogoCloudShared';
+import { PartnersGlassLogoCloudShared } from './PartnersGlassLogoCloudShared';
 
 export const PartnersPreview = ({
   items,
@@ -37,6 +38,7 @@ export const PartnersPreview = ({
   onDisplayModeChange,
   fontStyle,
   fontClassName,
+  logoColorMode = 'grayscale',
   // Shared header config
   hideHeader,
   showTitle,
@@ -65,6 +67,7 @@ export const PartnersPreview = ({
   onDisplayModeChange?: (mode: PartnersDisplayMode) => void;
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
+  logoColorMode?: PartnersLogoColorMode;
   // Shared header config
   hideHeader?: boolean;
   showTitle?: boolean;
@@ -256,6 +259,34 @@ export const PartnersPreview = ({
     );
   };
 
+  const renderGlassLogoCloudStyle = () => {
+    if (items.length === 0) {return renderEmptyState();}
+
+    return (
+      <div className="w-full bg-white dark:bg-slate-900">
+        <div className={cn('w-full bg-gradient-to-r from-zinc-950 via-zinc-900/90 to-zinc-950 border-t border-b border-zinc-800/80 z-20', getPartnersSectionSpacingClassName(spacing, 'glassLogoCloud'))}>
+          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+            <PartnersGlassLogoCloudShared
+              items={items}
+              brandColor={brandColor}
+              secondary={secondary}
+              mode={mode}
+              cornerRadius={cornerRadius}
+              logoSize={logoSize}
+              showBorder={showBorder}
+              spacing={spacing}
+              logoColorMode={logoColorMode}
+              openInNewTab
+              renderImage={(item, className) => (
+                <PreviewImage src={item.url} alt={item.name ?? 'Hình ảnh'} className={className} />
+              )}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderDividerStyle = () => {
     if (items.length === 0) {return renderEmptyState();}
 
@@ -352,6 +383,7 @@ export const PartnersPreview = ({
           {previewStyle === 'badge' && renderBadgeStyle()}
           {previewStyle === 'carousel' && renderCarouselStyle()}
           {previewStyle === 'logoCloud' && renderLogoCloudStyle()}
+          {previewStyle === 'glassLogoCloud' && renderGlassLogoCloudStyle()}
           {previewStyle === 'clean' && renderCleanStyle()}
           {previewStyle === 'divider' && renderDividerStyle()}
         </BrowserFrame>

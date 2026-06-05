@@ -93,7 +93,8 @@ import { PartnersCleanShared } from '@/app/admin/home-components/partners/_compo
 import { PartnersDividerShared } from '@/app/admin/home-components/partners/_components/PartnersDividerShared';
 import { PartnersGridShared } from '@/app/admin/home-components/partners/_components/PartnersGridShared';
 import { PartnersLogoCloudShared } from '@/app/admin/home-components/partners/_components/PartnersLogoCloudShared';
-import { getPartnersSectionSpacingClassName, normalizePartnersAlign, normalizePartnersCornerRadius, normalizePartnersDisplayMode, normalizePartnersLogoSize, normalizePartnersShowBorder, normalizePartnersSpacing, normalizePartnersStyle } from '@/app/admin/home-components/partners/_types';
+import { PartnersGlassLogoCloudShared } from '@/app/admin/home-components/partners/_components/PartnersGlassLogoCloudShared';
+import { getPartnersSectionSpacingClassName, normalizePartnersAlign, normalizePartnersCornerRadius, normalizePartnersDisplayMode, normalizePartnersLogoSize, normalizePartnersShowBorder, normalizePartnersSpacing, normalizePartnersStyle, type PartnersLogoColorMode } from '@/app/admin/home-components/partners/_types';
 import type { FooterBrandMode, FooterConfig, FooterCornerRadius, FooterLogoBackgroundStyle, FooterStyle } from '@/app/admin/home-components/footer/_types';
 import type { ClientsBrandMode, ClientsHeaderAlign } from '@/app/admin/home-components/clients/_types';
 import { normalizeClientsCornerRadius } from '@/app/admin/home-components/clients/_types';
@@ -3427,9 +3428,9 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
   // Extract header config for Partners
   const partnersHeaderConfig = extractSectionHeaderConfig(config);
 
-  const renderPartnersWithHeader = (content: React.ReactNode) => {
+  const renderPartnersWithHeader = (content: React.ReactNode, bgClass = 'bg-white', isDark = false) => {
     return (
-      <section className={cn('w-full bg-white px-3', getPartnersSectionSpacingClassName(partnersSpacing, 'siteOuter'))}>
+      <section className={cn('w-full px-3', bgClass, getPartnersSectionSpacingClassName(partnersSpacing, 'siteOuter'))}>
         <div className="mx-auto w-full max-w-7xl">
           {!partnersHeaderConfig.hideHeader && (
             <SectionHeader
@@ -3445,6 +3446,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
               subtitleAboveTitle={partnersHeaderConfig.subtitleAboveTitle}
               uppercaseText={partnersHeaderConfig.uppercaseText}
               brandColor={brandColor}
+              className={cn(isDark && '[&_h2]:text-white [&_p]:text-slate-400 [&_span]:text-slate-400')}
             />
           )}
           {content}
@@ -3568,6 +3570,53 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
           <SiteImage src={item.url} alt={item.name ?? 'Hình ảnh'} className={className} width={180} height={80} mode="logo" />
         )}
       />
+    );
+  }
+
+  if (style === 'glassLogoCloud') {
+    const normalizedItems = items.map((item, idx) => ({ ...item, id: idx }));
+    const logoColorMode = (config.logoColorMode as PartnersLogoColorMode) || 'grayscale';
+
+    return (
+      <div className="w-full bg-white">
+        {!partnersHeaderConfig.hideHeader && (
+          <div className={cn('mx-auto w-full max-w-7xl px-4 sm:px-6', partnersSpacing === 'none' ? 'pt-0' : partnersSpacing === 'compact' ? 'pt-4 md:pt-6' : 'pt-8 md:pt-12')}>
+            <SectionHeader
+              title={title}
+              subtitle={partnersHeaderConfig.subtitle}
+              badgeText={partnersHeaderConfig.badgeText}
+              hideHeader={partnersHeaderConfig.hideHeader}
+              showTitle={partnersHeaderConfig.showTitle}
+              showSubtitle={partnersHeaderConfig.showSubtitle}
+              showBadge={partnersHeaderConfig.showBadge}
+              headerAlign={partnersHeaderConfig.headerAlign}
+              titleColorPrimary={partnersHeaderConfig.titleColorPrimary}
+              subtitleAboveTitle={partnersHeaderConfig.subtitleAboveTitle}
+              uppercaseText={partnersHeaderConfig.uppercaseText}
+              brandColor={brandColor}
+            />
+          </div>
+        )}
+        <div className={cn('w-full bg-gradient-to-r from-zinc-950 via-zinc-900/90 to-zinc-950 border-t border-b border-zinc-800/80 z-20', getPartnersSectionSpacingClassName(partnersSpacing, 'glassLogoCloud', true))}>
+          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+            <PartnersGlassLogoCloudShared
+              items={normalizedItems}
+              brandColor={brandColor}
+              secondary={secondary}
+              mode={mode}
+              cornerRadius={partnersCornerRadius}
+              logoSize={partnersLogoSize}
+              showBorder={partnersShowBorder}
+              spacing={partnersSpacing}
+              logoColorMode={logoColorMode}
+              openInNewTab={false}
+              renderImage={(item, className) => (
+                <SiteImage src={item.url} alt={item.name ?? 'Hình ảnh'} className={className} width={180} height={80} mode="logo" />
+              )}
+            />
+          </div>
+        </div>
+      </div>
     );
   }
 

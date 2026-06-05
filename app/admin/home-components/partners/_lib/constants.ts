@@ -9,6 +9,7 @@ export const PARTNERS_STYLES = [
   { id: 'badge' as const, label: 'Badge' },
   { id: 'carousel' as const, label: 'Carousel' },
   { id: 'logoCloud' as const, label: 'Logo Cloud' },
+  { id: 'glassLogoCloud' as const, label: 'Glass Logo Cloud' },
   { id: 'clean' as const, label: 'Clean' },
   { id: 'divider' as const, label: 'Divider' },
 ];
@@ -19,6 +20,7 @@ export const PARTNERS_CROP_ASPECT_RATIO_BY_STYLE: Record<PartnersStyle, ImageAsp
   badge: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
   carousel: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
   logoCloud: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
+  glassLogoCloud: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
   clean: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
   divider: { label: 'Tự do', value: undefined, cssValue: undefined } as any,
 };
