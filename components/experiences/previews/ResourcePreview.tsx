@@ -5,7 +5,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 
 type DeviceType = 'desktop' | 'tablet' | 'mobile';
-type ResourceListLayoutStyle = 'grid' | 'sidebar' | 'masonry';
+type ResourceListLayoutStyle = 'grid' | 'sidebar' | 'list';
 type ResourceDetailLayoutStyle = 'classic' | 'modern' | 'minimal';
 type PaginationType = 'pagination' | 'infiniteScroll';
 
@@ -468,46 +468,91 @@ export function ResourcesListPreview({
     return list;
   }, [activeCat, filterVals, searchVal, sortByVal]);
 
-  const visibleItems = layoutStyle === 'masonry' ? processedResources.slice(0, 3) : processedResources;
+  const visibleItems = processedResources;
   const columns = device === 'mobile' ? 1 : layoutStyle === 'sidebar' ? 2 : Math.min(gridColumns, 4);
 
-  const resourceCard = (resource: typeof MOCK_RESOURCES[number], index: number) => (
-    <div key={resource.title} className={`overflow-hidden border border-slate-200 bg-white shadow-sm ${radiusClass} ${layoutStyle === 'masonry' && index === 0 ? 'md:col-span-2' : ''}`}>
-      <div className="relative flex aspect-[16/9] items-center justify-center bg-slate-100" style={{ background: index === 0 ? `linear-gradient(135deg, ${brandColor}1f, ${accent}33)` : undefined }}>
-        <FileText size={34} style={{ color: index === 0 ? brandColor : '#64748b' }} />
-        {resource.featured && (
-          <span className={`absolute left-3 top-3 flex items-center gap-1 bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-700 shadow ${smallRadiusClass}`}>
-            <Star size={11} style={{ color: brandColor }} /> Nổi bật
-          </span>
-        )}
-      </div>
-      <div className="space-y-3 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-xs font-medium text-slate-500">{resource.category}</span>
-          <span className="text-sm font-semibold" style={{ color: brandColor }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
-        </div>
-        <div>
-          <h3 className="font-semibold text-slate-900">{resource.title}</h3>
-          <p className="mt-1 line-clamp-2 text-sm text-slate-500">{resource.excerpt}</p>
-        </div>
-        {resourceFiltersFeature?.enabled && showResourceFilters && resource.filters && resource.filters.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {resource.filters.map((f) => (
-              <span key={f.name} className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-500 inline-flex items-center gap-1">
-                {f.icon && (
-                  <img src={f.icon} alt={f.name} className="h-3.5 w-3.5 object-contain shrink-0" />
-                )}
-                <span>{f.name}</span>
+  const resourceCard = (resource: typeof MOCK_RESOURCES[number], index: number) => {
+    const isList = layoutStyle === 'list';
+    if (isList) {
+      return (
+        <div key={resource.title} className={`overflow-hidden border border-slate-200 bg-white shadow-sm flex flex-col sm:flex-row ${radiusClass} w-full`}>
+          <div className="relative flex aspect-video sm:aspect-auto sm:w-48 shrink-0 items-center justify-center bg-slate-100" style={{ background: index === 0 ? `linear-gradient(135deg, ${brandColor}1f, ${accent}33)` : undefined }}>
+            <FileText size={34} style={{ color: index === 0 ? brandColor : '#64748b' }} />
+            {resource.featured && (
+              <span className={`absolute left-3 top-3 flex items-center gap-1 bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-700 shadow ${smallRadiusClass}`}>
+                <Star size={11} style={{ color: brandColor }} /> Nổi bật
               </span>
-            ))}
+            )}
           </div>
-        )}
-        <button className={`flex w-full items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-white ${smallRadiusClass}`} style={{ backgroundColor: brandColor }}>
-          Xem tài nguyên <ArrowRight size={14} />
-        </button>
+          <div className="flex-1 space-y-3 p-4 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-medium text-slate-500">{resource.category}</span>
+                <span className="text-sm font-semibold" style={{ color: brandColor }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
+              </div>
+              <h3 className="font-semibold text-slate-900 mt-1">{resource.title}</h3>
+              <p className="mt-1 line-clamp-2 text-sm text-slate-500">{resource.excerpt}</p>
+            </div>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              {resourceFiltersFeature?.enabled && showResourceFilters && resource.filters && resource.filters.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {resource.filters.map((f) => (
+                    <span key={f.name} className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-500 inline-flex items-center gap-1">
+                      {f.icon && (
+                        <img src={f.icon} alt={f.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                      )}
+                      <span>{f.name}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : <div />}
+              <button className={`flex items-center justify-center gap-2 px-4 py-2 text-xs font-semibold text-white shrink-0 ${smallRadiusClass}`} style={{ backgroundColor: brandColor }}>
+                Xem tài nguyên <ArrowRight size={12} />
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div key={resource.title} className={`overflow-hidden border border-slate-200 bg-white shadow-sm ${radiusClass}`}>
+        <div className="relative flex aspect-[16/9] items-center justify-center bg-slate-100" style={{ background: index === 0 ? `linear-gradient(135deg, ${brandColor}1f, ${accent}33)` : undefined }}>
+          <FileText size={34} style={{ color: index === 0 ? brandColor : '#64748b' }} />
+          {resource.featured && (
+            <span className={`absolute left-3 top-3 flex items-center gap-1 bg-white/90 px-2 py-1 text-[10px] font-semibold text-slate-700 shadow ${smallRadiusClass}`}>
+              <Star size={11} style={{ color: brandColor }} /> Nổi bật
+            </span>
+          )}
+        </div>
+        <div className="space-y-3 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs font-medium text-slate-500">{resource.category}</span>
+            <span className="text-sm font-semibold" style={{ color: brandColor }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
+          </div>
+          <div>
+            <h3 className="font-semibold text-slate-900">{resource.title}</h3>
+            <p className="mt-1 line-clamp-2 text-sm text-slate-500">{resource.excerpt}</p>
+          </div>
+          {resourceFiltersFeature?.enabled && showResourceFilters && resource.filters && resource.filters.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {resource.filters.map((f) => (
+                <span key={f.name} className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-500 inline-flex items-center gap-1">
+                  {f.icon && (
+                    <img src={f.icon} alt={f.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                  )}
+                  <span>{f.name}</span>
+                </span>
+              ))}
+            </div>
+          )}
+          <button className={`flex w-full items-center justify-center gap-2 px-3 py-2 text-sm font-semibold text-white ${smallRadiusClass}`} style={{ backgroundColor: brandColor }}>
+            Xem tài nguyên <ArrowRight size={14} />
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const filterPanel = (showSearch || showCategories) ? (
     layoutStyle === 'sidebar' ? (
@@ -691,7 +736,7 @@ export function ResourcesListPreview({
         <div className={layoutStyle === 'sidebar' && device !== 'mobile' ? 'grid grid-cols-[280px_1fr] gap-5' : ''}>
           {layoutStyle === 'sidebar' && device !== 'mobile' && filterPanel}
           <div className="space-y-4 flex-1">
-            <div className={`grid gap-4 ${columns === 1 ? 'grid-cols-1' : columns === 2 ? 'md:grid-cols-2' : columns === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+            <div className={layoutStyle === 'list' ? "space-y-4" : `grid gap-4 ${columns === 1 ? 'grid-cols-1' : columns === 2 ? 'md:grid-cols-2' : columns === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
               {visibleItems.map(resourceCard)}
             </div>
             <div className="text-center text-xs text-slate-500">

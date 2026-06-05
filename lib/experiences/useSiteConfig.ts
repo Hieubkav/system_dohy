@@ -11,7 +11,7 @@ type SearchLayoutStyle = 'search-only' | 'with-filters' | 'advanced';
 type ResultsDisplayStyle = 'grid' | 'list';
 
 type PostsListConfig = {
-  layoutStyle: 'fullwidth' | 'sidebar' | 'magazine';
+  layoutStyle: 'grid' | 'sidebar' | 'list';
   filterPosition: FilterPosition;
   paginationType: PaginationType;
   showSearch: boolean;
@@ -82,10 +82,19 @@ export function usePostsListConfig(): PostsListConfig {
   const experienceSetting = useQuery(api.settings.getByKey, { key: 'posts_list_ui' });
   
   return useMemo(() => {
-    const raw = experienceSetting?.value as Partial<PostsListConfig> | undefined;
-    const layoutStyle = raw?.layoutStyle === 'sidebar' || raw?.layoutStyle === 'magazine' || raw?.layoutStyle === 'fullwidth'
-      ? raw.layoutStyle
-      : 'fullwidth';
+    const raw = experienceSetting?.value as {
+      layoutStyle?: string;
+      filterPosition?: FilterPosition;
+      paginationType?: PaginationType;
+      showSearch?: boolean;
+      showCategories?: boolean;
+      hideEmptyCategories?: boolean;
+      postsPerPage?: number;
+    } | undefined;
+    const rawStyle = raw?.layoutStyle;
+    const layoutStyle: PostsListConfig['layoutStyle'] = rawStyle === 'sidebar'
+      ? 'sidebar'
+      : (rawStyle === 'magazine' || rawStyle === 'list' ? 'list' : 'grid');
     return {
       layoutStyle,
       filterPosition: raw?.filterPosition ?? 'sidebar',
@@ -295,7 +304,7 @@ export function useWishlistConfig(): WishlistConfig {
 }
 
 type ServicesListConfig = {
-  layoutStyle: 'grid' | 'sidebar' | 'masonry';
+  layoutStyle: 'grid' | 'sidebar' | 'list';
   filterPosition: 'sidebar' | 'top' | 'none';
   paginationType: PaginationType;
   showSearch: boolean;
@@ -309,8 +318,8 @@ export function useServicesListConfig(): ServicesListConfig {
   
   return useMemo(() => {
     const raw = experienceSetting?.value as {
-      layoutStyle?: ServicesListConfig['layoutStyle'];
-      layouts?: Partial<Record<ServicesListConfig['layoutStyle'], Partial<Omit<ServicesListConfig, 'layoutStyle'>>>>;
+      layoutStyle?: string;
+      layouts?: Partial<Record<'grid' | 'sidebar' | 'list', Partial<Omit<ServicesListConfig, 'layoutStyle'>>>>;
       filterPosition?: FilterPosition;
       paginationType?: PaginationType;
       showSearch?: boolean;
@@ -319,7 +328,10 @@ export function useServicesListConfig(): ServicesListConfig {
       postsPerPage?: number;
     } | undefined;
 
-    const layoutStyle: ServicesListConfig['layoutStyle'] = raw?.layoutStyle ?? 'grid';
+    const rawStyle = raw?.layoutStyle;
+    const layoutStyle: ServicesListConfig['layoutStyle'] = rawStyle === 'sidebar'
+      ? 'sidebar'
+      : (rawStyle === 'list' || rawStyle === 'masonry' ? 'list' : 'grid');
     const layoutConfig = raw?.layouts?.[layoutStyle];
     return {
       layoutStyle,
@@ -334,7 +346,7 @@ export function useServicesListConfig(): ServicesListConfig {
 }
 
 type ProjectsListConfig = {
-  layoutStyle: 'grid' | 'sidebar' | 'masonry';
+  layoutStyle: 'grid' | 'sidebar' | 'list';
   filterPosition: 'sidebar' | 'top' | 'none';
   paginationType: PaginationType;
   showSearch: boolean;
@@ -349,9 +361,23 @@ export function useProjectsListConfig(): ProjectsListConfig {
   const experienceSetting = useQuery(api.settings.getByKey, { key: 'projects_list_ui' });
 
   return useMemo(() => {
-    const raw = experienceSetting?.value as Partial<ProjectsListConfig> | undefined;
+    const raw = experienceSetting?.value as {
+      layoutStyle?: string;
+      filterPosition?: FilterPosition;
+      paginationType?: PaginationType;
+      showSearch?: boolean;
+      showCategories?: boolean;
+      hideEmptyCategories?: boolean;
+      postsPerPage?: number;
+      showClientName?: boolean;
+      showIntroVideo?: boolean;
+    } | undefined;
+    const rawStyle = raw?.layoutStyle;
+    const layoutStyle: ProjectsListConfig['layoutStyle'] = rawStyle === 'sidebar'
+      ? 'sidebar'
+      : (rawStyle === 'list' || rawStyle === 'masonry' ? 'list' : 'grid');
     return {
-      layoutStyle: raw?.layoutStyle ?? 'grid',
+      layoutStyle,
       filterPosition: raw?.filterPosition ?? 'top',
       paginationType: normalizePaginationType(raw?.paginationType),
       showSearch: raw?.showSearch ?? true,
@@ -390,7 +416,7 @@ export function useProjectsDetailConfig(): ProjectsDetailConfig {
 }
 
 type CoursesListConfig = {
-  layoutStyle: 'grid' | 'sidebar' | 'masonry';
+  layoutStyle: 'grid' | 'sidebar' | 'list';
   gridColumns: number;
   paginationType: PaginationType;
   showSearch: boolean;
@@ -402,7 +428,8 @@ type CoursesListConfig = {
 };
 
 const normalizeCoursesListLayoutStyle = (value?: string): CoursesListConfig['layoutStyle'] => {
-  if (value === 'grid' || value === 'sidebar' || value === 'masonry') {return value;}
+  if (value === 'grid' || value === 'sidebar' || value === 'list') {return value;}
+  if (value === 'masonry') return 'list';
   return 'grid';
 };
 
@@ -411,9 +438,9 @@ export function useCoursesListConfig(): CoursesListConfig {
 
   return useMemo(() => {
     const raw = experienceSetting?.value as {
-      layoutStyle?: CoursesListConfig['layoutStyle'];
+      layoutStyle?: string;
       gridColumns?: number;
-      layouts?: Partial<Record<CoursesListConfig['layoutStyle'], Partial<Omit<CoursesListConfig, 'layoutStyle'>>>>;
+      layouts?: Partial<Record<'grid' | 'sidebar' | 'list', Partial<Omit<CoursesListConfig, 'layoutStyle'>>>>;
       paginationType?: PaginationType;
       showSearch?: boolean;
       showCategories?: boolean;
@@ -464,7 +491,7 @@ export function useCoursesDetailConfig(): CoursesDetailConfig {
 }
 
 type ResourcesListConfig = {
-  layoutStyle: 'grid' | 'sidebar' | 'masonry';
+  layoutStyle: 'grid' | 'sidebar' | 'list';
   gridColumns: number;
   paginationType: PaginationType;
   showSearch: boolean;
@@ -476,7 +503,8 @@ type ResourcesListConfig = {
 };
 
 const normalizeResourcesListLayoutStyle = (value?: string): ResourcesListConfig['layoutStyle'] => {
-  if (value === 'grid' || value === 'sidebar' || value === 'masonry') {return value;}
+  if (value === 'grid' || value === 'sidebar' || value === 'list') {return value;}
+  if (value === 'masonry') return 'list';
   return 'grid';
 };
 
@@ -485,9 +513,9 @@ export function useResourcesListConfig(): ResourcesListConfig {
 
   return useMemo(() => {
     const raw = experienceSetting?.value as {
-      layoutStyle?: ResourcesListConfig['layoutStyle'];
+      layoutStyle?: string;
       gridColumns?: number;
-      layouts?: Partial<Record<ResourcesListConfig['layoutStyle'], Partial<Omit<ResourcesListConfig, 'layoutStyle'>>>>;
+      layouts?: Partial<Record<'grid' | 'sidebar' | 'list', Partial<Omit<ResourcesListConfig, 'layoutStyle'>>>>;
       paginationType?: PaginationType;
       showSearch?: boolean;
       showCategories?: boolean;

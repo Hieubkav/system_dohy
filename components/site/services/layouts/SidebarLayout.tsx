@@ -43,6 +43,7 @@ interface SidebarLayoutProps {
    showSearch?: boolean;
    showCategories?: boolean;
   getDetailHref: (service: Service) => string;
+  displayMode?: 'grid' | 'list';
 }
 
 function formatPrice(price?: number): string {
@@ -74,6 +75,7 @@ export function SidebarLayout({
    showSearch = true,
    showCategories = true,
   getDetailHref,
+  displayMode = 'list',
 }: SidebarLayoutProps) {
   const ringStyle = (style?: React.CSSProperties) =>
     ({ ...style, ['--tw-ring-color' as string]: tokens.filterRing } as React.CSSProperties);
@@ -198,6 +200,76 @@ export function SidebarLayout({
             <Briefcase size={48} className="mx-auto mb-3 text-slate-300" />
             <h2 className="text-lg font-semibold text-slate-600 mb-1">Không tìm thấy dịch vụ</h2>
             <p className="text-sm text-slate-500">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+          </div>
+        ) : displayMode === 'grid' ? (
+          <div className="grid sm:grid-cols-2 gap-3">
+            {services.map((service) => {
+              const showImage = Boolean(service.thumbnail) && !brokenThumbnails.has(String(service._id));
+              return (
+                <Link
+                  key={service._id}
+                  href={getDetailHref(service)}
+                  className="group block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                  style={{ '--tw-ring-color': tokens.filterRing } as React.CSSProperties}
+                >
+                  <article className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 border border-slate-100 h-full flex flex-col">
+                    <div className="aspect-[16/10] bg-slate-100 overflow-hidden relative">
+                      {showImage ? (
+                        <Image
+                          src={service.thumbnail as string}
+                          alt={service.title}
+                          fill
+                          sizes="(max-width: 640px) 100vw, 50vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          mode="thumb"
+                          onLoadingComplete={(img) => {
+                            if (img.naturalWidth === 0) { markThumbnailBroken(service._id); }
+                          }}
+                          onError={() => { markThumbnailBroken(service._id); }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Briefcase size={32} className="text-slate-300" />
+                        </div>
+                      )}
+                      {showFeatured && service.featured && (
+                        <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500 text-white text-xs font-medium rounded flex items-center gap-1">
+                          <Star size={10} className="fill-current" /> Nổi bật
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3 flex-1 flex flex-col">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        {categoryMap.get(service.categoryId) && (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded" style={{ backgroundColor: tokens.badgeBg, color: tokens.badgeText }}>
+                            {categoryMap.get(service.categoryId)}
+                          </span>
+                        )}
+                      </div>
+                      <h2 className="text-sm font-semibold text-slate-900 line-clamp-2 flex-1">
+                        {service.title}
+                      </h2>
+                      {showExcerpt && service.excerpt && (
+                        <p className="text-xs text-slate-500 line-clamp-2 mt-1">{service.excerpt}</p>
+                      )}
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
+                        <div className="flex items-center gap-2 text-xs text-slate-400">
+                          <span className="flex items-center gap-1"><Eye size={12} />{service.views.toLocaleString()}</span>
+                          {showDuration && service.duration && (
+                            <span className="flex items-center gap-1"><Clock size={12} />{service.duration}</span>
+                          )}
+                        </div>
+                        {showPrice && service.price !== undefined && (
+                          <span className="text-sm font-bold" style={{ color: tokens.priceColor }}>
+                            {formatPrice(service.price)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </article>
+                </Link>
+              );
+            })}
           </div>
         ) : (
           <div className="space-y-3">

@@ -3,7 +3,7 @@ import { Briefcase, ChevronDown, Clock, Eye, Folder, Search, Star, TrendingUp } 
 import Image from 'next/image';
 import { getServicesListColors, type ServicesListColors } from '@/components/site/services/colors';
 
-type ListLayoutStyle = 'grid' | 'sidebar' | 'masonry';
+type ListLayoutStyle = 'grid' | 'sidebar' | 'list';
 type FilterPosition = 'sidebar' | 'top' | 'none';
 type DeviceType = 'desktop' | 'tablet' | 'mobile';
 type PaginationType = 'pagination' | 'infiniteScroll';
@@ -483,7 +483,7 @@ export function ServicesListPreview({
   };
 
   // Map layoutStyle to actual implementation
-  if (layoutStyle === 'masonry') {
+  if (layoutStyle === 'list') {
     return <MagazinePreview {...props} />;
   }
   

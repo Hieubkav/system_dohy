@@ -22,7 +22,7 @@ import {
 import { useBrandColors } from '@/components/site/hooks';
 import { EXPERIENCE_NAMES, MESSAGES, useExperienceConfig, useExperienceSave } from '@/lib/experiences';
 
-type ListLayoutStyle = 'grid' | 'sidebar' | 'masonry';
+type ListLayoutStyle = 'grid' | 'sidebar' | 'list';
 type PaginationType = 'pagination' | 'infiniteScroll';
 
 type ResourcesListExperienceConfig = {
@@ -40,9 +40,9 @@ type ResourcesListExperienceConfig = {
 const EXPERIENCE_KEY = 'resources_list_ui';
 
 const LAYOUTS: LayoutOption<ListLayoutStyle>[] = [
-  { id: 'grid', label: 'Lưới', description: 'Bộ lọc gọn phía trên, thẻ tài nguyên rõ ràng' },
-  { id: 'sidebar', label: 'Bộ lọc trái', description: 'Phù hợp khi có nhiều danh mục và tag' },
-  { id: 'masonry', label: 'Nổi bật', description: 'Nhấn mạnh tài nguyên chính' },
+  { id: 'grid', label: 'Grid', description: 'Bộ lọc ngang phía trên, lưới thẻ tài nguyên' },
+  { id: 'sidebar', label: 'Sidebar', description: 'Sidebar bộ lọc bên trái, lưới thẻ bên phải' },
+  { id: 'list', label: 'List', description: 'Sidebar bộ lọc, thẻ dạng ngang rõ tên và mô tả' },
 ];
 
 const DEFAULT_CONFIG: ResourcesListExperienceConfig = {
@@ -58,7 +58,8 @@ const DEFAULT_CONFIG: ResourcesListExperienceConfig = {
 };
 
 const normalizeLayoutStyle = (value?: string): ListLayoutStyle => {
-  if (value === 'grid' || value === 'sidebar' || value === 'masonry') {return value;}
+  if (value === 'grid' || value === 'sidebar' || value === 'list') {return value;}
+  if (value === 'masonry') {return 'list';}
   return DEFAULT_CONFIG.layoutStyle;
 };
 
@@ -166,7 +167,7 @@ export default function ResourcesListExperiencePage() {
             <ExampleLinks links={[{ label: 'Trang tài nguyên', url: '/resources' }]} color={brandColor} compact />
           </ControlCard>
           <Card className="p-2">
-            <ExperienceHintCard hints={['Lưới phù hợp thư viện ít bộ lọc.', 'Bộ lọc trái phù hợp nhiều danh mục/tag.', 'Nổi bật phù hợp khi muốn đẩy tài nguyên chủ lực.']} />
+            <ExperienceHintCard hints={['Grid phù hợp thư viện ít bộ lọc.', 'Sidebar phù hợp nhiều danh mục/tag.', 'List giúp quét nhanh và thấy rõ mô tả tài nguyên.']} />
           </Card>
         </CardContent>
       </Card>

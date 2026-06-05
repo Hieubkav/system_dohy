@@ -45,6 +45,7 @@ function ProjectsContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') ?? '');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'title'>('newest');
+  const [offset, setOffset] = useState(0);
   const routeModeSetting = useQuery(api.settings.getValue, { key: 'ia_route_mode', defaultValue: 'unified' });
   const routeMode = useMemo(() => normalizeRouteMode(routeModeSetting), [routeModeSetting]);
   const categories = useQuery(api.projectCategories.listActive, { limit: 100 });
@@ -55,7 +56,7 @@ function ProjectsContent() {
   const projects = useQuery(api.projects.listPublishedWithOffset, {
     categoryId: activeCategory?._id,
     limit: listConfig.postsPerPage,
-    offset: 0,
+    offset,
     search: searchQuery.trim() || undefined,
     sortBy,
   });
@@ -76,90 +77,266 @@ function ProjectsContent() {
     recordSlug: project.slug,
   });
 
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
+    setOffset(0);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setOffset(0);
+  };
+
+  const handleSortChange = (value: 'newest' | 'oldest' | 'popular' | 'title') => {
+    setSortBy(value);
+    setOffset(0);
+  };
+
+  const total = totalCount ?? projects.length;
+  const hasMore = offset + listConfig.postsPerPage < total;
+  const layoutStyle = listConfig.layoutStyle ?? 'grid';
+
+  const topFilterBar = (listConfig.showSearch || listConfig.showCategories) && (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        {listConfig.showSearch && (
+          <div className="relative max-w-sm flex-1">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={searchQuery}
+              onChange={(event) => handleSearchChange(event.target.value)}
+              placeholder="Tìm kiếm dự án..."
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-slate-400 dark:border-slate-700 dark:bg-slate-950"
+            />
+          </div>
+        )}
+        <div className="flex flex-wrap gap-2">
+          {listConfig.showCategories && (
+            <select
+              value={selectedCategory}
+              onChange={(event) => handleCategoryChange(event.target.value)}
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950"
+            >
+              <option value="">Tất cả danh mục</option>
+              {categories.map((category) => (
+                <option key={category._id} value={category.slug}>{category.name}</option>
+              ))}
+            </select>
+          )}
+          <select
+            value={sortBy}
+            onChange={(event) => handleSortChange(event.target.value as 'newest' | 'oldest' | 'popular' | 'title')}
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950"
+          >
+            <option value="newest">Mới nhất</option>
+            <option value="oldest">Cũ nhất</option>
+            <option value="popular">Xem nhiều</option>
+            <option value="title">Theo tên</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+
+  const sidebarFilter = (
+    <aside className="w-full space-y-4 lg:w-64 lg:flex-shrink-0">
+      {listConfig.showSearch && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">Tìm kiếm</p>
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={searchQuery}
+              onChange={(event) => handleSearchChange(event.target.value)}
+              placeholder="Tìm dự án..."
+              className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-sm outline-none transition focus:border-slate-400 dark:border-slate-700 dark:bg-slate-950"
+            />
+          </div>
+        </div>
+      )}
+      {listConfig.showCategories && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">Danh mục</p>
+          <ul className="space-y-0.5">
+            <li>
+              <button
+                onClick={() => handleCategoryChange('')}
+                className="w-full rounded-xl px-3 py-2 text-left text-sm transition"
+                style={!selectedCategory ? { backgroundColor: `${brandColor}18`, color: brandColor, fontWeight: 600 } : { color: '#64748b' }}
+              >
+                Tất cả
+              </button>
+            </li>
+            {categories.map((category) => (
+              <li key={category._id}>
+                <button
+                  onClick={() => handleCategoryChange(category.slug)}
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm transition"
+                  style={selectedCategory === category.slug ? { backgroundColor: `${brandColor}18`, color: brandColor, fontWeight: 600 } : { color: '#64748b' }}
+                >
+                  {category.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">Sắp xếp</p>
+        <select
+          value={sortBy}
+          onChange={(event) => handleSortChange(event.target.value as 'newest' | 'oldest' | 'popular' | 'title')}
+          className="h-9 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950"
+        >
+          <option value="newest">Mới nhất</option>
+          <option value="oldest">Cũ nhất</option>
+          <option value="popular">Xem nhiều</option>
+          <option value="title">Theo tên</option>
+        </select>
+      </div>
+    </aside>
+  );
+
+  const paginationBar = (
+    <div className="flex items-center justify-between pt-4">
+      <span className="text-sm text-slate-500">{total} dự án</span>
+      <div className="flex gap-2">
+        {offset > 0 && (
+          <button
+            onClick={() => setOffset(Math.max(0, offset - listConfig.postsPerPage))}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900"
+          >
+            Trước
+          </button>
+        )}
+        {hasMore && (
+          <button
+            onClick={() => setOffset(offset + listConfig.postsPerPage)}
+            className="rounded-xl px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+            style={{ backgroundColor: brandColor }}
+          >
+            Xem thêm
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const emptyState = (
+    <div className="rounded-2xl border border-dashed border-slate-200 p-10 text-center text-slate-500 dark:border-slate-800">
+      Chưa có dự án phù hợp.
+    </div>
+  );
+
+  const GridCard = ({ project }: { project: typeof projects[number] }) => {
+    const category = categoryMap.get(project.categoryId);
+    return (
+      <Link href={getDetailHref(project)} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900">
+        <div className="aspect-video overflow-hidden bg-slate-100 dark:bg-slate-800">
+          {project.thumbnail ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={project.thumbnail} alt={project.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-slate-400">Dự án</div>
+          )}
+        </div>
+        <div className="space-y-3 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">{category?.name ?? 'Dự án'}</span>
+            {listConfig.showClientName && project.clientName && <span className="truncate text-xs text-slate-400">{project.clientName}</span>}
+          </div>
+          <h2 className="line-clamp-2 text-xl font-semibold text-slate-950 transition group-hover:text-teal-600 dark:text-white">{project.title}</h2>
+          {project.excerpt && <p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{project.excerpt}</p>}
+        </div>
+      </Link>
+    );
+  };
+
+  const ListCard = ({ project }: { project: typeof projects[number] }) => {
+    const category = categoryMap.get(project.categoryId);
+    return (
+      <Link href={getDetailHref(project)} className="group flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900">
+        <div className="w-40 flex-shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-800 sm:w-52">
+          {project.thumbnail ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={project.thumbnail} alt={project.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-slate-400">Dự án</div>
+          )}
+        </div>
+        <div className="flex flex-1 flex-col justify-center space-y-2 p-4">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">{category?.name ?? 'Dự án'}</span>
+            {listConfig.showClientName && project.clientName && <span className="text-xs text-slate-400">{project.clientName}</span>}
+          </div>
+          <h2 className="line-clamp-2 text-base font-semibold text-slate-950 transition group-hover:text-teal-600 dark:text-white">{project.title}</h2>
+          {project.excerpt && <p className="line-clamp-2 text-sm leading-5 text-slate-600 dark:text-slate-300">{project.excerpt}</p>}
+        </div>
+      </Link>
+    );
+  };
+
+  const pageHeader = (
+    <div className="mx-auto max-w-3xl text-center">
+      <p className="text-sm font-semibold uppercase tracking-[0.3em]" style={{ color: brandColor }}>Projects</p>
+      <h1 className="mt-3 text-3xl font-bold text-slate-950 dark:text-white md:text-5xl">Dự án đã thực hiện</h1>
+      <p className="mt-4 text-base text-slate-600 dark:text-slate-300">Các case study, hình ảnh và video giới thiệu nổi bật.</p>
+    </div>
+  );
+
+  if (layoutStyle === 'grid') {
+    return (
+      <main className="px-4 py-10 md:py-14">
+        <div className="mx-auto max-w-7xl space-y-8">
+          {pageHeader}
+          {topFilterBar}
+          {projects.length === 0 ? emptyState : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {projects.map((project) => <GridCard key={project._id} project={project} />)}
+            </div>
+          )}
+          {paginationBar}
+        </div>
+      </main>
+    );
+  }
+
+  if (layoutStyle === 'sidebar') {
+    return (
+      <main className="px-4 py-10 md:py-14">
+        <div className="mx-auto max-w-7xl space-y-8">
+          {pageHeader}
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+            {sidebarFilter}
+            <div className="min-w-0 flex-1 space-y-6">
+              {projects.length === 0 ? emptyState : (
+                <div className="grid gap-6 md:grid-cols-2">
+                  {projects.map((project) => <GridCard key={project._id} project={project} />)}
+                </div>
+              )}
+              {paginationBar}
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="px-4 py-10 md:py-14">
       <div className="mx-auto max-w-7xl space-y-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.3em]" style={{ color: brandColor }}>Projects</p>
-          <h1 className="mt-3 text-3xl font-bold text-slate-950 dark:text-white md:text-5xl">Dự án đã thực hiện</h1>
-          <p className="mt-4 text-base text-slate-600 dark:text-slate-300">Các case study, hình ảnh và video giới thiệu nổi bật.</p>
-        </div>
-
-        {(listConfig.showSearch || listConfig.showCategories) && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              {listConfig.showSearch && (
-                <div className="relative max-w-sm flex-1">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    placeholder="Tìm kiếm dự án..."
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-slate-400 dark:border-slate-700 dark:bg-slate-950"
-                  />
-                </div>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {listConfig.showCategories && (
-                  <select
-                    value={selectedCategory}
-                    onChange={(event) => setSelectedCategory(event.target.value)}
-                    className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950"
-                  >
-                    <option value="">Tất cả danh mục</option>
-                    {categories.map((category) => (
-                      <option key={category._id} value={category.slug}>{category.name}</option>
-                    ))}
-                  </select>
-                )}
-                <select
-                  value={sortBy}
-                  onChange={(event) => setSortBy(event.target.value as 'newest' | 'oldest' | 'popular' | 'title')}
-                  className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-950"
-                >
-                  <option value="newest">Mới nhất</option>
-                  <option value="oldest">Cũ nhất</option>
-                  <option value="popular">Xem nhiều</option>
-                  <option value="title">Theo tên</option>
-                </select>
+        {pageHeader}
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+          {sidebarFilter}
+          <div className="min-w-0 flex-1 space-y-6">
+            {projects.length === 0 ? emptyState : (
+              <div className="flex flex-col gap-4">
+                {projects.map((project) => <ListCard key={project._id} project={project} />)}
               </div>
-            </div>
+            )}
+            {paginationBar}
           </div>
-        )}
-
-        <div className="text-sm text-slate-500">{totalCount ?? projects.length} dự án</div>
-
-        {projects.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-200 p-10 text-center text-slate-500 dark:border-slate-800">
-            Chưa có dự án phù hợp.
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => {
-              const category = categoryMap.get(project.categoryId);
-              return (
-                <Link key={project._id} href={getDetailHref(project)} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-800 dark:bg-slate-900">
-                  <div className="aspect-video overflow-hidden bg-slate-100 dark:bg-slate-800">
-                    {project.thumbnail ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={project.thumbnail} alt={project.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-sm text-slate-400">Dự án</div>
-                    )}
-                  </div>
-                  <div className="space-y-3 p-5">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300">{category?.name ?? 'Dự án'}</span>
-                      {listConfig.showClientName && project.clientName && <span className="truncate text-xs text-slate-400">{project.clientName}</span>}
-                    </div>
-                    <h2 className="line-clamp-2 text-xl font-semibold text-slate-950 transition group-hover:text-teal-600 dark:text-white">{project.title}</h2>
-                    {project.excerpt && <p className="line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{project.excerpt}</p>}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        </div>
       </div>
     </main>
   );

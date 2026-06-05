@@ -27,7 +27,7 @@ import {
 } from '@/components/experiences/editor';
 import { EXPERIENCE_NAMES, MESSAGES, useExperienceConfig, useExperienceSave } from '@/lib/experiences';
 
-type ListLayoutStyle = 'grid' | 'sidebar' | 'masonry';
+type ListLayoutStyle = 'grid' | 'sidebar' | 'list';
 type PaginationType = 'pagination' | 'infiniteScroll';
 type FilterPosition = 'sidebar' | 'top' | 'none';
 
@@ -46,9 +46,9 @@ type ProjectsListExperienceConfig = {
 const EXPERIENCE_KEY = 'projects_list_ui';
 
 const LAYOUT_STYLES: LayoutOption<ListLayoutStyle>[] = [
-  { description: 'Cards dự án dạng lưới', id: 'grid', label: 'Grid' },
-  { description: 'Bộ lọc sidebar và danh sách dự án', id: 'sidebar', label: 'Sidebar' },
-  { description: 'Grid magazine cho portfolio', id: 'masonry', label: 'Magazine' },
+  { description: 'Bộ lọc ngang phía trên, cards dự án dạng lưới', id: 'grid', label: 'Grid' },
+  { description: 'Sidebar bộ lọc bên trái, lưới cards bên phải', id: 'sidebar', label: 'Sidebar' },
+  { description: 'Sidebar bộ lọc, thẻ dạng ngang rõ tên và mô tả', id: 'list', label: 'List' },
 ];
 
 const DEFAULT_CONFIG: ProjectsListExperienceConfig = {
@@ -66,8 +66,8 @@ const DEFAULT_CONFIG: ProjectsListExperienceConfig = {
 const HINTS = [
   'Grid phù hợp portfolio gọn gàng.',
   'Sidebar tốt khi có nhiều danh mục dự án.',
+  'List giúp quét nhanh, thấy rõ mô tả dự án.',
   'Bật khách hàng để tăng độ tin cậy.',
-  'Video giúp dự án nổi bật hơn trên danh sách.',
 ];
 
 export default function ProjectsListExperiencePage() {
@@ -81,9 +81,16 @@ export default function ProjectsListExperiencePage() {
 
   const serverConfig = useMemo<ProjectsListExperienceConfig>(() => {
     const raw = experienceSetting?.value as Partial<ProjectsListExperienceConfig> | undefined;
+    const rawLayout = raw?.layoutStyle as string | undefined;
+    const normalizeLayout = (val?: string): ListLayoutStyle => {
+      if (val === 'grid' || val === 'sidebar' || val === 'list') return val;
+      if (val === 'masonry') return 'list';
+      return 'grid';
+    };
     return {
       ...DEFAULT_CONFIG,
       ...raw,
+      layoutStyle: normalizeLayout(rawLayout),
       paginationType: raw?.paginationType === 'infiniteScroll' ? 'infiniteScroll' : 'pagination',
     };
   }, [experienceSetting?.value]);

@@ -13,13 +13,11 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import {
   FullWidthLayout,
-  MagazineLayout,
   type ServiceSortOption,
   ServicesFilter,
   SidebarLayout,
 } from '@/components/site/services';
 
-type ServicesListLayout = 'fullwidth' | 'sidebar' | 'magazine';
 
 function ServicesGridSkeleton({ count = 6 }: { count?: number }) {
   return (
@@ -147,9 +145,7 @@ function ServicesContent() {
     [brandColor, secondary, mode]
   );
   const listConfig = useServicesListConfig();
-   const layout: ServicesListLayout = listConfig.layoutStyle === 'masonry'
-     ? 'magazine'
-     : (listConfig.layoutStyle === 'sidebar' ? 'sidebar' : 'fullwidth');
+  const layout = listConfig.layoutStyle;
   const enabledFields = useEnabledServiceFields();
   const router = useRouter();
   const pathname = usePathname();
@@ -252,8 +248,6 @@ function ServicesContent() {
   const totalCount = useQuery(api.services.countPublished, {
     categoryId: activeCategory ?? undefined,
   });
-
-  const featuredServices = useQuery(api.services.listFeatured, { limit: 5 });
 
   const isSearching = !!searchQuery && searchQuery !== debouncedSearchQuery;
   const isLoadingServices = isSearching || (isSearchActive && paginatedServices === undefined) || (listConfig.paginationType === 'pagination' ? paginatedServices === undefined : infiniteStatus === 'LoadingFirstPage');
@@ -384,7 +378,7 @@ function ServicesContent() {
         </div>
 
         {/* Layout based rendering */}
-        {layout === 'fullwidth' && (
+        {layout === 'grid' && (
           <>
             <div className="mb-8">
               <ServicesFilter
@@ -434,15 +428,16 @@ function ServicesContent() {
                showSearch={listConfig.showSearch}
                showCategories={listConfig.showCategories}
               getDetailHref={getServiceDetailHref}
+              displayMode="grid"
             />
           )
         )}
 
-        {layout === 'magazine' && (
+        {layout === 'list' && (
           isLoadingServices ? (
             <ServicesGridSkeleton count={postsPerPage} />
           ) : (
-            <MagazineLayout
+            <SidebarLayout
               services={services}
               tokens={tokens}
               categoryMap={categoryMap}
@@ -453,9 +448,11 @@ function ServicesContent() {
               onSearchChange={handleSearchChange}
               sortBy={sortBy}
               onSortChange={handleSortChange}
-              featuredServices={featuredServices ?? []}
               enabledFields={enabledFields}
+               showSearch={listConfig.showSearch}
+               showCategories={listConfig.showCategories}
               getDetailHref={getServiceDetailHref}
+              displayMode="list"
             />
           )
         )}

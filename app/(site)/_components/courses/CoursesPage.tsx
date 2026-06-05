@@ -453,9 +453,9 @@ function CoursesContent() {
             <h1 className="text-3xl font-bold text-slate-900">{activeCategoryName ?? 'Khóa học'}</h1>
           </div>
 
-          <div className={config.layoutStyle === 'sidebar' ? 'grid gap-6 lg:grid-cols-[280px_1fr]' : 'space-y-6'}>
+          <div className={config.layoutStyle === 'sidebar' || config.layoutStyle === 'list' ? 'grid gap-6 lg:grid-cols-[280px_1fr]' : 'space-y-6'}>
             {(config.showSearch || config.showCategories || config.showLevelFilter) && (
-              config.layoutStyle === 'sidebar' ? (
+              config.layoutStyle === 'sidebar' || config.layoutStyle === 'list' ? (
                 <aside className="space-y-4 lg:block flex-shrink-0">
                   {config.showSearch && (
                     <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
@@ -707,7 +707,7 @@ function CoursesContent() {
                       )} khóa học
                     </p>
 
-                    {config.layoutStyle === 'sidebar' && (
+                    {(config.layoutStyle === 'sidebar' || config.layoutStyle === 'list') && (
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-slate-500">Sắp xếp:</span>
                         <CustomDropdown
@@ -727,8 +727,8 @@ function CoursesContent() {
                     )}
                   </div>
                   <div className={
-                    config.layoutStyle === 'masonry'
-                      ? 'grid gap-5 grid-cols-1'
+                    config.layoutStyle === 'list'
+                      ? 'grid gap-4 grid-cols-1'
                       : config.gridColumns === 4
                         ? 'grid gap-5 grid-cols-2 md:grid-cols-2 lg:grid-cols-4'
                         : 'grid gap-5 grid-cols-1 md:grid-cols-3 lg:grid-cols-3'
@@ -746,77 +746,53 @@ function CoursesContent() {
                       const hasLearningAccess = Boolean(progress?.hasAccess);
                       const progressPercent = progress?.progressPercent ?? 0;
 
-                      if (config.layoutStyle === 'masonry') {
+                      if (config.layoutStyle === 'list') {
                         return (
-                          <Link key={course._id} href={href} className={`group overflow-hidden ${getRadiusClass(config.cornerRadius)} border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md flex flex-col md:flex-row`}>
-                            {/* Thumbnail Area - ~42% width on desktop */}
-                            <div className="relative flex aspect-video md:aspect-auto md:w-[42%] items-center justify-center bg-slate-100 shrink-0 min-h-[200px]">
+                          <Link key={course._id} href={href} className={`group flex items-stretch gap-4 overflow-hidden ${getRadiusClass(config.cornerRadius)} border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}>
+                            {/* Thumbnail */}
+                            <div className="relative w-40 shrink-0 overflow-hidden bg-slate-100" style={{ minHeight: '7rem' }}>
                               {course.thumbnail ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
                               ) : (
-                                <GraduationCap size={48} style={{ color: brandColors.primary }} />
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <GraduationCap size={32} style={{ color: brandColors.primary }} />
+                                </div>
                               )}
                               {course.featured && (
-                                <span className="absolute left-4 top-4 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-1 text-xs font-semibold text-white shadow-sm">
-                                  <Star size={12} className="fill-current" /> Nổi bật
+                                <span className="absolute left-2 top-2 inline-flex items-center gap-0.5 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                                  <Star size={10} className="fill-current" /> Nổi bật
                                 </span>
                               )}
                             </div>
-                            
-                            {/* Content Area */}
-                            <div className="flex-1 flex flex-col justify-between p-5 md:p-6 space-y-4">
-                              <div className="space-y-2.5">
-                                <div className="flex flex-wrap items-center gap-2 text-xs">
-                                  <span className="rounded-full px-2.5 py-1 font-semibold" style={{ backgroundColor: `${brandColors.primary}18`, color: brandColors.primary }}>{category?.name ?? 'Khóa học'}</span>
-                                  {course.level && <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-600">{getCourseLevelLabel(course.level)}</span>}
-                                </div>
-                                <h2 className="text-lg md:text-xl font-bold text-slate-900 leading-snug group-hover:text-slate-700">{course.title}</h2>
-                                {course.excerpt && <p className="text-slate-500 text-sm line-clamp-2 leading-relaxed">{course.excerpt}</p>}
-                                <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-500 pt-1">
-                                  <span className="inline-flex items-center gap-1.5"><BookOpen size={14} className="text-slate-400" />{course.lessonCount} bài học</span>
-                                  {course.durationText && <span className="inline-flex items-center gap-1.5"><Clock size={14} className="text-slate-400" />{course.durationText}</span>}
-                                  {course.instructorName && <span className="inline-flex items-center gap-1.5"><UserRound size={14} className="text-slate-400" />{course.instructorName}</span>}
-                                </div>
-                                {courseFiltersFeature?.enabled && courseFiltersMap.get(course._id) && (courseFiltersMap.get(course._id) ?? []).length > 0 && (
-                                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                                    {(courseFiltersMap.get(course._id) ?? []).map((filter: any) => (
-                                      <span key={filter._id} title={filter.name} className="inline-flex items-center gap-1 rounded bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                                        {filter.icon && (
-                                          // eslint-disable-next-line @next/next/no-img-element
-                                          <img src={filter.icon} alt={filter.name} className="h-3.5 w-3.5 object-contain" />
-                                        )}
-                                        <span>{filter.name}</span>
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
+                            {/* Content */}
+                            <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 py-3 pr-2">
+                              <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                                <span className="rounded-full px-2 py-0.5 font-semibold" style={{ backgroundColor: `${brandColors.primary}18`, color: brandColors.primary }}>{category?.name ?? 'Khóa học'}</span>
+                                {course.level && <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600">{getCourseLevelLabel(course.level)}</span>}
                               </div>
-                              
-                              {(hasLearningAccess || showPrice) && (
-                                <div className="flex items-center justify-between border-t border-slate-100 pt-4">
-                                  {hasLearningAccess ? (
-                                    <div className="min-w-0 flex-1 pr-4">
-                                      <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                                        <span>Tiến độ học</span>
-                                        <span>{progressPercent}%</span>
-                                      </div>
-                                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-                                        <div className="h-full rounded-full" style={{ width: `${progressPercent}%`, backgroundColor: brandColors.primary }} />
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col">
-                                      <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Học phí</span>
-                                      <span className="text-lg font-bold" style={{ color: brandColors.secondary || brandColors.primary }}>
-                                        {formatPrice(course.pricingType, course.priceAmount)}
-                                      </span>
-                                    </div>
-                                  )}
-                                  <span className="rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:shadow transition-all" style={{ backgroundColor: brandColors.primary }}>
-                                    {hasLearningAccess ? 'Vào học' : 'Xem khóa học'}
-                                  </span>
-                                </div>
+                              <h2 className="line-clamp-1 text-base font-bold text-slate-900 group-hover:underline">{course.title}</h2>
+                              {course.excerpt && <p className="line-clamp-1 text-xs text-slate-500 leading-relaxed">{course.excerpt}</p>}
+                              <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500">
+                                <span className="inline-flex items-center gap-1"><BookOpen size={12} className="text-slate-400" />{course.lessonCount} bài học</span>
+                                {course.durationText && <span className="inline-flex items-center gap-1"><Clock size={12} className="text-slate-400" />{course.durationText}</span>}
+                                {course.instructorName && <span className="inline-flex items-center gap-1"><UserRound size={12} className="text-slate-400" />{course.instructorName}</span>}
+                              </div>
+                            </div>
+                            {/* Price + CTA */}
+                            <div className="flex shrink-0 flex-col items-end justify-center gap-2 py-3 pr-4">
+                              {hasLearningAccess ? (
+                                <>
+                                  <span className="text-xs font-semibold" style={{ color: brandColors.primary }}>Tiến độ: {progressPercent}%</span>
+                                  <span className="rounded-lg px-3 py-1.5 text-xs font-bold text-white" style={{ backgroundColor: brandColors.primary }}>Vào học</span>
+                                </>
+                              ) : showPrice ? (
+                                <>
+                                  <span className="text-sm font-bold" style={{ color: brandColors.secondary || brandColors.primary }}>{formatPrice(course.pricingType, course.priceAmount)}</span>
+                                  <span className="text-xs font-semibold group-hover:underline" style={{ color: brandColors.primary }}>Xem khóa học →</span>
+                                </>
+                              ) : (
+                                <span className="text-xs font-semibold group-hover:underline" style={{ color: brandColors.primary }}>Xem khóa học →</span>
                               )}
                             </div>
                           </Link>

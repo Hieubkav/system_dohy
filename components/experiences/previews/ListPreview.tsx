@@ -30,10 +30,11 @@ type PaginationTokens = {
   neutralTextLight: string;
 };
 
-const normalizeLayoutStyle = (style: ListLayoutStyle): 'fullwidth' | 'sidebar' | 'magazine' => {
-  if (style === 'grid' || style === 'fullwidth') {return 'fullwidth';}
-  if (style === 'list' || style === 'sidebar') {return 'sidebar';}
-  return 'magazine';
+const normalizeLayoutStyle = (style: ListLayoutStyle): 'grid' | 'sidebar' | 'list' => {
+  if (style === 'grid' || style === 'fullwidth') {return 'grid';}
+  if (style === 'sidebar') {return 'sidebar';}
+  if (style === 'list' || style === 'magazine' || style === 'masonry') {return 'list';}
+  return 'grid';
 };
 
 function PaginationPreview({
@@ -103,7 +104,7 @@ export function PostsListPreview({
   const showMobilePanel = isCompact && (showSearch || showCategories);
   const gridClass = isMobile ? 'grid-cols-1' : 'sm:grid-cols-2 lg:grid-cols-3';
 
-  if (style === 'fullwidth') {
+  if (style === 'grid') {
     return (
       <div className="py-6 md:py-10 px-4">
         <div className="max-w-7xl mx-auto">
@@ -305,7 +306,7 @@ export function PostsListPreview({
     );
   }
 
-  if (style === 'sidebar') {
+  if (style === 'sidebar' || style === 'list') {
     // Sidebar layout: Desktop: sidebar left | Mobile: sidebar bottom
     const sidebarWidth = isDesktop ? 'lg:w-64' : '';
     const containerClass = isMobile ? 'flex-col' : (isDesktop ? 'lg:flex-row' : 'flex-col');
@@ -401,44 +402,78 @@ export function PostsListPreview({
             
             {/* Main Content */}
             <main className={`flex-1 ${mainOrder}`}>
-              <div className="space-y-2.5">
-                {mockPosts.slice(0, visiblePosts).map((post) => (
-                  <div key={post.id} className="rounded-lg overflow-hidden border" style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}>
-                    <div className="flex flex-col sm:flex-row">
-                      {/* Image */}
-                      <div className={`${isMobile ? '' : 'sm:w-40 md:w-48'} flex-shrink-0`}>
-                        <div className={`${isMobile ? 'aspect-video' : 'aspect-video sm:aspect-[4/3] sm:h-full'} flex items-center justify-center relative`} style={{ backgroundColor: tokens.cardBorder }}>
-                          <FileText size={28} style={{ color: tokens.neutralTextLight }} />
+              <div className={style === 'sidebar' ? `grid ${gridClass} gap-3` : "space-y-2.5"}>
+                {mockPosts.slice(0, visiblePosts).map((post) => {
+                  if (style === 'sidebar') {
+                    // Grid Card
+                    return (
+                      <div key={post.id} className="rounded-lg overflow-hidden shadow-sm border h-full flex flex-col" style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}>
+                        <div className="aspect-video flex items-center justify-center" style={{ backgroundColor: tokens.cardBorder }}>
+                          <FileText size={24} style={{ color: tokens.neutralTextLight }} />
+                        </div>
+                        <div className="p-3 flex-1 flex flex-col">
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span
+                              className="text-xs font-medium px-1.5 py-0.5 rounded"
+                              style={{
+                                backgroundColor: tokens.categoryBadgeBg,
+                                color: tokens.categoryBadgeText,
+                                borderColor: tokens.categoryBadgeBorder,
+                              }}
+                            >
+                              {post.category}
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-semibold line-clamp-2 flex-1" style={{ color: tokens.bodyText }}>{post.title}</h3>
+                          <div className="h-3 rounded mt-1.5 w-4/5" style={{ backgroundColor: tokens.cardBorder }} />
+                          <div className="flex items-center justify-between text-xs mt-2.5 pt-2.5 border-t" style={{ color: tokens.neutralTextLight, borderColor: tokens.cardBorder }}>
+                            <span>{post.date}</span>
+                            <span>{post.views} views</span>
+                          </div>
                         </div>
                       </div>
-                      
-                      {/* Content */}
-                      <div className="p-3 flex-1 flex flex-col justify-center">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span
-                            className="text-xs font-medium px-2 py-0.5 rounded"
-                            style={{
-                              backgroundColor: tokens.categoryBadgeBg,
-                              color: tokens.categoryBadgeText,
-                              borderColor: tokens.categoryBadgeBorder,
-                            }}
-                          >
-                            {post.category}
-                          </span>
-                          <span className="text-xs" style={{ color: tokens.neutralTextLight }}>{post.date}</span>
+                    );
+                  }
+
+                  // Horizontal Card (cho style === 'list')
+                  return (
+                    <div key={post.id} className="rounded-lg overflow-hidden border" style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}>
+                      <div className="flex flex-col sm:flex-row">
+                        {/* Image */}
+                        <div className={`${isMobile ? '' : 'sm:w-40 md:w-48'} flex-shrink-0`}>
+                          <div className={`${isMobile ? 'aspect-video' : 'aspect-video sm:aspect-[4/3] sm:h-full'} flex items-center justify-center relative`} style={{ backgroundColor: tokens.cardBorder }}>
+                            <FileText size={28} style={{ color: tokens.neutralTextLight }} />
+                          </div>
                         </div>
-                        <h2 className="text-sm font-semibold line-clamp-2 mb-1" style={{ color: tokens.bodyText }}>
-                          {post.title}
-                        </h2>
-                        <div className="h-3 rounded w-4/5 mb-1.5" style={{ backgroundColor: tokens.cardBorder }} />
-                        <div className="flex items-center gap-1 text-xs" style={{ color: tokens.neutralTextLight }}>
-                          <span>👁</span>
-                          <span>{post.views.toLocaleString()}</span>
+                        
+                        {/* Content */}
+                        <div className="p-3 flex-1 flex flex-col justify-center">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span
+                              className="text-xs font-medium px-2 py-0.5 rounded"
+                              style={{
+                                backgroundColor: tokens.categoryBadgeBg,
+                                color: tokens.categoryBadgeText,
+                                borderColor: tokens.categoryBadgeBorder,
+                              }}
+                            >
+                              {post.category}
+                            </span>
+                            <span className="text-xs" style={{ color: tokens.neutralTextLight }}>{post.date}</span>
+                          </div>
+                          <h2 className="text-sm font-semibold line-clamp-2 mb-1" style={{ color: tokens.bodyText }}>
+                            {post.title}
+                          </h2>
+                          <div className="h-3 rounded w-4/5 mb-1.5" style={{ backgroundColor: tokens.cardBorder }} />
+                          <div className="flex items-center gap-1 text-xs" style={{ color: tokens.neutralTextLight }}>
+                            <span>👁</span>
+                            <span>{post.views.toLocaleString()}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <PaginationPreview paginationType={paginationType} brandColor={brandColor} tokens={tokens} />
             </main>

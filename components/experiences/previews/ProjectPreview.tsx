@@ -4,7 +4,7 @@ type DeviceType = 'desktop' | 'tablet' | 'mobile';
 type ColorMode = 'single' | 'dual';
 
 type ProjectsListPreviewProps = {
-  layoutStyle: 'grid' | 'sidebar' | 'masonry';
+  layoutStyle: 'grid' | 'sidebar' | 'list';
   filterPosition?: 'sidebar' | 'top' | 'none';
   showSearch?: boolean;
   showCategories?: boolean;
@@ -45,12 +45,41 @@ function ProjectCard({
   accent,
   showClientName,
   showIntroVideo,
+  isList = false,
 }: {
   project: typeof sampleProjects[number];
   accent: string;
   showClientName: boolean;
   showIntroVideo: boolean;
+  isList?: boolean;
 }) {
+  if (isList) {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950 flex flex-col sm:flex-row w-full">
+        <div className="relative aspect-video sm:aspect-auto sm:w-48 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 shrink-0">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Briefcase className="h-8 w-8 text-slate-400" />
+          </div>
+          {project.featured && (
+            <span className="absolute left-3 top-3 rounded-full px-2 py-1 text-[10px] font-semibold text-white" style={{ backgroundColor: accent }}>
+              Nổi bật
+            </span>
+          )}
+          {showIntroVideo && (
+            <span className="absolute right-3 top-3 rounded-full bg-white/90 p-1.5 text-slate-700">
+              <PlayCircle size={14} />
+            </span>
+          )}
+        </div>
+        <div className="space-y-2 p-4 flex-1 flex flex-col justify-center">
+          <span className="text-xs font-medium" style={{ color: accent }}>{project.category}</span>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-white">{project.title}</h3>
+          {showClientName && <p className="text-xs text-slate-500">Khách hàng: {project.client}</p>}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
       <div className="relative aspect-video bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
@@ -91,7 +120,7 @@ export function ProjectsListPreview({
 }: ProjectsListPreviewProps) {
   const accent = getAccent(brandColor, secondaryColor, colorMode);
   const isMobile = device === 'mobile';
-  const columns = isMobile ? 'grid-cols-1' : layoutStyle === 'masonry' ? 'grid-cols-3' : 'grid-cols-2';
+  const columns = isMobile || layoutStyle === 'list' ? 'grid-cols-1' : layoutStyle === 'sidebar' ? 'grid-cols-2' : 'grid-cols-3';
   const showSidebar = layoutStyle === 'sidebar' && filterPosition !== 'top' && !isMobile;
 
   return (
@@ -127,7 +156,7 @@ export function ProjectsListPreview({
           )}
           <div className={`grid gap-4 ${columns}`}>
             {sampleProjects.map((project) => (
-              <ProjectCard key={project.title} project={project} accent={accent} showClientName={showClientName} showIntroVideo={showIntroVideo} />
+              <ProjectCard key={project.title} project={project} accent={accent} showClientName={showClientName} showIntroVideo={showIntroVideo} isList={layoutStyle === 'list'} />
             ))}
           </div>
         </div>

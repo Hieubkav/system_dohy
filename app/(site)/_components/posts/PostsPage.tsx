@@ -13,7 +13,6 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import {
   FullWidthLayout,
-  MagazineLayout,
   PostsFilter,
   SidebarLayout,
   type SortOption,
@@ -268,8 +267,6 @@ function PostsContent() {
   const totalCount = useQuery(api.posts.countPublished, {
     categoryId: activeCategory ?? undefined,
   });
-  const featuredPosts = useQuery(api.posts.listFeatured, { limit: 5 });
-  
   // Load more when scrolling to bottom (infinite scroll mode)
   useEffect(() => {
     if (isPaginationMode) {
@@ -407,7 +404,7 @@ function PostsContent() {
         </div>
 
         {/* Layout based rendering */}
-        {layout === 'fullwidth' && (
+        {layout === 'grid' && (
           <>
             {/* Filter Bar - Hide based on config */}
             {(listConfig.showSearch || listConfig.showCategories) && (
@@ -464,15 +461,16 @@ function PostsContent() {
               showSearch={listConfig.showSearch}
               showCategories={listConfig.showCategories}
               getDetailHref={getPostDetailHref}
+              displayMode="grid"
             />
           )
         )}
 
-        {layout === 'magazine' && (
+        {layout === 'list' && (
           isLoadingPosts ? (
             <PostsGridSkeleton count={postsPerPage} />
           ) : (
-            <MagazineLayout
+            <SidebarLayout
               posts={posts}
               brandColor={brandColor}
               tokens={tokens}
@@ -484,11 +482,11 @@ function PostsContent() {
               onSearchChange={handleSearchChange}
               sortBy={sortBy}
               onSortChange={handleSortChange}
-              featuredPosts={featuredPosts ?? []}
               enabledFields={enabledFields}
               showSearch={listConfig.showSearch}
               showCategories={listConfig.showCategories}
               getDetailHref={getPostDetailHref}
+              displayMode="list"
             />
           )
         )}

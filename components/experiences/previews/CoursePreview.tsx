@@ -5,7 +5,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 
 type DeviceType = 'desktop' | 'tablet' | 'mobile';
-type CoursesListLayoutStyle = 'grid' | 'sidebar' | 'masonry';
+type CoursesListLayoutStyle = 'grid' | 'sidebar' | 'list';
 type CourseDetailLayoutStyle = 'classic' | 'modern' | 'minimal';
 type PaginationType = 'pagination' | 'infiniteScroll';
 
@@ -470,7 +470,7 @@ export function CoursesListPreview({
     return list;
   }, [activeCat, levelVal, filterVal, searchVal, sortByVal]);
 
-  const courses = layoutStyle === 'masonry' ? processedCourses : processedCourses.slice(0, isMobile ? 2 : 4);
+  const courses = layoutStyle === 'list' ? processedCourses : processedCourses.slice(0, isMobile ? 2 : 4);
   const visibleCategories = hideEmptyCategories ? MOCK_CATEGORIES.filter((category) => !category.empty) : MOCK_CATEGORIES;
 
   const filteredCategories = useMemo(() => {
@@ -742,14 +742,14 @@ export function CoursesListPreview({
             </div>
 
             <div className={
-              layoutStyle === 'masonry'
+              layoutStyle === 'list'
                 ? 'grid gap-5 grid-cols-1'
                 : gridColumns === 4
                   ? 'grid gap-5 grid-cols-2 md:grid-cols-2 lg:grid-cols-4'
                   : 'grid gap-5 grid-cols-1 md:grid-cols-3 lg:grid-cols-3'
             }>
               {courses.map((course) => {
-                if (layoutStyle === 'masonry') {
+                if (layoutStyle === 'list') {
                   return (
                     <FeaturedCourseCard
                       key={course.title}

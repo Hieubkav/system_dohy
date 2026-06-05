@@ -437,9 +437,9 @@ function ResourcesContent() {
             <p className="mt-2 text-sm text-slate-500">Tải ebook, template, checklist và tài liệu hữu ích.</p>
           </div>
 
-          <div className={config.layoutStyle === 'sidebar' ? 'grid gap-6 lg:grid-cols-[280px_1fr]' : 'space-y-6'}>
+          <div className={config.layoutStyle === 'sidebar' || config.layoutStyle === 'list' ? 'grid gap-6 lg:grid-cols-[280px_1fr]' : 'space-y-6'}>
             {(config.showSearch || config.showCategories) && (
-              config.layoutStyle === 'sidebar' ? (
+              config.layoutStyle === 'sidebar' || config.layoutStyle === 'list' ? (
                 <aside className="space-y-4 lg:block flex-shrink-0">
                   {config.showSearch && (
                     <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
@@ -600,68 +600,132 @@ function ResourcesContent() {
             )}
 
             <div className="space-y-6">
-              <div className={config.layoutStyle === 'masonry' ? 'columns-1 gap-5 sm:columns-2 lg:columns-3' : `grid gap-5 ${config.gridColumns >= 4 ? 'lg:grid-cols-4' : config.gridColumns === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} sm:grid-cols-2`}>
-                {isLoading ? (
-                  Array.from({ length: postsPerPage }).map((_, index) => (
-                    <div key={index} className={`h-72 animate-pulse border border-slate-200 bg-white ${getRadiusClass(config.cornerRadius)}`} />
-                  ))
-                ) : resourceItems.map((resource) => {
-                  const category = categoryMap.get(resource.categoryId);
-                  const detailHref = buildDetailPath({
-                    categorySlug: category?.slug,
-                    mode: routeMode,
-                    moduleKey: 'resources',
-                    recordSlug: resource.slug,
-                  });
-                  const assignedValues = resourceFiltersMap.get(resource._id) ?? [];
-                  return (
-                    <Link
-                      key={resource._id}
-                      href={detailHref}
-                      className={`group mb-5 block overflow-hidden border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${getRadiusClass(config.cornerRadius)}`}
-                    >
-                      <div className="relative aspect-video overflow-hidden bg-slate-100">
-                        {resource.thumbnail ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${brandColors.primary}18, ${brandColors.primary}05)` }}>
-                            <FileText size={42} style={{ color: brandColors.primary }} />
-                          </div>
-                        )}
-                        {resource.featured && (
-                          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white">
-                            <Star size={12} className="fill-current" /> Nổi bật
-                          </span>
-                        )}
-                      </div>
-                      <div className="space-y-3 p-4">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{category?.name ?? 'Tài nguyên'}</span>
-                          <span className="text-sm font-bold" style={{ color: brandColors.primary }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
+              {config.layoutStyle === 'list' ? (
+                /* List layout: horizontal cards */
+                <div className="flex flex-col gap-4">
+                  {isLoading ? (
+                    Array.from({ length: postsPerPage }).map((_, index) => (
+                      <div key={index} className={`h-28 animate-pulse border border-slate-200 bg-white ${getRadiusClass(config.cornerRadius)}`} />
+                    ))
+                  ) : resourceItems.map((resource) => {
+                    const category = categoryMap.get(resource.categoryId);
+                    const detailHref = buildDetailPath({
+                      categorySlug: category?.slug,
+                      mode: routeMode,
+                      moduleKey: 'resources',
+                      recordSlug: resource.slug,
+                    });
+                    const assignedValues = resourceFiltersMap.get(resource._id) ?? [];
+                    return (
+                      <Link
+                        key={resource._id}
+                        href={detailHref}
+                        className={`group flex items-stretch gap-4 overflow-hidden border border-slate-200 bg-white shadow-sm transition hover:shadow-md hover:-translate-y-0.5 ${getRadiusClass(config.cornerRadius)}`}
+                      >
+                        {/* Thumbnail */}
+                        <div className="relative w-40 shrink-0 overflow-hidden bg-slate-100" style={{ aspectRatio: '16/9' }}>
+                          {resource.thumbnail ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${brandColors.primary}18, ${brandColors.primary}05)` }}>
+                              <FileText size={28} style={{ color: brandColors.primary }} />
+                            </div>
+                          )}
+                          {resource.featured && (
+                            <span className="absolute left-2 top-2 inline-flex items-center gap-0.5 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                              <Star size={10} className="fill-current" /> Nổi bật
+                            </span>
+                          )}
                         </div>
-                        <h2 className="line-clamp-2 text-lg font-bold text-slate-900 group-hover:underline">{resource.title}</h2>
-                        {resource.excerpt && <p className="line-clamp-2 text-sm text-slate-500">{resource.excerpt}</p>}
-                        {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedValues.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            {assignedValues.slice(0, 4).map((value) => (
-                              <span key={value._id} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
-                                {value.icon && (
-                                  <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
-                                )}
+                        {/* Content */}
+                        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 py-3 pr-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{category?.name ?? 'Tài nguyên'}</span>
+                            {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedValues.slice(0, 3).map((value) => (
+                              <span key={value._id} className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                                {value.icon && <img src={value.icon} alt={value.name} className="h-3 w-3 object-contain shrink-0" />}
                                 <span>{value.name}</span>
                               </span>
                             ))}
                           </div>
-                        )}
-                        <div className="flex items-center gap-2 text-sm font-semibold group-hover:underline" style={{ color: brandColors.primary }}>
-                          Xem chi tiết →
+                          <h2 className="line-clamp-1 text-base font-bold text-slate-900 group-hover:underline">{resource.title}</h2>
+                          {resource.excerpt && <p className="line-clamp-2 text-xs text-slate-500 leading-relaxed">{resource.excerpt}</p>}
                         </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+                        {/* Price + CTA */}
+                        <div className="flex shrink-0 flex-col items-end justify-center gap-2 py-3 pr-4">
+                          <span className="text-sm font-bold" style={{ color: brandColors.primary }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
+                          <span className="text-xs font-semibold group-hover:underline" style={{ color: brandColors.primary }}>Xem chi tiết →</span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* Grid / Sidebar layout: vertical cards */
+                <div className={`grid gap-5 ${config.gridColumns >= 4 ? 'lg:grid-cols-4' : config.gridColumns === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} sm:grid-cols-2`}>
+                  {isLoading ? (
+                    Array.from({ length: postsPerPage }).map((_, index) => (
+                      <div key={index} className={`h-72 animate-pulse border border-slate-200 bg-white ${getRadiusClass(config.cornerRadius)}`} />
+                    ))
+                  ) : resourceItems.map((resource) => {
+                    const category = categoryMap.get(resource.categoryId);
+                    const detailHref = buildDetailPath({
+                      categorySlug: category?.slug,
+                      mode: routeMode,
+                      moduleKey: 'resources',
+                      recordSlug: resource.slug,
+                    });
+                    const assignedValues = resourceFiltersMap.get(resource._id) ?? [];
+                    return (
+                      <Link
+                        key={resource._id}
+                        href={detailHref}
+                        className={`group mb-5 block overflow-hidden border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${getRadiusClass(config.cornerRadius)}`}
+                      >
+                        <div className="relative aspect-video overflow-hidden bg-slate-100">
+                          {resource.thumbnail ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${brandColors.primary}18, ${brandColors.primary}05)` }}>
+                              <FileText size={42} style={{ color: brandColors.primary }} />
+                            </div>
+                          )}
+                          {resource.featured && (
+                            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white">
+                              <Star size={12} className="fill-current" /> Nổi bật
+                            </span>
+                          )}
+                        </div>
+                        <div className="space-y-3 p-4">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{category?.name ?? 'Tài nguyên'}</span>
+                            <span className="text-sm font-bold" style={{ color: brandColors.primary }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
+                          </div>
+                          <h2 className="line-clamp-2 text-lg font-bold text-slate-900 group-hover:underline">{resource.title}</h2>
+                          {resource.excerpt && <p className="line-clamp-2 text-sm text-slate-500">{resource.excerpt}</p>}
+                          {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedValues.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {assignedValues.slice(0, 4).map((value) => (
+                                <span key={value._id} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                                  {value.icon && (
+                                    <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                                  )}
+                                  <span>{value.name}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 text-sm font-semibold group-hover:underline" style={{ color: brandColors.primary }}>
+                            Xem chi tiết →
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
 
               {!isLoading && resourceItems.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">

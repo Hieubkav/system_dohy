@@ -22,7 +22,7 @@ import {
 import { useBrandColors } from '@/components/site/hooks';
 import { EXPERIENCE_NAMES, MESSAGES, useExperienceConfig, useExperienceSave } from '@/lib/experiences';
 
-type ListLayoutStyle = 'grid' | 'sidebar' | 'masonry';
+type ListLayoutStyle = 'grid' | 'sidebar' | 'list';
 type PaginationType = 'pagination' | 'infiniteScroll';
 
 type CoursesListExperienceConfig = {
@@ -40,9 +40,9 @@ type CoursesListExperienceConfig = {
 const EXPERIENCE_KEY = 'courses_list_ui';
 
 const LAYOUTS: LayoutOption<ListLayoutStyle>[] = [
-  { id: 'grid', label: 'Lưới', description: 'Bộ lọc gọn phía trên, thẻ khóa học rõ ràng' },
-  { id: 'sidebar', label: 'Bộ lọc trái', description: 'Bộ lọc cố định bên trái, phù hợp nhiều danh mục' },
-  { id: 'masonry', label: 'Nổi bật', description: 'Nhấn khóa học chính, hợp trang giới thiệu cao cấp' },
+  { id: 'grid', label: 'Grid', description: 'Bộ lọc ngang phía trên, lưới thẻ khóa học' },
+  { id: 'sidebar', label: 'Sidebar', description: 'Sidebar bộ lọc bên trái, lưới thẻ bên phải' },
+  { id: 'list', label: 'List', description: 'Sidebar bộ lọc, thẻ dạng ngang rõ thông tin' },
 ];
 
 const DEFAULT_CONFIG: CoursesListExperienceConfig = {
@@ -58,14 +58,15 @@ const DEFAULT_CONFIG: CoursesListExperienceConfig = {
 };
 
 const HINTS = [
-  'Lưới phù hợp trang có nhiều khóa học và cần xem nhanh.',
-  'Bộ lọc trái phù hợp khi có nhiều danh mục hoặc trình độ học.',
-  'Nổi bật phù hợp trang giới thiệu cao cấp, cần nhấn khóa học chính.',
+  'Grid phù hợp trang có nhiều khóa học và cần xem nhanh.',
+  'Sidebar phù hợp khi có nhiều danh mục hoặc trình độ học.',
+  'List giúp quét nhanh, thấy rõ mô tả và thông tin khóa học.',
   'Phân trang tốt cho Google; cuộn vô hạn hợp trải nghiệm trên điện thoại.',
 ];
 
 const normalizeLayoutStyle = (value?: string): ListLayoutStyle => {
-  if (value === 'grid' || value === 'sidebar' || value === 'masonry') {return value;}
+  if (value === 'grid' || value === 'sidebar' || value === 'list') {return value;}
+  if (value === 'masonry') {return 'list';}
   return DEFAULT_CONFIG.layoutStyle;
 };
 
