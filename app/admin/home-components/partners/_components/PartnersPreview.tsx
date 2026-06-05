@@ -39,6 +39,7 @@ export const PartnersPreview = ({
   fontStyle,
   fontClassName,
   logoColorMode = 'grayscale',
+  logoColorIntensity,
   // Shared header config
   hideHeader,
   showTitle,
@@ -68,6 +69,7 @@ export const PartnersPreview = ({
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
   logoColorMode?: PartnersLogoColorMode;
+  logoColorIntensity?: number;
   // Shared header config
   hideHeader?: boolean;
   showTitle?: boolean;
@@ -276,6 +278,7 @@ export const PartnersPreview = ({
               showBorder={showBorder}
               spacing={spacing}
               logoColorMode={logoColorMode}
+              logoColorIntensity={logoColorIntensity}
               openInNewTab
               renderImage={(item, className) => (
                 <PreviewImage src={item.url} alt={item.name ?? 'Hình ảnh'} className={className} />

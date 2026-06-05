@@ -48,8 +48,11 @@ import {
   DEFAULT_PARTNERS_LOGO_SIZE,
   DEFAULT_PARTNERS_SHOW_BORDER,
   DEFAULT_PARTNERS_SPACING,
+  getPartnersLogoColorModeFromIntensity,
   normalizePartnersCornerRadius,
   normalizePartnersDisplayMode,
+  normalizePartnersLogoColorIntensity,
+  normalizePartnersLogoColorMode,
   normalizePartnersLogoSize,
   normalizePartnersShowBorder,
   normalizePartnersSpacing,
@@ -57,6 +60,8 @@ import {
   type PartnerItem,
   type PartnersCornerRadius,
   type PartnersDisplayMode,
+  type PartnersLogoColorIntensity,
+  type PartnersLogoColorMode,
   type PartnersLogoSize,
   type PartnersSpacing,
   type PartnersStyle,
@@ -115,6 +120,8 @@ type PartnersSnapshotState = {
   cornerRadius: PartnersCornerRadius;
   displayMode: PartnersDisplayMode;
   items: PartnerItem[];
+  logoColorIntensity: PartnersLogoColorIntensity;
+  logoColorMode: PartnersLogoColorMode;
   logoSize: PartnersLogoSize;
   showBorder: boolean;
   spacing: PartnersSpacing;
@@ -847,6 +854,8 @@ const partnersSnapshotAdapter: SnapshotAdapter<PartnersSnapshotState> = {
     cornerRadius: normalizePartnersCornerRadius(rawConfig.cornerRadius ?? DEFAULT_PARTNERS_CORNER_RADIUS),
     displayMode: normalizePartnersDisplayMode(rawConfig.displayMode),
     items: normalizePartnerItems(rawConfig.items),
+    logoColorIntensity: normalizePartnersLogoColorIntensity(rawConfig.logoColorIntensity, rawConfig.logoColorMode),
+    logoColorMode: getPartnersLogoColorModeFromIntensity(normalizePartnersLogoColorIntensity(rawConfig.logoColorIntensity, normalizePartnersLogoColorMode(rawConfig.logoColorMode))),
     logoSize: normalizePartnersLogoSize(rawConfig.logoSize ?? DEFAULT_PARTNERS_LOGO_SIZE),
     showBorder: normalizePartnersShowBorder(rawConfig.showBorder ?? DEFAULT_PARTNERS_SHOW_BORDER),
     spacing: normalizePartnersSpacing(rawConfig.spacing ?? DEFAULT_PARTNERS_SPACING),
@@ -861,6 +870,8 @@ const partnersSnapshotAdapter: SnapshotAdapter<PartnersSnapshotState> = {
       name: item.name ?? '',
       url: item.url ?? '',
     })),
+    logoColorIntensity: state.logoColorIntensity,
+    logoColorMode: state.logoColorMode,
     logoSize: state.logoSize,
     showBorder: state.showBorder,
     spacing: state.spacing,
@@ -879,6 +890,10 @@ const partnersSnapshotAdapter: SnapshotAdapter<PartnersSnapshotState> = {
       spacing={state.spacing}
       setSpacing={(spacing) => setState((current) => ({ ...current, spacing }))}
       selectedStyle={state.style}
+      logoColorIntensity={state.logoColorIntensity}
+      setLogoColorIntensity={(logoColorIntensity) => setState((current) => ({ ...current, logoColorIntensity, logoColorMode: getPartnersLogoColorModeFromIntensity(logoColorIntensity) }))}
+      logoColorMode={state.logoColorMode}
+      setLogoColorMode={(logoColorMode) => setState((current) => ({ ...current, logoColorMode, logoColorIntensity: normalizePartnersLogoColorIntensity(current.logoColorIntensity, logoColorMode) }))}
     />
   ),
   renderPreview: (state, setState, title, headerConfig, colors, fontStyle, fontClassName) => (
@@ -897,6 +912,8 @@ const partnersSnapshotAdapter: SnapshotAdapter<PartnersSnapshotState> = {
       logoSize={state.logoSize}
       showBorder={state.showBorder}
       spacing={state.spacing}
+      logoColorIntensity={state.logoColorIntensity}
+      logoColorMode={state.logoColorMode}
       onDisplayModeChange={(displayMode) => setState((current) => ({ ...current, displayMode }))}
       fontStyle={fontStyle}
       fontClassName={fontClassName}

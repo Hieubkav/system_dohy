@@ -10,6 +10,7 @@ const OVERRIDES_KEY = "type_color_overrides";
 const FONT_OVERRIDES_KEY = "type_font_overrides";
 const GLOBAL_FONT_OVERRIDE_KEY = "global_font_override";
 const AI_IMPORT_OVERRIDES_KEY = "type_ai_import_overrides";
+const HOME_PAGE_BACKGROUND_KEY = "home_page_background";
 const DEFAULT_BRAND_COLOR = "#3b82f6";
 const SUPPORTED_CUSTOM_TYPES = new Set(HOME_COMPONENT_TYPE_VALUES);
 const FONT_KEYS = new Set(FONT_REGISTRY.map((font) => font.key));
@@ -36,6 +37,17 @@ const globalFontOverrideDoc = v.object({
 
 const aiImportOverrideDoc = v.object({
   enabled: v.boolean(),
+});
+
+const homePageBackgroundDoc = v.object({
+  type: v.union(
+    v.literal("white"),
+    v.literal("black"),
+    v.literal("primary"),
+    v.literal("secondary"),
+    v.literal("custom")
+  ),
+  customColor: v.string(),
 });
 
 const isValidHexColor = (value: string) => /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(value.trim());
@@ -103,6 +115,21 @@ const normalizeGlobalFontOverride = (value: unknown) => {
     ? record.fontKey
     : DEFAULT_FONT_KEY;
   return { enabled, fontKey };
+};
+
+const normalizeHomePageBackground = (value: unknown) => {
+  if (!value || typeof value !== "object") {
+    return {
+      type: "white" as const,
+      customColor: "",
+    };
+  }
+  const record = value as Record<string, unknown>;
+  const type = (["white", "black", "primary", "secondary", "custom"].includes(record.type as string))
+    ? (record.type as "white" | "black" | "primary" | "secondary" | "custom")
+    : ("white" as const);
+  const customColor = typeof record.customColor === "string" ? record.customColor : "";
+  return { type, customColor };
 };
 
 const normalizeOverrides = (value: unknown): Record<string, { enabled: boolean; systemEnabled: boolean; mode: "single" | "dual"; primary: string; secondary: string }> => {
@@ -176,12 +203,14 @@ export const getConfig = query({
     const fontOverrides = normalizeFontOverrides(await getSettingValue(ctx, FONT_OVERRIDES_KEY));
     const globalFontOverride = normalizeGlobalFontOverride(await getSettingValue(ctx, GLOBAL_FONT_OVERRIDE_KEY));
     const aiImportOverrides = normalizeAiImportOverrides(await getSettingValue(ctx, AI_IMPORT_OVERRIDES_KEY));
+    const homePageBackground = normalizeHomePageBackground(await getSettingValue(ctx, HOME_PAGE_BACKGROUND_KEY));
     return {
       hiddenTypes,
       typeColorOverrides: overrides,
       typeFontOverrides: fontOverrides,
       globalFontOverride,
       typeAiImportOverrides: aiImportOverrides,
+      homePageBackground,
     };
   },
   returns: v.object({
@@ -190,6 +219,7 @@ export const getConfig = query({
     typeFontOverrides: v.record(v.string(), fontOverrideDoc),
     globalFontOverride: globalFontOverrideDoc,
     typeAiImportOverrides: v.record(v.string(), aiImportOverrideDoc),
+    homePageBackground: homePageBackgroundDoc,
   }),
 });
 
@@ -370,6 +400,28 @@ export const bulkSetTypeAiImportOverride = mutation({
         overrides[type] = { enabled: args.enabled };
       });
     await upsertSetting(ctx, AI_IMPORT_OVERRIDES_KEY, overrides);
+    return null;
+  },
+  returns: v.null(),
+});
+
+export const setHomePageBackground = mutation({
+  args: {
+    type: v.union(
+      v.literal("white"),
+      v.literal("black"),
+      v.literal("primary"),
+      v.literal("secondary"),
+      v.literal("custom")
+    ),
+    customColor: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const next = {
+      type: args.type,
+      customColor: args.customColor ?? "",
+    };
+    await upsertSetting(ctx, HOME_PAGE_BACKGROUND_KEY, next);
     return null;
   },
   returns: v.null(),

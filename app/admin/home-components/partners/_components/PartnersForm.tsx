@@ -2,7 +2,18 @@ import React from 'react';
 import { Handshake, Settings2 } from 'lucide-react';
 import { Label, cn } from '../../../components/ui';
 import { MultiImageUploader } from '../../../components/MultiImageUploader';
-import type { PartnerItem, PartnersCornerRadius, PartnersLogoSize, PartnersSpacing, PartnersStyle, PartnersLogoColorMode } from '../_types';
+import {
+  DEFAULT_PARTNERS_LOGO_COLOR_INTENSITY,
+  getPartnersLogoColorModeFromIntensity,
+  normalizePartnersLogoColorIntensity,
+  type PartnerItem,
+  type PartnersCornerRadius,
+  type PartnersLogoColorIntensity,
+  type PartnersLogoColorMode,
+  type PartnersLogoSize,
+  type PartnersSpacing,
+  type PartnersStyle,
+} from '../_types';
 import { CollapsibleSubSection as SubSection } from '../../_shared/components/CollapsibleSubSection';
 import { SectionSpacingControl } from '../../_shared/components/SectionSpacingControl';
 import { useFormSectionsState } from '../../_shared/hooks/useFormSectionsState';
@@ -27,6 +38,8 @@ export const PartnersForm = ({
   showBorderControl: _showBorderControl = true,
   logoColorMode = 'grayscale',
   setLogoColorMode,
+  logoColorIntensity = DEFAULT_PARTNERS_LOGO_COLOR_INTENSITY,
+  setLogoColorIntensity,
   className,
   actions,
 }: {
@@ -45,32 +58,40 @@ export const PartnersForm = ({
   showBorderControl?: boolean;
   logoColorMode?: PartnersLogoColorMode;
   setLogoColorMode?: (value: PartnersLogoColorMode) => void;
+  logoColorIntensity?: PartnersLogoColorIntensity;
+  setLogoColorIntensity?: (value: PartnersLogoColorIntensity) => void;
   className?: string;
   actions?: React.ReactNode;
 }) => {
   const { openSections, toggleSection, hasClosedSection, handleToggleAll } = useFormSectionsState(activeSections, defaultExpanded);
   const cropAspectRatio = selectedStyle ? PARTNERS_CROP_ASPECT_RATIO_BY_STYLE[selectedStyle] : 'wide169';
-  
-  const colorModes: PartnersLogoColorMode[] = ['color', 'grayscale', 'white'];
-  const [localColorMode, setLocalColorMode] = React.useState<PartnersLogoColorMode>(logoColorMode);
 
-  React.useEffect(() => {
-    setLocalColorMode(logoColorMode);
-  }, [logoColorMode]);
+  const selectedLogoColorIntensity = normalizePartnersLogoColorIntensity(logoColorIntensity, logoColorMode);
 
-  const currentModeIndex = colorModes.indexOf(localColorMode);
+  const updateLogoColorIntensity = (value: PartnersLogoColorIntensity) => {
+    const nextValue = normalizePartnersLogoColorIntensity(value, logoColorMode);
+    setLogoColorIntensity?.(nextValue);
+    setLogoColorMode?.(getPartnersLogoColorModeFromIntensity(nextValue));
+  };
 
-  const getModeLabel = (mode: PartnersLogoColorMode) => {
-    switch (mode) {
-      case 'color':
-        return 'Màu gốc (Original Color)';
-      case 'grayscale':
-        return 'Thang màu xám (Grayscale)';
-      case 'white':
-        return 'Trắng tinh khiết (White scale)';
-      default:
-        return '';
+  const getModeLabel = (value: PartnersLogoColorIntensity) => {
+    if (value <= 0) {
+      return 'Màu gốc (Original Color)';
     }
+
+    if (value === 50) {
+      return 'Thang màu xám (Grayscale)';
+    }
+
+    if (value >= 100) {
+      return 'Trắng tinh khiết (White scale)';
+    }
+
+    if (value < 50) {
+      return `Pha màu → thang xám (${value}%)`;
+    }
+
+    return `Thang xám → trắng (${value}%)`;
   };
 
   return (
@@ -132,34 +153,26 @@ export const PartnersForm = ({
                 <div className="flex justify-between items-center text-xs font-semibold px-1">
                   <span className="text-slate-500">Chế độ hiện tại:</span>
                   <span className="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">
-                    {getModeLabel(localColorMode)}
+                    {getModeLabel(selectedLogoColorIntensity)}
                   </span>
                 </div>
                 
                 <input
-                  key={logoColorMode}
                   type="range"
                   min="0"
-                  max="2"
+                  max="100"
                   step="1"
-                  defaultValue={currentModeIndex >= 0 ? currentModeIndex : 1}
-                  onInput={(e) => {
-                    const index = parseInt(e.currentTarget.value, 10);
-                    const nextMode = colorModes[index];
-                    setLocalColorMode(nextMode);
-                  }}
+                  value={selectedLogoColorIntensity}
                   onChange={(e) => {
-                    const index = parseInt(e.currentTarget.value, 10);
-                    const nextMode = colorModes[index];
-                    setLogoColorMode?.(nextMode);
+                    updateLogoColorIntensity(Number(e.currentTarget.value));
                   }}
                   className="w-full h-1.5 accent-blue-600 cursor-pointer"
                 />
                 
                 <div className="flex justify-between text-[11px] text-slate-400 dark:text-slate-500 px-0.5">
-                  <span className={cn("cursor-pointer hover:text-slate-600 dark:hover:text-slate-300", localColorMode === 'color' && "text-blue-600 dark:text-blue-400 font-medium")} onClick={() => { setLocalColorMode('color'); setLogoColorMode?.('color'); }}>Màu gốc</span>
-                  <span className={cn("cursor-pointer hover:text-slate-600 dark:hover:text-slate-300", localColorMode === 'grayscale' && "text-blue-600 dark:text-blue-400 font-medium")} onClick={() => { setLocalColorMode('grayscale'); setLogoColorMode?.('grayscale'); }}>Thang xám</span>
-                  <span className={cn("cursor-pointer hover:text-slate-600 dark:hover:text-slate-300", localColorMode === 'white' && "text-blue-600 dark:text-blue-400 font-medium")} onClick={() => { setLocalColorMode('white'); setLogoColorMode?.('white'); }}>Trắng</span>
+                  <span className={cn("cursor-pointer hover:text-slate-600 dark:hover:text-slate-300", selectedLogoColorIntensity === 0 && "text-blue-600 dark:text-blue-400 font-medium")} onClick={() => { updateLogoColorIntensity(0); }}>Màu gốc</span>
+                  <span className={cn("cursor-pointer hover:text-slate-600 dark:hover:text-slate-300", selectedLogoColorIntensity === 50 && "text-blue-600 dark:text-blue-400 font-medium")} onClick={() => { updateLogoColorIntensity(50); }}>Thang xám</span>
+                  <span className={cn("cursor-pointer hover:text-slate-600 dark:hover:text-slate-300", selectedLogoColorIntensity === 100 && "text-blue-600 dark:text-blue-400 font-medium")} onClick={() => { updateLogoColorIntensity(100); }}>Trắng</span>
                 </div>
               </div>
             </div>

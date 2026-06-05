@@ -3378,7 +3378,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
     const sectionSpacingClassName = getSectionSpacingClassName(config.noVerticalMargin === true ? 'none' : normalizeSectionSpacing(config.spacing));
     
     return (
-      <section className={cn('w-full', sectionSpacingClassName)} style={{ backgroundColor: colors.neutralSurface }}>
+      <section className={cn('w-full', sectionSpacingClassName)} style={{ backgroundColor: 'transparent' }}>
         <div className={cn(
           'mx-auto px-3',
           galleryFullWidth ? 'max-w-none' : 'max-w-7xl',

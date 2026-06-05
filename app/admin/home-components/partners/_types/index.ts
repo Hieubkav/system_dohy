@@ -26,6 +26,8 @@ export interface PartnerItem extends ImageItem {
 }
 
 export type PartnersLogoColorMode = 'color' | 'grayscale' | 'white';
+export type PartnersLogoColorIntensity = number;
+export const DEFAULT_PARTNERS_LOGO_COLOR_INTENSITY: PartnersLogoColorIntensity = 50;
 
 export interface PartnersConfig extends SectionHeaderConfig {
   items: PartnerItem[];
@@ -38,6 +40,7 @@ export interface PartnersConfig extends SectionHeaderConfig {
   showBorder: boolean;
   spacing: PartnersSpacing;
   logoColorMode?: PartnersLogoColorMode;
+  logoColorIntensity?: PartnersLogoColorIntensity;
 }
 
 export const DEFAULT_PARTNERS_ALIGN: PartnersAlign = 'center';
@@ -66,6 +69,7 @@ export const DEFAULT_PARTNERS_CONFIG: Partial<PartnersConfig> = {
   spacing: DEFAULT_PARTNERS_SPACING,
   style: 'grid',
   logoColorMode: 'grayscale',
+  logoColorIntensity: DEFAULT_PARTNERS_LOGO_COLOR_INTENSITY,
 };
 
 export const normalizePartnersStyle = (value: unknown): PartnersStyle => {
@@ -134,6 +138,52 @@ export const normalizePartnersShowBorder = (value: unknown): boolean => {
   }
 
   return DEFAULT_PARTNERS_SHOW_BORDER;
+};
+
+export const normalizePartnersLogoColorMode = (value: unknown): PartnersLogoColorMode => {
+  if (value === 'color' || value === 'grayscale' || value === 'white') {
+    return value;
+  }
+
+  return 'grayscale';
+};
+
+export const getPartnersLogoColorIntensityFromMode = (mode: PartnersLogoColorMode): PartnersLogoColorIntensity => {
+  if (mode === 'color') {
+    return 0;
+  }
+
+  if (mode === 'white') {
+    return 100;
+  }
+
+  return DEFAULT_PARTNERS_LOGO_COLOR_INTENSITY;
+};
+
+export const normalizePartnersLogoColorIntensity = (value: unknown, fallbackMode: unknown = 'grayscale'): PartnersLogoColorIntensity => {
+  const numericValue = typeof value === 'number'
+    ? value
+    : typeof value === 'string' && value.trim() !== ''
+      ? Number(value)
+      : Number.NaN;
+
+  if (Number.isFinite(numericValue)) {
+    return Math.min(100, Math.max(0, Math.round(numericValue)));
+  }
+
+  return getPartnersLogoColorIntensityFromMode(normalizePartnersLogoColorMode(fallbackMode));
+};
+
+export const getPartnersLogoColorModeFromIntensity = (value: PartnersLogoColorIntensity): PartnersLogoColorMode => {
+  if (value <= 25) {
+    return 'color';
+  }
+
+  if (value >= 75) {
+    return 'white';
+  }
+
+  return 'grayscale';
 };
 
 export const normalizePartnersSpacing = normalizeSectionSpacing;

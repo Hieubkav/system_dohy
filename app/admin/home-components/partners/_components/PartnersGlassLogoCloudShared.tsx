@@ -9,10 +9,12 @@ import {
   getPartnersCornerRadiusClassName,
   getPartnersLogoBoxClassName,
   getPartnersLogoFallbackSize,
+  normalizePartnersLogoColorIntensity,
   type PartnersCornerRadius,
   type PartnersLogoSize,
   type PartnersSpacing,
   type PartnersLogoColorMode,
+  type PartnersLogoColorIntensity,
 } from '../_types';
 
 type PartnersGlassLogoCloudItem = {
@@ -34,6 +36,7 @@ export const PartnersGlassLogoCloudShared = ({
   showBorder = true,
   spacing: _spacing = 'normal',
   logoColorMode = 'grayscale',
+  logoColorIntensity,
   openInNewTab = false,
   renderImage,
   className,
@@ -47,6 +50,7 @@ export const PartnersGlassLogoCloudShared = ({
   showBorder?: boolean;
   spacing?: PartnersSpacing;
   logoColorMode?: PartnersLogoColorMode;
+  logoColorIntensity?: PartnersLogoColorIntensity;
   openInNewTab?: boolean;
   renderImage?: (item: PartnersGlassLogoCloudItem, className: string) => React.ReactNode;
   className?: string;
@@ -85,14 +89,21 @@ export const PartnersGlassLogoCloudShared = ({
   const fallbackIconSize = getPartnersLogoFallbackSize('glassLogoCloud', logoSize, false);
   const colors = React.useMemo(() => getPartnersColors(brandColor, secondary, mode), [brandColor, secondary, mode]);
 
-  const getFilterClass = (mode: PartnersLogoColorMode) => {
-    if (mode === 'grayscale') {
-      return 'grayscale hover:grayscale-0';
+  const resolvedLogoColorIntensity = normalizePartnersLogoColorIntensity(logoColorIntensity, logoColorMode);
+
+  const getFilterStyle = (intensity: PartnersLogoColorIntensity): React.CSSProperties => {
+    if (intensity <= 0) {
+      return { filter: 'none' };
     }
-    if (mode === 'white') {
-      return 'brightness-0 invert';
+
+    if (intensity <= 50) {
+      return { filter: `grayscale(${intensity * 2}%)` };
     }
-    return ''; // color
+
+    const whiteProgress = (intensity - 50) / 50;
+    return {
+      filter: `grayscale(100%) brightness(${1 - whiteProgress}) invert(${whiteProgress})`,
+    };
   };
 
   return (
@@ -113,21 +124,23 @@ export const PartnersGlassLogoCloudShared = ({
           {items.map((item, index) => {
             const key = item.id ?? item.link ?? item.url ?? index;
             const label = item.name || 'Hình ảnh';
-            const filterClass = getFilterClass(logoColorMode);
+            const filterStyle = getFilterStyle(resolvedLogoColorIntensity);
             
             const content = (
               <>
                 {item.url ? (
-                  renderImage ? (
-                    renderImage(item, cn(logoClassName, 'w-auto max-w-full object-contain filter opacity-70 hover:opacity-100 transition-all duration-300 hover:scale-105', filterClass))
-                  ) : (
-                    <img
-                      src={item.url}
-                      alt={label}
-                      className={cn(logoClassName, 'w-auto max-w-full object-contain filter opacity-70 hover:opacity-100 transition-all duration-300 hover:scale-105', filterClass)}
-                      draggable={false}
-                    />
-                  )
+                  <span className="inline-flex items-center justify-center opacity-70 transition-all duration-300 hover:scale-105 hover:opacity-100" style={filterStyle}>
+                    {renderImage ? (
+                      renderImage(item, cn(logoClassName, 'w-auto max-w-full object-contain'))
+                    ) : (
+                      <img
+                        src={item.url}
+                        alt={label}
+                        className={cn(logoClassName, 'w-auto max-w-full object-contain')}
+                        draggable={false}
+                      />
+                    )}
+                  </span>
                 ) : (
                   <ImageIcon size={fallbackIconSize} className="text-slate-500" />
                 )}

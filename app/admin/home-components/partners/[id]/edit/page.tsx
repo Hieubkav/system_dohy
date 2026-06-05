@@ -23,7 +23,7 @@ import { getSuggestedSecondary, resolveSecondaryByMode } from '../../../_shared/
 import { PartnersForm } from '../../_components/PartnersForm';
 import { PartnersPreview } from '../../_components/PartnersPreview';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
-import { DEFAULT_PARTNERS_CORNER_RADIUS, DEFAULT_PARTNERS_DISPLAY_MODE, DEFAULT_PARTNERS_LOGO_SIZE, DEFAULT_PARTNERS_SHOW_BORDER, DEFAULT_PARTNERS_SPACING, normalizePartnersCornerRadius, normalizePartnersDisplayMode, normalizePartnersLogoSize, normalizePartnersShowBorder, normalizePartnersSpacing, normalizePartnersStyle, type PartnerItem, type PartnersCornerRadius, type PartnersDisplayMode, type PartnersLogoSize, type PartnersSpacing, type PartnersStyle, type PartnersLogoColorMode } from '../../_types';
+import { DEFAULT_PARTNERS_CORNER_RADIUS, DEFAULT_PARTNERS_DISPLAY_MODE, DEFAULT_PARTNERS_LOGO_COLOR_INTENSITY, DEFAULT_PARTNERS_LOGO_SIZE, DEFAULT_PARTNERS_SHOW_BORDER, DEFAULT_PARTNERS_SPACING, getPartnersLogoColorModeFromIntensity, normalizePartnersCornerRadius, normalizePartnersDisplayMode, normalizePartnersLogoColorIntensity, normalizePartnersLogoColorMode, normalizePartnersLogoSize, normalizePartnersShowBorder, normalizePartnersSpacing, normalizePartnersStyle, type PartnerItem, type PartnersCornerRadius, type PartnersDisplayMode, type PartnersLogoColorIntensity, type PartnersLogoSize, type PartnersSpacing, type PartnersStyle, type PartnersLogoColorMode } from '../../_types';
 import { AiDemoPartnersImport } from '../../../product-list/_components/AiDemoProductsImport';
 
 const COMPONENT_TYPE = 'Partners';
@@ -82,6 +82,7 @@ export default function PartnersEditPage({
   const [showBorder, setShowBorder] = useState(DEFAULT_PARTNERS_SHOW_BORDER);
   const [spacing, setSpacing] = useState<PartnersSpacing>(DEFAULT_PARTNERS_SPACING);
   const [logoColorMode, setLogoColorMode] = useState<PartnersLogoColorMode>('grayscale');
+  const [logoColorIntensity, setLogoColorIntensity] = useState<PartnersLogoColorIntensity>(DEFAULT_PARTNERS_LOGO_COLOR_INTENSITY);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialSnapshot, setInitialSnapshot] = useState<string | null>(null);
 
@@ -142,7 +143,9 @@ export default function PartnersEditPage({
       const nextLogoSize = normalizePartnersLogoSize(config.logoSize);
       const nextShowBorder = normalizePartnersShowBorder(config.showBorder);
       const nextSpacing = normalizePartnersSpacing(config.spacing);
-      const nextLogoColorMode = (config.logoColorMode as PartnersLogoColorMode) || 'grayscale';
+      const nextLogoColorMode = normalizePartnersLogoColorMode(config.logoColorMode);
+      const nextLogoColorIntensity = normalizePartnersLogoColorIntensity(config.logoColorIntensity, nextLogoColorMode);
+      const nextResolvedLogoColorMode = getPartnersLogoColorModeFromIntensity(nextLogoColorIntensity);
 
       // Load header config
       const headerConfig = extractSectionHeaderConfig(config);
@@ -164,14 +167,16 @@ export default function PartnersEditPage({
       setLogoSize(nextLogoSize);
       setShowBorder(nextShowBorder);
       setSpacing(nextSpacing);
-      setLogoColorMode(nextLogoColorMode);
+      setLogoColorMode(nextResolvedLogoColorMode);
+      setLogoColorIntensity(nextLogoColorIntensity);
       setInitialSnapshot(JSON.stringify({
         displayMode: nextDisplayMode,
         cornerRadius: nextCornerRadius,
         logoSize: nextLogoSize,
         showBorder: nextShowBorder,
         spacing: nextSpacing,
-        logoColorMode: nextLogoColorMode,
+        logoColorMode: nextResolvedLogoColorMode,
+        logoColorIntensity: nextLogoColorIntensity,
         title: component.title.trim(),
         active: component.active,
         style: nextStyle,
@@ -198,6 +203,7 @@ export default function PartnersEditPage({
     showBorder,
     spacing,
     logoColorMode,
+    logoColorIntensity,
     title: title.trim(),
     active,
     style: partnersStyle,
@@ -242,6 +248,7 @@ export default function PartnersEditPage({
           showBorder,
           spacing,
           logoColorMode,
+          logoColorIntensity,
           items: partnersItems.map((item: PartnerItem) => ({ link: item.link, name: item.name, url: item.url, storageId: item.storageId })),
           style: partnersStyle,
           // Header fields
@@ -376,6 +383,8 @@ export default function PartnersEditPage({
           selectedStyle={partnersStyle}
           logoColorMode={logoColorMode}
           setLogoColorMode={setLogoColorMode}
+          logoColorIntensity={logoColorIntensity}
+          setLogoColorIntensity={setLogoColorIntensity}
           defaultExpanded={false}
           className="mb-4"
           actions={(
@@ -447,6 +456,7 @@ export default function PartnersEditPage({
               showBorder={showBorder}
               spacing={spacing}
               logoColorMode={logoColorMode}
+              logoColorIntensity={logoColorIntensity}
               onDisplayModeChange={setDisplayMode}
               fontStyle={fontStyle}
               fontClassName="font-active"

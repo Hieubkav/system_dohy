@@ -2,6 +2,9 @@
 
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Image as ImageIcon, X } from 'lucide-react';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { useBrandColors } from '@/components/site/hooks';
 import { cn } from '../../../components/ui';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
@@ -217,6 +220,28 @@ export const GalleryPreview = ({
   const colors = getGalleryColorTokens({ primary: brandColor, secondary, mode, harmony });
   const ONE = 1;
   const NEGATIVE_ONE = -1;
+
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const systemColors = useBrandColors();
+
+  const homePageBgColor = React.useMemo(() => {
+    if (!systemConfig?.homePageBackground) {return '#ffffff';}
+    const { type, customColor } = systemConfig.homePageBackground;
+    switch (type) {
+      case 'white':
+        return '#ffffff';
+      case 'black':
+        return '#000000';
+      case 'primary':
+        return systemColors.primary;
+      case 'secondary':
+        return systemColors.secondary || systemColors.primary;
+      case 'custom':
+        return customColor || '#ffffff';
+      default:
+        return '#ffffff';
+    }
+  }, [systemConfig?.homePageBackground, systemColors]);
   let previewStyle = selectedStyle;
   if (!previewStyle) {
     previewStyle = 'spotlight';
@@ -837,7 +862,7 @@ export const GalleryPreview = ({
 
   // Render Gallery styles with container and Lightbox (with keyboard navigation)
   const renderGalleryContent = () => (
-    <section className={cn("w-full", sectionSpacingClassName)} style={{ backgroundColor: colors.neutralSurface }}>
+    <section className={cn("w-full", sectionSpacingClassName)} style={{ backgroundColor: 'transparent' }}>
       <div className={cn(
         'mx-auto',
         fullWidthDesktop ? 'w-full px-2' : 'max-w-7xl px-4',
@@ -911,7 +936,7 @@ export const GalleryPreview = ({
         fontClassName={fontClassName}
       >
         <BrowserFrame>
-          <div className="w-full">
+          <div className="w-full transition-colors duration-300" style={{ backgroundColor: homePageBgColor }}>
             <SectionHeader
               title={title}
               subtitle={subtitle}

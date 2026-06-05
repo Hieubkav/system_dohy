@@ -41,6 +41,7 @@ export default function SystemHomeComponentsPage() {
   const setGlobalFontOverride = useMutation(api.homeComponentSystemConfig.setGlobalFontOverride);
   const setTypeAiImportOverride = useMutation(api.homeComponentSystemConfig.setTypeAiImportOverride);
   const bulkSetTypeAiImportOverride = useMutation(api.homeComponentSystemConfig.bulkSetTypeAiImportOverride);
+  const setHomePageBackground = useMutation(api.homeComponentSystemConfig.setHomePageBackground);
 
   const [hiddenTypes, setHiddenTypes] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -48,6 +49,10 @@ export default function SystemHomeComponentsPage() {
   const [typeFontOverrides, setTypeFontOverrides] = useState<Record<string, FontOverride>>({});
   const [typeAiImportOverrides, setTypeAiImportOverrides] = useState<Record<string, AiImportOverride>>({});
   const [globalFontOverride, setGlobalFontOverrideState] = useState({ enabled: false, fontKey: DEFAULT_FONT_KEY });
+  const [homePageBackground, setHomePageBackgroundState] = useState({
+    type: 'white' as 'white' | 'black' | 'primary' | 'secondary' | 'custom',
+    customColor: '',
+  });
 
   useEffect(() => {
     if (!config) {return;}
@@ -56,6 +61,7 @@ export default function SystemHomeComponentsPage() {
     setTypeFontOverrides(config.typeFontOverrides);
     setTypeAiImportOverrides(config.typeAiImportOverrides);
     setGlobalFontOverrideState(config.globalFontOverride ?? { enabled: false, fontKey: DEFAULT_FONT_KEY });
+    setHomePageBackgroundState(config.homePageBackground ?? { type: 'white', customColor: '' });
   }, [config]);
 
   const componentTypes = useMemo(() => (
@@ -215,6 +221,23 @@ export default function SystemHomeComponentsPage() {
     }
   };
 
+  const handleHomePageBackgroundChange = async (next: {
+    type?: 'white' | 'black' | 'primary' | 'secondary' | 'custom';
+    customColor?: string;
+  }) => {
+    const nextState = {
+      type: next.type ?? homePageBackground.type,
+      customColor: next.customColor ?? homePageBackground.customColor,
+    };
+    setHomePageBackgroundState(nextState);
+    try {
+      await setHomePageBackground(nextState);
+      toast.success('Đã cập nhật màu nền trang chủ.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật màu nền trang chủ.');
+    }
+  };
+
   const handleHideSelected = async () => {
     if (selectedVisibleTypes.length === 0) {return;}
     const nextHidden = Array.from(new Set([...hiddenTypes, ...selectedVisibleTypes]));
@@ -297,31 +320,81 @@ export default function SystemHomeComponentsPage() {
           <CardTitle className="text-base">Danh sách Home Components</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 space-y-3">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">Font mặc định</div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Áp dụng cho toàn bộ component khi chưa bật custom font.</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">Font mặc định</div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Áp dụng cho toàn bộ component khi chưa bật custom font.</p>
+                </div>
+                <div
+                  className={cn(
+                    'cursor-pointer inline-flex items-center justify-center rounded-full w-10 h-5 transition-colors',
+                    globalFontOverride.enabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
+                  )}
+                  onClick={() => handleGlobalFontChange({ enabled: !globalFontOverride.enabled })}
+                >
+                  <div className={cn('w-4 h-4 bg-white rounded-full transition-transform', globalFontOverride.enabled ? 'translate-x-2' : '-translate-x-2')} />
+                </div>
               </div>
-              <div
-                className={cn(
-                  'cursor-pointer inline-flex items-center justify-center rounded-full w-10 h-5 transition-colors',
-                  globalFontOverride.enabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
-                )}
-                onClick={() => handleGlobalFontChange({ enabled: !globalFontOverride.enabled })}
+              <select
+                value={globalFontOverride.fontKey}
+                onChange={(event) => handleGlobalFontChange({ fontKey: event.target.value })}
+                className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               >
-                <div className={cn('w-4 h-4 bg-white rounded-full transition-transform', globalFontOverride.enabled ? 'translate-x-2' : '-translate-x-2')} />
-              </div>
+                {FONT_REGISTRY.map((font) => (
+                  <option key={font.key} value={font.key}>{font.label}</option>
+                ))}
+              </select>
             </div>
-            <select
-              value={globalFontOverride.fontKey}
-              onChange={(event) => handleGlobalFontChange({ fontKey: event.target.value })}
-              className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            >
-              {FONT_REGISTRY.map((font) => (
-                <option key={font.key} value={font.key}>{font.label}</option>
-              ))}
-            </select>
+
+            <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+              <div>
+                <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">Màu nền trang chủ</div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Thiết lập màu nền cho toàn bộ trang chủ ở phía client.</p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+                {[
+                  { value: 'white', label: 'Trắng' },
+                  { value: 'black', label: 'Đen' },
+                  { value: 'primary', label: 'Màu chính' },
+                  { value: 'secondary', label: 'Màu phụ' },
+                  { value: 'custom', label: 'Tự chọn' }
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => handleHomePageBackgroundChange({ type: opt.value as any })}
+                    className={cn(
+                      "px-3 py-2 text-xs font-medium rounded-md border transition-all",
+                      homePageBackground.type === opt.value
+                        ? "border-cyan-600 bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400 dark:border-cyan-400"
+                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {homePageBackground.type === 'custom' && (
+                <div className="flex items-center gap-2 pt-2">
+                  <input
+                    type="color"
+                    value={homePageBackground.customColor || '#ffffff'}
+                    onChange={(event) => handleHomePageBackgroundChange({ customColor: event.target.value })}
+                    className="h-8 w-8 rounded border border-slate-200 cursor-pointer p-0 dark:border-slate-700 dark:bg-slate-900"
+                  />
+                  <input
+                    type="text"
+                    placeholder="#ffffff"
+                    value={homePageBackground.customColor}
+                    onChange={(event) => handleHomePageBackgroundChange({ customColor: event.target.value })}
+                    className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
