@@ -171,58 +171,58 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
 
   const CtaCard = ({ isModernLayout }: { isModernLayout?: boolean }) => (
     <div 
-      className={`border bg-white p-5 transition-all duration-300 ${radiusClass} ${
+      className={`border bg-white p-4 transition-all duration-300 ${
         isModernLayout 
-          ? 'shadow-lg border-indigo-50/50 hover:shadow-indigo-100/30' 
-          : 'shadow-sm border-slate-200'
+          ? 'border-zinc-200 shadow-[0_1px_2px_rgba(0,0,0,0.05)] rounded-sm' 
+          : `shadow-sm border-slate-200 ${radiusClass}`
       }`}
     >
-      <div className={`mb-4 flex aspect-video items-center justify-center overflow-hidden bg-slate-100 ${radiusClass}`}>
+      <div className={`mb-3 flex aspect-video items-center justify-center overflow-hidden bg-slate-100 ${isModernLayout ? 'rounded-sm' : radiusClass}`}>
         {resource.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover" />
         ) : (
-          <FileText size={48} style={{ color: brandColor }} />
+          <FileText size={40} style={{ color: brandColor }} />
         )}
       </div>
       {showPrice && (
-        <>
-          <p className="text-sm text-slate-500">{resource.priceNote || (resource.pricingType === 'free' ? 'Đăng nhập để tải' : 'Tải sau khi thanh toán')}</p>
-          <p className="mt-1 text-2xl font-bold" style={{ color: accent }}>{price}</p>
-        </>
+        <div className="space-y-0.5">
+          <p className="text-[11px] text-zinc-400">{resource.priceNote || (resource.pricingType === 'free' ? 'Đăng nhập để tải' : 'Tải sau khi thanh toán')}</p>
+          <p className="text-xl font-bold" style={{ color: isModernLayout ? '#18181b' : accent }}>{price}</p>
+        </div>
       )}
       {showPrice && resource.comparePriceAmount && resource.pricingType === 'paid' && (
-        <p className="text-sm text-slate-400">
+        <p className="text-[11px] text-zinc-400 mt-0.5">
           Giá gốc: <span className="line-through">{formatPrice('paid', resource.comparePriceAmount)}</span>
         </p>
       )}
       {resourceAccess?.reason === 'login_required' && (
-        <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
-          <Lock size={16} className="mt-0.5 shrink-0" />
-          <span>Vui lòng đăng nhập để tải tài nguyên.</span>
+        <div className="mt-3 flex items-start gap-1.5 rounded-sm border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700">
+          <Lock size={14} className="mt-0.5 shrink-0" />
+          <span>Đăng nhập để tải tài nguyên.</span>
         </div>
       )}
       <button
         type="button"
         onClick={() => { void handleDownload(); }}
         disabled={isDownloading}
-        className="mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 font-semibold text-white transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+        className="mt-3 inline-flex w-full items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60 cursor-default select-none"
         style={{ 
-          backgroundColor: brandColor, 
-          borderRadius: config.cornerRadius === 'none' ? '0px' : config.cornerRadius === 'sm' ? '8px' : '12px',
-          boxShadow: isModernLayout ? `0 4px 14px ${brandColor}33` : undefined
+          backgroundColor: isModernLayout ? '#27272a' : brandColor, 
+          borderRadius: isModernLayout ? '4px' : (config.cornerRadius === 'none' ? '0px' : config.cornerRadius === 'sm' ? '8px' : '12px'),
+          boxShadow: undefined
         }}
       >
         {isDownloading ? (
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent shrink-0" />
+          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent shrink-0" />
         ) : hasAccess || (resource.pricingType === 'free' && token) ? (
-          <Download size={18} />
+          <Download size={14} />
         ) : !token && resource.pricingType === 'free' ? (
-          <Lock size={18} />
+          <Lock size={14} />
         ) : commerceMode === 'cart' && resource.pricingType !== 'contact' ? (
-          <ShoppingCart size={18} />
+          <ShoppingCart size={14} />
         ) : (
-          <Lock size={18} />
+          <Lock size={14} />
         )}
         {isDownloading ? 'Đang xử lý...' : ctaLabel}
       </button>
@@ -394,79 +394,122 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
     );
   }
 
-  // Layout 2: MODERN (Hiện đại)
+  // Layout 2: MODERN (Hiện đại - phong cách macOS App)
   if (config.layoutStyle === 'modern') {
     return (
-      <main className="min-h-screen bg-white pb-24 lg:pb-12 font-active" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
-        {/* Hero Banner với màu Gradient sang trọng */}
-        <section className="relative overflow-hidden py-12 px-4 text-white" style={{ background: `linear-gradient(135deg, ${brandColor}, ${accent})` }}>
-          <div className="absolute inset-0 opacity-15 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
-          <div className="mx-auto max-w-7xl relative z-10">
-            <div className="max-w-4xl space-y-4">
-              <Link href="/resources" className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors">
-                <ArrowLeft size={16} /> Tất cả tài nguyên
-              </Link>
-              <div className="flex flex-wrap items-center gap-2">
-                {resource.featured && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white shadow-md">
-                    <Star size={12} className="fill-current" /> Nổi bật
-                  </span>
-                )}
-                <span className="rounded-full px-3 py-1 text-xs font-semibold bg-white/20 text-white backdrop-blur-sm">
-                  {category?.name ?? 'Tài nguyên'}
-                </span>
+      <main className="min-h-screen bg-slate-50/50 pb-24 lg:pb-12 font-active px-4 py-8" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
+        <div className="mx-auto max-w-6xl border border-zinc-200 bg-white rounded-lg overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
+          {/* macOS-style Toolbar */}
+          <div className="h-12 border-b border-zinc-200 bg-zinc-50 px-4 flex items-center justify-between select-none">
+            <div className="flex items-center gap-4">
+              {/* Traffic lights */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56] border border-[#e0443e] shrink-0" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e] border border-[#dea123] shrink-0" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f] border border-[#1aab29] shrink-0" />
               </div>
-              <h1 className="max-w-4xl text-3xl font-extrabold leading-tight tracking-tight md:text-5xl">{resource.title}</h1>
-              {resource.excerpt && <p className="max-w-2xl text-lg text-white/90 leading-relaxed font-light">{resource.excerpt}</p>}
-              {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedFilters && assignedFilters.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {assignedFilters.map((filterValue) => (
-                    <span
-                      key={filterValue._id}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-0.5 text-xs font-semibold text-white"
-                    >
-                      {filterValue.icon && (
-                        <img src={filterValue.icon} alt={filterValue.name} className="h-3.5 w-3.5 object-contain shrink-0" />
-                      )}
-                      <span>{filterValue.name}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
+              <div className="h-4 w-[1px] bg-zinc-200" />
+              {/* Breadcrumb */}
+              <Link href="/resources" className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800 transition-colors font-medium">
+                <ArrowLeft size={12} /> Quay lại
+              </Link>
+            </div>
+            {/* Right Status */}
+            <div className="text-[10px] font-mono text-zinc-400">
+              Finder / {category?.name ?? 'Tài nguyên'}
             </div>
           </div>
-        </section>
 
-        {/* Content body */}
-        <section className={`mx-auto grid max-w-7xl gap-8 px-4 py-8 ${showAside ? 'lg:grid-cols-[minmax(0,1fr)_320px]' : 'max-w-4xl'}`}>
-          <div className="space-y-8">
-            <GalleryBlock />
-            <article className="prose prose-slate max-w-none prose-headings:text-slate-900 prose-p:text-slate-650">
-              <RichContent content={resourceContent} />
-            </article>
-          </div>
+          {/* Workspace Layout - 2 Columns */}
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] divide-y lg:divide-y-0 lg:divide-x divide-zinc-200">
+            {/* Left Column (macOS Sidebar) */}
+            <aside className="bg-zinc-50/30 p-5 space-y-6 flex flex-col justify-between shrink-0 lg:max-w-[280px]">
+              <div className="space-y-5">
+                {/* Category & Status */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-sm bg-zinc-200/60 text-zinc-700 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
+                    {category?.name ?? 'Tài nguyên'}
+                  </span>
+                  {resource.featured && (
+                    <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-500/10 text-amber-700 px-2 py-0.5 text-[10px] font-bold">
+                      <Star size={10} className="fill-current animate-pulse" /> Nổi bật
+                    </span>
+                  )}
+                </div>
 
-          {showAside && (
-            <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
-              {config.showStickyCta && <CtaCard isModernLayout={true} />}
-              {related.length > 0 && (
-                <div className={`border border-indigo-50/50 bg-white p-5 ${radiusClass} shadow-md hover:shadow-lg transition-all duration-300`}>
-                  <h3 className="font-bold text-sm text-slate-800 border-b border-slate-100 pb-2 mb-3 flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: brandColor }} />
-                    Tài nguyên liên quan
-                  </h3>
-                  <div className="space-y-3 text-sm font-semibold">
-                    {related.map((item) => (
-                      <Link key={item._id} href={`/resources/${item.slug}`} className="block text-slate-650 hover:text-slate-900 transition-colors truncate">
-                        • {item.title}
-                      </Link>
-                    ))}
+                {/* Title & Excerpt */}
+                <div className="space-y-2">
+                  <h1 className="text-lg font-bold text-zinc-900 leading-snug">{resource.title}</h1>
+                  {resource.excerpt && (
+                    <p className="text-[11px] text-zinc-500 leading-relaxed font-normal">
+                      {resource.excerpt}
+                    </p>
+                  )}
+                </div>
+
+                {/* Resource Filters */}
+                {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedFilters && assignedFilters.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] uppercase font-semibold tracking-wider text-zinc-400">Thông số</span>
+                    <div className="flex flex-wrap gap-1">
+                      {assignedFilters.map((filterValue) => (
+                        <span
+                          key={filterValue._id}
+                          className="inline-flex items-center gap-1 rounded-sm border border-zinc-200 bg-white px-2 py-0.5 text-[10px] text-zinc-700 font-medium"
+                        >
+                          {filterValue.icon && (
+                            <img src={filterValue.icon} alt="" className="h-3 w-3 object-contain shrink-0" />
+                          )}
+                          <span>{filterValue.name}</span>
+                        </span>
+                      ))}
+                    </div>
                   </div>
+                )}
+
+                {/* Related Resources */}
+                {related.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-[10px] uppercase font-semibold tracking-wider text-zinc-400">Tài nguyên liên quan</span>
+                    <div className="space-y-0.5 text-xs">
+                      {related.map((item) => (
+                        <Link
+                          key={item._id}
+                          href={`/resources/${item.slug}`}
+                          className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/40 px-2 py-1.5 rounded-sm transition-colors truncate"
+                        >
+                          <FileText size={12} className="text-zinc-400 shrink-0" />
+                          <span className="truncate">{item.title}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Widget (CtaCard) */}
+              {config.showStickyCta && (
+                <div className="pt-4 border-t border-zinc-200/60 mt-auto">
+                  <CtaCard isModernLayout={true} />
                 </div>
               )}
             </aside>
-          )}
-        </section>
+
+            {/* Right Column (Main View - Gallery & Content) */}
+            <section className="bg-white p-6 lg:p-8 space-y-6">
+              {/* Gallery Block */}
+              <GalleryBlock />
+
+              {/* Divider */}
+              <div className="h-[1px] bg-zinc-200/60" />
+
+              {/* Detail Content */}
+              <article className="prose prose-zinc max-w-none prose-sm leading-relaxed prose-headings:text-zinc-900 prose-p:text-zinc-650">
+                <RichContent content={resourceContent} />
+              </article>
+            </section>
+          </div>
+        </div>
 
         {/* Sticky Mobile CTA */}
         {config.showStickyCta && <MobileStickyCta />}
