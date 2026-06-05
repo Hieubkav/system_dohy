@@ -46,8 +46,11 @@ export default function ResourcesListPage() {
 function ResourcesContent() {
   const categoriesData = useQuery(api.resourceCategories.listAll, {});
   const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'resources' });
+  const fieldsData = useQuery(api.admin.modules.listEnabledModuleFields, { moduleKey: 'resources' });
   const deleteResource = useMutation(api.resources.remove);
   const bulkClearBrokenMedia = useMutation(api.resources.bulkClearBrokenMedia);
+
+  const enabledFields = useMemo(() => new Set(fieldsData?.map((field) => field.fieldKey) ?? []), [fieldsData]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -232,7 +235,9 @@ function ResourcesContent() {
                 </TableCell>
                 <TableCell>
                   <div className="font-medium text-slate-900 dark:text-slate-100">{resource.title}</div>
-                  <div className="text-xs text-slate-500">{resource.excerpt || 'Chưa có mô tả ngắn'}</div>
+                  {enabledFields.has('excerpt') && (
+                    <div className="text-xs text-slate-500">{resource.excerpt || 'Chưa có mô tả ngắn'}</div>
+                  )}
                 </TableCell>
                 <TableCell>{categoryMap[resource.categoryId]?.name ?? 'Không có'}</TableCell>
                 <TableCell className="text-slate-600 dark:text-slate-300">{formatPrice(resource.pricingType, resource.priceAmount)}</TableCell>
