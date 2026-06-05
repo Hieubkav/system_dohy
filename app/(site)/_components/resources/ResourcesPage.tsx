@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { Bookmark, ChevronDown, Download, FileText, Filter, Search, SlidersHorizontal, Star, X } from 'lucide-react';
+import { Bookmark, ChevronDown, FileText, Filter, Search, SlidersHorizontal, Star, X, Check } from 'lucide-react';
 import { useBrandColors } from '@/components/site/hooks';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { useResourcesListConfig } from '@/lib/experiences';
@@ -106,6 +106,133 @@ function CustomDropdown({
               <span className="truncate">{option.label}</span>
             </button>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MultiSelectDropdown({
+  values,
+  onChange,
+  onClear,
+  options,
+  placeholder,
+  icon,
+  cornerRadius = 'lg',
+  brandColor = '#4f46e5',
+}: {
+  values: string[];
+  onChange: (value: string) => void;
+  onClear: () => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  icon?: React.ReactNode;
+  cornerRadius?: 'none' | 'sm' | 'lg';
+  brandColor?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOptions = options.filter((opt) => opt.value !== '' && values.includes(opt.value));
+  const hasSelection = selectedOptions.length > 0;
+
+  const displayLabel = useMemo(() => {
+    if (!hasSelection) return placeholder;
+    if (selectedOptions.length === 1) return selectedOptions[0].label;
+    return `${selectedOptions[0].label} (+${selectedOptions.length - 1})`;
+  }, [hasSelection, selectedOptions, placeholder]);
+
+  const displayIcon = useMemo(() => {
+    if (selectedOptions.length === 1 && selectedOptions[0].icon) {
+      return <img src={selectedOptions[0].icon} alt="" className="h-4 w-4 object-contain shrink-0" />;
+    }
+    return icon;
+  }, [selectedOptions, icon]);
+
+  return (
+    <div ref={containerRef} className="relative w-full min-w-[170px] sm:w-auto">
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 ${getRadiusClass(cornerRadius, 'input')}`}
+        >
+          <span className="flex items-center gap-2 truncate">
+            {displayIcon}
+            <span className="truncate">{displayLabel}</span>
+          </span>
+          <ChevronDown size={16} className={`shrink-0 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {hasSelection && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClear();
+            }}
+            title="Xóa bộ lọc"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition shadow-sm"
+            style={{ borderRadius: cornerRadius === 'none' ? '0' : cornerRadius === 'sm' ? '8px' : '12px' }}
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
+      {isOpen && (
+        <div className={`absolute left-0 right-0 z-30 mt-1.5 max-h-72 min-w-[200px] overflow-y-auto border border-slate-100 bg-white p-1.5 shadow-lg ${getRadiusClass(cornerRadius, 'input')}`}>
+          <button
+            type="button"
+            onClick={() => {
+              onClear();
+              setIsOpen(false);
+            }}
+            className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors rounded-lg ${!hasSelection ? 'bg-slate-50 font-semibold text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+          >
+            <span className="truncate">Tất cả phần mềm</span>
+            {!hasSelection && <Check size={14} style={{ color: brandColor }} className="shrink-0" />}
+          </button>
+
+          <div className="my-1 border-t border-slate-100" />
+
+          {options
+            .filter((opt) => opt.value !== '')
+            .map((option) => {
+              const isSelected = values.includes(option.value);
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(option.value);
+                  }}
+                  className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors rounded-lg ${
+                    isSelected ? 'font-semibold font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                  style={isSelected ? { backgroundColor: `${brandColor}12`, color: brandColor } : undefined}
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    {option.icon && (
+                      <img src={option.icon} alt={option.label} className="h-4 w-4 object-contain shrink-0" />
+                    )}
+                    <span className="truncate">{option.label}</span>
+                  </span>
+                  {isSelected && <Check size={14} style={{ color: brandColor }} className="shrink-0" />}
+                </button>
+              );
+            })}
         </div>
       )}
     </div>
@@ -440,16 +567,18 @@ function ResourcesContent() {
                       cornerRadius={config.cornerRadius}
                     />
                     {resourceFiltersFeature?.enabled && config.showResourceFilters && allFilterValues && allFilterValues.filter((v) => v.active).length > 0 && (
-                      <CustomDropdown
-                        value={activeFilterSlugs.length === 1 ? activeFilterSlugs[0] : ''}
-                        onChange={(value) => handleFilterChange(value || null)}
+                      <MultiSelectDropdown
+                        values={activeFilterSlugs}
+                        onChange={(value) => handleFilterChange(value)}
+                        onClear={() => handleFilterChange(null)}
                         options={[
                           { value: '', label: activeFilters?.[0]?.name ? `Tất cả ${activeFilters[0].name.toLowerCase()}` : 'Tất cả bộ lọc' },
                           ...allFilterValues.filter((v) => v.active).map((val) => ({ value: val.slug, label: val.name, icon: val.icon })),
                         ]}
-                        placeholder={activeFilterSlugs.length > 1 ? `Đã chọn (${activeFilterSlugs.length})` : (activeFilters?.[0]?.name ?? 'Bộ lọc')}
+                        placeholder={activeFilters?.[0]?.name ? `Tất cả ${activeFilters[0].name.toLowerCase()}` : 'Bộ lọc'}
                         icon={<Filter size={15} className="text-slate-400" />}
                         cornerRadius={config.cornerRadius}
+                        brandColor={brandColors.primary}
                       />
                     )}
                     <CustomDropdown

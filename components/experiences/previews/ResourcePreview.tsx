@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Bookmark, ChevronDown, Download, FileText, Filter, Lock, Search, ShieldCheck, SlidersHorizontal, Star, X } from 'lucide-react';
+import { ArrowRight, Bookmark, ChevronDown, Download, FileText, Filter, Lock, Search, ShieldCheck, SlidersHorizontal, Star, X, Check } from 'lucide-react';
 import { formatPrice, getRadiusClass, getSmallRadiusClass } from '@/lib/courses/courseUtils';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -132,6 +132,143 @@ function CustomDropdown({
               <span className="truncate">{option.label}</span>
             </button>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type MultiSelectDropdownProps = {
+  values: string[];
+  onChange: (value: string) => void;
+  onClear: () => void;
+  options: DropdownOption[];
+  placeholder?: string;
+  icon?: React.ReactNode;
+  cornerRadius?: 'none' | 'sm' | 'lg';
+  brandColor?: string;
+};
+
+function MultiSelectDropdown({
+  values,
+  onChange,
+  onClear,
+  options,
+  placeholder,
+  icon,
+  cornerRadius = 'lg',
+  brandColor = '#4f46e5',
+}: MultiSelectDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const selectedOptions = options.filter((opt) => opt.value !== '' && values.includes(opt.value));
+  const hasSelection = selectedOptions.length > 0;
+
+  const displayLabel = useMemo(() => {
+    if (!hasSelection) return placeholder;
+    if (selectedOptions.length === 1) return selectedOptions[0].label;
+    return `${selectedOptions[0].label} (+${selectedOptions.length - 1})`;
+  }, [hasSelection, selectedOptions, placeholder]);
+
+  const displayIcon = useMemo(() => {
+    if (selectedOptions.length === 1 && selectedOptions[0].icon) {
+      return <img src={selectedOptions[0].icon} alt="" className="h-3.5 w-3.5 object-contain shrink-0" />;
+    }
+    return icon;
+  }, [selectedOptions, icon]);
+
+  const buttonRadiusClass = getSmallRadiusClass(cornerRadius);
+  const menuRadiusClass = getSmallRadiusClass(cornerRadius);
+
+  return (
+    <div ref={containerRef} className="relative w-full sm:w-auto min-w-[155px]">
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className={`flex h-9 w-full items-center justify-between gap-1.5 border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-slate-300 outline-none ${buttonRadiusClass}`}
+        >
+          <span className="flex items-center gap-1.5 truncate">
+            {displayIcon}
+            <span className="truncate">{displayLabel}</span>
+          </span>
+          <ChevronDown
+            size={14}
+            className={`text-slate-400 flex-shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {hasSelection && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClear();
+            }}
+            title="Xóa bộ lọc"
+            className="flex h-9 w-9 shrink-0 items-center justify-center border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition shadow-sm"
+            style={{ borderRadius: cornerRadius === 'none' ? '0' : cornerRadius === 'sm' ? '4px' : '6px' }}
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {isOpen && (
+        <div className={`absolute right-0 left-0 md:left-auto md:right-0 z-30 mt-1 max-h-60 min-w-[180px] overflow-y-auto border border-slate-100 bg-white p-1.5 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none ${menuRadiusClass}`}>
+          <button
+            type="button"
+            onClick={() => {
+              onClear();
+              setIsOpen(false);
+            }}
+            className={`flex w-full items-center justify-between px-2.5 py-1.5 text-left text-xs transition-colors rounded ${!hasSelection ? 'bg-slate-50 font-semibold text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+          >
+            <span className="truncate">Tất cả phần mềm</span>
+            {!hasSelection && <Check size={12} style={{ color: brandColor }} className="shrink-0" />}
+          </button>
+
+          <div className="my-1 border-t border-slate-100" />
+
+          {options
+            .filter((opt) => opt.value !== '')
+            .map((option) => {
+              const isSelected = values.includes(option.value);
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(option.value);
+                  }}
+                  className={`flex w-full items-center justify-between px-2.5 py-1.5 text-left text-xs transition-colors rounded ${
+                    isSelected ? 'font-semibold font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  }`}
+                  style={isSelected ? { backgroundColor: `${brandColor}12`, color: brandColor } : undefined}
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    {option.icon && (
+                      <img src={option.icon} alt={option.label} className="h-3.5 w-3.5 object-contain shrink-0" />
+                    )}
+                    <span className="truncate">{option.label}</span>
+                  </span>
+                  {isSelected && <Check size={12} style={{ color: brandColor }} className="shrink-0" />}
+                </button>
+              );
+            })}
         </div>
       )}
     </div>
@@ -299,17 +436,23 @@ export function ResourcesListPreview({
 
   const [searchVal, setSearchVal] = useState('');
   const [activeCat, setActiveCat] = useState('Tất cả');
-  const [filterVal, setFilterVal] = useState('');
+  const [filterVals, setFilterVals] = useState<string[]>([]);
   const [sortByVal, setSortByVal] = useState('newest');
   const [categoryQuery, setCategoryQuery] = useState('');
+
+  const handleFilterToggle = (val: string) => {
+    setFilterVals((prev) =>
+      prev.includes(val) ? prev.filter((v) => v !== val) : [...prev, val]
+    );
+  };
 
   const processedResources = useMemo(() => {
     let list = [...MOCK_RESOURCES];
     if (activeCat !== 'Tất cả') {
       list = list.filter(r => r.category === activeCat);
     }
-    if (filterVal) {
-      list = list.filter(r => r.filters?.some(f => f.name === filterVal));
+    if (filterVals.length > 0) {
+      list = list.filter(r => r.filters?.some(f => filterVals.includes(f.name)));
     }
     if (searchVal.trim()) {
       const q = searchVal.toLowerCase();
@@ -323,7 +466,7 @@ export function ResourcesListPreview({
       list.sort((a, b) => b.priceAmount - a.priceAmount);
     }
     return list;
-  }, [activeCat, filterVal, searchVal, sortByVal]);
+  }, [activeCat, filterVals, searchVal, sortByVal]);
 
   const visibleItems = layoutStyle === 'masonry' ? processedResources.slice(0, 3) : processedResources;
   const columns = device === 'mobile' ? 1 : layoutStyle === 'sidebar' ? 2 : Math.min(gridColumns, 4);
@@ -440,25 +583,32 @@ export function ResourcesListPreview({
             </h3>
             <div className="space-y-1">
               <button
-                onClick={() => setFilterVal('')}
-                className={`w-full py-1.5 px-2.5 rounded text-left text-xs transition-colors border border-transparent ${!filterVal ? 'font-semibold' : ''}`}
-                style={!filterVal ? { backgroundColor: `${brandColor}18`, color: brandColor } : { backgroundColor: 'transparent', color: '#475569' }}
+                onClick={() => setFilterVals([])}
+                className={`w-full py-1.5 px-2.5 rounded text-left text-xs transition-colors border border-transparent flex items-center justify-between ${filterVals.length === 0 ? 'font-semibold' : ''}`}
+                style={filterVals.length === 0 ? { backgroundColor: `${brandColor}18`, color: brandColor } : { backgroundColor: 'transparent', color: '#475569' }}
               >
-                Tất cả phần mềm
+                <span>Tất cả phần mềm</span>
+                {filterVals.length === 0 && <Check size={12} style={{ color: brandColor }} className="shrink-0" />}
               </button>
-              {MOCK_FILTERS.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => setFilterVal(item.name)}
-                  className={`w-full py-1.5 px-2.5 rounded text-left text-xs transition-colors border border-transparent flex items-center gap-1.5 ${filterVal === item.name ? 'font-semibold' : ''}`}
-                  style={filterVal === item.name ? { backgroundColor: `${brandColor}18`, color: brandColor } : { backgroundColor: 'transparent', color: '#475569' }}
-                >
-                  {item.icon && (
-                    <img src={item.icon} alt={item.name} className="h-3.5 w-3.5 object-contain shrink-0" />
-                  )}
-                  <span>{item.name}</span>
-                </button>
-              ))}
+              {MOCK_FILTERS.map((item) => {
+                const isSelected = filterVals.includes(item.name);
+                return (
+                  <button
+                    key={item.name}
+                    onClick={() => handleFilterToggle(item.name)}
+                    className={`w-full py-1.5 px-2.5 rounded text-left text-xs transition-colors border border-transparent flex items-center justify-between gap-1.5 ${isSelected ? 'font-semibold font-bold' : ''}`}
+                    style={isSelected ? { backgroundColor: `${brandColor}18`, color: brandColor } : { backgroundColor: 'transparent', color: '#475569' }}
+                  >
+                    <span className="flex items-center gap-1.5 truncate">
+                      {item.icon && (
+                        <img src={item.icon} alt={item.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                      )}
+                      <span className="truncate">{item.name}</span>
+                    </span>
+                    {isSelected && <Check size={12} style={{ color: brandColor }} className="shrink-0" />}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -494,15 +644,18 @@ export function ResourcesListPreview({
               />
             )}
             {resourceFiltersFeature?.enabled && showResourceFilters && (
-              <CustomDropdown
-                value={filterVal}
-                onChange={setFilterVal}
+              <MultiSelectDropdown
+                values={filterVals}
+                onChange={handleFilterToggle}
+                onClear={() => setFilterVals([])}
                 options={[
                   { value: '', label: 'Tất cả phần mềm' },
                   ...MOCK_FILTERS.map((item) => ({ value: item.name, label: item.name, icon: item.icon })),
                 ]}
+                placeholder="Bộ lọc"
                 icon={<Filter size={14} className="text-slate-400" />}
                 cornerRadius={cornerRadius}
+                brandColor={brandColor}
               />
             )}
             <CustomDropdown
