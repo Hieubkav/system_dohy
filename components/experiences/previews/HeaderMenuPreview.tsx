@@ -1397,12 +1397,15 @@ export function HeaderMenuPreview({
                     <a
                       href={item.url}
                       className={cn(
-                        'text-sm font-medium transition-colors',
+                        'text-sm font-medium transition-colors flex items-center gap-1',
                         hoveredItem === item._id ? 'text-[var(--menu-hover-text)]' : 'hover:text-[var(--menu-hover-text)]'
                       )}
                       style={{ color: layerColors.navbar.text, ...menuVars }}
                     >
-                      {item.label}
+                      <span>{item.label}</span>
+                      {item.children.length > 0 && (
+                        <ChevronDown size={14} className={cn("transition-transform duration-200 shrink-0", hoveredItem === item._id && "rotate-180")} />
+                      )}
                     </a>
                     {item.children.length > 0 && hoveredItem === item._id && (
                       <div className="absolute left-1/2 top-full mt-6 -translate-x-1/2 z-50">
@@ -1631,13 +1634,7 @@ export function HeaderMenuPreview({
   const darkGlassNavText = '#ffffff';
   const darkGlassAccentText = '#FFD700';
 
-  // Danh sách social icons mock (dùng ký tự unicode thay font-awesome)
-  const darkGlassSocials = [
-    { label: 'YT', color: '#ef4444', title: 'YouTube' },
-    { label: 'TT', color: '#ffffff', title: 'TikTok' },
-    { label: 'FB', color: '#3b82f6', title: 'Facebook' },
-    { label: 'IG', color: '#ec4899', title: 'Instagram' },
-  ];
+
 
   const renderDarkGlassStyle = () => {
     const pillLogoSize = Math.min(64, logoSize);
@@ -1646,19 +1643,90 @@ export function HeaderMenuPreview({
     const renderDarkGlassNav = () => (
       <nav className="hidden lg:flex justify-center flex-1">
         <ul className="flex items-center justify-center gap-1" style={{ flexWrap: 'nowrap' }}>
-          {menuTree.slice(0, 6).map((item) => (
-            <li key={item._id} style={{ flexShrink: 0 }}>
-              <a
-                href={item.url}
-                className="px-3 py-2 text-xs font-semibold uppercase tracking-wide whitespace-nowrap transition-colors duration-200 rounded-md"
-                style={{ color: darkGlassNavText }}
-                onMouseEnter={(e) => { e.currentTarget.style.color = darkGlassAccentText; }}
-                onMouseLeave={(e) => { e.currentTarget.style.color = darkGlassNavText; }}
+          {menuTree.slice(0, 6).map((item) => {
+            const hasSubItems = item.children.some((child) => child.children.length > 0);
+            const totalSubItems = item.children.reduce((acc, child) => acc + child.children.length, 0);
+            const isMega = item.children.length >= 3 || totalSubItems > 6;
+            const isMedium = !isMega && (item.children.length > 1 || hasSubItems);
+            const dropdownWidth = isMega ? 'w-[720px]' : isMedium ? 'w-[420px]' : 'w-[240px]';
+            const gridCols = isMega
+              ? 'grid-cols-3'
+              : item.children.length > 1
+                ? 'grid-cols-2'
+                : 'grid-cols-1';
+
+            return (
+              <li
+                key={item._id}
+                style={{ flexShrink: 0 }}
+                className="relative"
+                onMouseEnter={() => setHoveredItem(item._id)}
+                onMouseLeave={() => setHoveredItem(null)}
               >
-                {item.label}
-              </a>
-            </li>
-          ))}
+                <a
+                  href={item.url}
+                  className="px-3 py-2 text-xs font-semibold uppercase tracking-wide whitespace-nowrap transition-colors duration-200 rounded-md flex items-center gap-1"
+                  style={{
+                    color: hoveredItem === item._id ? darkGlassAccentText : darkGlassNavText,
+                  }}
+                >
+                  <span>{item.label}</span>
+                  {item.children.length > 0 && (
+                    <ChevronDown size={12} className={cn("transition-transform duration-200 shrink-0", hoveredItem === item._id && "rotate-180")} />
+                  )}
+                </a>
+                {item.children.length > 0 && hoveredItem === item._id && (
+                  <div className="absolute left-1/2 top-full mt-6 -translate-x-1/2 z-50">
+                    <div
+                      className={cn('rounded-2xl border p-6', dropdownWidth)}
+                      style={{ backgroundColor: tokens.dropdownBg, borderColor: tokens.dropdownBorder }}
+                    >
+                      <div className={cn('grid gap-6', gridCols)}>
+                        {item.children.map((child) => (
+                          <div key={child._id} className="space-y-3">
+                            <a href={child.url} className="text-sm font-semibold whitespace-normal break-words leading-snug" style={{ color: level1Color }}>
+                              {child.label}
+                            </a>
+                            <div className="space-y-2">
+                              {child.children.length > 0 ? child.children.map((sub) => (
+                                <div key={sub._id} className="relative group/menu-node">
+                                  <a
+                                    href={sub.url}
+                                    target={sub.openInNewTab ? '_blank' : undefined}
+                                    rel={sub.openInNewTab ? 'noreferrer' : undefined}
+                                    className="flex min-w-0 items-start justify-between gap-2 rounded-lg px-2 py-1.5 text-sm hover:text-[var(--menu-dropdown-sub-hover-text)]"
+                                    style={{ color: tokens.dropdownSubItemText, ...menuVars }}
+                                  >
+                                    <span className="min-w-0 flex-1 whitespace-normal break-words leading-snug">{sub.label}</span>
+                                    {sub.children.length > 0 && <ChevronRight size={10} className="transition-transform duration-200 group-hover/menu-node:rotate-90" />}
+                                  </a>
+                                  {sub.children.length > 0 && (
+                                    <div className="absolute left-full top-0 ml-2 hidden group-hover/menu-node:block">
+                                      <div className="rounded-xl border py-2 min-w-[220px] shadow-lg overflow-y-auto scrollbar-menu-thin" style={{ backgroundColor: tokens.dropdownBg, borderColor: tokens.dropdownBorder, maxHeight: 'min(70vh, 290px)' }}>
+                                        {renderDesktopFlyoutNodes(sub.children)}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )) : (
+                                <a
+                                  href={child.url}
+                                  className="text-sm hover:text-[var(--menu-dropdown-sub-hover-text)]"
+                                  style={{ color: tokens.dropdownSubItemText, ...menuVars }}
+                                >
+                                  Xem thêm
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </li>
+            );
+          })}
           {menuTree.length === 0 && (
             ['TRANG CHỦ', 'KHÓA HỌC', 'DỰ ÁN', 'VỀ CHÚNG TÔI', 'THƯ VIỆN'].map((label) => (
               <li key={label} style={{ flexShrink: 0 }}>
@@ -1675,32 +1743,83 @@ export function HeaderMenuPreview({
       </nav>
     );
 
-    // Render social + CTA bên phải
+    // Render search + wishlist + cart + login + CTA bên phải
     const renderDarkGlassActions = () => (
-      <div className="flex items-center justify-end gap-2" style={{ flexShrink: 0 }}>
-        {/* Social icons — chỉ hiện desktop */}
-        <div className="hidden lg:flex items-center gap-1">
-          {darkGlassSocials.map((s) => (
-            <div
-              key={s.title}
-              title={s.title}
-              className="w-7 h-7 flex items-center justify-center text-[10px] font-bold rounded-md cursor-pointer transition-transform hover:scale-110"
-              style={{ color: s.color }}
-            >
-              {s.label}
+      <div className="flex items-center justify-end gap-3" style={{ flexShrink: 0 }}>
+        <div className="hidden lg:flex items-center gap-3">
+          {/* Search */}
+          {showSearch && (
+            <div className="flex items-center gap-2">
+              <div className={cn('overflow-hidden transition-all duration-200', searchOpen ? 'w-40' : 'w-0')}>
+                <input
+                  type="text"
+                  placeholder={config.search.placeholder ?? 'Tìm kiếm...'}
+                  className={cn('w-40 px-3 py-1.5 rounded-full border text-xs focus:outline-none transition-opacity bg-white/10 text-white border-white/20')}
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    color: '#ffffff',
+                  }}
+                />
+              </div>
+              <button
+                onClick={() => setSearchOpen((prev) => !prev)}
+                className="p-2 text-white hover:opacity-80 transition-opacity"
+              >
+                <Search size={18} />
+              </button>
             </div>
-          ))}
+          )}
+
+          {/* User Menu / Login */}
+          {showUserMenu && renderUserMenu('icon')}
+          {showLoginLink && (
+            <a
+              href={defaultLinks.login}
+              className="p-2 text-white hover:opacity-80 transition-opacity"
+            >
+              <User size={18} />
+            </a>
+          )}
+
+          {/* Wishlist */}
+          {config.wishlist.show && (
+            <a
+              href={defaultLinks.wishlist}
+              className="p-2 text-white hover:opacity-80 transition-opacity"
+            >
+              <Heart size={18} />
+            </a>
+          )}
+
+          {/* Cart */}
+          {config.cart.show && (
+            <a
+              href={defaultLinks.cart}
+              className="p-2 relative text-white hover:opacity-80 transition-opacity"
+            >
+              <ShoppingCart size={18} />
+              <span
+                className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold rounded-full flex items-center justify-center"
+                style={{ backgroundColor: '#ffffff', color: '#000000' }}
+              >
+                0
+              </span>
+            </a>
+          )}
+
+          {/* CTA Button */}
+          {config.cta.show && (
+            <a
+              href={defaultLinks.cta}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-full text-[11px] font-semibold uppercase tracking-widest transition-transform hover:scale-105"
+              style={{ backgroundColor: '#ffffff', color: '#000000', padding: '8px 18px' }}
+            >
+              {ctaLabel}
+            </a>
+          )}
         </div>
-        {/* CTA pill */}
-        {config.cta.show && (
-          <a
-            href={defaultLinks.cta}
-            className="hidden lg:inline-flex items-center justify-center whitespace-nowrap rounded-full text-[11px] font-semibold uppercase tracking-widest transition-transform hover:scale-105"
-            style={{ backgroundColor: '#ffffff', color: '#000000', padding: '8px 18px' }}
-          >
-            {ctaLabel}
-          </a>
-        )}
+
         {/* Mobile hamburger */}
         <button
           type="button"
@@ -1817,17 +1936,6 @@ export function HeaderMenuPreview({
                 </a>
               </div>
             )}
-            {/* Mobile social icons */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, padding: '12px 20px 20px' }}>
-              {darkGlassSocials.map((s) => (
-                <div
-                  key={s.title}
-                  style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', color: s.color, fontSize: 11, fontWeight: 700 }}
-                >
-                  {s.label}
-                </div>
-              ))}
-            </div>
           </div>
         )}
       </div>
