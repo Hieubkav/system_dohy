@@ -48,7 +48,7 @@ export type HeaderInitialData = {
   };
 };
 
-type HeaderStyle = 'classic' | 'topbar' | 'allbirds';
+type HeaderStyle = 'classic' | 'topbar' | 'allbirds' | 'darkglass';
 type DropdownAlign = 'center' | 'left' | 'right';
 
 interface TopbarConfig {
@@ -296,11 +296,13 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
     classic: buildLinearSteps(24, 160),
     topbar: buildLinearSteps(28, 180),
     allbirds: buildLinearSteps(16, 140),
+    darkglass: buildLinearSteps(24, 128),
   };
   const headerSpacingMap: Record<HeaderStyle, number[]> = {
     classic: [6, 8, 10, 12, 14, 16, 18],
     topbar: [4, 6, 8, 10, 12, 14, 16],
     allbirds: [6, 8, 10, 12, 14, 16, 18],
+    darkglass: [6, 8, 10, 12, 14, 16, 18],
   };
   const logoSize = logoSizeMap[headerStyle][logoSizeLevel - 1] ?? logoSizeMap[headerStyle][0];
   const headerSpacingY = headerSpacingMap[headerStyle][headerSpacingLevel - 1] ?? headerSpacingMap[headerStyle][3];
