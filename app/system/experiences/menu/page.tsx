@@ -62,12 +62,14 @@ const LAYOUT_STYLES: LayoutOption<HeaderLayoutStyle>[] = [
   { id: 'classic', label: 'Classic', description: 'Header tiêu chuẩn, menu ngang đơn giản.' },
   { id: 'topbar', label: 'Topbar', description: 'Có topbar, search, tiện ích nhanh.' },
   { id: 'allbirds', label: 'Allbirds', description: 'Logo trái, menu giữa, actions bên phải.' },
+  { id: 'darkglass', label: 'Dark Glass', description: 'Header tối backdrop-blur, pill sticky, social icons.' },
 ];
 
 const HINTS = [
   'Menu items được quản lý ở /admin/menus.',
   'Topbar phù hợp site bán hàng cần hotline + search.',
   'Allbirds phù hợp brand cần header tối giản, tập trung nav.',
+  'Dark Glass phù hợp studio, creative agency, portfolio — nền tối backdrop-blur.',
   'Tắt Tên thương hiệu hoặc CTA để tăng không gian menu trước khi More.',
   'Logo lớn + bật Tên thương hiệu + CTA sẽ làm menu phải co lại trước khi More.',
   'Login chỉ hiển thị khi bật Module Khách hàng + tính năng Đăng nhập KH.',
@@ -839,6 +841,64 @@ export default function HeaderMenuExperiencePage() {
                       </button>
                     ))}
                   </div>
+                </div>
+              </div>
+            </ControlCard>
+          )}
+
+          {previewStyle === 'darkglass' && (
+            <ControlCard title="Giao diện Dark Glass">
+              <div className="space-y-3">
+                <p className="text-[11px] leading-5 text-slate-500">
+                  Style tối, backdrop-blur, sticky pill header lấy cảm hứng từ creative studio.
+                  Màu nền cố định đen bán trong suốt — không phụ thuộc màu thương hiệu.
+                </p>
+                <ToggleRow
+                  label="CTA button"
+                  checked={config.cta.show}
+                  onChange={(v) => updateCta('show', v)}
+                  accentColor={resolvedBrandColor}
+                />
+                {config.cta.show && (
+                  <div className="space-y-2 pt-1">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Nhãn CTA</Label>
+                      <Input
+                        value={config.cta.text ?? 'Liên hệ'}
+                        onChange={(event) => updateCta('text', event.target.value)}
+                        className="h-8 text-sm"
+                        placeholder="Liên hệ"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Đường dẫn CTA</Label>
+                      <Input
+                        value={config.cta.url ?? '/contact'}
+                        onChange={(event) => updateCta('url', event.target.value)}
+                        className="h-8 text-sm"
+                        placeholder="/contact"
+                      />
+                    </div>
+                  </div>
+                )}
+                <ToggleRow
+                  label="Sticky desktop"
+                  checked={config.headerStickyDesktop ?? config.headerSticky}
+                  onChange={updateHeaderStickyDesktop}
+                  accentColor={resolvedBrandColor}
+                />
+                <ToggleRow
+                  label="Sticky mobile"
+                  checked={config.headerStickyMobile ?? config.headerSticky}
+                  onChange={updateHeaderStickyMobile}
+                  accentColor={resolvedBrandColor}
+                />
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900">
+                  <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Social icons</p>
+                  <p className="text-[11px] leading-5 text-slate-400">
+                    Social icons (YouTube, TikTok, Facebook, Instagram) lấy URL từ Settings → Social Media.
+                    Chỉnh sửa tại <a href="/system/settings" className="text-cyan-600 hover:underline">System Settings</a>.
+                  </p>
                 </div>
               </div>
             </ControlCard>

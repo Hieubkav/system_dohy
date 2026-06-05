@@ -7,7 +7,7 @@ import { Card, CardContent, cn } from '@/app/admin/components/ui';
 import { getMenuColors, resolveMenuLayerColors, type MenuColorMode, type MenuColors, type MenuLayerColorConfig } from '@/components/site/header/colors';
 import { buildMenuTree, type MenuTreeNode } from '@/lib/utils/menu-tree';
 
-export type HeaderLayoutStyle = 'classic' | 'topbar' | 'allbirds';
+export type HeaderLayoutStyle = 'classic' | 'topbar' | 'allbirds' | 'darkglass';
 export type LogoBackgroundStyle = 'none' | 'border' | 'shadow' | 'soft' | 'solid' | 'outline' | 'hairline' | 'inset' | 'pill';
 
 export type HeaderMenuConfig = {
@@ -151,11 +151,13 @@ export function HeaderMenuPreview({
     classic: buildLinearSteps(24, 160),
     topbar: buildLinearSteps(28, 180),
     allbirds: buildLinearSteps(16, 140),
+    darkglass: buildLinearSteps(24, 128),
   };
   const headerSpacingMap: Record<HeaderLayoutStyle, number[]> = {
     classic: [6, 8, 10, 12, 14, 16, 18],
     topbar: [4, 6, 8, 10, 12, 14, 16],
     allbirds: [6, 8, 10, 12, 14, 16, 18],
+    darkglass: [6, 8, 10, 12, 14, 16, 18],
   };
   const logoSize = logoSizeMap[layoutStyle][logoSizeLevel - 1] ?? logoSizeMap[layoutStyle][0];
   const headerSpacingY = headerSpacingMap[layoutStyle][headerSpacingLevel - 1] ?? headerSpacingMap[layoutStyle][3];
@@ -1618,11 +1620,221 @@ export function HeaderMenuPreview({
     </div>
   );
 
+  // ─── Dark Glass Style ───────────────────────────────────────────────────────
+  // Lấy cảm hứng từ dự án dohy: nền tối backdrop-blur, pill sticky, social icons
+  const darkGlassPillBg = 'rgba(0,0,0,0.65)';
+  const darkGlassNavText = '#ffffff';
+  const darkGlassAccentText = '#FFD700';
+
+  // Danh sách social icons mock (dùng ký tự unicode thay font-awesome)
+  const darkGlassSocials = [
+    { label: 'YT', color: '#ef4444', title: 'YouTube' },
+    { label: 'TT', color: '#ffffff', title: 'TikTok' },
+    { label: 'FB', color: '#3b82f6', title: 'Facebook' },
+    { label: 'IG', color: '#ec4899', title: 'Instagram' },
+  ];
+
+  const renderDarkGlassStyle = () => {
+    const pillLogoSize = Math.min(64, logoSize);
+
+    // Render desktop nav items
+    const renderDarkGlassNav = () => (
+      <nav className="hidden lg:flex justify-center flex-1">
+        <ul className="flex items-center justify-center gap-1" style={{ flexWrap: 'nowrap' }}>
+          {menuTree.slice(0, 6).map((item) => (
+            <li key={item._id} style={{ flexShrink: 0 }}>
+              <a
+                href={item.url}
+                className="px-3 py-2 text-xs font-semibold uppercase tracking-wide whitespace-nowrap transition-colors duration-200 rounded-md"
+                style={{ color: darkGlassNavText }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = darkGlassAccentText; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = darkGlassNavText; }}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))}
+          {menuTree.length === 0 && (
+            ['TRANG CHỦ', 'KHÓA HỌC', 'DỰ ÁN', 'VỀ CHÚNG TÔI', 'THƯ VIỆN'].map((label) => (
+              <li key={label} style={{ flexShrink: 0 }}>
+                <span
+                  className="px-3 py-2 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"
+                  style={{ color: darkGlassNavText }}
+                >
+                  {label}
+                </span>
+              </li>
+            ))
+          )}
+        </ul>
+      </nav>
+    );
+
+    // Render social + CTA bên phải
+    const renderDarkGlassActions = () => (
+      <div className="flex items-center justify-end gap-2" style={{ flexShrink: 0 }}>
+        {/* Social icons — chỉ hiện desktop */}
+        <div className="hidden lg:flex items-center gap-1">
+          {darkGlassSocials.map((s) => (
+            <div
+              key={s.title}
+              title={s.title}
+              className="w-7 h-7 flex items-center justify-center text-[10px] font-bold rounded-md cursor-pointer transition-transform hover:scale-110"
+              style={{ color: s.color }}
+            >
+              {s.label}
+            </div>
+          ))}
+        </div>
+        {/* CTA pill */}
+        {config.cta.show && (
+          <a
+            href={defaultLinks.cta}
+            className="hidden lg:inline-flex items-center justify-center whitespace-nowrap rounded-full text-[11px] font-semibold uppercase tracking-widest transition-transform hover:scale-105"
+            style={{ backgroundColor: '#ffffff', color: '#000000', padding: '8px 18px' }}
+          >
+            {ctaLabel}
+          </a>
+        )}
+        {/* Mobile hamburger */}
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="lg:hidden p-2 rounded-md"
+          style={{ color: '#ffffff' }}
+          aria-label="Toggle menu"
+        >
+          <div className="w-5 h-4 flex flex-col justify-between">
+            <span className="w-full h-0.5 rounded" style={{ backgroundColor: '#ffffff' }} />
+            <span className="w-full h-0.5 rounded" style={{ backgroundColor: '#ffffff' }} />
+            <span className="w-full h-0.5 rounded" style={{ backgroundColor: '#ffffff' }} />
+          </div>
+        </button>
+      </div>
+    );
+
+    // Render logo block
+    const renderDarkGlassLogo = (size: number) => (
+      <div className="flex items-center" style={{ flexShrink: 0 }}>
+        {logo ? (
+          <img
+            src={logo}
+            alt={brandLabel}
+            style={{ width: size, height: 'auto', objectFit: 'contain' }}
+          />
+        ) : (
+          <div
+            className="flex items-center justify-center rounded-xl text-xs font-bold"
+            style={{ width: size, height: size, backgroundColor: 'rgba(255,255,255,0.15)', color: '#ffffff' }}
+          >
+            {brandLabel.slice(0, 2).toUpperCase()}
+          </div>
+        )}
+      </div>
+    );
+
+    return (
+      <div style={{ position: 'relative' }}>
+        {/* ── Pill Sticky Header (trạng thái đặc trưng của Dark Glass) ── */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px',
+            width: '96%',
+            margin: '12px auto 0',
+            height: device === 'mobile' ? 72 : 88,
+            padding: device === 'mobile' ? '0 16px' : '0 28px',
+            background: darkGlassPillBg,
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            borderRadius: 9999,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
+          {/* Logo */}
+          {renderDarkGlassLogo(device === 'mobile' ? Math.min(48, pillLogoSize) : pillLogoSize)}
+
+          {/* Nav (desktop) */}
+          {renderDarkGlassNav()}
+
+          {/* Actions */}
+          {renderDarkGlassActions()}
+        </div>
+
+        {/* ── Mobile Menu Overlay ── */}
+        {device === 'mobile' && mobileMenuOpen && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              width: '80%',
+              background: 'rgba(0,0,0,0.95)',
+              backdropFilter: 'blur(16px)',
+              borderLeft: '1px solid rgba(255,255,255,0.1)',
+              zIndex: 60,
+              borderRadius: '0 0 0 16px',
+            }}
+          >
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              {renderDarkGlassLogo(40)}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                style={{ color: '#ffffff', background: 'none', border: 'none', cursor: 'pointer', fontSize: 20 }}
+              >
+                ✕
+              </button>
+            </div>
+            <nav style={{ padding: '12px 0' }}>
+              {(menuTree.length > 0 ? menuTree : [
+                { label: 'TRANG CHỦ' }, { label: 'KHÓA HỌC' }, { label: 'DỰ ÁN' }, { label: 'VỀ CHÚNG TÔI' }, { label: 'THƯ VIỆN' },
+              ]).map((item, i) => (
+                <a
+                  key={'_id' in item ? item._id : i}
+                  href={'url' in item ? item.url : '#'}
+                  style={{ display: 'block', padding: '10px 20px', color: '#ffffff', fontSize: 13, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+            {config.cta.show && (
+              <div style={{ padding: '12px 20px' }}>
+                <a
+                  href={defaultLinks.cta}
+                  style={{ display: 'block', width: '100%', textAlign: 'center', padding: '10px', background: '#ffffff', color: '#000000', borderRadius: 9999, fontSize: 12, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase' }}
+                >
+                  {ctaLabel}
+                </a>
+              </div>
+            )}
+            {/* Mobile social icons */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 12, padding: '12px 20px 20px' }}>
+              {darkGlassSocials.map((s) => (
+                <div
+                  key={s.title}
+                  style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: '50%', color: s.color, fontSize: 11, fontWeight: 700 }}
+                >
+                  {s.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="border rounded-lg overflow-hidden" style={{ borderColor: tokens.border }}>
       {layoutStyle === 'classic' && renderClassicStyle()}
       {layoutStyle === 'topbar' && renderTopbarStyle()}
       {layoutStyle === 'allbirds' && renderAllbirdsStyle()}
+      {layoutStyle === 'darkglass' && renderDarkGlassStyle()}
 
       <div className="p-4 space-y-3" style={{ backgroundColor: tokens.surfaceAlt }}>
         <div className="h-32 rounded-lg flex items-center justify-center" style={{ backgroundColor: tokens.placeholderBg }}>
