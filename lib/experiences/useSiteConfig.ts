@@ -469,6 +469,7 @@ type ResourcesListConfig = {
   paginationType: PaginationType;
   showSearch: boolean;
   showCategories: boolean;
+  showResourceFilters: boolean;
   hideEmptyCategories: boolean;
   postsPerPage: number;
   cornerRadius: 'none' | 'sm' | 'lg';
@@ -490,6 +491,7 @@ export function useResourcesListConfig(): ResourcesListConfig {
       paginationType?: PaginationType;
       showSearch?: boolean;
       showCategories?: boolean;
+      showResourceFilters?: boolean;
       hideEmptyCategories?: boolean;
       postsPerPage?: number;
       cornerRadius?: 'none' | 'sm' | 'lg';
@@ -502,6 +504,7 @@ export function useResourcesListConfig(): ResourcesListConfig {
       paginationType: normalizePaginationType(layoutConfig?.paginationType ?? raw?.paginationType),
       showSearch: layoutConfig?.showSearch ?? raw?.showSearch ?? true,
       showCategories: layoutConfig?.showCategories ?? raw?.showCategories ?? true,
+      showResourceFilters: layoutConfig?.showResourceFilters ?? raw?.showResourceFilters ?? true,
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
       postsPerPage: layoutConfig?.postsPerPage ?? raw?.postsPerPage ?? 12,
       cornerRadius: raw?.cornerRadius ?? 'lg',
@@ -514,6 +517,7 @@ type ResourcesDetailConfig = {
   showGallery: boolean;
   showRelated: boolean;
   showStickyCta: boolean;
+  showResourceFilters: boolean;
   cornerRadius: 'none' | 'sm' | 'lg';
 };
 
@@ -527,6 +531,7 @@ export function useResourcesDetailConfig(): ResourcesDetailConfig {
       showGallery: raw?.showGallery ?? true,
       showRelated: raw?.showRelated ?? true,
       showStickyCta: raw?.showStickyCta ?? true,
+      showResourceFilters: raw?.showResourceFilters ?? true,
       cornerRadius: raw?.cornerRadius ?? 'lg',
     };
   }, [experienceSetting?.value]);

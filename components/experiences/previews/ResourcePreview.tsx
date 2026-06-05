@@ -15,6 +15,7 @@ type ResourceListPreviewProps = {
   paginationType?: PaginationType;
   showSearch?: boolean;
   showCategories?: boolean;
+  showResourceFilters?: boolean;
   hideEmptyCategories?: boolean;
   postsPerPage?: number;
   brandColor?: string;
@@ -29,6 +30,7 @@ type ResourceDetailPreviewProps = {
   showGallery?: boolean;
   showRelated?: boolean;
   showStickyCta?: boolean;
+  showResourceFilters?: boolean;
   brandColor?: string;
   secondaryColor?: string;
   colorMode?: 'single' | 'dual';
@@ -45,6 +47,7 @@ const getItemRadiusClass = (radius?: 'none' | 'sm' | 'lg') => {
 type DropdownOption = {
   value: string;
   label: string;
+  icon?: string;
 };
 
 type CustomDropdownProps = {
@@ -95,7 +98,11 @@ function CustomDropdown({
         className={`flex h-9 w-full items-center justify-between gap-1.5 border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-slate-300 outline-none ${buttonRadiusClass}`}
       >
         <span className="flex items-center gap-1.5 truncate">
-          {icon}
+          {selectedOption?.icon ? (
+            <img src={selectedOption.icon} alt={selectedOption.label} className="h-3.5 w-3.5 object-contain shrink-0" />
+          ) : (
+            icon
+          )}
           <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
         </span>
         <ChevronDown
@@ -119,7 +126,10 @@ function CustomDropdown({
                   : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
               }`}
             >
-              {option.label}
+              {option.icon && (
+                <img src={option.icon} alt={option.label} className="h-3.5 w-3.5 mr-1.5 object-contain shrink-0" />
+              )}
+              <span className="truncate">{option.label}</span>
             </button>
           ))}
         </div>
@@ -248,14 +258,19 @@ function CategoryDropdown({
 }
 
 const MOCK_RESOURCES = [
-  { title: 'Checklist ra mắt website', category: 'Checklist', pricingType: 'free', priceAmount: 0, excerpt: 'Danh sách việc cần kiểm tra trước khi public website.', featured: true, filters: [{ name: 'AutoCAD 2D' }] },
-  { title: 'Template kế hoạch nội dung', category: 'Template', pricingType: 'paid', priceAmount: 299000, excerpt: 'Bộ file lập lịch, phân nhóm và đo hiệu quả nội dung.', filters: [{ name: 'PR' }] },
-  { title: 'Ebook tối ưu SEO cơ bản', category: 'Ebook', pricingType: 'paid', priceAmount: 199000, excerpt: 'Hướng dẫn nền tảng để tối ưu trang bán hàng và blog.', filters: [{ name: 'Blender' }] },
-  { title: 'Bộ mẫu brief dự án', category: 'Toolkit', pricingType: 'free', priceAmount: 0, excerpt: 'File mẫu thu thập yêu cầu, phạm vi và checklist nghiệm thu.', filters: [{ name: 'Adobe after effects' }] },
+  { title: 'Checklist ra mắt website', category: 'Checklist', pricingType: 'free', priceAmount: 0, excerpt: 'Danh sách việc cần kiểm tra trước khi public website.', featured: true, filters: [{ name: 'AutoCAD 2D', icon: 'https://img.icons8.com/color/48/autocad.png' }] },
+  { title: 'Template kế hoạch nội dung', category: 'Template', pricingType: 'paid', priceAmount: 299000, excerpt: 'Bộ file lập lịch, phân nhóm và đo hiệu quả nội dung.', filters: [{ name: 'PR', icon: 'https://img.icons8.com/color/48/public-relations.png' }] },
+  { title: 'Ebook tối ưu SEO cơ bản', category: 'Ebook', pricingType: 'paid', priceAmount: 199000, excerpt: 'Hướng dẫn nền tảng để tối ưu trang bán hàng và blog.', filters: [{ name: 'Blender', icon: 'https://img.icons8.com/color/48/blender-3d.png' }] },
+  { title: 'Bộ mẫu brief dự án', category: 'Toolkit', pricingType: 'free', priceAmount: 0, excerpt: 'File mẫu thu thập yêu cầu, phạm vi và checklist nghiệm thu.', filters: [{ name: 'Adobe after effects', icon: 'https://img.icons8.com/color/48/adobe-after-effects.png' }] },
 ];
 
 const CATEGORIES = ['Tất cả', 'Ebook', 'Template', 'Checklist', 'Toolkit'];
-const MOCK_FILTERS = ['Blender', 'Adobe after effects', 'PR', 'AutoCAD 2D'];
+const MOCK_FILTERS = [
+  { name: 'Blender', icon: 'https://img.icons8.com/color/48/blender-3d.png' },
+  { name: 'Adobe after effects', icon: 'https://img.icons8.com/color/48/adobe-after-effects.png' },
+  { name: 'PR', icon: 'https://img.icons8.com/color/48/public-relations.png' },
+  { name: 'AutoCAD 2D', icon: 'https://img.icons8.com/color/48/autocad.png' },
+];
 
 const resolveSecondary = (primary: string, secondary?: string, mode?: 'single' | 'dual') =>
   mode === 'dual' && secondary ? secondary : primary;
@@ -266,6 +281,7 @@ export function ResourcesListPreview({
   paginationType = 'pagination',
   showSearch = true,
   showCategories = true,
+  showResourceFilters = true,
   hideEmptyCategories = true,
   postsPerPage = 12,
   brandColor = '#4f46e5',
@@ -331,10 +347,15 @@ export function ResourcesListPreview({
           <h3 className="font-semibold text-slate-900">{resource.title}</h3>
           <p className="mt-1 line-clamp-2 text-sm text-slate-500">{resource.excerpt}</p>
         </div>
-        {resourceFiltersFeature?.enabled && resource.filters && resource.filters.length > 0 && (
+        {resourceFiltersFeature?.enabled && showResourceFilters && resource.filters && resource.filters.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {resource.filters.map((f) => (
-              <span key={f.name} className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-500">{f.name}</span>
+              <span key={f.name} className="rounded-full border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-500 inline-flex items-center gap-1">
+                {f.icon && (
+                  <img src={f.icon} alt={f.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                )}
+                <span>{f.name}</span>
+              </span>
             ))}
           </div>
         )}
@@ -411,11 +432,11 @@ export function ResourcesListPreview({
           </div>
         )}
 
-        {resourceFiltersFeature?.enabled && (
+        {resourceFiltersFeature?.enabled && showResourceFilters && (
           <div className={`border border-slate-200 bg-white p-3.5 shadow-sm ${getRadiusClass(cornerRadius, 'panel')}`}>
             <h3 className="font-semibold text-xs text-slate-700 mb-2 flex items-center gap-2">
               <Filter size={12} className="text-slate-400" />
-              Phần mềm
+              Bộ lọc phần mềm
             </h3>
             <div className="space-y-1">
               <button
@@ -425,14 +446,17 @@ export function ResourcesListPreview({
               >
                 Tất cả phần mềm
               </button>
-              {MOCK_FILTERS.map((name) => (
+              {MOCK_FILTERS.map((item) => (
                 <button
-                  key={name}
-                  onClick={() => setFilterVal(name)}
-                  className={`w-full py-1.5 px-2.5 rounded text-left text-xs transition-colors border border-transparent ${filterVal === name ? 'font-semibold' : ''}`}
-                  style={filterVal === name ? { backgroundColor: `${brandColor}18`, color: brandColor } : { backgroundColor: 'transparent', color: '#475569' }}
+                  key={item.name}
+                  onClick={() => setFilterVal(item.name)}
+                  className={`w-full py-1.5 px-2.5 rounded text-left text-xs transition-colors border border-transparent flex items-center gap-1.5 ${filterVal === item.name ? 'font-semibold' : ''}`}
+                  style={filterVal === item.name ? { backgroundColor: `${brandColor}18`, color: brandColor } : { backgroundColor: 'transparent', color: '#475569' }}
                 >
-                  {name}
+                  {item.icon && (
+                    <img src={item.icon} alt={item.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                  )}
+                  <span>{item.name}</span>
                 </button>
               ))}
             </div>
@@ -469,13 +493,13 @@ export function ResourcesListPreview({
                 cornerRadius={cornerRadius}
               />
             )}
-            {resourceFiltersFeature?.enabled && (
+            {resourceFiltersFeature?.enabled && showResourceFilters && (
               <CustomDropdown
                 value={filterVal}
                 onChange={setFilterVal}
                 options={[
                   { value: '', label: 'Tất cả phần mềm' },
-                  ...MOCK_FILTERS.map((name) => ({ value: name, label: name })),
+                  ...MOCK_FILTERS.map((item) => ({ value: item.name, label: item.name, icon: item.icon })),
                 ]}
                 icon={<Filter size={14} className="text-slate-400" />}
                 cornerRadius={cornerRadius}
@@ -532,6 +556,7 @@ export function ResourceDetailPreview({
   showGallery = true,
   showRelated = true,
   showStickyCta = true,
+  showResourceFilters = true,
   brandColor = '#4f46e5',
   secondaryColor,
   colorMode = 'single',
@@ -547,6 +572,8 @@ export function ResourceDetailPreview({
     : layoutStyle === 'minimal'
       ? 'bg-white text-slate-900'
       : 'bg-slate-50 text-slate-900';
+
+  const resourceFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'resources', featureKey: 'enableResourceFilters' });
 
   return (
     <div className="relative bg-white text-slate-900">
@@ -565,6 +592,21 @@ export function ResourceDetailPreview({
                 <span key={item} className={`border px-3 py-1 ${smallRadiusClass}`} style={{ borderColor: layoutStyle === 'modern' ? 'rgba(255,255,255,.25)' : '#e2e8f0' }}>{item}</span>
               ))}
             </div>
+            {resourceFiltersFeature?.enabled && showResourceFilters && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {[{ name: 'AutoCAD 2D', icon: 'https://img.icons8.com/color/48/autocad.png' }].map((item) => (
+                  <span
+                    key={item.name}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold ${layoutStyle === 'modern' ? 'border-white/20 bg-white/10 text-white' : 'border-slate-200 bg-slate-50 text-slate-700'}`}
+                  >
+                    {item.icon && (
+                      <img src={item.icon} alt={item.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                    )}
+                    <span>{item.name}</span>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <div className={`border p-4 shadow-sm ${radiusClass}`} style={{ backgroundColor: layoutStyle === 'modern' ? 'rgba(255,255,255,.08)' : '#fff', borderColor: layoutStyle === 'modern' ? 'rgba(255,255,255,.16)' : '#e2e8f0' }}>
             <div className={`mb-4 flex aspect-[16/10] items-center justify-center ${smallRadiusClass}`} style={{ background: `linear-gradient(135deg, ${brandColor}22, ${accent}33)` }}>

@@ -31,12 +31,14 @@ const getRadiusClass = (radius?: 'none' | 'sm' | 'lg', type: 'card' | 'input' | 
 type DropdownOption = {
   value: string;
   label: string;
+  icon?: string;
 };
 
 type AssignedResourceFilterValue = {
   _id: Id<'resourceFilterValues'>;
   name: string;
   slug: string;
+  icon?: string;
 };
 
 function CustomDropdown({
@@ -77,7 +79,11 @@ function CustomDropdown({
         className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 ${getRadiusClass(cornerRadius, 'input')}`}
       >
         <span className="flex items-center gap-2 truncate">
-          {icon}
+          {selectedOption?.icon ? (
+            <img src={selectedOption.icon} alt={selectedOption.label} className="h-4 w-4 object-contain shrink-0" />
+          ) : (
+            icon
+          )}
           <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
         </span>
         <ChevronDown size={16} className={`shrink-0 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -94,7 +100,10 @@ function CustomDropdown({
               }}
               className={`flex w-full items-center px-3 py-2 text-left text-sm transition-colors ${option.value === value ? 'bg-slate-50 font-semibold text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
             >
-              {option.label}
+              {option.icon && (
+                <img src={option.icon} alt={option.label} className="h-4 w-4 mr-2 object-contain shrink-0" />
+              )}
+              <span className="truncate">{option.label}</span>
             </button>
           ))}
         </div>
@@ -370,7 +379,7 @@ function ResourcesContent() {
                     </div>
                   )}
 
-                  {resourceFiltersFeature?.enabled && activeFilters && allFilterValues && activeFilters.length > 0 && (
+                  {resourceFiltersFeature?.enabled && config.showResourceFilters && activeFilters && allFilterValues && activeFilters.length > 0 && (
                     <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
                       <h3 className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
                         <Filter size={14} className="text-slate-400" />
@@ -390,10 +399,13 @@ function ResourcesContent() {
                                       key={value._id}
                                       type="button"
                                       onClick={() => handleFilterChange(value.slug)}
-                                      className="rounded-full border px-3 py-1 text-xs font-medium transition"
+                                      className="rounded-full border px-3 py-1 text-xs font-medium transition inline-flex items-center gap-1.5"
                                       style={active ? { backgroundColor: brandColors.primary, borderColor: brandColors.primary, color: '#fff' } : { borderColor: '#e2e8f0', color: '#475569' }}
                                     >
-                                      {value.name}
+                                      {value.icon && (
+                                        <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                                      )}
+                                      <span>{value.name}</span>
                                     </button>
                                   );
                                 })}
@@ -427,13 +439,13 @@ function ResourcesContent() {
                       icon={<Bookmark size={15} className="text-slate-400" />}
                       cornerRadius={config.cornerRadius}
                     />
-                    {resourceFiltersFeature?.enabled && allFilterValues && allFilterValues.filter((v) => v.active).length > 0 && (
+                    {resourceFiltersFeature?.enabled && config.showResourceFilters && allFilterValues && allFilterValues.filter((v) => v.active).length > 0 && (
                       <CustomDropdown
                         value={activeFilterSlugs.length === 1 ? activeFilterSlugs[0] : ''}
                         onChange={(value) => handleFilterChange(value || null)}
                         options={[
                           { value: '', label: activeFilters?.[0]?.name ? `Tất cả ${activeFilters[0].name.toLowerCase()}` : 'Tất cả bộ lọc' },
-                          ...allFilterValues.filter((v) => v.active).map((val) => ({ value: val.slug, label: val.name })),
+                          ...allFilterValues.filter((v) => v.active).map((val) => ({ value: val.slug, label: val.name, icon: val.icon })),
                         ]}
                         placeholder={activeFilterSlugs.length > 1 ? `Đã chọn (${activeFilterSlugs.length})` : (activeFilters?.[0]?.name ?? 'Bộ lọc')}
                         icon={<Filter size={15} className="text-slate-400" />}
@@ -501,15 +513,20 @@ function ResourcesContent() {
                         </div>
                         <h2 className="line-clamp-2 text-lg font-bold text-slate-900 group-hover:underline">{resource.title}</h2>
                         {resource.excerpt && <p className="line-clamp-2 text-sm text-slate-500">{resource.excerpt}</p>}
-                        {resourceFiltersFeature?.enabled && assignedValues.length > 0 && (
+                        {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedValues.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
                             {assignedValues.slice(0, 4).map((value) => (
-                              <span key={value._id} className="rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-500">{value.name}</span>
+                              <span key={value._id} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                                {value.icon && (
+                                  <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                                )}
+                                <span>{value.name}</span>
+                              </span>
                             ))}
                           </div>
                         )}
-                        <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: brandColors.primary }}>
-                          <Download size={16} /> Xem & tải
+                        <div className="flex items-center gap-2 text-sm font-semibold group-hover:underline" style={{ color: brandColors.primary }}>
+                          Xem chi tiết →
                         </div>
                       </div>
                     </Link>

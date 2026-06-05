@@ -60,6 +60,7 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
   const resourceAccess = useQuery(api.resources.getResourceAccess, resource?._id ? { resourceId: resource._id, token: token ?? undefined } : 'skip');
   const relatedResources = useQuery(api.resources.searchPublished, resource?.categoryId ? { categoryId: resource.categoryId, limit: 4 } : 'skip');
   const assignedFilters = useQuery(api.resourceFilters.listByResource, resource?._id ? { resourceId: resource._id } : 'skip');
+  const resourceFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'resources', featureKey: 'enableResourceFilters' });
   const incrementViews = useMutation(api.resources.incrementViews);
   const requestDownload = useMutation(api.resources.requestDownload);
 
@@ -161,11 +162,13 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
 
   const ctaLabel = resource.pricingType === 'contact'
     ? 'Liên hệ tư vấn'
-    : hasAccess || resource.pricingType === 'free'
-      ? 'Tải tài nguyên'
-      : commerceMode === 'cart'
-        ? 'Thêm vào giỏ hàng'
-        : 'Liên hệ mua';
+    : !token
+      ? (resource.pricingType === 'free' ? 'Đăng nhập để tải' : 'Đăng nhập để mua')
+      : hasAccess || resource.pricingType === 'free'
+        ? 'Tải tài nguyên'
+        : commerceMode === 'cart'
+          ? 'Thêm vào giỏ hàng'
+          : 'Liên hệ mua';
 
   const CtaCard = () => (
     <div className={`border border-slate-200 bg-white p-5 ${radiusClass}`}>
@@ -201,7 +204,15 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
         className="mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
         style={{ backgroundColor: brandColor, borderRadius: config.cornerRadius === 'none' ? '0px' : config.cornerRadius === 'sm' ? '8px' : '12px' }}
       >
-        {hasAccess || resource.pricingType === 'free' ? <Download size={18} /> : commerceMode === 'cart' && resource.pricingType !== 'contact' ? <ShoppingCart size={18} /> : <Lock size={18} />}
+        {hasAccess || (resource.pricingType === 'free' && token) ? (
+          <Download size={18} />
+        ) : !token && resource.pricingType === 'free' ? (
+          <Lock size={18} />
+        ) : commerceMode === 'cart' && resource.pricingType !== 'contact' ? (
+          <ShoppingCart size={18} />
+        ) : (
+          <Lock size={18} />
+        )}
         {isDownloading ? 'Đang xử lý...' : ctaLabel}
       </button>
     </div>
@@ -227,14 +238,17 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
             </div>
             <h1 className={`max-w-4xl text-4xl font-bold leading-tight md:text-5xl ${isModern ? 'text-white' : 'text-slate-900'}`}>{resource.title}</h1>
             {resource.excerpt && <p className={`max-w-2xl text-lg ${isModern ? 'text-white/80' : 'text-slate-600'}`}>{resource.excerpt}</p>}
-            {assignedFilters && assignedFilters.length > 0 && (
+            {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedFilters && assignedFilters.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {assignedFilters.map((filterValue) => (
                   <span
                     key={filterValue._id}
                     className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold ${isModern ? 'border-white/20 bg-white/10 text-white' : 'border-slate-200 bg-slate-50 text-slate-700'}`}
                   >
-                    {filterValue.name}
+                    {filterValue.icon && (
+                      <img src={filterValue.icon} alt={filterValue.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                    )}
+                    <span>{filterValue.name}</span>
                   </span>
                 ))}
               </div>
@@ -310,7 +324,15 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
             className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white shadow-sm disabled:opacity-60"
             style={{ backgroundColor: brandColor, borderRadius: config.cornerRadius === 'none' ? '0px' : config.cornerRadius === 'sm' ? '8px' : '12px' }}
           >
-            {hasAccess || resource.pricingType === 'free' ? <Download size={14} /> : <ShoppingCart size={14} />}
+            {hasAccess || (resource.pricingType === 'free' && token) ? (
+              <Download size={14} />
+            ) : !token && resource.pricingType === 'free' ? (
+              <Lock size={14} />
+            ) : commerceMode === 'cart' && resource.pricingType !== 'contact' ? (
+              <ShoppingCart size={14} />
+            ) : (
+              <Lock size={14} />
+            )}
             {isDownloading ? 'Đang xử lý' : ctaLabel}
           </button>
         </div>

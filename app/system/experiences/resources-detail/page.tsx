@@ -29,6 +29,7 @@ type ResourcesDetailExperienceConfig = {
   showGallery: boolean;
   showRelated: boolean;
   showStickyCta: boolean;
+  showResourceFilters: boolean;
   cornerRadius: 'none' | 'sm' | 'lg';
 };
 
@@ -45,12 +46,14 @@ const DEFAULT_CONFIG: ResourcesDetailExperienceConfig = {
   showGallery: true,
   showRelated: true,
   showStickyCta: true,
+  showResourceFilters: true,
   cornerRadius: 'lg',
 };
 
 export default function ResourcesDetailExperiencePage() {
   const experienceSetting = useQuery(api.settings.getByKey, { key: EXPERIENCE_KEY });
   const resourcesModule = useQuery(api.admin.modules.getModuleByKey, { key: 'resources' });
+  const resourceFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'resources', featureKey: 'enableResourceFilters' });
   const brandColors = useBrandColors();
   const exampleResourceSlug = useExampleResourceSlug();
   const [brandColor, setBrandColor] = useState(brandColors.primary);
@@ -69,7 +72,7 @@ export default function ResourcesDetailExperiencePage() {
     return { ...DEFAULT_CONFIG, ...raw };
   }, [experienceSetting?.value]);
 
-  const isLoading = experienceSetting === undefined || resourcesModule === undefined;
+  const isLoading = experienceSetting === undefined || resourcesModule === undefined || resourceFiltersFeature === undefined;
   const { config, setConfig, hasChanges } = useExperienceConfig(serverConfig, DEFAULT_CONFIG, isLoading);
   const { handleSave, isSaving } = useExperienceSave(
     EXPERIENCE_KEY,
@@ -113,6 +116,9 @@ export default function ResourcesDetailExperiencePage() {
             <ToggleRow label="Gallery" checked={config.showGallery} onChange={(value) => updateConfig('showGallery', value)} accentColor={brandColor} />
             <ToggleRow label="Tài nguyên liên quan" checked={config.showRelated} onChange={(value) => updateConfig('showRelated', value)} accentColor={brandColor} />
             <ToggleRow label="Nút tải cố định" checked={config.showStickyCta} onChange={(value) => updateConfig('showStickyCta', value)} accentColor={brandColor} />
+            {resourceFiltersFeature?.enabled && (
+              <ToggleRow label="Bộ lọc tài nguyên" checked={config.showResourceFilters} onChange={(value) => updateConfig('showResourceFilters', value)} accentColor={brandColor} />
+            )}
             <div className="mt-3 border-t border-slate-100 pt-3">
               <SelectRow label="Độ bo góc" value={config.cornerRadius ?? 'lg'} options={[{ value: 'lg', label: 'Nhiều' }, { value: 'sm', label: 'Ít' }, { value: 'none', label: 'Không bo' }]} onChange={(value) => updateConfig('cornerRadius', value as 'none' | 'sm' | 'lg')} />
             </div>
@@ -153,6 +159,7 @@ export default function ResourcesDetailExperiencePage() {
                 showGallery={config.showGallery}
                 showRelated={config.showRelated}
                 showStickyCta={config.showStickyCta}
+                showResourceFilters={config.showResourceFilters}
                 brandColor={brandColor}
                 secondaryColor={secondaryColor}
                 colorMode={colorMode}

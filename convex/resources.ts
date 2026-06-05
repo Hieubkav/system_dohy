@@ -980,6 +980,117 @@ export const listResourceCustomers = query({
   returns: v.array(resourceCustomerAdminDoc),
 });
 
+export const listResourceCustomersAdmin = query({
+  args: {
+    resourceId: v.optional(v.id("resources")),
+    limit: v.optional(v.number()),
+    offset: v.optional(v.number()),
+    search: v.optional(v.string()),
+    status: v.optional(v.union(v.literal("active"), v.literal("revoked"))),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit ?? 50, 100);
+    const offset = args.offset ?? 0;
+    const fetchLimit = args.search?.trim() ? 2000 : (offset + limit + 1);
+
+    let customersRelation: Doc<"resourceCustomers">[] = [];
+    if (args.resourceId && args.status) {
+      customersRelation = await ctx.db
+        .query("resourceCustomers")
+        .withIndex("by_resourceId_and_status", (q) => q.eq("resourceId", args.resourceId!).eq("status", args.status!))
+        .take(fetchLimit);
+    } else if (args.resourceId) {
+      customersRelation = await ctx.db
+        .query("resourceCustomers")
+        .withIndex("by_resourceId", (q) => q.eq("resourceId", args.resourceId!))
+        .take(fetchLimit);
+    } else if (args.status) {
+      customersRelation = await ctx.db
+        .query("resourceCustomers")
+        .withIndex("by_status", (q) => q.eq("status", args.status!))
+        .take(fetchLimit);
+    } else {
+      customersRelation = await ctx.db.query("resourceCustomers").order("desc").take(fetchLimit);
+    }
+
+    // Fetch customer documents to filter by search
+    const targetRelationsForCustomerFetch = args.search?.trim() ? customersRelation : customersRelation.slice(offset, offset + limit);
+    const uniqueCustomerIds = Array.from(new Set(targetRelationsForCustomerFetch.map((c) => c.customerId)));
+    const customers = await Promise.all(uniqueCustomerIds.map((id) => ctx.db.get(id)));
+    const customerMap = new Map(customers.filter(Boolean).map((c) => [c!._id, c!]));
+
+    let filteredRelations = customersRelation;
+    if (args.search?.trim()) {
+      const searchLower = args.search.toLowerCase().trim();
+      filteredRelations = customersRelation.filter((relation) => {
+        const customer = customerMap.get(relation.customerId);
+        if (!customer) return false;
+        return (
+          customer.name.toLowerCase().includes(searchLower) ||
+          (customer.email ?? "").toLowerCase().includes(searchLower) ||
+          (customer.phone ?? "").toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    const totalCount = filteredRelations.length;
+    const page = filteredRelations.slice(offset, offset + limit);
+
+    // Calculate stats on all matching customers (before slicing)
+    const totalCustomers = filteredRelations.filter((c) => c.status === "active").length;
+    const totalDownloads = filteredRelations.reduce((sum, c) => sum + (c.downloadCount || 0), 0);
+    const averageDownloads = filteredRelations.length ? Math.round(totalDownloads / filteredRelations.length) : 0;
+
+    const [resources, finalCustomers] = await Promise.all([
+      Promise.all(Array.from(new Set(page.map((item) => item.resourceId))).map((id) => ctx.db.get(id))),
+      Promise.all(Array.from(new Set(page.map((item) => item.customerId))).map((id) => ctx.db.get(id))),
+    ]);
+
+    const resourceMap = new Map(resources.filter(Boolean).map((r) => [r!._id, r!]));
+    const finalCustomerMap = new Map(finalCustomers.filter(Boolean).map((c) => [c!._id, c!]));
+
+    return {
+      hasMore: filteredRelations.length > offset + limit,
+      totalCount,
+      stats: {
+        totalCustomers,
+        totalDownloads,
+        averageDownloads,
+      },
+      items: page.map((row) => {
+        const customer = finalCustomerMap.get(row.customerId);
+        const resource = resourceMap.get(row.resourceId);
+        return {
+          customerEmail: customer?.email ?? "",
+          customerId: row.customerId,
+          customerName: customer?.name ?? "Khách hàng đã xóa",
+          customerPhone: customer?.phone ?? "",
+          downloadCount: row.downloadCount,
+          enrolledAt: row.enrolledAt,
+          grantedAt: row.grantedAt,
+          lastDownloadAt: row.lastDownloadAt,
+          resourceId: row.resourceId,
+          resourceTitle: resource?.title ?? "Tài nguyên đã xóa",
+          sourceOrderId: row.sourceOrderId,
+          sourceType: row.sourceType,
+          status: row.status,
+          accessId: row._id,
+        };
+      }),
+    };
+  },
+  returns: v.object({
+    hasMore: v.boolean(),
+    totalCount: v.number(),
+    stats: v.object({
+      totalCustomers: v.number(),
+      totalDownloads: v.number(),
+      averageDownloads: v.number(),
+    }),
+    items: v.array(resourceCustomerAdminDoc),
+  }),
+});
+
 export const grantAccess = mutation({
   args: {
     customerId: v.id("customers"),

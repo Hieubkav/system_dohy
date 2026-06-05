@@ -30,6 +30,7 @@ type ResourcesListExperienceConfig = {
   gridColumns: number;
   showSearch: boolean;
   showCategories: boolean;
+  showResourceFilters: boolean;
   hideEmptyCategories: boolean;
   paginationType: PaginationType;
   postsPerPage: number;
@@ -49,6 +50,7 @@ const DEFAULT_CONFIG: ResourcesListExperienceConfig = {
   gridColumns: 3,
   showSearch: true,
   showCategories: true,
+  showResourceFilters: true,
   hideEmptyCategories: true,
   paginationType: 'pagination',
   postsPerPage: 12,
@@ -68,6 +70,7 @@ const normalizePaginationType = (value?: string): PaginationType => {
 export default function ResourcesListExperiencePage() {
   const experienceSetting = useQuery(api.settings.getByKey, { key: EXPERIENCE_KEY });
   const resourcesModule = useQuery(api.admin.modules.getModuleByKey, { key: 'resources' });
+  const resourceFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'resources', featureKey: 'enableResourceFilters' });
   const brandColors = useBrandColors();
   const [brandColor, setBrandColor] = useState(brandColors.primary);
   const [secondaryColor, setSecondaryColor] = useState(brandColors.secondary || '');
@@ -91,6 +94,7 @@ export default function ResourcesListExperiencePage() {
       gridColumns: raw?.gridColumns ?? 3,
       showSearch: legacyLayout?.showSearch ?? raw?.showSearch ?? true,
       showCategories: legacyLayout?.showCategories ?? raw?.showCategories ?? true,
+      showResourceFilters: legacyLayout?.showResourceFilters ?? raw?.showResourceFilters ?? true,
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
       paginationType: normalizePaginationType(legacyLayout?.paginationType ?? raw?.paginationType),
       postsPerPage: legacyLayout?.postsPerPage ?? raw?.postsPerPage ?? 12,
@@ -98,7 +102,7 @@ export default function ResourcesListExperiencePage() {
     };
   }, [experienceSetting?.value]);
 
-  const isLoading = experienceSetting === undefined || resourcesModule === undefined;
+  const isLoading = experienceSetting === undefined || resourcesModule === undefined || resourceFiltersFeature === undefined;
   const { config, setConfig, hasChanges } = useExperienceConfig(serverConfig, DEFAULT_CONFIG, isLoading);
   const { handleSave, isSaving } = useExperienceSave(
     EXPERIENCE_KEY,
@@ -136,6 +140,9 @@ export default function ResourcesListExperiencePage() {
           <ControlCard title="Khối hiển thị">
             <ToggleRow label="Tìm kiếm" checked={config.showSearch} onChange={(value) => setConfig((prev) => ({ ...prev, showSearch: value }))} accentColor={brandColor} />
             <ToggleRow label="Danh mục" checked={config.showCategories} onChange={(value) => setConfig((prev) => ({ ...prev, showCategories: value }))} accentColor={brandColor} />
+            {resourceFiltersFeature?.enabled && (
+              <ToggleRow label="Bộ lọc tài nguyên" checked={config.showResourceFilters} onChange={(value) => setConfig((prev) => ({ ...prev, showResourceFilters: value }))} accentColor={brandColor} />
+            )}
             <ToggleRow label="Ẩn danh mục rỗng" checked={config.hideEmptyCategories} onChange={(value) => setConfig((prev) => ({ ...prev, hideEmptyCategories: value }))} accentColor={brandColor} />
           </ControlCard>
           <ControlCard title="Danh sách">
@@ -182,6 +189,7 @@ export default function ResourcesListExperiencePage() {
                 gridColumns={config.gridColumns}
                 showSearch={config.showSearch}
                 showCategories={config.showCategories}
+                showResourceFilters={config.showResourceFilters}
                 hideEmptyCategories={config.hideEmptyCategories}
                 paginationType={config.paginationType}
                 postsPerPage={config.postsPerPage}
