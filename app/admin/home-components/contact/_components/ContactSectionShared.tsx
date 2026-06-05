@@ -1048,17 +1048,15 @@ const renderKanban = ({
   const hasMap = Boolean(config.showMap);
 
   // Tự động tính toán độ tương phản chữ (trắng/đen) trên nền màu primary của nút gửi
-  const isPrimaryDark = React.useMemo(() => {
-    const color = (tokens.primary || '').trim();
-    if (/^#[0-9a-fA-F]{6}$/.test(color)) {
-      const r = Number.parseInt(color.slice(1, 3), 16);
-      const g = Number.parseInt(color.slice(3, 5), 16);
-      const b = Number.parseInt(color.slice(5, 7), 16);
-      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      return luma < 128;
-    }
-    return false;
-  }, [tokens.primary]);
+  const color = (tokens.primary || '').trim();
+  let isPrimaryDark = false;
+  if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+    const r = Number.parseInt(color.slice(1, 3), 16);
+    const g = Number.parseInt(color.slice(3, 5), 16);
+    const b = Number.parseInt(color.slice(5, 7), 16);
+    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    isPrimaryDark = luma < 128;
+  }
 
   // Cấu hình tokens màu sắc cho style Kanban (đồng bộ thương hiệu, tối ưu độ tương phản nền tối)
   const kanbanTokens = {
