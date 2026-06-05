@@ -427,6 +427,19 @@ function ResourcesContent() {
                       icon={<Bookmark size={15} className="text-slate-400" />}
                       cornerRadius={config.cornerRadius}
                     />
+                    {resourceFiltersFeature?.enabled && allFilterValues && allFilterValues.filter((v) => v.active).length > 0 && (
+                      <CustomDropdown
+                        value={activeFilterSlugs.length === 1 ? activeFilterSlugs[0] : ''}
+                        onChange={(value) => handleFilterChange(value || null)}
+                        options={[
+                          { value: '', label: activeFilters?.[0]?.name ? `Tất cả ${activeFilters[0].name.toLowerCase()}` : 'Tất cả bộ lọc' },
+                          ...allFilterValues.filter((v) => v.active).map((val) => ({ value: val.slug, label: val.name })),
+                        ]}
+                        placeholder={activeFilterSlugs.length > 1 ? `Đã chọn (${activeFilterSlugs.length})` : (activeFilters?.[0]?.name ?? 'Bộ lọc')}
+                        icon={<Filter size={15} className="text-slate-400" />}
+                        cornerRadius={config.cornerRadius}
+                      />
+                    )}
                     <CustomDropdown
                       value={sortBy}
                       onChange={(value) => setSortBy(value as typeof sortBy)}
