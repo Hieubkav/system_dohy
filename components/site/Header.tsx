@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { PublicImage as Image } from '@/components/shared/PublicImage';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -220,6 +220,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
   const commerceCapabilities = useQuery(api.cart.getCommerceCapabilities, staticMode ? 'skip' : {});
   const customerLoginFeature = useQuery(api.admin.modules.getModuleFeature, staticMode ? 'skip' : { moduleKey: 'customers', featureKey: 'enableLogin' });
   const router = useRouter();
+  const pathname = usePathname();
   const { customer, isAuthenticated, logout } = useCustomerAuth();
   
   const menuData = menuDataQuery ?? initialData?.menuData;
@@ -2143,16 +2144,25 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
 
     return (
       <>
-        {/* Top Header (Absolute) */}
+        {/* Top Header */}
         <header
           className={cn(
-            "absolute top-0 left-0 w-full z-40 transition-opacity duration-300",
+            pathname === '/' ? "absolute top-0 left-0 w-full" : "relative w-full",
+            "z-40 transition-opacity duration-300",
             isScrolled ? "opacity-0 pointer-events-none" : "opacity-100"
           )}
         >
           <div
-            className="flex items-center justify-between gap-4 w-full px-6 bg-black/50 backdrop-blur-lg border-b border-white/10"
-            style={{ paddingTop: headerSpacingY, paddingBottom: headerSpacingY }}
+            className={cn(
+              "flex items-center justify-between gap-4 w-full px-6 border-b transition-all duration-300",
+              pathname === '/'
+                ? "bg-black/20 backdrop-blur-md border-white/5"
+                : "bg-zinc-950 border-zinc-900"
+            )}
+            style={{
+              paddingTop: Math.min(10, headerSpacingY),
+              paddingBottom: Math.min(10, headerSpacingY),
+            }}
           >
             {renderDarkGlassLogo(logoSize)}
             {renderDarkGlassNav("text-white", "hover:text-[#FFD700]")}
