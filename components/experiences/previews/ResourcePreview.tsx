@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, Bookmark, ChevronDown, Download, FileText, Filter, Lock, Search, ShieldCheck, SlidersHorizontal, Star, X, Check } from 'lucide-react';
+import { ArrowRight, Bookmark, ChevronDown, Download, FileText, Filter, Search, ShieldCheck, SlidersHorizontal, Star, X, Check } from 'lucide-react';
 import { formatPrice, getRadiusClass, getSmallRadiusClass } from '@/lib/courses/courseUtils';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -704,9 +704,19 @@ export function ResourcesListPreview({
   );
 }
 
+import { ArrowLeft } from 'lucide-react';
+
+const MOCK_GALLERY_IMAGES = [
+  'https://images.unsplash.com/photo-1503387762-592dedb802d7?w=800&auto=format&fit=crop&q=60',
+  'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&auto=format&fit=crop&q=60',
+  'https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=800&auto=format&fit=crop&q=60',
+  'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&auto=format&fit=crop&q=60',
+];
+
 export function ResourceDetailPreview({
   layoutStyle,
   showGallery = true,
+  galleryMode = 'grid',
   showRelated = true,
   showStickyCta = true,
   showResourceFilters = true,
@@ -715,114 +725,300 @@ export function ResourceDetailPreview({
   colorMode = 'single',
   device = 'desktop',
   cornerRadius = 'lg',
-}: ResourceDetailPreviewProps) {
+}: ResourceDetailPreviewProps & { galleryMode?: 'scroll' | 'grid' }) {
   const accent = resolveSecondary(brandColor, secondaryColor, colorMode);
   const radiusClass = getRadiusClass(cornerRadius);
-  const smallRadiusClass = getSmallRadiusClass(cornerRadius);
   const isMobile = device === 'mobile';
-  const heroClass = layoutStyle === 'modern'
-    ? 'bg-slate-900 text-white'
-    : layoutStyle === 'minimal'
-      ? 'bg-white text-slate-900'
-      : 'bg-slate-50 text-slate-900';
+  
+  const [activeImage, setActiveImage] = useState(MOCK_GALLERY_IMAGES[0]);
+
+  useEffect(() => {
+    setActiveImage(MOCK_GALLERY_IMAGES[0]);
+  }, [showGallery]);
 
   const resourceFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'resources', featureKey: 'enableResourceFilters' });
 
-  return (
-    <div className="relative bg-white text-slate-900">
-      <section className={`p-6 ${heroClass}`}>
-        <div className={`mx-auto grid max-w-6xl gap-6 ${isMobile || layoutStyle === 'minimal' ? 'grid-cols-1' : 'md:grid-cols-[1.2fr_0.8fr]'}`}>
-          <div className="space-y-4">
-            <span className={`inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold ${smallRadiusClass}`} style={{ backgroundColor: `${brandColor}1a`, color: layoutStyle === 'modern' ? '#fff' : brandColor }}>
-              <FileText size={13} /> Template
-            </span>
-            <h1 className="text-3xl font-bold">Checklist ra mắt website chuyên nghiệp</h1>
-            <p className={layoutStyle === 'modern' ? 'text-sm text-slate-200' : 'text-sm text-slate-600'}>
-              Bộ checklist giúp đội ngũ rà soát nội dung, hiệu năng, SEO và tracking trước khi public.
-            </p>
-            <div className="flex flex-wrap gap-2 text-xs">
-              {['PDF', 'Google Sheet', 'Cập nhật 2026'].map((item) => (
-                <span key={item} className={`border px-3 py-1 ${smallRadiusClass}`} style={{ borderColor: layoutStyle === 'modern' ? 'rgba(255,255,255,.25)' : '#e2e8f0' }}>{item}</span>
-              ))}
+  // Component phụ hiển thị Gallery ảnh
+  const GalleryBlock = () => {
+    if (!showGallery) return null;
+    return (
+      <div className="space-y-3">
+        <div className={`aspect-video overflow-hidden border border-slate-200 bg-slate-100 transition-all duration-300 shadow-sm ${radiusClass}`}>
+          <img src={activeImage} alt="Preview chính" className="h-full w-full object-cover animate-fade-in" />
+        </div>
+        {galleryMode === 'grid' ? (
+          <div className="grid grid-cols-4 gap-2.5">
+            {MOCK_GALLERY_IMAGES.map((img: string, idx: number) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setActiveImage(img)}
+                className={`aspect-video overflow-hidden border transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] ${
+                  activeImage === img 
+                    ? 'border-2 ring-1' 
+                    : 'border-slate-200 hover:border-slate-400'
+                } ${radiusClass}`}
+                style={activeImage === img ? { borderColor: brandColor, boxShadow: `0 0 0 1.5px ${brandColor}` } : undefined}
+              >
+                <img src={img} alt="" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex gap-2.5 overflow-x-auto pb-1.5 scrollbar-thin">
+            {MOCK_GALLERY_IMAGES.map((img: string, idx: number) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setActiveImage(img)}
+                className={`h-14 w-20 shrink-0 overflow-hidden border transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] ${
+                  activeImage === img 
+                    ? 'border-2 ring-1' 
+                    : 'border-slate-200 hover:border-slate-400'
+                } ${radiusClass}`}
+                style={activeImage === img ? { borderColor: brandColor, boxShadow: `0 0 0 1.5px ${brandColor}` } : undefined}
+              >
+                <img src={img} alt="" className="h-full w-full object-cover" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Component phụ hiển thị CtaCard (Tải tài nguyên)
+  const CtaCard = ({ isModernLayout }: { isModernLayout?: boolean }) => (
+    <div 
+      className={`border bg-white p-5 transition-all duration-300 ${radiusClass} ${
+        isModernLayout 
+          ? 'shadow-lg border-indigo-50/50 hover:shadow-indigo-100/30' 
+          : 'shadow-sm border-slate-200'
+      }`}
+    >
+      <div className={`mb-4 flex aspect-video items-center justify-center overflow-hidden bg-slate-100 ${radiusClass}`}>
+        <img src={MOCK_GALLERY_IMAGES[0]} alt="Checklist" className="h-full w-full object-cover" />
+      </div>
+      <div className="space-y-1">
+        <p className="text-xs text-slate-500">Tải sau khi đăng nhập</p>
+        <p className="text-2xl font-bold" style={{ color: accent }}>Miễn phí</p>
+      </div>
+      <button
+        type="button"
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 font-semibold text-white transition-all duration-300 hover:opacity-90 active:scale-[0.98]"
+        style={{ 
+          backgroundColor: brandColor, 
+          borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px',
+          boxShadow: isModernLayout ? `0 4px 14px ${brandColor}33` : undefined
+        }}
+      >
+        <Download size={18} />
+        Tải tài nguyên
+      </button>
+      <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+        <ShieldCheck size={14} className="shrink-0" />
+        Đăng nhập để lưu quyền tải lại.
+      </div>
+    </div>
+  );
+
+  // Layout 1: CLASSIC (Cổ điển)
+  if (layoutStyle === 'classic') {
+    return (
+      <div className="relative bg-white text-slate-900 font-sans shadow-sm rounded-lg overflow-hidden border border-slate-100">
+        {/* Hero Banner */}
+        <section className="bg-slate-50/70 border-b border-slate-100 p-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <ArrowLeft size={12} /> Quay lại
             </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold bg-slate-200/60 text-slate-700">Checklist</span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900">Checklist ra mắt website chuyên nghiệp</h1>
+            <p className="text-sm text-slate-500 max-w-2xl leading-relaxed">Bộ checklist giúp rà soát nội dung, hiệu năng, SEO và tracking trước khi public.</p>
             {resourceFiltersFeature?.enabled && showResourceFilters && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {[{ name: 'AutoCAD 2D', icon: 'https://img.icons8.com/color/48/autocad.png' }].map((item) => (
-                  <span
-                    key={item.name}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold ${layoutStyle === 'modern' ? 'border-white/20 bg-white/10 text-white' : 'border-slate-200 bg-slate-50 text-slate-700'}`}
-                  >
-                    {item.icon && (
-                      <img src={item.icon} alt={item.name} className="h-3.5 w-3.5 object-contain shrink-0" />
-                    )}
+                  <span key={item.name} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                    <img src={item.icon} alt="" className="h-3.5 w-3.5 object-contain shrink-0" />
                     <span>{item.name}</span>
                   </span>
                 ))}
               </div>
             )}
           </div>
-          <div className={`border p-4 shadow-sm ${radiusClass}`} style={{ backgroundColor: layoutStyle === 'modern' ? 'rgba(255,255,255,.08)' : '#fff', borderColor: layoutStyle === 'modern' ? 'rgba(255,255,255,.16)' : '#e2e8f0' }}>
-            <div className={`mb-4 flex aspect-[16/10] items-center justify-center ${smallRadiusClass}`} style={{ background: `linear-gradient(135deg, ${brandColor}22, ${accent}33)` }}>
-              <Download size={38} style={{ color: brandColor }} />
-            </div>
-            <div className="mb-3 flex items-center justify-between">
-              <span className="text-sm text-slate-500">Giá</span>
-              <strong style={{ color: brandColor }}>Miễn phí</strong>
-            </div>
-            <button className={`flex w-full items-center justify-center gap-2 px-4 py-3 font-semibold text-white ${smallRadiusClass}`} style={{ backgroundColor: brandColor }}>
-              <Download size={16} /> Tải tài nguyên
-            </button>
-            <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
-              <ShieldCheck size={14} /> Đăng nhập để lưu quyền tải lại.
-            </div>
+        </section>
+
+        {/* Content body */}
+        <section className={`p-6 mx-auto grid gap-6 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-[1fr_280px]'}`}>
+          <div className="space-y-6">
+            <GalleryBlock />
+            <article className="prose prose-slate max-w-none">
+              <h3 className="text-lg font-semibold text-slate-900">Bạn nhận được gì?</h3>
+              <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-5">
+                <li>Kiểm tra nội dung, SEO, form, tracking và performance.</li>
+                <li>File mẫu có thể copy để sử dụng ngay cho dự án của bạn.</li>
+                <li>Hệ thống hóa thứ tự ưu tiên tối ưu hóa tỷ lệ chuyển đổi.</li>
+              </ul>
+            </article>
           </div>
-        </div>
-      </section>
 
-      <section className="mx-auto grid max-w-6xl gap-6 p-6 md:grid-cols-[1fr_280px]">
-        <article className={`border border-slate-200 p-5 shadow-sm ${radiusClass}`}>
-          <h2 className="text-lg font-semibold">Bạn nhận được gì?</h2>
-          <ul className="mt-3 space-y-2 text-sm text-slate-600">
-            <li>Kiểm tra nội dung, SEO, form, tracking và performance.</li>
-            <li>File có thể copy để dùng lại cho nhiều dự án.</li>
-            <li>Gợi ý thứ tự ưu tiên trước ngày ra mắt.</li>
-          </ul>
-          {showGallery && (
-            <div className="mt-5 grid grid-cols-3 gap-3">
-              {[1, 2, 3].map((item) => (
-                <div key={item} className={`flex aspect-[4/3] items-center justify-center bg-slate-100 ${smallRadiusClass}`}><FileText className="text-slate-400" size={24} /></div>
-              ))}
-            </div>
-          )}
-        </article>
-        <aside className={`h-fit border border-slate-200 bg-slate-50 p-4 ${radiusClass}`}>
-          <div className="flex items-center gap-2 text-sm font-semibold"><Lock size={15} /> Quyền truy cập</div>
-          <p className="mt-2 text-xs text-slate-500">Mua một lần hoặc tải miễn phí tùy loại tài nguyên.</p>
-        </aside>
-      </section>
-
-      {showRelated && (
-        <section className="mx-auto max-w-6xl p-6 pt-0">
-          <h2 className="mb-3 text-lg font-semibold">Tài nguyên liên quan</h2>
-          <div className="grid gap-3 md:grid-cols-3">
-            {MOCK_RESOURCES.slice(1, 4).map((item) => (
-              <div key={item.title} className={`border border-slate-200 p-4 ${radiusClass}`}>
-                <p className="text-xs text-slate-500">{item.category}</p>
-                <h3 className="mt-1 font-semibold">{item.title}</h3>
+          <aside className="space-y-4">
+            {showStickyCta && <CtaCard />}
+            {showRelated && (
+              <div className={`border border-slate-200 bg-white p-4 shadow-sm ${radiusClass}`}>
+                <h4 className="font-semibold text-xs uppercase tracking-wider text-slate-400 mb-2">Tài nguyên liên quan</h4>
+                <div className="space-y-2 text-xs font-medium">
+                  {MOCK_RESOURCES.slice(1, 4).map((item) => (
+                    <div key={item.title} className="text-slate-600 hover:text-slate-900 transition-colors cursor-pointer truncate">
+                      • {item.title}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
+          </aside>
+        </section>
+      </div>
+    );
+  }
+
+  // Layout 2: MODERN (Hiện đại)
+  if (layoutStyle === 'modern') {
+    return (
+      <div className="relative bg-white text-slate-900 font-sans shadow-sm rounded-lg overflow-hidden border border-slate-100">
+        {/* Hero Banner với màu Gradient */}
+        <section className="p-8 text-white relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${brandColor}, ${accent})` }}>
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
+          <div className="space-y-3 relative z-10">
+            <div className="flex items-center gap-2 text-xs text-white/80">
+              <ArrowLeft size={12} /> Quay lại
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold bg-white/20 text-white">Checklist</span>
+            </div>
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Checklist ra mắt website chuyên nghiệp</h1>
+            <p className="text-sm text-white/95 max-w-2xl leading-relaxed">Bộ checklist giúp rà soát nội dung, hiệu năng, SEO và tracking trước khi public.</p>
+            {resourceFiltersFeature?.enabled && showResourceFilters && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {[{ name: 'AutoCAD 2D', icon: 'https://img.icons8.com/color/48/autocad.png' }].map((item) => (
+                  <span key={item.name} className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 text-xs font-medium text-white">
+                    <img src={item.icon} alt="" className="h-3.5 w-3.5 object-contain shrink-0" />
+                    <span>{item.name}</span>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </section>
-      )}
 
-      {showStickyCta && (
-        <div className="sticky bottom-0 border-t border-slate-200 bg-white/95 p-3 backdrop-blur">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 text-sm">
-            <span className="font-medium">Checklist ra mắt website</span>
-            <button className={`px-4 py-2 font-semibold text-white ${smallRadiusClass}`} style={{ backgroundColor: brandColor }}>Tải ngay</button>
+        {/* Content body */}
+        <section className={`p-6 mx-auto grid gap-6 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-[1fr_280px]'}`}>
+          <div className="space-y-6">
+            <GalleryBlock />
+            <article className="prose prose-slate max-w-none">
+              <h3 className="text-lg font-semibold text-slate-900 border-l-4 pl-3" style={{ borderColor: brandColor }}>Bạn nhận được gì?</h3>
+              <ul className="mt-3 space-y-2 text-sm text-slate-600 list-disc pl-5">
+                <li>Kiểm tra nội dung, SEO, form, tracking và performance.</li>
+                <li>File mẫu có thể copy để sử dụng ngay cho dự án của bạn.</li>
+                <li>Hệ thống hóa thứ tự ưu tiên tối ưu hóa tỷ lệ chuyển đổi.</li>
+              </ul>
+            </article>
           </div>
+
+          <aside className="space-y-4">
+            {showStickyCta && <CtaCard isModernLayout={true} />}
+            {showRelated && (
+              <div className={`border border-indigo-50/50 bg-white p-4 shadow-sm hover:shadow-md transition-all duration-300 ${radiusClass}`}>
+                <h4 className="font-semibold text-xs uppercase tracking-wider text-slate-400 mb-2">Tài nguyên liên quan</h4>
+                <div className="space-y-2.5 text-xs font-semibold">
+                  {MOCK_RESOURCES.slice(1, 4).map((item) => (
+                    <div key={item.title} className="text-slate-600 hover:text-slate-900 transition-colors cursor-pointer truncate flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: brandColor }} />
+                      <span>{item.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+        </section>
+      </div>
+    );
+  }
+
+  // Layout 3: MINIMAL (Tối giản - 1 cột căn giữa giống macOS/iOS app)
+  return (
+    <div className="relative bg-white text-slate-900 font-sans shadow-sm rounded-lg overflow-hidden border border-slate-100 py-6">
+      <div className="max-w-2xl mx-auto px-4 md:px-0 space-y-6">
+        {/* Title Section */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <ArrowLeft size={12} /> Quay lại
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-500">Checklist</span>
+            {resourceFiltersFeature?.enabled && showResourceFilters && (
+              <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                AutoCAD 2D
+              </span>
+            )}
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Checklist ra mắt website chuyên nghiệp</h1>
+          <p className="text-sm text-slate-500 leading-relaxed">Bộ checklist giúp rà soát nội dung, hiệu năng, SEO và tracking trước khi public.</p>
         </div>
-      )}
+
+        {/* Gallery */}
+        <GalleryBlock />
+
+        {/* Inline Cta Card (Kiểu tối giản ngang Apple) */}
+        {showStickyCta && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border border-slate-100 bg-slate-50/60 p-4 rounded-xl shadow-inner animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-16 bg-slate-200 rounded-lg overflow-hidden shrink-0 border border-slate-100">
+                <img src={MOCK_GALLERY_IMAGES[0]} alt="" className="h-full w-full object-cover" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-semibold text-slate-800">Checklist ra mắt website</p>
+                <p className="text-xs text-slate-500">Miễn phí • Đăng nhập để tải</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold text-white transition-all active:scale-95"
+              style={{ backgroundColor: brandColor, borderRadius: '8px' }}
+            >
+              <Download size={15} /> Tải tài nguyên
+            </button>
+          </div>
+        )}
+
+        {/* Content Body */}
+        <article className="prose prose-slate max-w-none pt-2">
+          <h3 className="text-lg font-semibold text-slate-900">Bạn nhận được gì?</h3>
+          <ul className="mt-3 space-y-2 text-sm text-slate-650 list-disc pl-5">
+            <li>Kiểm tra nội dung, SEO, form, tracking và performance.</li>
+            <li>File mẫu có thể copy để sử dụng ngay cho dự án của bạn.</li>
+            <li>Hệ thống hóa thứ tự ưu tiên tối ưu hóa tỷ lệ chuyển đổi.</li>
+          </ul>
+        </article>
+
+        {/* Related Section ở cuối */}
+        {showRelated && (
+          <div className="border-t border-slate-100 pt-6 mt-8">
+            <h4 className="font-semibold text-sm text-slate-800 mb-3">Tài nguyên liên quan khác</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {MOCK_RESOURCES.slice(1, 4).map((item) => (
+                <div key={item.title} className="border border-slate-150 p-3 rounded-lg hover:border-slate-350 transition-colors cursor-pointer bg-slate-50/30">
+                  <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">{item.category}</p>
+                  <h5 className="font-semibold text-xs text-slate-700 mt-1 truncate">{item.title}</h5>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

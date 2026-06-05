@@ -27,6 +27,7 @@ type DetailLayoutStyle = 'classic' | 'modern' | 'minimal';
 type ResourcesDetailExperienceConfig = {
   layoutStyle: DetailLayoutStyle;
   showGallery: boolean;
+  galleryMode?: 'scroll' | 'grid';
   showRelated: boolean;
   showStickyCta: boolean;
   showResourceFilters: boolean;
@@ -44,6 +45,7 @@ const LAYOUTS: LayoutOption<DetailLayoutStyle>[] = [
 const DEFAULT_CONFIG: ResourcesDetailExperienceConfig = {
   layoutStyle: 'classic',
   showGallery: true,
+  galleryMode: 'grid',
   showRelated: true,
   showStickyCta: true,
   showResourceFilters: true,
@@ -114,6 +116,19 @@ export default function ResourcesDetailExperiencePage() {
           </ControlCard>
           <ControlCard title="Khối hiển thị">
             <ToggleRow label="Gallery" checked={config.showGallery} onChange={(value) => updateConfig('showGallery', value)} accentColor={brandColor} />
+            {config.showGallery && (
+              <div className="pl-4 pr-1 py-1.5 bg-slate-50/50 rounded-lg border border-slate-100 my-1 space-y-2">
+                <SelectRow
+                  label="Chế độ ảnh phụ"
+                  value={config.galleryMode ?? 'grid'}
+                  options={[
+                    { value: 'grid', label: 'Dạng lưới (Grid)' },
+                    { value: 'scroll', label: 'Cuộn ngang (Scroll)' },
+                  ]}
+                  onChange={(value) => updateConfig('galleryMode', value as 'scroll' | 'grid')}
+                />
+              </div>
+            )}
             <ToggleRow label="Tài nguyên liên quan" checked={config.showRelated} onChange={(value) => updateConfig('showRelated', value)} accentColor={brandColor} />
             <ToggleRow label="Nút tải cố định" checked={config.showStickyCta} onChange={(value) => updateConfig('showStickyCta', value)} accentColor={brandColor} />
             {resourceFiltersFeature?.enabled && (
@@ -157,6 +172,7 @@ export default function ResourcesDetailExperiencePage() {
               <ResourceDetailPreview
                 layoutStyle={config.layoutStyle}
                 showGallery={config.showGallery}
+                galleryMode={config.galleryMode}
                 showRelated={config.showRelated}
                 showStickyCta={config.showStickyCta}
                 showResourceFilters={config.showResourceFilters}

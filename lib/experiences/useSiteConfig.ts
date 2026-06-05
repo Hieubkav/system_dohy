@@ -515,6 +515,7 @@ export function useResourcesListConfig(): ResourcesListConfig {
 type ResourcesDetailConfig = {
   layoutStyle: 'classic' | 'modern' | 'minimal';
   showGallery: boolean;
+  galleryMode?: 'scroll' | 'grid';
   showRelated: boolean;
   showStickyCta: boolean;
   showResourceFilters: boolean;
@@ -529,6 +530,7 @@ export function useResourcesDetailConfig(): ResourcesDetailConfig {
     return {
       layoutStyle: raw?.layoutStyle ?? 'classic',
       showGallery: raw?.showGallery ?? true,
+      galleryMode: raw?.galleryMode ?? 'grid',
       showRelated: raw?.showRelated ?? true,
       showStickyCta: raw?.showStickyCta ?? true,
       showResourceFilters: raw?.showResourceFilters ?? true,

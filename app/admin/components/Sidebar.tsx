@@ -416,6 +416,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
                     { href: '/admin/resources', label: 'Tất cả tài nguyên', moduleKey: 'resources' },
                     { href: '/admin/resource-categories', label: 'Danh mục tài nguyên', moduleKey: 'resources' },
                     ...(resourceFiltersFeature?.enabled ? [{ href: '/admin/resources/filters', label: 'Bộ lọc tài nguyên', moduleKey: 'resources' }] : []),
+                    { href: '/admin/resources/customers', label: 'Người mua và tải', moduleKey: 'resources' },
                   ]}
                 />
               </div>
