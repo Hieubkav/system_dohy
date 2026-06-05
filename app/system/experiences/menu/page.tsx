@@ -702,88 +702,90 @@ export default function HeaderMenuExperiencePage() {
               </div>
             )}
           </ControlCard>
-          <ControlCard title="Topbar & Search">
-            <div className="space-y-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Hotline</Label>
-                <Input
-                  value={settingsPhone ?? ''}
-                  className="h-8 text-sm"
-                  disabled
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Email</Label>
-                <Input
-                  value={settingsEmail ?? ''}
-                  className="h-8 text-sm"
-                  disabled
-                />
-              </div>
-              <ToggleRow
-                label="Hiển thị hotline"
-                checked={config.topbar.showHotline ?? true}
-                onChange={(v) => updateTopbar('showHotline', v)}
-                accentColor={resolvedBrandColor}
-              />
-              <ToggleRow
-                label="Hiển thị email"
-                checked={config.topbar.showEmail ?? true}
-                onChange={(v) => updateTopbar('showEmail', v)}
-                accentColor={resolvedBrandColor}
-              />
-              <ToggleRow
-                label="Slogan topbar"
-                checked={config.topbar.sloganEnabled ?? true}
-                onChange={(v) => updateTopbar('sloganEnabled', v)}
-                accentColor={resolvedBrandColor}
-              />
-              <div className="space-y-1">
-                <Label className="text-xs">Slogan</Label>
-                <Input
-                  value={resolvedTopbarSlogan}
-                  className="h-8 text-sm"
-                  disabled
-                />
-              </div>
-              <ToggleRow
-                label="Theo dõi đơn"
-                checked={config.topbar.showTrackOrder && ordersEnabled}
-                onChange={(v) => updateTopbar('showTrackOrder', v)}
-                accentColor={resolvedBrandColor}
-                disabled={!ordersEnabled}
-              />
-              {config.search.show && (
-                <div className="pt-2">
-                  <p className="text-xs font-medium text-slate-500">Search theo module</p>
-                  <ModuleFeatureStatus
-                    label="Sản phẩm"
-                    enabled={productsModule?.enabled ?? false}
-                    href="/system/modules/products"
-                    moduleName="Module Sản phẩm"
-                  />
-                  <ModuleFeatureStatus
-                    label="Bài viết"
-                    enabled={postsModule?.enabled ?? false}
-                    href="/system/modules/posts"
-                    moduleName="Module Bài viết"
-                  />
-                  <ModuleFeatureStatus
-                    label="Dịch vụ"
-                    enabled={servicesModule?.enabled ?? false}
-                    href="/system/modules/services"
-                    moduleName="Module Dịch vụ"
-                  />
-                  <ModuleFeatureStatus
-                    label="Khóa học"
-                    enabled={coursesModule?.enabled ?? false}
-                    href="/system/modules/courses"
-                    moduleName="Module Khóa học"
+          {previewStyle !== 'darkglass' && (
+            <ControlCard title="Topbar & Search">
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Hotline</Label>
+                  <Input
+                    value={settingsPhone ?? ''}
+                    className="h-8 text-sm"
+                    disabled
                   />
                 </div>
-              )}
-            </div>
-          </ControlCard>
+                <div className="space-y-1">
+                  <Label className="text-xs">Email</Label>
+                  <Input
+                    value={settingsEmail ?? ''}
+                    className="h-8 text-sm"
+                    disabled
+                  />
+                </div>
+                <ToggleRow
+                  label="Hiển thị hotline"
+                  checked={config.topbar.showHotline ?? true}
+                  onChange={(v) => updateTopbar('showHotline', v)}
+                  accentColor={resolvedBrandColor}
+                />
+                <ToggleRow
+                  label="Hiển thị email"
+                  checked={config.topbar.showEmail ?? true}
+                  onChange={(v) => updateTopbar('showEmail', v)}
+                  accentColor={resolvedBrandColor}
+                />
+                <ToggleRow
+                  label="Slogan topbar"
+                  checked={config.topbar.sloganEnabled ?? true}
+                  onChange={(v) => updateTopbar('sloganEnabled', v)}
+                  accentColor={resolvedBrandColor}
+                />
+                <div className="space-y-1">
+                  <Label className="text-xs">Slogan</Label>
+                  <Input
+                    value={resolvedTopbarSlogan}
+                    className="h-8 text-sm"
+                    disabled
+                  />
+                </div>
+                <ToggleRow
+                  label="Theo dõi đơn"
+                  checked={config.topbar.showTrackOrder && ordersEnabled}
+                  onChange={(v) => updateTopbar('showTrackOrder', v)}
+                  accentColor={resolvedBrandColor}
+                  disabled={!ordersEnabled}
+                />
+                {config.search.show && (
+                  <div className="pt-2">
+                    <p className="text-xs font-medium text-slate-500">Search theo module</p>
+                    <ModuleFeatureStatus
+                      label="Sản phẩm"
+                      enabled={productsModule?.enabled ?? false}
+                      href="/system/modules/products"
+                      moduleName="Module Sản phẩm"
+                    />
+                    <ModuleFeatureStatus
+                      label="Bài viết"
+                      enabled={postsModule?.enabled ?? false}
+                      href="/system/modules/posts"
+                      moduleName="Module Bài viết"
+                    />
+                    <ModuleFeatureStatus
+                      label="Dịch vụ"
+                      enabled={servicesModule?.enabled ?? false}
+                      href="/system/modules/services"
+                      moduleName="Module Dịch vụ"
+                    />
+                    <ModuleFeatureStatus
+                      label="Khóa học"
+                      enabled={coursesModule?.enabled ?? false}
+                      href="/system/modules/courses"
+                      moduleName="Module Khóa học"
+                    />
+                  </div>
+                )}
+              </div>
+            </ControlCard>
+          )}
           {previewStyle === 'classic' && (
             <ControlCard title="Giao diện Classic">
               <div className="space-y-2">
@@ -904,7 +906,7 @@ export default function HeaderMenuExperiencePage() {
             </ControlCard>
           )}
 
-          <Card className="p-2 lg:col-span-4">
+          <Card className="p-2 col-span-full">
             <div className="mb-2">
               <ExampleLinks
                 links={[{ label: 'Trang chủ', url: '/' }]}
