@@ -135,17 +135,16 @@ const sortByValidator = v.union(
 function assertValidDownloadUrl(url: string) {
   const cleanUrl = url.trim();
   if (!cleanUrl) {
-    throw new Error("Vui lòng nhập link tải Google Drive");
+    throw new Error("Vui lòng nhập link tải");
   }
   try {
     const parsed = new URL(cleanUrl);
-    const allowed = parsed.protocol === "https:" &&
-      (parsed.hostname === "drive.google.com" || parsed.hostname.endsWith(".google.com"));
+    const allowed = parsed.protocol === "http:" || parsed.protocol === "https:";
     if (!allowed) {
       throw new Error("invalid");
     }
   } catch {
-    throw new Error("Link tải phải là URL Google Drive hợp lệ");
+    throw new Error("Link tải phải là URL hợp lệ (bắt đầu bằng http:// hoặc https://)");
   }
 }
 
