@@ -4,7 +4,7 @@ import {
   type SectionSpacing,
 } from '../../_shared/types/sectionSpacing';
 
-export type ServiceListStyle = 'grid' | 'bento' | 'list' | 'carousel' | 'minimal' | 'showcase';
+export type ServiceListStyle = 'grid' | 'bento' | 'list' | 'carousel' | 'minimal' | 'showcase' | 'kanban';
 
 export type ServiceSelectionMode = 'auto' | 'manual' | 'demo';
 

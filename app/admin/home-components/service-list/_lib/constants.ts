@@ -14,7 +14,8 @@ export const SERVICE_LIST_STYLES: { id: ServiceListStyle; label: string }[] = [
   { id: 'list', label: 'List' },
   { id: 'carousel', label: 'Carousel' },
   { id: 'minimal', label: 'Minimal' },
-  { id: 'showcase', label: 'Showcase' }
+  { id: 'showcase', label: 'Showcase' },
+  { id: 'kanban', label: 'Kanban' }
 ];
 
 export const DEFAULT_SERVICE_LIST_CONFIG: ServiceListConfig = {
