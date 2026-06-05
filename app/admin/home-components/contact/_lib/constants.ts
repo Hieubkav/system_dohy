@@ -15,6 +15,7 @@ export const CONTACT_STYLES: Array<{ id: ContactStyle; label: string }> = [
   { id: 'elegant', label: 'Elegant Clean' },
   { id: 'minimal', label: 'Minimal Form' },
   { id: 'centered', label: 'Balanced Split' },
+  { id: 'kanban', label: 'Mẫu tối giản Kanban (Layout 7)' },
 ];
 
 export const DEFAULT_CONTACT_CONFIG: ContactConfigState = {
@@ -120,6 +121,11 @@ export const DEFAULT_CONTACT_TEXTS: Record<ContactStyle, Record<string, string>>
     heading: 'Liên hệ & hỗ trợ',
     description: 'Phản hồi nhanh trong giờ làm việc.',
   },
+  kanban: {
+    badge: 'Thông tin liên hệ',
+    heading: 'Kết nối với chúng tôi',
+    description: 'Chúng tôi luôn sẵn sàng hỗ trợ bạn',
+  },
 };
 
 export const TEXT_FIELDS: Record<ContactStyle, Array<{ key: string; label: string; placeholder: string }>> = {
@@ -147,6 +153,11 @@ export const TEXT_FIELDS: Record<ContactStyle, Array<{ key: string; label: strin
   centered: [
     { key: 'heading', label: 'Heading hiển thị', placeholder: 'Liên hệ & hỗ trợ' },
     { key: 'description', label: 'Mô tả', placeholder: 'Phản hồi nhanh trong giờ làm việc.' },
+  ],
+  kanban: [
+    { key: 'badge', label: 'Badge hiển thị', placeholder: 'Thông tin liên hệ' },
+    { key: 'heading', label: 'Heading hiển thị', placeholder: 'Kết nối với chúng tôi' },
+    { key: 'description', label: 'Mô tả', placeholder: 'Chúng tôi luôn sẵn sàng hỗ trợ bạn' },
   ],
 };
 

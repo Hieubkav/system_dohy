@@ -23,6 +23,7 @@ export const ABOUT_STYLES: AboutStyleOption[] = [
   { id: 'showcase', label: 'Mẫu Sản phẩm (Layout 6)' },
   { id: 'spaCollage', label: 'Mẫu Spa Premium (Layout 7)' },
   { id: 'solarFeature', label: 'Mẫu Năng lượng (Layout 8)' },
+  { id: 'kanban', label: 'Mẫu tối giản Kanban (Layout 9)' },
 ];
 
 const ABOUT_STYLE_SET = new Set<AboutStyle>(ABOUT_STYLES.map((style) => style.id));

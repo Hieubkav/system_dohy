@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import Link from 'next/link';
 import { ArrowRight, Image as ImageIcon, Phone } from 'lucide-react';
 import { cn } from '../../../components/ui';
@@ -126,6 +128,25 @@ export function AboutSectionShared({
   const isMobilePreview = isPreview && device === 'mobile';
   const isTabletPreview = isPreview && device === 'tablet';
   const isNarrowPreview = isPreview && device !== 'desktop';
+
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+
+  const isDarkBg = React.useMemo(() => {
+    if (!systemConfig?.homePageBackground) {return false;}
+    const { type, customColor } = systemConfig.homePageBackground;
+    if (type === 'black') {return true;}
+    if (type === 'custom' && customColor) {
+      const color = customColor.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+        const r = Number.parseInt(color.slice(1, 3), 16);
+        const g = Number.parseInt(color.slice(3, 5), 16);
+        const b = Number.parseInt(color.slice(5, 7), 16);
+        const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        return luma < 128;
+      }
+    }
+    return false;
+  }, [systemConfig?.homePageBackground]);
 
   const resolvedHeading = sanitizeText(heading) || sanitizeText(title) || 'Về chúng tôi';
   const resolvedDescription = sanitizeText(description);
@@ -676,6 +697,108 @@ export function AboutSectionShared({
     </section>
   );
 
+  const renderKanban = () => (
+    <section 
+      className={cn('py-8 border-b transition-colors duration-300', sectionXClass)}
+      style={{
+        backgroundColor: isDarkBg ? 'rgba(9, 9, 11, 0.3)' : 'rgba(244, 244, 245, 0.4)',
+        borderColor: isDarkBg ? '#27272a' : '#e4e4e7',
+      }}
+    >
+      <div className="max-w-7xl mx-auto">
+        <div className={cn('grid gap-6 items-center', gridTwoColClass)}>
+          {/* Cột hình ảnh */}
+          <div className="w-full flex justify-center">
+            <div className={cn('relative w-full overflow-hidden shadow-sm aspect-video md:aspect-[16/10] border', cornerRadiusSoftClass)} style={{ borderColor: isDarkBg ? '#27272a' : '#e4e4e7' }}>
+              {primaryImage ? (
+                <AboutImage 
+                  src={primaryImage} 
+                  alt={resolvedHeading} 
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-[1.02]" 
+                  context={context} 
+                  imagePriority={imagePriority} 
+                />
+              ) : renderEmptyImage(40)}
+            </div>
+          </div>
+
+          {/* Cột thông tin */}
+          <div className="flex flex-col w-full justify-center">
+            {resolvedSubHeading ? (
+              <span 
+                className="text-[10px] font-bold tracking-[0.15em] uppercase mb-2 self-start"
+                style={{ color: tokens.primary }}
+              >
+                {resolvedSubHeading}
+              </span>
+            ) : null}
+
+            <h2 
+              className={cn('font-bold tracking-tight mb-3 text-xl md:text-2xl lg:text-3xl')}
+              style={{ color: isDarkBg ? '#f4f4f5' : '#09090b' }}
+            >
+              {resolvedHeading}{' '}
+              {resolvedHighlightText ? (
+                <span style={{ color: tokens.primary }}>{resolvedHighlightText}</span>
+              ) : null}
+            </h2>
+
+            {resolvedDescription ? (
+              <p 
+                className="text-xs leading-relaxed mb-5 text-justify"
+                style={{ color: isDarkBg ? '#a1a1aa' : '#71717a' }}
+              >
+                {resolvedDescription}
+              </p>
+            ) : null}
+
+            {visibleFeatures.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                {visibleFeatures.slice(0, 4).map((feature) => (
+                  <div 
+                    key={feature.title} 
+                    className={cn('flex items-center gap-2 p-2 border transition-colors duration-200 rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.03)]')}
+                    style={{
+                      backgroundColor: isDarkBg ? 'rgba(24, 24, 27, 0.4)' : '#ffffff',
+                      borderColor: isDarkBg ? '#27272a' : '#e4e4e7',
+                    }}
+                  >
+                    <div className="shrink-0 w-5 h-5 flex items-center justify-center text-xs" style={{ color: tokens.primary }}>
+                      {renderFeatureMedia(feature, 'w-3.5 h-3.5 stroke-[2.5]')}
+                    </div>
+                    <span 
+                      className="font-semibold text-xs leading-tight"
+                      style={{ color: isDarkBg ? '#e4e4e7' : '#27272a' }}
+                    >
+                      {feature.title}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {resolvedButtonText ? (
+              <AboutButton
+                context={context}
+                href={resolvedButtonLink}
+                text={resolvedButtonText}
+                withArrow
+                className={cn(
+                  'self-start inline-flex items-center gap-1.5 px-5 py-2.5 shadow-sm font-semibold text-xs uppercase tracking-wider transition-all duration-200 group rounded-sm border',
+                )}
+                style={{ 
+                  backgroundColor: isDarkBg ? '#18181b' : '#ffffff', 
+                  color: isDarkBg ? '#f4f4f5' : '#09090b',
+                  borderColor: isDarkBg ? '#27272a' : '#e4e4e7'
+                }}
+              />
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+
   const renderEmpty = () => (
     <section className="py-16">
       <div className="flex flex-col items-center justify-center text-center">
@@ -704,6 +827,7 @@ export function AboutSectionShared({
             {style === 'showcase' && renderShowcase()}
             {style === 'spaCollage' && renderSpaCollage()}
             {style === 'solarFeature' && renderSolarFeature()}
+            {style === 'kanban' && renderKanban()}
           </>
         )}
     </div>

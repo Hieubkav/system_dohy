@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { AlertTriangle, Eye } from 'lucide-react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
@@ -45,6 +47,21 @@ export function ContactPreview({
   const { device, setDevice } = usePreviewDevice();
   const normalizedConfig = React.useMemo(() => normalizeContactConfig(config), [config]);
   const previewStyle = selectedStyle ?? normalizedConfig.style;
+
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const homePageBgColor = React.useMemo(() => {
+    if (!systemConfig?.homePageBackground) {
+      return '#ffffff';
+    }
+    const { type, customColor } = systemConfig.homePageBackground;
+    if (type === 'black') {
+      return '#000000';
+    }
+    if (type === 'custom' && customColor) {
+      return customColor.trim();
+    }
+    return '#ffffff';
+  }, [systemConfig?.homePageBackground]);
 
   const validation = React.useMemo(() => getContactValidationResult({
     primary: brandColor,
@@ -101,16 +118,18 @@ export function ContactPreview({
         fontClassName={fontClassName}
       >
         <BrowserFrame url="yoursite.com/contact">
-          <ContactSectionShared
-            config={{ ...normalizedConfig, style: previewStyle }}
-            style={previewStyle}
-            tokens={validation.tokens}
-            mode={mode}
-            context="preview"
-            device={device}
-            title={title}
-            mapData={mapData ?? undefined}
-          />
+          <div className="w-full transition-colors duration-300" style={{ backgroundColor: homePageBgColor }}>
+            <ContactSectionShared
+              config={{ ...normalizedConfig, style: previewStyle }}
+              style={previewStyle}
+              tokens={validation.tokens}
+              mode={mode}
+              context="preview"
+              device={device}
+              title={title}
+              mapData={mapData ?? undefined}
+            />
+          </div>
         </BrowserFrame>
       </PreviewWrapper>
 

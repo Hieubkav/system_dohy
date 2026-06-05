@@ -1,6 +1,9 @@
 'use client';
 
 import React from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { useBrandColors } from '@/components/site/hooks';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
 import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
@@ -64,6 +67,27 @@ export const AboutPreview = ({
   cornerRadius,
 }: AboutPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const systemColors = useBrandColors();
+
+  const homePageBgColor = React.useMemo(() => {
+    if (!systemConfig?.homePageBackground) {return '#ffffff';}
+    const { type, customColor } = systemConfig.homePageBackground;
+    switch (type) {
+      case 'white':
+        return '#ffffff';
+      case 'black':
+        return '#000000';
+      case 'primary':
+        return systemColors.primary;
+      case 'secondary':
+        return systemColors.secondary || systemColors.primary;
+      case 'custom':
+        return customColor || '#ffffff';
+      default:
+        return '#ffffff';
+    }
+  }, [systemConfig?.homePageBackground, systemColors]);
 
   const previewStyle = selectedStyle ?? config.style ?? 'bento';
   const setPreviewStyle = (nextStyle: string) => {
@@ -104,43 +128,45 @@ export const AboutPreview = ({
         fontClassName={fontClassName}
       >
         <BrowserFrame url="yoursite.com/about">
-          <div className="container mx-auto px-4">
-            <div className={getSectionSpacingClassName(spacing)}>
-              <SectionHeader
-                title={title}
-                subtitle={subtitle}
-                badgeText={badgeText}
-                hideHeader={hideHeader}
-                showTitle={showTitle}
-                showSubtitle={showSubtitle}
-                showBadge={showBadge}
-                headerAlign={headerAlign}
-                titleColorPrimary={titleColorPrimary}
-                subtitleAboveTitle={subtitleAboveTitle}
-                uppercaseText={uppercaseText}
-                brandColor={tokens.primary}
-              />
-              <AboutSectionShared
-                context="preview"
-                mode={mode}
-                style={previewStyle}
-                title={title || config.heading || 'Về chúng tôi'}
-                subHeading={config.subHeading}
-                heading={config.heading}
-                highlightText={config.highlightText}
-                description={config.description}
-                phone={config.phone}
-                image={config.image}
-                images={config.images}
-                imageCaption={config.imageCaption}
-                buttonText={config.buttonText}
-                buttonLink={config.buttonLink}
-                features={config.features ?? []}
-                stats={config.stats ?? []}
-                tokens={tokens}
-                device={device}
-                cornerRadius={cornerRadius ?? config.cornerRadius ?? 'lg'}
-              />
+          <div className="w-full transition-colors duration-300" style={{ backgroundColor: homePageBgColor }}>
+            <div className="container mx-auto px-4">
+              <div className={getSectionSpacingClassName(spacing)}>
+                <SectionHeader
+                  title={title}
+                  subtitle={subtitle}
+                  badgeText={badgeText}
+                  hideHeader={hideHeader}
+                  showTitle={showTitle}
+                  showSubtitle={showSubtitle}
+                  showBadge={showBadge}
+                  headerAlign={headerAlign}
+                  titleColorPrimary={titleColorPrimary}
+                  subtitleAboveTitle={subtitleAboveTitle}
+                  uppercaseText={uppercaseText}
+                  brandColor={tokens.primary}
+                />
+                <AboutSectionShared
+                  context="preview"
+                  mode={mode}
+                  style={previewStyle}
+                  title={title || config.heading || 'Về chúng tôi'}
+                  subHeading={config.subHeading}
+                  heading={config.heading}
+                  highlightText={config.highlightText}
+                  description={config.description}
+                  phone={config.phone}
+                  image={config.image}
+                  images={config.images}
+                  imageCaption={config.imageCaption}
+                  buttonText={config.buttonText}
+                  buttonLink={config.buttonLink}
+                  features={config.features ?? []}
+                  stats={config.stats ?? []}
+                  tokens={tokens}
+                  device={device}
+                  cornerRadius={cornerRadius ?? config.cornerRadius ?? 'lg'}
+                />
+              </div>
             </div>
           </div>
         </BrowserFrame>

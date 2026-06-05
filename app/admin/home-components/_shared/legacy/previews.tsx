@@ -2603,7 +2603,7 @@ export const CTAPreview = ({ config, brandColor, secondary, selectedStyle, onSty
   );
 };
 
-export type AboutStyle = 'classic' | 'bento' | 'minimal' | 'split' | 'timeline' | 'showcase' | 'spaCollage' | 'solarFeature';
+export type AboutStyle = 'classic' | 'bento' | 'minimal' | 'split' | 'timeline' | 'showcase' | 'spaCollage' | 'solarFeature' | 'kanban';
 
 // ============ BENEFITS PREVIEW (Why Choose Us) ============
 // 6 Professional Styles: Solid Cards, Accent List, Bold Bento, Icon Row, Carousel, Timeline
@@ -3450,7 +3450,7 @@ export interface ContactConfig {
   submitButtonText?: string;
   responseTimeText?: string;
 }
-export type ContactStyle = 'modern' | 'floating' | 'grid' | 'elegant' | 'minimal' | 'centered';
+export type ContactStyle = 'modern' | 'floating' | 'grid' | 'elegant' | 'minimal' | 'centered' | 'kanban';
 
 const getSocialIcon = (platform: string) => {
   switch (platform.toLowerCase()) {
