@@ -767,8 +767,8 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
   }
 
   // Inline mobile menu button renderer
-  const renderMobileMenuButton = (isTransparent = false) => {
-    const color = isTransparent ? tokens.textInverse : layerColors.navbar.text;
+  const renderMobileMenuButton = (isTransparent = false, customColor?: string) => {
+    const color = customColor || (isTransparent ? tokens.textInverse : layerColors.navbar.text);
     return (
       <button onClick={handleMobileMenuToggle} className={cn('p-2 rounded-lg lg:hidden')} style={{ color }}>
         <div className="w-5 h-4 flex flex-col justify-between">
@@ -2234,7 +2234,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
           {showCart && (
             <CartIcon variant="mobile" tokens={{ ...navbarActionTokens, iconButtonText: '#ffffff' }} />
           )}
-          {renderMobileMenuButton(true)}
+          {renderMobileMenuButton(true, tokens.surface)}
         </div>
       </div>
     );
