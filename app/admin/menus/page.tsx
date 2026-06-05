@@ -70,6 +70,9 @@ const MODULE_SITE_ROUTE_CATALOG: Record<string, { label: string; url: string }[]
   courses: [
     { label: 'Tất cả khóa học', url: buildModuleListPath('courses') },
   ],
+  resources: [
+    { label: 'Tất cả tài nguyên', url: buildModuleListPath('resources') },
+  ],
   wishlist: [
     { label: 'Wishlist', url: '/wishlist' },
   ],
@@ -183,6 +186,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
   const serviceCategories = useQuery(api.serviceCategories.listActive, { limit: 100 });
   const projectCategories = useQuery(api.projectCategories.listActive, { limit: 100 });
   const courseCategories = useQuery(api.courseCategories.listActive, { limit: 100 });
+  const resourceCategories = useQuery(api.resourceCategories.listActive, { limit: 100 });
   const trustPageRoutes = useQuery(api.menus.listTrustPageRoutesForPicker, {});
   const coursesEnabled = enabledModules?.some(moduleItem => moduleItem.key === 'courses') ?? false;
   const publishedCourseCount = useQuery(api.courses.countPublished, coursesEnabled ? {} : 'skip');
@@ -203,7 +207,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pickerStep, setPickerStep] = useState<1 | 2 | 3>(1);
   const [selectedType, setSelectedType] = useState<'core' | 'module' | 'category' | 'trust' | 'detail' | null>(null);
-  const [selectedModule, setSelectedModule] = useState<'posts' | 'products' | 'services' | 'courses' | 'projects' | null>(null);
+  const [selectedModule, setSelectedModule] = useState<'posts' | 'products' | 'services' | 'courses' | 'projects' | 'resources' | null>(null);
 
   // AI Import state
   const [isAiImportOpen, setIsAiImportOpen] = useState(false);
@@ -242,6 +246,12 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
   const detailCourses = useQuery(
     api.menus.listCoursesForPicker,
     selectedModule === 'courses' && pickerStep === 3
+      ? { search: quickRouteSearch, limit: 20 }
+      : 'skip'
+  );
+  const detailResources = useQuery(
+    api.menus.listResourcesForPicker,
+    selectedModule === 'resources' && pickerStep === 3
       ? { search: quickRouteSearch, limit: 20 }
       : 'skip'
   );
@@ -329,6 +339,17 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
       });
     }
 
+    if (enabledKeys.has('resources')) {
+      (resourceCategories ?? []).forEach(category => {
+        options.push({
+          group: 'Danh mục',
+          label: category.name,
+          source: 'resources',
+          url: buildCategoryPath({ categorySlug: category.slug, mode: routeMode, moduleKey: 'resources' }),
+        });
+      });
+    }
+
     (trustPageRoutes ?? []).forEach(route => {
       options.push({
         group: 'Trang tin cậy',
@@ -346,7 +367,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
     });
 
     return Array.from(deduped.values());
-  }, [courseCategories, enabledModules, postCategories, productCategories, projectCategories, routeMode, serviceCategories, trustPageRoutes]);
+  }, [courseCategories, enabledModules, postCategories, productCategories, projectCategories, resourceCategories, routeMode, serviceCategories, trustPageRoutes]);
 
   const filteredQuickRoutes = useMemo(() => {
     const keyword = quickRouteSearch.trim().toLowerCase();
@@ -559,7 +580,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
       const categoryLimit = maxDepth >= 3 ? 6 : 4;
       const appendCategories = (
         categories: Array<{ name: string; slug: string }> | undefined,
-        moduleKey: 'posts' | 'products' | 'services' | 'courses' | 'projects',
+        moduleKey: 'posts' | 'products' | 'services' | 'courses' | 'projects' | 'resources',
         scoreBase: number,
       ) => {
         if (maxChildDepth < 1) {return;}
@@ -639,6 +660,20 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
         url: buildModuleListPath('courses'),
       });
       appendCategories(courseCategories, 'courses', 74);
+    }
+
+    if (enabledKeys.has('resources')) {
+      add({
+        depth: 0,
+        label: 'Tài nguyên',
+        reasons: [
+          'Khu vực tài nguyên đang bật',
+          `${resourceCategories?.length ?? 0} danh mục tài nguyên có thể làm menu con`,
+        ],
+        score: 84 + Math.min(8, resourceCategories?.length ?? 0),
+        url: buildModuleListPath('resources'),
+      });
+      appendCategories(resourceCategories, 'resources', 72);
     }
 
     if (enabledKeys.has('posts')) {
@@ -739,7 +774,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
       root,
       ...(childrenByRoot.get(root.url) ?? [])
     ]).slice(0, MENU_ITEMS_LIMIT);
-  }, [courseCategories, enabledModules, maxDepth, postCategories, productCategories, projectCategories, publishedCourseCount, routeMode, serviceCategories, isUseProductTypeLogic, smartMenuBuilderData, enableProductTypes, trustPageRoutes]);
+  }, [courseCategories, enabledModules, maxDepth, postCategories, productCategories, projectCategories, resourceCategories, publishedCourseCount, routeMode, serviceCategories, isUseProductTypeLogic, smartMenuBuilderData, enableProductTypes, trustPageRoutes]);
 
   const hasChanges = useMemo(() => {
     const normalize = (items: DraftMenuItem[]) => items.map(item => ({
@@ -1091,10 +1126,10 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
 
   const pickerTypeOptions = [
     { type: 'core' as const, label: 'Trang cơ bản', description: 'Trang chủ, Liên hệ...' },
-    { type: 'module' as const, label: 'Module', description: 'Bài viết, Sản phẩm, Dịch vụ, Dự án, Khóa học...' },
+    { type: 'module' as const, label: 'Module', description: 'Bài viết, Sản phẩm, Dịch vụ, Dự án, Khóa học, Tài nguyên...' },
     { type: 'category' as const, label: 'Danh mục', description: 'Category filters' },
     { type: 'trust' as const, label: 'Chính sách', description: 'Trust pages đã có dữ liệu' },
-    { type: 'detail' as const, label: 'Chi tiết', description: 'Bài viết, Sản phẩm, Dịch vụ, Dự án, Khóa học' },
+    { type: 'detail' as const, label: 'Chi tiết', description: 'Bài viết, Sản phẩm, Dịch vụ, Dự án, Khóa học, Tài nguyên' },
   ];
 
   const detailModuleOptions = [
@@ -1128,6 +1163,12 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
       description: 'Chọn 1 khóa học cụ thể',
       enabled: coursesEnabled,
     },
+    {
+      key: 'resources' as const,
+      label: 'Tài nguyên chi tiết',
+      description: 'Chọn 1 tài nguyên cụ thể',
+      enabled: enabledModules?.some(moduleItem => moduleItem.key === 'resources'),
+    },
   ];
 
   const availableDetailModules = detailModuleOptions.filter(option => option.enabled);
@@ -1155,6 +1196,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
     || (selectedModule === 'services' && detailServices === undefined)
     || (selectedModule === 'projects' && detailProjects === undefined)
     || (selectedModule === 'courses' && detailCourses === undefined)
+    || (selectedModule === 'resources' && detailResources === undefined)
   );
 
   const stats = [
@@ -1580,6 +1622,10 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
                       <div className="px-4 py-6 text-sm text-slate-500">Không tìm thấy khóa học.</div>
                     )}
 
+                    {!isDetailLoading && selectedModule === 'resources' && (detailResources?.length ?? 0) === 0 && (
+                      <div className="px-4 py-6 text-sm text-slate-500">Không tìm thấy tài nguyên.</div>
+                    )}
+
                     {!isDetailLoading && selectedModule === 'posts' && (detailPosts?.length ?? 0) > 0 && (
                       <div className="space-y-1 p-2">
                         {detailPosts?.map(post => (
@@ -1742,6 +1788,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
                                   mode: routeMode,
                                   moduleKey: 'courses',
                                   recordSlug: course.slug,
+                                  // categorySlug is optional but buildDetailPath signature handles it
                                 }),
                                 source: 'courses',
                                 group: 'Module',
@@ -1757,6 +1804,43 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
                                   mode: routeMode,
                                   moduleKey: 'courses',
                                   recordSlug: course.slug,
+                                })}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {!isDetailLoading && selectedModule === 'resources' && (detailResources?.length ?? 0) > 0 && (
+                      <div className="space-y-1 p-2">
+                        {detailResources?.map(resource => (
+                          <button
+                            key={resource._id}
+                            type="button"
+                            onClick={() => {
+                              handleSelectQuickRoute({
+                                label: resource.title,
+                                url: buildDetailPath({
+                                  categorySlug: resource.categorySlug,
+                                  mode: routeMode,
+                                  moduleKey: 'resources',
+                                  recordSlug: resource.slug,
+                                }),
+                                source: 'resources',
+                                group: 'Module',
+                              });
+                            }}
+                            className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-slate-700 truncate">{resource.title}</div>
+                              <div className="text-xs text-slate-500 font-mono truncate">
+                                {buildDetailPath({
+                                  categorySlug: resource.categorySlug,
+                                  mode: routeMode,
+                                  moduleKey: 'resources',
+                                  recordSlug: resource.slug,
                                 })}
                               </div>
                             </div>

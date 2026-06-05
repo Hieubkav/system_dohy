@@ -714,3 +714,41 @@ export const getSmartMenuBuilderData = query({
     };
   },
 });
+
+export const listResourcesForPicker = query({
+  args: {
+    search: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.min(args.limit ?? 20, 50);
+    const search = args.search?.trim();
+    const resources = search
+      ? await ctx.db
+        .query("resources")
+        .withSearchIndex("search_title", (q) => q.search("title", search.toLowerCase()).eq("status", "Published"))
+        .take(limit)
+      : await ctx.db
+        .query("resources")
+        .withIndex("by_status_publishedAt", (q) => q.eq("status", "Published"))
+        .order("desc")
+        .take(limit);
+
+    const categories = await Promise.all(resources.map((resource) => ctx.db.get(resource.categoryId)));
+    const categoryMap = new Map(categories.filter(Boolean).map((cat) => [cat!._id, cat!]));
+
+    return resources.map((resource: Doc<"resources">) => ({
+      _id: resource._id,
+      title: resource.title,
+      slug: resource.slug,
+      categorySlug: categoryMap.get(resource.categoryId)?.slug ?? "",
+    }));
+  },
+  returns: v.array(v.object({
+    _id: v.id("resources"),
+    title: v.string(),
+    slug: v.string(),
+    categorySlug: v.string(),
+  })),
+});
+
