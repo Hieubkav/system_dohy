@@ -2089,24 +2089,64 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
       </nav>
     );
 
-    const renderDarkGlassLogo = (size: number) => (
-      <Link href="/" className="flex items-center gap-3 flex-shrink-0">
-        <div style={{ ...logoWrapStyle, width: hasBackgroundFrame ? size + 16 : size, height: logo ? 'auto' : (hasBackgroundFrame ? size + 16 : size) }}>
-          {logo ? (
-            <div style={{ ...logoInnerStyle, width: size, height: 'auto' }}>
-              <img src={logo} alt={displayName} className="h-full w-full object-contain" />
-            </div>
-          ) : (
-            <div style={{ ...logoInnerStyle, width: size, height: size, backgroundColor: 'rgba(255,255,255,0.15)', color: '#ffffff' }}>
-              {displayName.slice(0, 2).toUpperCase()}
-            </div>
+    const renderDarkGlassLogo = (size: number) => {
+      const desktopSize = size;
+      const mobileSize = Math.min(36, size);
+      
+      const logoVars = {
+        '--logo-wrap-w-desktop': `${hasBackgroundFrame ? desktopSize + 16 : desktopSize}px`,
+        '--logo-wrap-w-mobile': `${hasBackgroundFrame ? mobileSize + 16 : mobileSize}px`,
+        '--logo-wrap-h-desktop': logo ? 'auto' : `${hasBackgroundFrame ? desktopSize + 16 : desktopSize}px`,
+        '--logo-wrap-h-mobile': logo ? 'auto' : `${hasBackgroundFrame ? mobileSize + 16 : mobileSize}px`,
+        '--logo-inner-w-desktop': `${desktopSize}px`,
+        '--logo-inner-w-mobile': `${mobileSize}px`,
+        '--logo-inner-h-desktop': logo ? 'auto' : `${desktopSize}px`,
+        '--logo-inner-h-mobile': logo ? 'auto' : `${mobileSize}px`,
+      } as React.CSSProperties;
+
+      return (
+        <Link href="/" className="flex items-center gap-3 flex-shrink-0">
+          <div 
+            style={{ 
+              ...logoWrapStyle, 
+              ...logoVars, 
+              width: undefined, 
+              height: undefined 
+            }}
+            className="w-[var(--logo-wrap-w-mobile)] lg:w-[var(--logo-wrap-w-desktop)] h-[var(--logo-wrap-h-mobile)] lg:h-[var(--logo-wrap-h-desktop)] flex items-center justify-center"
+          >
+            {logo ? (
+              <div 
+                style={{ 
+                  ...logoInnerStyle, 
+                  width: undefined, 
+                  height: undefined 
+                }}
+                className="w-[var(--logo-inner-w-mobile)] lg:w-[var(--logo-inner-w-desktop)] h-auto flex items-center justify-center"
+              >
+                <img src={logo} alt={displayName} className="h-full w-full object-contain" />
+              </div>
+            ) : (
+              <div 
+                style={{ 
+                  ...logoInnerStyle, 
+                  width: undefined, 
+                  height: undefined,
+                  backgroundColor: 'rgba(255,255,255,0.15)', 
+                  color: '#ffffff' 
+                }}
+                className="w-[var(--logo-inner-w-mobile)] lg:w-[var(--logo-inner-w-desktop)] h-[var(--logo-inner-h-mobile)] lg:h-[var(--logo-inner-h-desktop)] flex items-center justify-center"
+              >
+                {displayName.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+          </div>
+          {showBrandName && (
+            <span className="font-semibold text-white text-sm lg:text-base">{displayName}</span>
           )}
-        </div>
-        {showBrandName && (
-          <span className="font-semibold text-white">{displayName}</span>
-        )}
-      </Link>
-    );
+        </Link>
+      );
+    };
 
     const renderDarkGlassRightActions = (_isSticky = false) => (
       <div className="flex items-center justify-end gap-3 flex-shrink-0">
@@ -2211,7 +2251,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
         >
           <div
             className={cn(
-              "flex items-center justify-between gap-4 w-full px-6 border-b transition-all duration-300",
+              "flex items-center justify-between gap-4 w-full px-4 sm:px-6 border-b transition-all duration-300",
               pathname === '/'
                 ? "bg-black/20 backdrop-blur-md border-white/5"
                 : "bg-zinc-950 border-zinc-900"
@@ -2234,7 +2274,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
             isScrolled ? "translate-y-0 opacity-100" : "-translate-y-[150%] opacity-0 pointer-events-none"
           )}
         >
-          <div className="flex items-center justify-between gap-4 w-full h-[76px] lg:h-[88px] px-6 lg:px-8 bg-black/60 backdrop-blur-lg rounded-full shadow-2xl shadow-black/40 border border-white/10">
+          <div className="flex items-center justify-between gap-4 w-full h-[60px] sm:h-[70px] lg:h-[88px] px-4 sm:px-6 lg:px-8 bg-black/60 backdrop-blur-lg rounded-full shadow-2xl shadow-black/40 border border-white/10">
             {renderDarkGlassLogo(pillLogoSize)}
             {renderDarkGlassNav("text-white")}
             {renderDarkGlassRightActions(true)}

@@ -1276,7 +1276,7 @@ const RenderCircular = ({
       <div className="mx-auto max-w-[1140px]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           
-          <div className="text-left space-y-6">
+          <div className="text-center lg:text-left space-y-6">
             <h2 
               className="text-4xl sm:text-5xl lg:text-[61px] font-light leading-tight tracking-wide uppercase font-sans"
               style={{ color: textCol }}
@@ -1285,13 +1285,13 @@ const RenderCircular = ({
             </h2>
             {subtitleText && (
               <p 
-                className="text-lg sm:text-xl font-light leading-relaxed max-w-lg"
+                className="text-lg sm:text-xl font-light leading-relaxed max-w-lg mx-auto lg:mx-0"
                 style={{ color: mutedTextCol }}
               >
                 {subtitleText}
               </p>
             )}
-            <div className="pt-2">
+            <div className="pt-2 flex justify-center lg:justify-start">
               <a
                 href={circularCtaLink || "#contact"}
                 target="_self"

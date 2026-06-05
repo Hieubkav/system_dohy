@@ -120,7 +120,7 @@ export const PartnersGlassLogoCloudShared = ({
       } as React.CSSProperties}
     >
       <div className="overflow-hidden" ref={emblaRef}>
-        <div className="ml-0 flex px-4">
+        <div className="ml-0 flex px-3 sm:px-4">
           {items.map((item, index) => {
             const key = item.id ?? item.link ?? item.url ?? index;
             const label = item.name || 'Hình ảnh';
@@ -148,7 +148,7 @@ export const PartnersGlassLogoCloudShared = ({
             );
 
             const innerClassName = cn(
-              'flex h-full items-center justify-center p-3 px-8 transition-all duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--partners-glass-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-black',
+              'flex h-full items-center justify-center p-3 px-3 md:px-6 lg:px-8 transition-all duration-300 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--partners-glass-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-black',
               showBorder ? 'border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/10' : 'border border-transparent hover:bg-white/[0.02]',
               radiusClassName,
             );
@@ -158,7 +158,7 @@ export const PartnersGlassLogoCloudShared = ({
                 key={key}
                 role="group"
                 aria-roledescription="slide"
-                className="min-w-0 shrink-0 grow-0 basis-1/3 pl-4 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 flex items-center justify-center"
+                className="min-w-0 shrink-0 grow-0 basis-1/2 pl-3 xs:basis-1/3 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 sm:pl-4 flex items-center justify-center"
               >
                 {item.link ? (
                   <a
