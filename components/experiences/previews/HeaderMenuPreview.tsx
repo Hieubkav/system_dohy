@@ -1667,7 +1667,7 @@ export function HeaderMenuPreview({
                   href={item.url}
                   className="px-3 py-2 text-xs font-semibold uppercase tracking-wide whitespace-nowrap transition-colors duration-200 rounded-md flex items-center gap-1"
                   style={{
-                    color: hoveredItem === item._id ? darkGlassAccentText : darkGlassNavText,
+                    color: hoveredItem === item._id ? tokens.primary : darkGlassNavText,
                   }}
                 >
                   <span>{item.label}</span>
@@ -1846,7 +1846,7 @@ export function HeaderMenuPreview({
             <a
               href={defaultLinks.cta}
               className="inline-flex items-center justify-center whitespace-nowrap rounded-full text-[11px] font-semibold uppercase tracking-widest transition-transform hover:scale-105"
-              style={{ backgroundColor: '#ffffff', color: '#000000', padding: '8px 18px' }}
+              style={{ backgroundColor: tokens.primary, color: tokens.textInverse, padding: '8px 18px' }}
             >
               {ctaLabel}
             </a>

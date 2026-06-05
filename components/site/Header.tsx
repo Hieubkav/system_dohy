@@ -1867,7 +1867,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
   if (headerStyle === 'darkglass') {
     const pillLogoSize = Math.min(64, logoSize);
 
-    const renderDarkGlassNav = (textClassName: string, hoverTextClassName: string) => (
+    const renderDarkGlassNav = (textClassName: string) => (
       <nav className="hidden lg:flex items-center gap-6">
         {menuTree.map((item) => {
           const hasSubItems = item.children.some((child) => child.children.length > 0);
@@ -1875,12 +1875,6 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
           const isMega = item.children.length >= 3 || totalSubItems > 6;
           const isMedium = !isMega && (item.children.length > 1 || hasSubItems);
           const dropdownWidthValue = isMega ? 720 : isMedium ? 420 : 240;
-          const dropdownWidth = isMega ? 'w-[720px]' : isMedium ? 'w-[420px]' : 'w-[240px]';
-          const gridCols = isMega
-            ? 'grid-cols-3'
-            : item.children.length > 1
-              ? 'grid-cols-2'
-              : 'grid-cols-1';
 
           return (
             <div
@@ -1895,8 +1889,11 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
               <Link
                 href={item.url}
                 target={item.openInNewTab ? '_blank' : undefined}
-                className={cn('text-sm font-semibold uppercase tracking-wide transition-colors flex items-center gap-1', textClassName, hoverTextClassName)}
-                style={menuVars}
+                className={cn('text-sm font-semibold uppercase tracking-wide transition-colors flex items-center gap-1', textClassName)}
+                style={{
+                  color: hoveredItem === item._id ? tokens.primary : '#ffffff',
+                  ...menuVars
+                }}
               >
                 <span>{item.label}</span>
                 {item.children.length > 0 && (
@@ -2177,7 +2174,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
             <Link
               href={ctaHref}
               className="inline-flex items-center justify-center whitespace-nowrap rounded-full text-xs font-semibold uppercase tracking-widest transition-transform hover:scale-105"
-              style={{ backgroundColor: '#ffffff', color: '#000000', padding: '8px 20px' }}
+              style={{ backgroundColor: tokens.primary, color: tokens.textInverse, padding: '8px 20px' }}
             >
               {config.cta.text ?? 'Liên hệ'}
             </Link>
@@ -2225,7 +2222,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
             }}
           >
             {renderDarkGlassLogo(logoSize)}
-            {renderDarkGlassNav("text-white", "hover:text-[#FFD700]")}
+            {renderDarkGlassNav("text-white")}
             {renderDarkGlassRightActions(false)}
           </div>
         </header>
@@ -2239,7 +2236,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
         >
           <div className="flex items-center justify-between gap-4 w-full h-[76px] lg:h-[88px] px-6 lg:px-8 bg-black/60 backdrop-blur-lg rounded-full shadow-2xl shadow-black/40 border border-white/10">
             {renderDarkGlassLogo(pillLogoSize)}
-            {renderDarkGlassNav("text-white", "hover:text-[#FFD700]")}
+            {renderDarkGlassNav("text-white")}
             {renderDarkGlassRightActions(true)}
           </div>
         </header>
@@ -2373,12 +2370,6 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                 const isMega = item.children.length >= 3 || totalSubItems > 6;
                 const isMedium = !isMega && (item.children.length > 1 || hasSubItems);
                 const dropdownWidthValue = isMega ? 720 : isMedium ? 420 : 240;
-                const dropdownWidth = isMega ? 'w-[720px]' : isMedium ? 'w-[420px]' : 'w-[240px]';
-                const gridCols = isMega
-                  ? 'grid-cols-3'
-                  : item.children.length > 1
-                    ? 'grid-cols-2'
-                    : 'grid-cols-1';
 
                 return (
                   <div
