@@ -20,6 +20,7 @@ const CONTACT_STYLE_SET = new Set<ContactStyle>([
   'elegant',
   'minimal',
   'centered',
+  'kanban',
 ]);
 
 const coerceText = (value: unknown) => {

@@ -1046,7 +1046,32 @@ const renderKanban = ({
   const contactItems = getDisplayItems(config, isPreview);
   const hasForm = Boolean(config.showForm);
   const hasMap = Boolean(config.showMap);
-  const useOriginalSocialIconColors = config.useOriginalSocialIconColors !== false;
+
+  // Override tokens for true dark/light monochrome Kanban styling
+  const kanbanTokens = {
+    ...tokens,
+    valueText: isDarkBg ? '#f4f4f5' : '#18181b', // zinc-100 or zinc-900
+    labelText: isDarkBg ? '#a1a1aa' : '#52525b', // zinc-400 or zinc-600
+    iconTintColor: isDarkBg ? '#f4f4f5' : '#18181b',
+    iconTintBackground: isDarkBg ? '#27272a' : '#f4f4f5',
+    primary: isDarkBg ? '#f4f4f5' : '#18181b',
+    formBackground: 'transparent',
+    formBorder: isDarkBg ? '#27272a' : '#e4e4e7',
+    formFieldBackground: isDarkBg ? '#09090b' : '#ffffff',
+    formFieldText: isDarkBg ? '#f4f4f5' : '#09090b',
+    formFieldBorder: isDarkBg ? '#27272a' : '#e4e4e7',
+    formFieldPlaceholder: isDarkBg ? '#52525b' : '#a1a1aa',
+    formFieldFocus: isDarkBg ? '#3f3f46' : '#a1a1aa',
+    formButtonBackground: isDarkBg ? '#f4f4f5' : '#18181b',
+    formButtonText: isDarkBg ? '#09090b' : '#ffffff',
+    formButtonBorder: isDarkBg ? '#f4f4f5' : '#18181b',
+    formTitle: isDarkBg ? '#f4f4f5' : '#09090b',
+    formDescription: isDarkBg ? '#71717a' : '#52525b',
+    formHelperText: isDarkBg ? '#a1a1aa' : '#71717a',
+    formAccent: isDarkBg ? '#f4f4f5' : '#18181b',
+    mapPlaceholderBg: isDarkBg ? '#18181b' : '#f4f4f5',
+    mapPlaceholderIcon: isDarkBg ? '#52525b' : '#a1a1aa',
+  };
 
   let columnsCount = 1;
   if (hasForm) {
@@ -1096,12 +1121,12 @@ const renderKanban = ({
                   borderColor: isDarkBg ? '#27272a' : '#e4e4e7',
                 }}
               >
-                <div className="shrink-0 mt-0.5" style={{ color: tokens.primary }}>
+                <div className="shrink-0 mt-0.5" style={{ color: kanbanTokens.primary }}>
                   {renderContactIcon(item.icon, 14)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <h4 className="font-bold text-[10px] uppercase tracking-wider mb-0.5" style={{ color: isDarkBg ? '#71717a' : '#52525b' }}>{item.label}</h4>
-                  {renderItemValue(item, tokens, isPreview, 'text-xs font-semibold leading-relaxed')}
+                  {renderItemValue(item, kanbanTokens, isPreview, 'text-xs font-semibold leading-relaxed')}
                 </div>
               </div>
             ))}
@@ -1109,23 +1134,20 @@ const renderKanban = ({
 
           {activeSocials.length > 0 && (
             <div className="pt-3 border-t" style={{ borderColor: isDarkBg ? '#27272a' : '#e4e4e7' }}>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 {activeSocials.map((social, idx) => {
                   const Icon = getSocialIconComponent(social.platform);
-                  const original = SOCIAL_ORIGINAL_COLORS[social.platform];
-                  const useBg = useOriginalSocialIconColors && original ? original.bg : (isDarkBg ? '#18181b' : '#ffffff');
-                  const useColor = useOriginalSocialIconColors && original ? original.icon : (isDarkBg ? '#e4e4e7' : '#27272a');
                   return (
                     <a
                       key={`${social.id}-${social.platform}-${idx}`}
                       href={resolveSocialHref(social)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-7 h-7 rounded-sm border flex items-center justify-center transition-all duration-200 hover:scale-105 opacity-85 hover:opacity-100"
+                      className="w-7 h-7 rounded-sm border flex items-center justify-center transition-all duration-200 hover:scale-105 opacity-80 hover:opacity-100"
                       style={{
-                        backgroundColor: useBg,
+                        backgroundColor: isDarkBg ? '#18181b' : '#ffffff',
                         borderColor: isDarkBg ? '#27272a' : '#e4e4e7',
-                        color: useColor,
+                        color: isDarkBg ? '#f4f4f5' : '#18181b',
                       }}
                       aria-label={social.platform || 'social'}
                     >
@@ -1147,21 +1169,28 @@ const renderKanban = ({
               </span>
             </div>
             <div
-              className="p-3 border rounded-sm flex-1 [&_input]:rounded-none [&_textarea]:rounded-none [&_button]:rounded-none [&_input]:py-1.5 [&_textarea]:py-1.5 [&_button]:py-2 [&_input]:text-xs [&_textarea]:text-xs [&_button]:text-xs [&_input]:h-auto [&_textarea]:h-auto"
+              className={cn(
+                "p-3 border rounded-sm flex-1",
+                " [&_input]:rounded-none [&_textarea]:rounded-none [&_button]:rounded-none [&_input]:text-xs [&_textarea]:text-xs [&_button]:text-xs",
+                " [&_input]:px-2.5 [&_textarea]:px-2.5 [&_input]:py-2 [&_textarea]:py-2 [&_button]:py-2.5",
+                isDarkBg 
+                  ? "[&_input]:bg-[#09090b] [&_textarea]:bg-[#09090b] [&_input]:border-zinc-800 [&_textarea]:border-zinc-800 [&_input]:text-zinc-100 [&_textarea]:text-zinc-100 [&_button]:bg-zinc-100 [&_button]:text-zinc-950 hover:[&_button]:bg-zinc-200 [&_svg]:hidden"
+                  : "[&_input]:bg-white [&_textarea]:bg-white [&_input]:border-zinc-200 [&_textarea]:border-zinc-200 [&_input]:text-zinc-900 [&_textarea]:text-zinc-900 [&_button]:bg-zinc-900 [&_button]:text-white hover:[&_button]:bg-zinc-800 [&_svg]:hidden"
+              )}
               style={{
                 backgroundColor: isDarkBg ? 'rgba(24, 24, 27, 0.2)' : '#ffffff',
                 borderColor: isDarkBg ? '#27272a' : '#e4e4e7',
               }}
             >
               <ContactInquiryForm
-                brandColor={tokens.primary}
-                secondaryColor={tokens.secondary}
+                brandColor={kanbanTokens.primary}
+                secondaryColor={kanbanTokens.secondary}
                 title={undefined}
                 description={undefined}
                 submitLabel={info.submitLabel}
                 responseTimeText={info.responseText}
                 fields={config.formFields}
-                tokens={tokens}
+                tokens={kanbanTokens}
                 sourcePath={sourcePath}
                 subjectFallback={info.subjectFallback}
                 withContainer={false}
@@ -1186,7 +1215,7 @@ const renderKanban = ({
                 backgroundColor: isDarkBg ? 'rgba(24, 24, 27, 0.4)' : '#ffffff',
               }}
             >
-              {renderMapOrPlaceholder({ mapData, fallbackEmbed: config.mapEmbed, tokens, className: 'absolute inset-0', isPreview })}
+              {renderMapOrPlaceholder({ mapData, fallbackEmbed: config.mapEmbed, tokens: kanbanTokens, className: 'absolute inset-0', isPreview })}
             </div>
           </div>
         )}

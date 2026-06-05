@@ -15,7 +15,7 @@ export const CONTACT_STYLES: Array<{ id: ContactStyle; label: string }> = [
   { id: 'elegant', label: 'Elegant Clean' },
   { id: 'minimal', label: 'Minimal Form' },
   { id: 'centered', label: 'Balanced Split' },
-  { id: 'kanban', label: 'Mẫu tối giản Kanban (Layout 7)' },
+  { id: 'kanban', label: 'Kanban Board' },
 ];
 
 export const DEFAULT_CONTACT_CONFIG: ContactConfigState = {
