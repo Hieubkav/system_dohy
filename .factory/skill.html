@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ thống Kỹ năng AI - Antigravity Factory</title>
+  <!-- Google Fonts: Plus Jakarta Sans cho UI, JetBrains Mono cho code -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* VARIABLES & DESIGN SYSTEM (Premium Dark Theme) */
+    :root {
+      --bg-base: #09090b;
+      --bg-surface: rgba(20, 20, 23, 0.7);
+      --bg-surface-solid: #121215;
+      --border-color: rgba(39, 39, 42, 0.8);
+      --border-focus: rgba(63, 63, 70, 0.9);
+      
+      --text-primary: #f4f4f5;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --text-bright: #ffffff;
+      
+      /* Category colors (HSL tailored) */
+      --color-routing: 217, 91%, 60%;     /* Blue */
+      --color-setup: 142, 71%, 45%;       /* Green */
+      --color-auth: 262, 83%, 62%;        /* Purple */
+      --color-component: 24, 95%, 53%;    /* Orange */
+      --color-migration: 322, 81%, 55%;    /* Pink */
+      --color-performance: 0, 84%, 60%;    /* Red */
+      
+      --font-ui: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --shadow-neon: 0 0 20px rgba(63, 63, 70, 0.15);
+      
+      --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* BASE STYLES */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font-ui);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      /* Tinh tế background radial gradient */
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.05) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.03) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    /* SCROLLBAR CUSTOMIZATION */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(9, 9, 11, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(39, 39, 42, 0.8);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(63, 63, 70, 0.8);
+    }
+
+    /* HEADER & WRAPPER */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      width: 100%;
+      flex-grow: 1;
+    }
+
+    header {
+      margin-bottom: 3rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .logo-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      box-shadow: 0 0 30px rgba(139, 92, 246, 0.3);
+      margin-bottom: 1rem;
+    }
+
+    .logo-container svg {
+      width: 32px;
+      height: 32px;
+      color: white;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      background: linear-gradient(to right, #ffffff, #a1a1aa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+
+    header p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      font-weight: 400;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* SEARCH & FILTER CONTROLS */
+    .controls-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-bottom: 2.5rem;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .controls-panel {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    .search-wrapper {
+      position: relative;
+      flex-grow: 1;
+      max-width: 100%;
+    }
+
+    @media (min-width: 768px) {
+      .search-wrapper {
+        max-width: 400px;
+      }
+    }
+
+    .search-input {
+      width: 100%;
+      background: rgba(9, 9, 11, 0.6);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 0.75rem 1rem 0.75rem 2.75rem;
+      border-radius: 10px;
+      font-family: var(--font-ui);
+      font-size: 0.95rem;
+      transition: var(--transition-smooth);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 2px rgba(250, 250, 250, 0.05);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+      width: 18px;
+      height: 18px;
+    }
+
+    .filter-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .filter-btn {
+      background: rgba(39, 39, 42, 0.4);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .filter-btn:hover {
+      background: rgba(39, 39, 42, 0.8);
+      color: var(--text-primary);
+    }
+
+    .filter-btn.active {
+      background: var(--text-primary);
+      border-color: var(--text-primary);
+      color: var(--bg-base);
+    }
+
+    .skills-count {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-left: auto;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      background: rgba(39, 39, 42, 0.3);
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    /* GRID OF SKILL CARDS */
+    .skills-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    @media (min-width: 640px) {
+      .skills-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .skills-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .skill-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: var(--transition-smooth);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .skill-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-focus);
+      box-shadow: var(--shadow-lg), var(--shadow-neon);
+    }
+
+    /* Glow effect on hover top edge based on category color */
+    .skill-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--theme-color, #71717a);
+      opacity: 0.4;
+      transition: var(--transition-smooth);
+    }
+
+    .skill-card:hover::before {
+      opacity: 1;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      gap: 0.75rem;
+    }
+
+    .card-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: rgba(39, 39, 42, 0.4);
+      border: 1px solid var(--border-color);
+      color: var(--theme-color, var(--text-primary));
+      transition: var(--transition-smooth);
+    }
+
+    .skill-card:hover .card-icon {
+      background: rgba(var(--theme-color-rgb), 0.1);
+      border-color: rgba(var(--theme-color-rgb), 0.3);
+    }
+
+    .card-icon svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .category-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      background: rgba(var(--theme-color-rgb), 0.1);
+      color: var(--theme-color);
+      border: 1px solid rgba(var(--theme-color-rgb), 0.2);
+    }
+
+    .card-body {
+      flex-grow: 1;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin-bottom: 0.5rem;
+      line-height: 1.3;
+    }
+
+    .card-desc {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      border: 1px solid transparent;
+      gap: 0.4rem;
+    }
+
+    .btn-primary {
+      background: rgba(39, 39, 42, 0.6);
+      border-color: var(--border-color);
+      color: var(--text-primary);
+      flex-grow: 1;
+    }
+
+    .btn-primary:hover {
+      background: var(--text-primary);
+      color: var(--bg-base);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border-color: transparent;
+      color: var(--text-muted);
+    }
+
+    .btn-secondary:hover {
+      color: var(--text-primary);
+      background: rgba(39, 39, 42, 0.4);
+    }
+
+    .btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* DETAIL MODAL */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(9, 9, 11, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 1rem;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .modal-content {
+      background: var(--bg-surface-solid);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 960px;
+      height: 85vh;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+
+    .modal-overlay.open .modal-content {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      padding: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(20, 20, 23, 0.4);
+    }
+
+    .modal-header-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text-bright);
+    }
+
+    .modal-close-btn {
+      background: rgba(39, 39, 42, 0.6);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(63, 63, 70, 0.8);
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      flex-grow: 1;
+      display: flex;
+      overflow: hidden;
+      height: calc(100% - 130px);
+    }
+
+    /* Modal Navigation Sidebar */
+    .modal-sidebar {
+      width: 240px;
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      background: rgba(20, 20, 23, 0.2);
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 768px) {
+      .modal-sidebar {
+        display: none;
+      }
+    }
+
+    .sidebar-menu-item {
+      padding: 1rem 1.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-left: 2px solid transparent;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .sidebar-menu-item:hover {
+      background: rgba(39, 39, 42, 0.3);
+      color: var(--text-primary);
+    }
+
+    .sidebar-menu-item.active {
+      background: rgba(39, 39, 42, 0.5);
+      color: var(--text-bright);
+      border-left-color: var(--theme-color, #71717a);
+      font-weight: 600;
+    }
+
+    .sidebar-menu-item svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Modal Mobile Tab Header */
+    .modal-mobile-tabs {
+      display: none;
+      border-bottom: 1px solid var(--border-color);
+      overflow-x: auto;
+    }
+
+    @media (max-width: 768px) {
+      .modal-mobile-tabs {
+        display: flex;
+      }
+    }
+
+    .mobile-tab-item {
+      padding: 0.75rem 1.25rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-bottom: 2px solid transparent;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .mobile-tab-item.active {
+      color: var(--text-bright);
+      border-bottom-color: var(--theme-color, #71717a);
+      font-weight: 600;
+    }
+
+    /* Modal Main Viewport */
+    .modal-viewport {
+      flex-grow: 1;
+      overflow-y: auto;
+      padding: 2rem;
+    }
+
+    .modal-tab-content {
+      display: none;
+    }
+
+    .modal-tab-content.active {
+      display: block;
+      animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* TYPOGRAPHY INSIDE MODAL (Markdown-like style) */
+    .doc-section {
+      margin-bottom: 2rem;
+    }
+
+    .doc-section h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .doc-section p {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    /* Lists styling */
+    .list-use-case {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .list-use-case li {
+      position: relative;
+      padding-left: 1.75rem;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .list-use-case li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 800;
+    }
+
+    .list-use-case.green li::before {
+      content: '✓';
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .list-use-case.red li::before {
+      content: '×';
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      font-size: 0.9rem;
+      top: 2px;
+    }
+
+    /* Checklist block */
+    .checklist-wrapper {
+      background: rgba(39, 39, 42, 0.2);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .checklist-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .checklist-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--text-muted);
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+      background: transparent;
+      color: var(--bg-base);
+      font-size: 0.7rem;
+      font-weight: bold;
+      transition: var(--transition-smooth);
+    }
+
+    .checklist-checkbox.checked {
+      background: var(--theme-color, #71717a);
+      border-color: var(--theme-color, #71717a);
+      color: #000;
+    }
+
+    /* Code Blocks */
+    .code-block-wrapper {
+      background: #09090b;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 1rem 0;
+      font-family: var(--font-mono);
+    }
+
+    .code-block-header {
+      background: rgba(20, 20, 23, 0.8);
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .copy-code-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-weight: 500;
+      transition: var(--transition-smooth);
+    }
+
+    .copy-code-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .code-block-wrapper pre {
+      padding: 1.25rem;
+      overflow-x: auto;
+      margin: 0;
+    }
+
+    .code-block-wrapper code {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #e4e4e7;
+      line-height: 1.6;
+    }
+
+    .inline-code {
+      font-family: var(--font-mono);
+      background: rgba(63, 63, 70, 0.4);
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #f4f4f5;
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+
+    /* Rendered Markdown Styling */
+    .markdown-rendered h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--text-bright);
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+    }
+
+    .markdown-rendered h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin-top: 1.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .markdown-rendered h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .markdown-rendered p {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .markdown-rendered ul {
+      margin-left: 1.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .markdown-rendered li {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .markdown-rendered a {
+      color: #3b82f6;
+      border-bottom: 1px dashed rgba(59, 130, 246, 0.4);
+      transition: var(--transition-smooth);
+    }
+
+    .markdown-rendered a:hover {
+      color: #60a5fa;
+      border-bottom-color: #60a5fa;
+    }
+
+    .markdown-rendered .todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      list-style: none;
+    }
+
+    .markdown-rendered .todo-item .box {
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--text-muted);
+      border-radius: 3px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6rem;
+      font-weight: bold;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+
+    .markdown-rendered .todo-done .box {
+      background: var(--theme-color, #71717a);
+      border-color: var(--theme-color, #71717a);
+      color: #000;
+    }
+
+    .markdown-rendered .spacer {
+      height: 1rem;
+    }
+
+    /* Modal Action Footer */
+    .modal-footer {
+      padding: 1.25rem 1.5rem;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 1rem;
+      background: rgba(20, 20, 23, 0.4);
+    }
+
+    .modal-footer .btn {
+      padding: 0.65rem 1.25rem;
+      font-size: 0.875rem;
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 3rem 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid rgba(39, 39, 42, 0.3);
+      margin-top: auto;
+    }
+
+    footer a {
+      color: var(--text-secondary);
+      transition: var(--transition-smooth);
+    }
+
+    footer a:hover {
+      color: var(--text-bright);
+    }
+
+    /* TOAST SYSTEM (For Copy Notifications) */
+    .toast-container {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      z-index: 1100;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .toast {
+      background: #18181b;
+      border: 1px solid var(--border-focus);
+      color: var(--text-bright);
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: var(--transition-smooth);
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%) translateY(0); opacity: 0; }
+      to { transform: translateX(0) translateY(0); opacity: 1; }
+    }
+
+    .toast.fade-out {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    .toast svg {
+      color: #10b981;
+      width: 16px;
+      height: 16px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- HEADER -->
+    <header>
+      <div class="logo-container">
+        <!-- Logo SVG tinh tế của Antigravity -->
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+      </div>
+      <h1>Kỹ năng Dự án Antigravity</h1>
+      <p>Thư mục tổng hợp trực quan và tìm kiếm nhanh các kỹ năng (skills) hỗ trợ phát triển hệ thống trong dự án hiện tại.</p>
+    </header>
+
+    <!-- SEARCH & FILTERS -->
+    <div class="controls-panel">
+      <div class="search-wrapper">
+        <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Tìm kiếm skill theo tên, mô tả..." oninput="handleSearch()">
+      </div>
+      
+      <div class="filter-tabs" id="filterTabs">
+        <!-- Tab buttons generated dynamically -->
+      </div>
+      
+      <span class="skills-count" id="skillsCount">Hiển thị: 0/0 skill</span>
+    </div>
+
+    <!-- SKILLS GRID -->
+    <div class="skills-grid" id="skillsGrid">
+      <!-- Cards generated dynamically -->
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>Thiết kế bởi <strong>Antigravity AI</strong> • Cho dự án <strong>system_dohy</strong> • 2026</p>
+  </footer>
+
+  <!-- DETAIL MODAL -->
+  <div class="modal-overlay" id="detailModal" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <div class="card-icon" id="modalIcon">
+            <!-- Icon SVG dynamically set -->
+          </div>
+          <div>
+            <h2 class="modal-title" id="modalTitle">Tên Skill</h2>
+            <span class="category-badge" id="modalCategory">Nhóm</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeModal()">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Mobile tab navigation -->
+      <div class="modal-mobile-tabs" id="modalMobileTabs">
+        <div class="mobile-tab-item active" onclick="switchTab('overview')">Tổng quan & Cách dùng</div>
+        <div class="mobile-tab-item" onclick="switchTab('checklist')">Checklist thực hiện</div>
+        <div class="mobile-tab-item" onclick="switchTab('fullDoc')">Tài liệu chi tiết</div>
+      </div>
+
+      <div class="modal-body">
+        <!-- Sidebar navigation for desktop -->
+        <div class="modal-sidebar">
+          <div class="sidebar-menu-item active" id="menu-overview" onclick="switchTab('overview')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"></path></svg>
+            Tổng quan & Cách dùng
+          </div>
+          <div class="sidebar-menu-item" id="menu-checklist" onclick="switchTab('checklist')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+            Checklist thực hiện
+          </div>
+          <div class="sidebar-menu-item" id="menu-fullDoc" onclick="switchTab('fullDoc')">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+            Tài liệu chi tiết
+          </div>
+        </div>
+
+        <!-- Main Viewport -->
+        <div class="modal-viewport" id="modalViewport">
+          
+          <!-- Content tab: Overview -->
+          <div class="modal-tab-content active" id="tab-overview">
+            <div class="doc-section">
+              <h3>
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                Mô tả
+              </h3>
+              <p id="modalDescDetail">Mô tả đầy đủ của skill.</p>
+            </div>
+            
+            <div class="doc-section" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+              <div>
+                <h3 style="color: #10b981;">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  Khi nào sử dụng (When to Use)
+                </h3>
+                <ul class="list-use-case green" id="modalWhenToUse">
+                  <!-- JS generated -->
+                </ul>
+              </div>
+              
+              <div>
+                <h3 style="color: #ef4444;">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  Khi nào KHÔNG sử dụng (When Not to Use)
+                </h3>
+                <ul class="list-use-case red" id="modalWhenNotToUse">
+                  <!-- JS generated -->
+                </ul>
+              </div>
+            </div>
+
+            <div class="doc-section">
+              <h3>
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                Hướng dẫn nhanh & Code ví dụ
+              </h3>
+              <div id="modalQuickGuide">
+                <!-- JS generated code block -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Content tab: Checklist -->
+          <div class="modal-tab-content" id="tab-checklist">
+            <div class="doc-section">
+              <h3>
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                Các bước thực hành & Tuân thủ
+              </h3>
+              <p>Thực hiện các bước checklist dưới đây khi kích hoạt và viết mã nguồn theo skill này để duy trì chuẩn thiết kế sạch.</p>
+              <div class="checklist-wrapper">
+                <ul class="checklist-list" id="modalChecklist">
+                  <!-- JS generated -->
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Content tab: Full Documentation -->
+          <div class="modal-tab-content" id="tab-fullDoc">
+            <div class="doc-section markdown-rendered" id="modalMarkdownContent">
+              <!-- JS rendered markdown HTML -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="copySkillName()">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+          Sao chép tên
+        </button>
+        <a id="modalIdeLink" href="#" class="btn btn-primary" onclick="handleIdeLinkClick(event)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+          Mở file trong IDE
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- DATA & LOGIC SCRIPT -->
+  <script>
+    /* 1. DATA DEFINITIONS OF DOCKER/AGENT SKILLS */
+    const skillsData = [
+      {
+        id: "convex",
+        name: "convex",
+        title: "Convex General Router",
+        category: "Routing",
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"></path></svg>`,
+        themeColor: "#3b82f6",
+        themeColorRgb: "59, 130, 246",
+        path: "e:/NextJS/job/job_from_system_vietadmin/system_dohy/.agents/skills/convex/SKILL.md",
+        description: "Routes general Convex requests to the right project skill. Use when the user asks which Convex skill to use or gives an underspecified Convex app task.",
+        whenToUse: [
+          "Khi bắt đầu nhận nhiệm vụ liên quan tới Convex mà chưa rõ thuộc nhóm chuyên biệt nào.",
+          "Cần cài đặt, cập nhật tài liệu và hướng dẫn Convex AI guidelines trong repo (`npx convex ai-files install`)."
+        ],
+        whenNotToUse: [
+          "Khi yêu cầu đã nêu rõ và khớp trực tiếp với một skill chuyên sâu khác (ví dụ: tạo component, chỉnh schema, phân quyền hay audit)."
+        ],
+        checklist: [
+          "Đọc kỹ yêu cầu người dùng để chuyển giao sang skill chuyên biệt phù hợp nhất.",
+          "Kiểm tra xem dự án đã cài đặt file cấu hình Convex AI guidelines chưa.",
+          "Chạy `npx convex ai-files install` nếu file cũ bị mất hoặc thiếu cập nhật."
+        ],
+        quickGuide: "Kích hoạt cài đặt hướng dẫn AI nếu cần thiết:\n```bash\nnpx convex ai-files install\n```\nSau đó, tham chiếu và chuyển giao sang một trong các skill con chuyên dụng.",
+        fullDoc: `## Router to the Right Skill
+
+Sau khi cài đặt hoặc cập nhật AI files, hãy sử dụng skill Convex cụ thể nhất cho nhiệm vụ:
+
+- Dự án mới hoặc thêm Convex vào app: \`convex-quickstart\`
+- Thiết lập xác thực (Authentication): \`convex-setup-auth\`
+- Xây dựng component Convex tái sử dụng: \`convex-create-component\`
+- Lập kế hoạch hoặc chạy migration dữ liệu: \`convex-migration-helper\`
+- Điều tra các vấn đề hiệu năng (Performance): \`convex-performance-audit\`
+
+Nếu một trong số các skill trên khớp rõ ràng với mục tiêu của người dùng, hãy chuyển sang skill đó thay vì ở lại skill định tuyến chung này.
+
+## Khi nào KHÔNG sử dụng
+
+- Người dùng đã gọi tên một quy trình làm việc Convex cụ thể hơn.
+- Một skill Convex khác hiển nhiên phù hợp với yêu cầu hơn.`
+      },
+      {
+        id: "convex-create-component",
+        name: "convex-create-component",
+        title: "Convex Component Creator",
+        category: "Component",
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`,
+        themeColor: "#f97316",
+        themeColorRgb: "249, 115, 22",
+        path: "e:/NextJS/job/job_from_system_vietadmin/system_dohy/.agents/skills/convex-create-component/SKILL.md",
+        description: "Builds reusable Convex components with isolated tables and app-facing APIs. Use for new components, reusable backend modules, integrations, or component boundary work.",
+        whenToUse: [
+          "Tạo một component Convex mới có tính độc lập trong ứng dụng.",
+          "Trích xuất logic backend có thể tái sử dụng thành một component riêng biệt.",
+          "Xây dựng tích hợp của bên thứ ba cần sở hữu các bảng dữ liệu và luồng xử lý riêng."
+        ],
+        whenNotToUse: [
+          "Logic nghiệp vụ chạy một lần (one-off) thuộc về trực tiếp ứng dụng chính.",
+          "Các tiện ích mỏng, đơn thuần không cần cơ sở dữ liệu bảng Convex hoặc hàm xử lý.",
+          "Xử lý điều phối cấp ứng dụng tổng thể (nên đặt tại thư mục `convex/` chính)."
+        ],
+        checklist: [
+          "Lên kế hoạch các bảng dữ liệu mà component sẽ sở hữu riêng.",
+          "Xác định các hàm public mà component sẽ công khai ra cho App chính.",
+          "Giữ các logic về Authentication và Environment variables ở phía App chính (Component không truy cập trực tiếp các thông tin này).",
+          "Truyền ID của bảng thuộc App chính qua ranh giới dưới dạng `v.string()` (Component không hiểu namespace của App chính).",
+          "Sử dụng `./_generated/server` cục bộ của component khi import `query` hay `mutation`."
+        ],
+        quickGuide: "Cấu trúc tối giản của một component cục bộ nằm trong `convex/components/<tên_component>/` với file `convex.config.ts`:\n```typescript\nimport { defineComponent } from \"convex/server\";\nexport default defineComponent(\"notifications\");\n```\nSau đó liên kết component này vào trong `convex/convex.config.ts` của ứng dụng chính thông qua hàm `app.use(...)`.",
+        fullDoc: `## Các quy tắc quan trọng (Critical Rules)
+
+- **Giữ xác thực (authentication) ở phía App**: Bởi vì \`ctx.auth\` không khả dụng trực tiếp bên trong component.
+- **Giữ truy cập môi trường (env access) ở phía App**: Hàm component không thể đọc trực tiếp từ \`process.env\`.
+- **Truyền ID của App qua ranh giới dưới dạng String**: Các kiểu \`Id\` sẽ trở thành chuỗi thuần túy trong \`ComponentApi\`.
+- **Không sử dụng \`v.id(\"parentTable\")\` cho các bảng do ứng dụng sở hữu** bên trong đối số hoặc schema của component, vì component không có quyền truy cập vào namespace bảng của ứng dụng chính.
+- **Import \`query\`, \`mutation\`, và \`action\` từ chính thư mục \`./_generated/server\` cục bộ của component**, không dùng của ứng dụng chính.
+- **Không phơi bày (expose) trực tiếp hàm component cho client**. Hãy tạo các wrapper function ở phía ứng dụng để điều khiển auth/env trước khi gọi vào component.
+- **Nếu cần phân trang (pagination)**, hãy sử dụng \`paginator\` từ \`convex-helpers\` thay vì dùng \`.paginate()\` tích hợp sẵn, do \`.paginate()\` không hoạt động qua ranh giới component.`
+      },
+      {
+        id: "convex-migration-helper",
+        name: "convex-migration-helper",
+        title: "Convex Migration Helper",
+        category: "Migration",
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"></path><path d="M8 21H3v-5"></path><path d="M12 22v-3a2 2 0 0 0-2-2H4"></path><path d="M12 2v3a2 2 0 0 0 2 2h6"></path><path d="M19 17A7 7 0 0 1 5.3 14"></path><path d="M5 7a7 7 0 0 1 13.7 3"></path></svg>`,
+        themeColor: "#ec4899",
+        themeColorRgb: "236, 72, 153",
+        path: "e:/NextJS/job/job_from_system_vietadmin/system_dohy/.agents/skills/convex-migration-helper/SKILL.md",
+        description: "Plans Convex schema and data migrations with widen-migrate-narrow and @convex-dev/migrations. Use for breaking schema changes, backfills, table reshaping, or zero-downtime rollouts.",
+        whenToUse: [
+          "Thêm trường bắt buộc mới (required fields) vào bảng hiện đã có dữ liệu.",
+          "Thay đổi kiểu dữ liệu (data type) hoặc cấu trúc của các trường cũ.",
+          "Chia tách (splitting) hoặc gộp (merging) các bảng dữ liệu.",
+          "Đổi tên hoặc xóa các trường đang chứa dữ liệu cũ."
+        ],
+        whenNotToUse: [
+          "Dự án mới tinh (greenfield) chưa có dữ liệu thật trên production/dev.",
+          "Thêm trường tùy chọn (optional fields) không cần backfill dữ liệu cũ.",
+          "Thêm bảng mới hoàn toàn chưa có liên kết dữ liệu cần di trú."
+        ],
+        checklist: [
+          "Luôn tuân thủ nguyên tắc: Widen -> Migrate -> Narrow.",
+          "Nới rộng schema trước (chuyển trường cần thêm thành optional hoặc cho phép định dạng cũ).",
+          "Viết code xử lý cả hai định dạng dữ liệu khi đọc, và ghi định dạng mới cho các document mới.",
+          "Sử dụng thư viện chính thức `@convex-dev/migrations` để phân lô (batching) tránh timeout trên bảng lớn.",
+          "Chạy test di trú với tham số `dryRun: true` để kiểm tra logic trước khi thay đổi dữ liệu thật."
+        ],
+        quickGuide: "Bản chất của quy trình di trú dữ liệu an toàn:\n1. **Widen**: Cập nhật schema thành optional. Cập nhật code để đọc cả hai định dạng và luôn ghi định dạng mới.\n2. **Migrate**: Triển khai và chạy hàm di trú để cập nhật toàn bộ các document cũ.\n3. **Narrow**: Cập nhật schema thành required (thu hẹp lại), dọn dẹp các đoạn code xử lý định dạng cũ.",
+        fullDoc: `## Các khái niệm cốt lõi (Key Concepts)
+
+### Schema Validation là động lực thúc đẩy quy trình
+
+Convex sẽ không cho phép bạn triển khai một schema không khớp với dữ liệu đang lưu trữ. Đây là ràng buộc cơ bản quyết định mọi quy trình di trú:
+- Bạn không thể thêm một trường bắt buộc nếu các tài liệu cũ không có nó.
+- Bạn không thể thay đổi kiểu dữ liệu của một trường nếu các tài liệu cũ vẫn chứa kiểu dữ liệu cũ.
+- Bạn không thể xóa một trường khỏi schema nếu các tài liệu cũ vẫn chứa trường đó.
+
+Do đó, quy trình di trú luôn tuân theo một khuôn mẫu có thể dự đoán trước: **nới rộng schema (widen), di trú dữ liệu (migrate), thu hẹp schema (narrow)**.
+
+### Di trú trực tuyến (Online Migrations)
+
+Các cuộc di trú trong Convex chạy trực tuyến, nghĩa là ứng dụng vẫn tiếp tục phục vụ người dùng trong khi dữ liệu được cập nhật bất đồng bộ theo từng lô nhỏ (batches). Trong khoảng thời gian này, mã nguồn của bạn bắt buộc phải có khả năng xử lý cả hai định dạng dữ liệu (cũ và mới).
+
+### Tránh xóa dữ liệu vĩnh viễn ngay lập tức
+
+Trừ khi bạn hoàn toàn chắc chắn, hãy ưu tiên đánh dấu trường không sử dụng là \`v.optional\` kèm theo dòng chú thích (deprecated) thay vì xóa bỏ hoàn toàn trường đó ngay lập tức.`
+      },
+      {
+        id: "convex-performance-audit",
+        name: "convex-performance-audit",
+        title: "Convex Performance Auditor",
+        category: "Performance",
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>`,
+        themeColor: "#ef4444",
+        themeColorRgb: "239, 68, 68",
+        path: "e:/NextJS/job/job_from_system_vietadmin/system_dohy/.agents/skills/convex-performance-audit/SKILL.md",
+        description: "Audits Convex performance for reads, subscriptions, write contention, and function limits. Use for slow features, insights findings, OCC conflicts, or read amplification.",
+        whenToUse: [
+          "Ứng dụng, trang web hoặc một tính năng Convex cụ thể chạy chậm hoặc tốn nhiều tài nguyên.",
+          "Chỉ số Convex Insights báo cáo lượng tài nguyên đọc lớn (high bytes/documents read) hoặc nhiều lỗi OCC conflicts.",
+          "Hàm chạy bị lỗi timeout hoặc vượt quá kích thước transaction quy định."
+        ],
+        whenNotToUse: [
+          "Thiết lập Convex ban đầu, cấu hình xác thực (auth) hoặc trích xuất component.",
+          "Các thay đổi schema đơn thuần không nhằm cải thiện hiệu năng rõ rệt.",
+          "Các tối ưu hóa vi mô (micro-optimizations) khi chưa có số liệu đo lường cụ thể."
+        ],
+        checklist: [
+          "Thu thập thông tin hiệu năng từ `npx convex insights --details`.",
+          "Phân tích luồng nghiệp vụ bị chậm, xác định rõ các bảng được đọc/ghi.",
+          "Trace toàn bộ read set và write set để phát hiện lỗi N+1 hoặc JS filter.",
+          "Áp dụng lọc tại database bằng Index thích hợp, không filter ở phía Javascript.",
+          "Giới hạn số lượng bản ghi trả về bằng Pagination, không lạm dụng `.collect()` trên bảng lớn."
+        ],
+        quickGuide: "Kiểm tra nhanh hiệu năng qua CLI:\n```bash\nnpx convex insights --details\n```\nSau đó, kiểm tra mã nguồn để đảm bảo tuân thủ 7 Nguyên tắc DB Bandwidth Optimization (Lọc ở DB, Không N+1, Luôn có index, Có limit/pagination, Chỉ lấy data cần thiết, Chạy Promise.all song song).",
+        fullDoc: `## 7 Nguyên tắc DB Bandwidth Optimization (Bắt buộc)
+
+1. **Filter ở DB, không ở JS**: Không fetch ALL dữ liệu rồi mới filter/count.
+2. **Không N+1**: Sử dụng batch load và Map để tối ưu O(1).
+3. **Luôn có index phù hợp**: Phù hợp cho việc filter và sort.
+4. **Luôn có limit + pagination**: (Mặc định 20, tối đa 100-500).
+5. **Chỉ lấy dữ liệu cần thiết**: Projection, không lạm dụng select toàn bộ bảng.
+6. **Load song song**: Sử dụng \`Promise.all\` cho các truy vấn độc lập.
+7. **Monitor trước khi deploy**: Ghi nhận và xử lý các truy vấn chậm hơn 1 giây.
+
+## Quy trình kiểm tra (Workflow)
+
+- **Bước 1**: Xác định một luồng nghiệp vụ cụ thể của người dùng và các endpoint liên quan.
+- **Bước 2**: Trace chi tiết toàn bộ các tác vụ đọc ghi dữ liệu (\`ctx.db.get\`, \`ctx.db.query\`, \`ctx.db.patch\`, \`ctx.db.insert\`).
+- **Bước 3**: Cải thiện thuật toán, chuyển đổi truy vấn reactive sang point-in-time nếu không cần cập nhật real-time.
+- **Bước 4**: Sửa đổi đồng bộ trên toàn bộ các hàm thao tác cùng bảng dữ liệu.`
+      },
+      {
+        id: "convex-quickstart",
+        name: "convex-quickstart",
+        title: "Convex Quickstarter",
+        category: "Setup",
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>`,
+        themeColor: "#10b981",
+        themeColorRgb: "16, 185, 129",
+        path: "e:/NextJS/job/job_from_system_vietadmin/system_dohy/.agents/skills/convex-quickstart/SKILL.md",
+        description: "Creates or adds Convex to an app. Use for new Convex projects, npm create convex@latest, frontend setup, env vars, or the first npx convex dev run.",
+        whenToUse: [
+          "Bắt đầu khởi tạo một dự án mới hoàn toàn sử dụng Convex làm backend.",
+          "Thêm và tích hợp thư viện Convex vào một ứng dụng frontend có sẵn (React, Next.js, Remix, v.v.)."
+        ],
+        whenNotToUse: [
+          "Dự án đã được cài đặt Convex hoàn chỉnh và thư mục `convex/` đã tồn tại."
+        ],
+        checklist: [
+          "Lựa chọn template cấu hình sẵn phù hợp nếu khởi tạo mới (ví dụ `nextjs-shadcn`).",
+          "Cài đặt gói thư viện bằng lệnh: `npm install convex`.",
+          "Chạy `CONVEX_AGENT_MODE=anonymous npx convex dev --once` để tạo anonymous deployment cục bộ.",
+          "Cập nhật các biến môi trường kết nối thích hợp vào file `.env.local`.",
+          "Viết hàm backend Verify đầu tiên và bọc component gốc của App bằng `ConvexProvider`."
+        ],
+        quickGuide: "Để tạo mới một ứng dụng với Next.js và Convex, sử dụng lệnh:\n```bash\nnpm create convex@latest . -- -t nextjs-shadcn\nnpm install\nCONVEX_AGENT_MODE=anonymous npx convex dev --once\n```\nThao tác này giúp thiết lập toàn bộ môi trường dev ẩn danh mà không yêu cầu đăng nhập trình duyệt.",
+        fullDoc: `## Tích hợp vào ứng dụng hiện có (Add Convex to Existing App)
+
+### 1. Cài đặt thư viện
+\`\`\`bash
+npm install convex
+\`\`\`
+
+### 2. Khởi tạo môi trường ẩn danh
+Chạy lệnh sau để tạo anonymous deployment cục bộ, ghi các biến môi trường vào \`.env.local\`, sinh thư mục \`_generated/\` và typecheck code:
+\`\`\`bash
+npx convex dev --once
+\`\`\`
+
+### 3. Cấu hình Provider cho React / Next.js
+Bọc ứng dụng ở lớp ngoài cùng bằng \`ConvexProvider\`. Khởi tạo đối tượng \`ConvexReactClient\` ở phạm vi module (module scope) thay vì khởi tạo bên trong component:
+
+\`\`\`tsx
+// Đúng: Khởi tạo một lần ở module scope
+const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
+
+function App() {
+  return (
+    <ConvexProvider client={convex}>
+      <MainApp />
+    </ConvexProvider>
+  );
+}
+\`\`\``
+      },
+      {
+        id: "convex-setup-auth",
+        name: "convex-setup-auth",
+        title: "Convex Auth Setup",
+        category: "Auth",
+        icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
+        themeColor: "#8b5cf6",
+        themeColorRgb: "139, 92, 246",
+        path: "e:/NextJS/job/job_from_system_vietadmin/system_dohy/.agents/skills/convex-setup-auth/SKILL.md",
+        description: "Sets up Convex auth, identity mapping, and access control. Use for login, auth providers, users tables, protected functions, or roles in a Convex app.",
+        whenToUse: [
+          "Thiết lập cơ chế xác thực đăng ký/đăng nhập cho ứng dụng lần đầu tiên.",
+          "Tích hợp các nhà cung cấp định danh bên ngoài (Convex Auth, Clerk, Auth0, WorkOS AuthKit).",
+          "Bảo vệ các hàm API backend bằng cách xác thực danh tính người dùng."
+        ],
+        whenNotToUse: [
+          "Sử dụng một backend không phải là Convex.",
+          "Chỉ muốn sửa các lỗi nhỏ trong giao diện đăng nhập không ảnh hưởng tới cấu hình và phân quyền backend."
+        ],
+        checklist: [
+          "Xác định rõ giải pháp Auth (ưu tiên Convex Auth cho đơn giản, Clerk nếu cần quản lý nâng cao).",
+          "Cấu hình chính xác file cấu hình JWT `convex/auth.config.ts`.",
+          "Luôn xác thực danh tính trên server bằng cách kiểm tra `ctx.auth.getUserIdentity()`, không tin tưởng ID truyền lên từ Client.",
+          "Ánh xạ thông tin mã định danh của user vào bảng `users` trong DB nếu cần lưu trữ thông tin tùy chỉnh."
+        ],
+        quickGuide: "Ví dụ bảo vệ hàm backend bằng cách xác thực Token định danh:\n```typescript\nimport { query } from \"./_generated/server\";\n\nexport const getProfile = query({\n  args: {},\n  handler: async (ctx) => {\n    const identity = await ctx.auth.getUserIdentity();\n    if (!identity) throw new Error(\"Not authenticated\");\n    // Xử lý đọc dữ liệu của user tương ứng...\n  }\n});\n```",
+        fullDoc: `## Các nhà cung cấp phổ biến (Common Auth Providers)
+
+- **Convex Auth**: Giải pháp mặc định tốt nhất khi muốn quản lý toàn bộ tài khoản và bảng dữ liệu auth khép kín ngay bên trong Convex.
+- **Clerk**: Sử dụng khi ứng dụng cần giao diện đăng nhập dựng sẵn chất lượng cao, quản lý tài khoản phong phú.
+- **WorkOS AuthKit**: Phù hợp cho các ứng dụng doanh nghiệp (B2B, SSO).
+
+## Quy tắc quan trọng khi triển khai
+
+- **Không tự ý tạo bảng \`users\` song song** khi sử dụng Convex Auth, vì Convex Auth đã tự động quản lý thực thể người dùng thông qua các bảng nội bộ của nó.
+- **Luôn kiểm tra xác thực trên Server**: Mọi truy vấn nhạy cảm hoặc chỉnh sửa dữ liệu bắt buộc phải kiểm tra thông tin định danh trả về từ \`ctx.auth.getUserIdentity()\`. Quăng lỗi rõ ràng như \`Not authenticated\` hoặc \`Unauthorized\` nếu không hợp lệ.`
+      }
+    ];
+
+    /* 2. STATE VARIABLES */
+    let currentCategory = "All";
+    let searchQuery = "";
+    let selectedSkill = null;
+
+    /* 3. UTILITY FUNCTIONS */
+    // Render simple markdown to clean HTML
+    function renderMarkdown(md) {
+      if (!md) return '';
+      let html = md;
+
+      // Extract & escape code blocks to prevent parsing issues
+      const codeBlocks = [];
+      html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
+        const placeholder = `__CODE_BLOCK_PLACEHOLDER_${codeBlocks.length}__`;
+        const escapedCode = code
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+        
+        codeBlocks.push(`<div class="code-block-wrapper">
+          <div class="code-block-header">
+            <span>${lang || 'typescript'}</span>
+            <button class="copy-code-btn" onclick="copyText(this, \`${code.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg> Copy code
+            </button>
+          </div>
+          <pre><code class="language-${lang}">${escapedCode}</code></pre>
+        </div>`);
+        return placeholder;
+      });
+
+      // Inline code
+      html = html.replace(/`([^`\n]+)`/g, '<code class="inline-code">$1</code>');
+
+      // Bold text
+      html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+      // Headers
+      html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+      html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+      html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+      html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
+
+      // Unordered lists
+      html = html.replace(/^\s*-\s+\[ \]\s+(.*$)/gim, '<li class="todo-item todo-empty"><span class="box"></span>$1</li>');
+      html = html.replace(/^\s*-\s+\[x\]\s+(.*$)/gim, '<li class="todo-item todo-done"><span class="box">✓</span>$1</li>');
+      html = html.replace(/^\s*-\s+(.*$)/gim, '<li>$1</li>');
+      html = html.replace(/^\s*\*\s+(.*$)/gim, '<li>$1</li>');
+
+      // Re-inject escaped code blocks
+      codeBlocks.forEach((block, index) => {
+        html = html.replace(`__CODE_BLOCK_PLACEHOLDER_${index}__`, block);
+      });
+
+      // Process lists & paragraphs line-by-line
+      const lines = html.split('\n');
+      let inList = false;
+      let result = [];
+      
+      for (let line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith('<li')) {
+          if (!inList) {
+            result.push('<ul>');
+            inList = true;
+          }
+          result.push(line);
+        } else {
+          if (inList) {
+            result.push('</ul>');
+            inList = false;
+          }
+          if (trimmed === '') {
+            result.push('<div class="spacer"></div>');
+          } else if (
+            !line.startsWith('<h') && 
+            !line.startsWith('<div') && 
+            !line.startsWith('<pre') && 
+            !line.startsWith('</pre') && 
+            !line.startsWith('<code') && 
+            !line.startsWith('</div') && 
+            !line.startsWith('<ul>') && 
+            !line.startsWith('</ul>')
+          ) {
+            result.push(`<p>${line}</p>`);
+          } else {
+            result.push(line);
+          }
+        }
+      }
+      if (inList) {
+        result.push('</ul>');
+      }
+
+      return result.join('\n');
+    }
+
+    // Show Toast Notification
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" width="16" height="16">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>${message}</span>
+      `;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 300);
+      }, 2000);
+    }
+
+    // Copy to clipboard helper
+    function copyText(button, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        if (button) {
+          const originalHTML = button.innerHTML;
+          button.innerHTML = '✓ Copied';
+          setTimeout(() => {
+            button.innerHTML = originalHTML;
+          }, 1500);
+        }
+        showToast("Đã sao chép đoạn mã!");
+      }).catch(err => {
+        console.error("Lỗi sao chép: ", err);
+      });
+    }
+
+    // Copy skill name
+    function copySkillName() {
+      if (selectedSkill) {
+        navigator.clipboard.writeText(selectedSkill.name).then(() => {
+          showToast(`Đã sao chép tên skill: "${selectedSkill.name}"`);
+        });
+      }
+    }
+
+    // Handle IDE link click
+    function handleIdeLinkClick(e) {
+      // Vì mở qua file:/// có thể bị chặn bởi cơ chế bảo mật của browser khi mở trang từ local,
+      // Ta thông báo hướng dẫn người dùng nếu click không hoạt động.
+      const path = e.currentTarget.getAttribute('href');
+      navigator.clipboard.writeText(path).then(() => {
+        showToast("Đã copy đường dẫn file MD gốc vào Clipboard!");
+      });
+    }
+
+    /* 4. RENDERING LOGIC */
+    // Initialize Category Filter Tabs
+    function initFilters() {
+      const categories = ["All", ...new Set(skillsData.map(s => s.category))];
+      const tabsContainer = document.getElementById('filterTabs');
+      
+      tabsContainer.innerHTML = categories.map(cat => `
+        <button class="filter-btn ${cat === currentCategory ? 'active' : ''}" onclick="filterCategory('${cat}')">
+          ${cat === 'All' ? 'Tất cả' : cat}
+        </button>
+      `).join('');
+    }
+
+    // Filter by Category Click
+    function filterCategory(category) {
+      currentCategory = category;
+      initFilters();
+      renderCards();
+    }
+
+    // Search input handler
+    function handleSearch() {
+      searchQuery = document.getElementById('searchInput').value.toLowerCase();
+      renderCards();
+    }
+
+    // Render Skill Cards Grid
+    function renderCards() {
+      const grid = document.getElementById('skillsGrid');
+      
+      const filtered = skillsData.filter(skill => {
+        const matchesCategory = currentCategory === "All" || skill.category === currentCategory;
+        const matchesSearch = skill.name.toLowerCase().includes(searchQuery) || 
+                              skill.title.toLowerCase().includes(searchQuery) ||
+                              skill.description.toLowerCase().includes(searchQuery);
+        return matchesCategory && matchesSearch;
+      });
+
+      document.getElementById('skillsCount').innerText = `Hiển thị: ${filtered.length}/${skillsData.length} skill`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div style="grid-column: 1/-1; text-align: center; padding: 4rem 1rem; color: var(--text-muted);">
+            <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin: 0 auto 1rem; display: block; opacity: 0.5;">
+              <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <p style="font-size: 1.1rem; font-weight: 500; margin-bottom: 0.25rem;">Không tìm thấy kết quả</p>
+            <p style="font-size: 0.9rem;">Hãy thử tìm kiếm với các từ khóa hoặc nhóm danh mục khác.</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(skill => `
+        <div class="skill-card" 
+             style="--theme-color: ${skill.themeColor}; --theme-color-rgb: ${skill.themeColorRgb};"
+             onclick="openModal('${skill.id}')">
+          <div>
+            <div class="card-header">
+              <div class="card-icon">
+                ${skill.icon}
+              </div>
+              <span class="category-badge">${skill.category}</span>
+            </div>
+            
+            <div class="card-body">
+              <h3 class="card-title">${skill.title}</h3>
+              <p class="card-desc">${skill.description}</p>
+            </div>
+          </div>
+
+          <div class="card-footer" onclick="event.stopPropagation()">
+            <button class="btn btn-secondary" onclick="navigator.clipboard.writeText('${skill.name}').then(() => showToast('Đã copy tên: ${skill.name}'))">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+              Copy tên
+            </button>
+            <button class="btn btn-primary" onclick="openModal('${skill.id}')">
+              Chi tiết
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /* 5. MODAL SYSTEM WORKFLOWS */
+    // Open Modal
+    function openModal(id) {
+      const skill = skillsData.find(s => s.id === id);
+      if (!skill) return;
+      selectedSkill = skill;
+
+      // Update styling custom properties for the modal theme
+      const modal = document.getElementById('detailModal');
+      modal.style.setProperty('--theme-color', skill.themeColor);
+      modal.style.setProperty('--theme-color-rgb', skill.themeColorRgb);
+
+      // Set content
+      document.getElementById('modalIcon').innerHTML = skill.icon;
+      document.getElementById('modalTitle').innerText = skill.title;
+      document.getElementById('modalCategory').innerText = skill.category;
+      document.getElementById('modalDescDetail').innerText = skill.description;
+
+      // Populate lists
+      document.getElementById('modalWhenToUse').innerHTML = skill.whenToUse.map(item => `<li>${item}</li>`).join('');
+      document.getElementById('modalWhenNotToUse').innerHTML = skill.whenNotToUse.map(item => `<li>${item}</li>`).join('');
+      
+      // Render quick guide & code block
+      document.getElementById('modalQuickGuide').innerHTML = renderMarkdown(skill.quickGuide);
+
+      // Populate checklist
+      document.getElementById('modalChecklist').innerHTML = skill.checklist.map(item => `
+        <li class="checklist-item">
+          <span class="checklist-checkbox" onclick="toggleCheckbox(this)">✓</span>
+          <span>${item}</span>
+        </li>
+      `).join('');
+
+      // Render full doc markdown
+      document.getElementById('modalMarkdownContent').innerHTML = renderMarkdown(skill.fullDoc);
+
+      // Set IDE absolute file path
+      document.getElementById('modalIdeLink').setAttribute('href', `file:///${skill.path}`);
+
+      // Open modal
+      modal.classList.add('open');
+      document.body.style.overflow = 'hidden'; // Lock body scroll
+      
+      // Default to overview tab
+      switchTab('overview');
+    }
+
+    // Toggle Checklist items locally inside modal
+    function toggleCheckbox(element) {
+      element.classList.toggle('checked');
+    }
+
+    // Switch tab inside modal
+    function switchTab(tabId) {
+      // Deactivate all sidebar items
+      document.querySelectorAll('.sidebar-menu-item').forEach(item => item.classList.remove('active'));
+      document.querySelectorAll('.mobile-tab-item').forEach(item => item.classList.remove('active'));
+      
+      // Deactivate all content views
+      document.querySelectorAll('.modal-tab-content').forEach(content => content.classList.remove('active'));
+
+      // Activate selected
+      const sidebarItem = document.getElementById(`menu-${tabId}`);
+      if (sidebarItem) sidebarItem.classList.add('active');
+      
+      // Activate mobile tab
+      const mobileTab = Array.from(document.querySelectorAll('.mobile-tab-item')).find(item => item.getAttribute('onclick').includes(tabId));
+      if (mobileTab) mobileTab.classList.add('active');
+
+      // Activate view content
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+
+      // Scroll viewport back to top
+      document.getElementById('modalViewport').scrollTop = 0;
+    }
+
+    // Close Modal
+    function closeModal(event) {
+      document.getElementById('detailModal').classList.remove('open');
+      document.body.style.overflow = ''; // Unlock body scroll
+      selectedSkill = null;
+    }
+
+    // Close Modal on Esc key
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+
+    /* 6. INITIALIZATION RUN */
+    initFilters();
+    renderCards();
+  </script>
+</body>
+</html>
