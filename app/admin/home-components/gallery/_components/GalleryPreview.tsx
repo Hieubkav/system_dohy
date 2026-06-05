@@ -437,7 +437,7 @@ export const GalleryPreview = ({
     if (items.length === 0) {return renderGalleryEmptyState();}
     const showCounters = items.length > 6;
 
-    const colsClass = desktopColumns === 3 ? 'grid-cols-3' : 'grid-cols-4';
+    const colsClass = desktopColumns === 3 ? 'grid-cols-3' : desktopColumns === 6 ? 'grid-cols-6' : 'grid-cols-4';
     
     return (
       <div
@@ -588,7 +588,7 @@ export const GalleryPreview = ({
       );
     }
 
-    const colsClass = desktopColumns === 3 ? 'columns-3' : 'columns-4';
+    const colsClass = desktopColumns === 3 ? 'columns-3' : desktopColumns === 6 ? 'columns-6' : 'columns-4';
 
     return (
       <div className={cn('px-4', fullWidthDesktop ? 'w-full' : 'max-w-7xl mx-auto')}>
@@ -793,11 +793,13 @@ export const GalleryPreview = ({
     }
 
     // Masonry layout with CSS columns
+    const colsClass = desktopColumns === 3 ? 'columns-3' : desktopColumns === 6 ? 'columns-6' : 'columns-4';
+
     return (
       <div className="px-4">
         <div className={cn(
           'gap-3',
-          device === 'mobile' ? 'columns-2' : (device === 'tablet' ? 'columns-3' : 'columns-4'),
+          device === 'mobile' ? 'columns-2' : (device === 'tablet' ? 'columns-3' : colsClass),
         )}>
           {visibleItems.map((photo, idx) => {
             // Varying heights for masonry effect

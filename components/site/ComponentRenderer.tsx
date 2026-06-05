@@ -94,7 +94,7 @@ import { PartnersDividerShared } from '@/app/admin/home-components/partners/_com
 import { PartnersGridShared } from '@/app/admin/home-components/partners/_components/PartnersGridShared';
 import { PartnersLogoCloudShared } from '@/app/admin/home-components/partners/_components/PartnersLogoCloudShared';
 import { PartnersGlassLogoCloudShared } from '@/app/admin/home-components/partners/_components/PartnersGlassLogoCloudShared';
-import { getPartnersSectionSpacingClassName, normalizePartnersAlign, normalizePartnersCornerRadius, normalizePartnersDisplayMode, normalizePartnersLogoSize, normalizePartnersShowBorder, normalizePartnersSpacing, normalizePartnersStyle, type PartnersLogoColorMode } from '@/app/admin/home-components/partners/_types';
+import { getPartnersSectionSpacingClassName, normalizePartnersAlign, normalizePartnersCornerRadius, normalizePartnersDisplayMode, normalizePartnersLogoColorIntensity, normalizePartnersLogoSize, normalizePartnersShowBorder, normalizePartnersSpacing, normalizePartnersStyle, type PartnersLogoColorMode } from '@/app/admin/home-components/partners/_types';
 import type { FooterBrandMode, FooterConfig, FooterCornerRadius, FooterLogoBackgroundStyle, FooterStyle } from '@/app/admin/home-components/footer/_types';
 import type { ClientsBrandMode, ClientsHeaderAlign } from '@/app/admin/home-components/clients/_types';
 import { normalizeClientsCornerRadius } from '@/app/admin/home-components/clients/_types';
@@ -2093,7 +2093,7 @@ function TestimonialsSection({ config, brandColor, secondary, mode, title }: { c
 // Partners: 6 Professional Styles (Grid, Marquee, Mono, Badge, Carousel, Featured)
 type GalleryStyle = 'spotlight' | 'explore' | 'stories' | 'grid' | 'marquee' | 'masonry' | 'mono' | 'badge' | 'carousel' | 'featured' | 'clean' | 'divider';
 type GalleryCornerRadius = 'none' | 'sm' | 'lg';
-type GalleryDesktopColumns = 3 | 4;
+type GalleryDesktopColumns = 3 | 4 | 6;
 
 function normalizeGalleryCornerRadius(value: unknown, noBorderRadius?: unknown): GalleryCornerRadius {
   if (noBorderRadius === true) {
@@ -2112,7 +2112,7 @@ function normalizeGalleryCornerRadius(value: unknown, noBorderRadius?: unknown):
 }
 
 function normalizeGalleryDesktopColumns(value: unknown): GalleryDesktopColumns {
-  return value === 3 ? 3 : 4;
+  return value === 3 ? 3 : value === 6 ? 6 : 4;
 }
 
 function getGalleryCornerRadiusClassName(value: GalleryCornerRadius): string {
@@ -2524,7 +2524,7 @@ function TrustBadgesSection({
 
   const sharedHeader = <TrustBadgesSectionHeader brandColor={brandColor} config={headerConfig} fallbackSubtitle={headerConfig.subtitle} title={title} />;
 
-  const TrustCue = ({ compact = false }: { compact?: boolean }) => (
+  const renderTrustCue = (compact = false) => (
     <TrustBadgesTrustCue colors={colors} compact={compact} text={trustCueText} />
   );
 
@@ -2543,7 +2543,7 @@ function TrustBadgesSection({
                 className={cn('group relative flex min-h-[164px] flex-col overflow-hidden cursor-zoom-in transition-all duration-300 hover:-translate-y-0.5', radiusClassName)}
                 style={{ border: cardBorder, backgroundColor: colors.neutralSurface, boxShadow: '0 16px 40px rgba(15, 23, 42, 0.06)' }}
               >
-                <div className="absolute left-3 top-3 z-10"><TrustCue compact /></div>
+                <div className="absolute left-3 top-3 z-10">{renderTrustCue(true)}</div>
                 <div className={cn('flex flex-1 items-center justify-center p-5 pt-10', TRUST_BADGES_A4_ASPECT_CLASS)} style={{ backgroundColor: colors.neutralBackground }}>
                   {item.url ? (
                     <SiteImage src={item.url} className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105" alt={item.name ?? ''} />
@@ -2605,7 +2605,7 @@ function TrustBadgesSection({
                 style={{ border: cardBorder, backgroundColor: colors.neutralSurface, boxShadow: '0 18px 45px rgba(15, 23, 42, 0.08)' }}
               >
                 <div className={cn(TRUST_BADGES_A4_ASPECT_CLASS, 'flex items-center justify-center p-5 md:p-6 relative overflow-hidden')} style={{ backgroundColor: colors.neutralBackground }}>
-                  <div className="absolute left-4 top-4 z-20"><TrustCue compact /></div>
+                  <div className="absolute left-4 top-4 z-20">{renderTrustCue(true)}</div>
                   {item.url ? (
                     <SiteImage src={item.url} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 z-10" alt={item.name ?? ''} />
                   ) : (
@@ -2645,7 +2645,7 @@ function TrustBadgesSection({
           <div className={cn('grid items-stretch', compactStack ? 'gap-3 md:grid-cols-[0.46fr_1.9fr]' : 'gap-4 md:grid-cols-[0.82fr_1.35fr]')}>
             <div className={cn('flex h-full flex-col border bg-white shadow-sm', compactStack ? 'p-3' : 'p-4 md:p-5', radiusClassName)} style={{ borderColor: renderConfig.showBorder ? colors.neutralBorder : 'transparent', boxShadow: '0 18px 45px rgba(15, 23, 42, 0.06)' }}>
               <div className={compactStack ? 'mb-3' : 'mb-4'}>
-                <TrustCue />
+                {renderTrustCue()}
                 <p className={cn('mt-3 font-bold', compactStack ? 'text-sm' : 'text-base')} style={{ color: colors.heading }}>{stackHeading}</p>
                 <p className={cn('mt-2 text-xs', compactStack ? 'leading-4' : 'leading-5')} style={{ color: colors.mutedText }}>{stackDescription}</p>
               </div>
@@ -2709,7 +2709,7 @@ function TrustBadgesSection({
               >
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div className="h-1.5 w-10 rounded-full" style={{ backgroundColor: colors.sectionAccentBar }} />
-                  <TrustCue compact />
+                  {renderTrustCue(true)}
                 </div>
                 <div className={cn('flex items-center justify-center p-3 relative overflow-hidden', TRUST_BADGES_A4_ASPECT_CLASS, innerRadiusClassName)} style={{ backgroundColor: colors.neutralBackground, border: cardBorder }}>
                   {item.url ? (
@@ -2919,8 +2919,8 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
   const galleryCornerRadius = normalizeGalleryCornerRadius(config.cornerRadius, config.noBorderRadius);
   const galleryRoundedClass = getGalleryCornerRadiusClassName(galleryCornerRadius);
   const galleryDesktopColumns = normalizeGalleryDesktopColumns(config.desktopColumns);
-  const galleryGridColumnsClass = galleryDesktopColumns === 3 ? 'grid-cols-3' : 'grid-cols-4';
-  const galleryMasonryColumnsClass = galleryDesktopColumns === 3 ? 'columns-3' : 'columns-4';
+  const galleryGridColumnsClass = galleryDesktopColumns === 3 ? 'grid-cols-3' : galleryDesktopColumns === 6 ? 'grid-cols-6' : 'grid-cols-4';
+  const galleryMasonryColumnsClass = galleryDesktopColumns === 3 ? 'columns-3' : galleryDesktopColumns === 6 ? 'columns-6' : 'columns-4';
 
   React.useEffect(() => {
     if (style !== 'marquee') {return;}
@@ -3091,7 +3091,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
     if (normalizedItems.length === 0) {return renderGalleryEmptyState();}
 
     return (
-      <div className={cn('grid gap-3 grid-cols-3', galleryDesktopColumns === 3 ? 'md:grid-cols-3' : 'md:grid-cols-4')}>
+      <div className={cn('grid gap-3 grid-cols-2 md:grid-cols-3', galleryDesktopColumns === 3 ? 'lg:grid-cols-3' : galleryDesktopColumns === 6 ? 'lg:grid-cols-6' : 'lg:grid-cols-4')}>
         {normalizedItems.map((photo) => (
           <div
             key={photo.id}
@@ -3576,6 +3576,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
   if (style === 'glassLogoCloud') {
     const normalizedItems = items.map((item, idx) => ({ ...item, id: idx }));
     const logoColorMode = (config.logoColorMode as PartnersLogoColorMode) || 'grayscale';
+    const logoColorIntensity = normalizePartnersLogoColorIntensity(config.logoColorIntensity, logoColorMode);
 
     return (
       <div className="w-full bg-white">
@@ -3609,6 +3610,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
               showBorder={partnersShowBorder}
               spacing={partnersSpacing}
               logoColorMode={logoColorMode}
+              logoColorIntensity={logoColorIntensity}
               openInNewTab={false}
               renderImage={(item, className) => (
                 <SiteImage src={item.url} alt={item.name ?? 'Hình ảnh'} className={className} width={180} height={80} mode="logo" />
