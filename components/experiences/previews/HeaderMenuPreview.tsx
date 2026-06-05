@@ -147,6 +147,11 @@ export function HeaderMenuPreview({
     : level1ColorMode === 'secondary' ? tokens.secondary
     : tokens.textPrimary;
 
+  const resolvedStyle: HeaderLayoutStyle = 
+    (layoutStyle as string) === 'transparent' || (layoutStyle as string) === 'centered'
+      ? 'allbirds'
+      : (layoutStyle || 'classic') as HeaderLayoutStyle;
+
   const logoSizeMap: Record<HeaderLayoutStyle, number[]> = {
     classic: buildLinearSteps(24, 160),
     topbar: buildLinearSteps(28, 180),
@@ -159,8 +164,8 @@ export function HeaderMenuPreview({
     allbirds: [6, 8, 10, 12, 14, 16, 18],
     darkglass: [6, 8, 10, 12, 14, 16, 18],
   };
-  const logoSize = logoSizeMap[layoutStyle][logoSizeLevel - 1] ?? logoSizeMap[layoutStyle][0];
-  const headerSpacingY = headerSpacingMap[layoutStyle][headerSpacingLevel - 1] ?? headerSpacingMap[layoutStyle][3];
+  const logoSize = logoSizeMap[resolvedStyle][logoSizeLevel - 1] ?? logoSizeMap[resolvedStyle][0];
+  const headerSpacingY = headerSpacingMap[resolvedStyle][headerSpacingLevel - 1] ?? headerSpacingMap[resolvedStyle][3];
   const logoDotSize = Math.max(2, Math.round(logoSize / 4));
   const logoBackgroundStyle: LogoBackgroundStyle =
     config.logoBackgroundStyle === 'border'
@@ -222,7 +227,7 @@ export function HeaderMenuPreview({
     ...(logo && hasBackgroundFrame ? { padding: Math.max(4, Math.round(logoSize * 0.1)) } : {}),
     borderRadius: logoBackgroundStyle === 'pill'
       ? logoContainerSize
-      : layoutStyle === 'allbirds'
+      : resolvedStyle === 'allbirds'
         ? logoContainerSize
         : Math.max(16, Math.round(logoContainerSize * 0.24)),
     display: 'flex',
@@ -234,7 +239,7 @@ export function HeaderMenuPreview({
   const logoInnerBaseStyle: React.CSSProperties = {
     width: logoSize,
     height: logo ? 'auto' : logoSize,
-    borderRadius: layoutStyle === 'allbirds' ? logoSize : Math.max(8, Math.round(logoSize * 0.24)),
+    borderRadius: resolvedStyle === 'allbirds' ? logoSize : Math.max(8, Math.round(logoSize * 0.24)),
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -363,7 +368,7 @@ export function HeaderMenuPreview({
     calculate();
 
     return () => resizeObserver.disconnect();
-  }, [rootItems.length, logoSizeLevel, showBrandName, layoutStyle, config.cta.show, config.cart.show, config.wishlist.show]);
+  }, [rootItems.length, logoSizeLevel, showBrandName, resolvedStyle, config.cta.show, config.cart.show, config.wishlist.show]);
 
   const displayTopbar = useMemo(() => ({
     ...config.topbar,
@@ -1831,10 +1836,10 @@ export function HeaderMenuPreview({
 
   return (
     <div className="border rounded-lg overflow-hidden" style={{ borderColor: tokens.border }}>
-      {layoutStyle === 'classic' && renderClassicStyle()}
-      {layoutStyle === 'topbar' && renderTopbarStyle()}
-      {layoutStyle === 'allbirds' && renderAllbirdsStyle()}
-      {layoutStyle === 'darkglass' && renderDarkGlassStyle()}
+      {resolvedStyle === 'classic' && renderClassicStyle()}
+      {resolvedStyle === 'topbar' && renderTopbarStyle()}
+      {resolvedStyle === 'allbirds' && renderAllbirdsStyle()}
+      {resolvedStyle === 'darkglass' && renderDarkGlassStyle()}
 
       <div className="p-4 space-y-3" style={{ backgroundColor: tokens.surfaceAlt }}>
         <div className="h-32 rounded-lg flex items-center justify-center" style={{ backgroundColor: tokens.placeholderBg }}>
