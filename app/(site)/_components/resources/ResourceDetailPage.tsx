@@ -394,114 +394,98 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
     );
   }
 
-  // Layout 2: MODERN (Hiện đại - phong cách macOS App)
+  // Layout 2: MODERN (Hiện đại - phong cách tối giản phẳng macOS)
   if (config.layoutStyle === 'modern') {
     return (
-      <main className="min-h-screen bg-slate-50/50 pb-24 lg:pb-12 font-active px-4 py-8" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
-        <div className="mx-auto max-w-6xl border border-zinc-200 bg-white rounded-lg overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.04)]">
-          {/* macOS-style Toolbar */}
-          <div className="h-12 border-b border-zinc-200 bg-zinc-50 px-4 flex items-center justify-between select-none">
-            <div className="flex items-center gap-4">
-              {/* Traffic lights */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56] border border-[#e0443e] shrink-0" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e] border border-[#dea123] shrink-0" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f] border border-[#1aab29] shrink-0" />
-              </div>
-              <div className="h-4 w-[1px] bg-zinc-200" />
-              {/* Breadcrumb */}
-              <Link href="/resources" className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800 transition-colors font-medium">
-                <ArrowLeft size={12} /> Quay lại
-              </Link>
-            </div>
-            {/* Right Status */}
-            <div className="text-[10px] font-mono text-zinc-400">
-              Finder / {category?.name ?? 'Tài nguyên'}
-            </div>
+      <main className="min-h-screen bg-white pb-24 lg:pb-12 font-active px-4 py-8" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
+        <div className="mx-auto max-w-7xl">
+          {/* Breadcrumb quay lại đặt tự nhiên ở trên */}
+          <div className="mb-6">
+            <Link href="/resources" className="inline-flex items-center gap-1.5 text-xs text-zinc-550 hover:text-zinc-900 transition-colors font-semibold">
+              <ArrowLeft size={12} /> Quay lại tất cả tài nguyên
+            </Link>
           </div>
 
-          {/* Workspace Layout - 2 Columns */}
-          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] divide-y lg:divide-y-0 lg:divide-x divide-zinc-200">
-            {/* Left Column (macOS Sidebar) */}
-            <aside className="bg-zinc-50/30 p-5 space-y-6 flex flex-col justify-between shrink-0 lg:max-w-[280px]">
-              <div className="space-y-5">
-                {/* Category & Status */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-sm bg-zinc-200/60 text-zinc-700 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
-                    {category?.name ?? 'Tài nguyên'}
+          {/* Bố cục 2 cột thông thoáng */}
+          <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-10">
+            {/* Cột Trái: Sidebar thông tin tối giản phẳng */}
+            <aside className="space-y-6 shrink-0 lg:max-w-[300px]">
+              {/* Category & Status */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-sm bg-zinc-100 text-zinc-650 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase border border-zinc-200/60">
+                  {category?.name ?? 'Tài nguyên'}
+                </span>
+                {resource.featured && (
+                  <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-500/10 text-amber-700 px-2 py-0.5 text-[10px] font-bold">
+                    <Star size={10} className="fill-current" /> Nổi bật
                   </span>
-                  {resource.featured && (
-                    <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-500/10 text-amber-700 px-2 py-0.5 text-[10px] font-bold">
-                      <Star size={10} className="fill-current animate-pulse" /> Nổi bật
-                    </span>
-                  )}
-                </div>
-
-                {/* Title & Excerpt */}
-                <div className="space-y-2">
-                  <h1 className="text-lg font-bold text-zinc-900 leading-snug">{resource.title}</h1>
-                  {resource.excerpt && (
-                    <p className="text-[11px] text-zinc-500 leading-relaxed font-normal">
-                      {resource.excerpt}
-                    </p>
-                  )}
-                </div>
-
-                {/* Resource Filters */}
-                {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedFilters && assignedFilters.length > 0 && (
-                  <div className="space-y-1.5">
-                    <span className="text-[10px] uppercase font-semibold tracking-wider text-zinc-400">Thông số</span>
-                    <div className="flex flex-wrap gap-1">
-                      {assignedFilters.map((filterValue) => (
-                        <span
-                          key={filterValue._id}
-                          className="inline-flex items-center gap-1 rounded-sm border border-zinc-200 bg-white px-2 py-0.5 text-[10px] text-zinc-700 font-medium"
-                        >
-                          {filterValue.icon && (
-                            <img src={filterValue.icon} alt="" className="h-3 w-3 object-contain shrink-0" />
-                          )}
-                          <span>{filterValue.name}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
                 )}
+              </div>
 
-                {/* Related Resources */}
-                {related.length > 0 && (
-                  <div className="space-y-2">
-                    <span className="text-[10px] uppercase font-semibold tracking-wider text-zinc-400">Tài nguyên liên quan</span>
-                    <div className="space-y-0.5 text-xs">
-                      {related.map((item) => (
-                        <Link
-                          key={item._id}
-                          href={`/resources/${item.slug}`}
-                          className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/40 px-2 py-1.5 rounded-sm transition-colors truncate"
-                        >
-                          <FileText size={12} className="text-zinc-400 shrink-0" />
-                          <span className="truncate">{item.title}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
+              {/* Title & Excerpt */}
+              <div className="space-y-2">
+                <h1 className="text-2xl font-extrabold text-zinc-900 leading-tight tracking-tight">{resource.title}</h1>
+                {resource.excerpt && (
+                  <p className="text-xs text-zinc-500 leading-relaxed font-normal">
+                    {resource.excerpt}
+                  </p>
                 )}
               </div>
 
               {/* Action Widget (CtaCard) */}
               {config.showStickyCta && (
-                <div className="pt-4 border-t border-zinc-200/60 mt-auto">
+                <div className="pt-2">
                   <CtaCard isModernLayout={true} />
+                </div>
+              )}
+
+              {/* Resource Filters */}
+              {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedFilters && assignedFilters.length > 0 && (
+                <div className="space-y-2 pt-4 border-t border-zinc-100">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-450">Thông số</span>
+                  <div className="flex flex-wrap gap-1">
+                    {assignedFilters.map((filterValue) => (
+                      <span
+                        key={filterValue._id}
+                        className="inline-flex items-center gap-1 rounded-sm border border-zinc-200 bg-zinc-50/50 px-2 py-0.5 text-[10px] text-zinc-700 font-medium"
+                      >
+                        {filterValue.icon && (
+                          <img src={filterValue.icon} alt="" className="h-3 w-3 object-contain shrink-0" />
+                        )}
+                        <span>{filterValue.name}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Related Resources */}
+              {related.length > 0 && (
+                <div className="space-y-2.5 pt-4 border-t border-zinc-100">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-455">Tài nguyên liên quan</span>
+                  <div className="space-y-1 text-xs">
+                    {related.map((item) => (
+                      <Link
+                        key={item._id}
+                        href={`/resources/${item.slug}`}
+                        className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 px-2 py-1.5 rounded-sm transition-colors truncate"
+                      >
+                        <FileText size={12} className="text-zinc-400 shrink-0" />
+                        <span className="truncate">{item.title}</span>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               )}
             </aside>
 
-            {/* Right Column (Main View - Gallery & Content) */}
-            <section className="bg-white p-6 lg:p-8 space-y-6">
+            {/* Cột Phải: Main View (Gallery & Content) */}
+            <section className="space-y-6">
               {/* Gallery Block */}
               <GalleryBlock />
 
               {/* Divider */}
-              <div className="h-[1px] bg-zinc-200/60" />
+              <div className="h-[1px] bg-zinc-150" />
 
               {/* Detail Content */}
               <article className="prose prose-zinc max-w-none prose-sm leading-relaxed prose-headings:text-zinc-900 prose-p:text-zinc-650">

@@ -884,110 +884,94 @@ export function ResourceDetailPreview({
     );
   }
 
-  // Layout 2: MODERN (Hiện đại - phong cách macOS App)
+  // Layout 2: MODERN (Hiện đại - phong cách tối giản phẳng macOS)
   if (layoutStyle === 'modern') {
     return (
-      <div className="mx-auto max-w-6xl border border-zinc-200 bg-white rounded-lg overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.04)] font-sans">
-        {/* macOS-style Toolbar */}
-        <div className="h-12 border-b border-zinc-200 bg-zinc-50 px-4 flex items-center justify-between select-none">
-          <div className="flex items-center gap-4">
-            {/* Traffic lights */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f56] border border-[#e0443e] shrink-0" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e] border border-[#dea123] shrink-0" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#27c93f] border border-[#1aab29] shrink-0" />
-            </div>
-            <div className="h-4 w-[1px] bg-zinc-200" />
-            {/* Breadcrumb */}
-            <div className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-800 transition-colors font-medium">
-              <ArrowLeft size={12} /> Quay lại
-            </div>
-          </div>
-          {/* Right Status */}
-          <div className="text-[10px] font-mono text-zinc-400">
-            Finder / Checklist
+      <div className="mx-auto max-w-7xl font-sans text-slate-900 bg-white">
+        {/* Breadcrumb quay lại đặt tự nhiên ở trên */}
+        <div className="mb-5">
+          <div className="inline-flex items-center gap-1.5 text-xs text-zinc-550 hover:text-zinc-900 transition-colors font-semibold">
+            <ArrowLeft size={12} /> Quay lại tất cả tài nguyên
           </div>
         </div>
 
-        {/* Workspace Layout - 2 Columns */}
-        <div className={`grid divide-zinc-200 ${isMobile ? 'grid-cols-1 divide-y' : 'grid-cols-[260px_1fr] divide-x'}`}>
-          {/* Left Column (macOS Sidebar) */}
-          <aside className="bg-zinc-50/30 p-4 space-y-5 flex flex-col justify-between shrink-0">
-            <div className="space-y-5">
-              {/* Category & Status */}
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="rounded-sm bg-zinc-200/60 text-zinc-700 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
-                  Checklist
-                </span>
-                <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-500/10 text-amber-700 px-2 py-0.5 text-[10px] font-bold">
-                  <Star size={10} className="fill-current animate-pulse" /> Nổi bật
-                </span>
-              </div>
+        {/* Bố cục 2 cột thông thoáng */}
+        <div className={`grid gap-8 ${isMobile ? 'grid-cols-1' : 'grid-cols-[260px_1fr]'}`}>
+          {/* Cột Trái: Sidebar thông tin tối giản phẳng */}
+          <aside className="space-y-5 shrink-0">
+            {/* Category & Status */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="rounded-sm bg-zinc-100 text-zinc-650 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase border border-zinc-200/60">
+                Checklist
+              </span>
+              <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-500/10 text-amber-700 px-2 py-0.5 text-[10px] font-bold">
+                <Star size={10} className="fill-current" /> Nổi bật
+              </span>
+            </div>
 
-              {/* Title & Excerpt */}
-              <div className="space-y-1.5">
-                <h1 className="text-base font-bold text-zinc-900 leading-snug">Checklist ra mắt website chuyên nghiệp</h1>
-                <p className="text-[11px] text-zinc-500 leading-relaxed font-normal">
-                  Bộ checklist giúp rà soát nội dung, hiệu năng, SEO và tracking trước khi public.
-                </p>
-              </div>
-
-              {/* Resource Filters */}
-              {resourceFiltersFeature?.enabled && showResourceFilters && (
-                <div className="space-y-1.5">
-                  <span className="text-[10px] uppercase font-semibold tracking-wider text-zinc-400">Thông số</span>
-                  <div className="flex flex-wrap gap-1">
-                    {[{ name: 'AutoCAD 2D', icon: 'https://img.icons8.com/color/48/autocad.png' }].map((item) => (
-                      <span
-                        key={item.name}
-                        className="inline-flex items-center gap-1 rounded-sm border border-zinc-200 bg-white px-2 py-0.5 text-[10px] text-zinc-700 font-medium"
-                      >
-                        <img src={item.icon} alt="" className="h-3 w-3 object-contain shrink-0" />
-                        <span>{item.name}</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Related Resources */}
-              {showRelated && (
-                <div className="space-y-2">
-                  <span className="text-[10px] uppercase font-semibold tracking-wider text-zinc-400">Tài nguyên liên quan</span>
-                  <div className="space-y-0.5 text-xs">
-                    {MOCK_RESOURCES.slice(1, 4).map((item) => (
-                      <div
-                        key={item.title}
-                        className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/40 px-2 py-1.5 rounded-sm transition-colors truncate cursor-default"
-                      >
-                        <FileText size={12} className="text-zinc-400 shrink-0" />
-                        <span className="truncate">{item.title}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+            {/* Title & Excerpt */}
+            <div className="space-y-1.5">
+              <h1 className="text-base font-bold text-zinc-900 leading-snug">Checklist ra mắt website chuyên nghiệp</h1>
+              <p className="text-[11px] text-zinc-500 leading-relaxed font-normal">
+                Bộ checklist giúp rà soát nội dung, hiệu năng, SEO và tracking trước khi public.
+              </p>
             </div>
 
             {/* Action Widget (CtaCard) */}
             {showStickyCta && (
-              <div className="pt-4 border-t border-zinc-200/60 mt-auto">
+              <div className="pt-1">
                 <CtaCard isModernLayout={true} />
+              </div>
+            )}
+
+            {/* Resource Filters */}
+            {resourceFiltersFeature?.enabled && showResourceFilters && (
+              <div className="space-y-1.5 pt-4 border-t border-zinc-100">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-450">Thông số</span>
+                <div className="flex flex-wrap gap-1">
+                  {[{ name: 'AutoCAD 2D', icon: 'https://img.icons8.com/color/48/autocad.png' }].map((item) => (
+                    <span
+                      key={item.name}
+                      className="inline-flex items-center gap-1 rounded-sm border border-zinc-200 bg-zinc-50/50 px-2 py-0.5 text-[10px] text-zinc-700 font-medium"
+                    >
+                      <img src={item.icon} alt="" className="h-3 w-3 object-contain shrink-0" />
+                      <span>{item.name}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Related Resources */}
+            {showRelated && (
+              <div className="space-y-2 pt-4 border-t border-zinc-100">
+                <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-455">Tài nguyên liên quan</span>
+                <div className="space-y-1 text-xs">
+                  {MOCK_RESOURCES.slice(1, 4).map((item) => (
+                    <div
+                      key={item.title}
+                      className="flex items-center gap-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 px-2 py-1.5 rounded-sm transition-colors truncate cursor-default"
+                    >
+                      <FileText size={12} className="text-zinc-400 shrink-0" />
+                      <span className="truncate">{item.title}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </aside>
 
-          {/* Right Column (Main View - Gallery & Content) */}
-          <section className="bg-white p-5 lg:p-6 space-y-5">
+          {/* Cột Phải: Main View (Gallery & Content) */}
+          <section className="space-y-5">
             {/* Gallery Block */}
             <GalleryBlock />
 
             {/* Divider */}
-            <div className="h-[1px] bg-zinc-200/60" />
+            <div className="h-[1px] bg-zinc-150" />
 
             {/* Detail Content */}
             <article className="prose prose-zinc max-w-none">
-              <h3 className="text-sm font-semibold text-zinc-800 border-l-2 pl-2 border-zinc-500">Bạn nhận được gì?</h3>
+              <h3 className="text-sm font-semibold text-zinc-800 border-l-2 pl-2 border-zinc-550">Bạn nhận được gì?</h3>
               <ul className="mt-2 space-y-1.5 text-xs text-zinc-650 list-disc pl-4 leading-relaxed">
                 <li>Kiểm tra nội dung, SEO, form, tracking và performance.</li>
                 <li>File mẫu có thể copy để sử dụng ngay cho dự án của bạn.</li>
