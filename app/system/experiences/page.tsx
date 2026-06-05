@@ -9,8 +9,11 @@ import {
   Briefcase,
   CalendarDays,
   CreditCard,
+  Eye,
   FileText,
   Heart,
+  LayoutList,
+  ListFilter,
   Loader2,
   Mail,
   Menu as MenuIcon,
@@ -81,6 +84,7 @@ export default function ExperiencesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [activeGroup, setActiveGroup] = useState<ExperienceGroup>(null);
+  const [subFilter, setSubFilter] = useState<'all' | 'list' | 'detail'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Debounce
@@ -111,6 +115,19 @@ export default function ExperiencesPage() {
     query: debouncedQuery,
   });
 
+  const filteredExperiences = React.useMemo(() => {
+    if (!experiences) return [];
+    return experiences.filter((exp) => {
+      if (subFilter === 'list') {
+        return exp.title.toLowerCase().includes('danh sách');
+      }
+      if (subFilter === 'detail') {
+        return exp.title.toLowerCase().includes('chi tiết');
+      }
+      return true;
+    });
+  }, [experiences, subFilter]);
+
   // Count per group (all experiences, no filter)
   const allExperiences = useQuery(api.experiences.search, { query: '' });
   const countByGroup = React.useMemo(() => {
@@ -125,6 +142,7 @@ export default function ExperiencesPage() {
   const handleGroupChange = useCallback((group: ExperienceGroup) => {
     setActiveGroup(group);
     setSearchQuery('');
+    setSubFilter('all');
   }, []);
 
   return (
@@ -205,27 +223,76 @@ export default function ExperiencesPage() {
         })}
       </div>
 
+      {/* Sub-filter tabs */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+        <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">
+          Bộ lọc phụ:
+        </span>
+        <div className="flex bg-slate-100/80 dark:bg-slate-800/80 p-0.5 rounded-lg">
+          <button
+            type="button"
+            onClick={() => setSubFilter('all')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
+              subFilter === 'all'
+                ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            <ListFilter size={12} />
+            Tất cả
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubFilter('list')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
+              subFilter === 'list'
+                ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            <LayoutList size={12} />
+            Danh sách
+          </button>
+          <button
+            type="button"
+            onClick={() => setSubFilter('detail')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all ${
+              subFilter === 'detail'
+                ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+            }`}
+          >
+            <Eye size={12} />
+            Chi tiết
+          </button>
+        </div>
+      </div>
+
       {/* Results */}
       {experiences === undefined ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
           <Loader2 className="h-8 w-8 text-cyan-500 animate-spin" />
           <p className="text-sm text-slate-500 dark:text-slate-400">Đang tải...</p>
         </div>
-      ) : experiences.length === 0 ? (
+      ) : filteredExperiences.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/20 text-center px-4">
           <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center mb-3">
             <Search className="h-5 w-5 text-slate-400 dark:text-slate-600" />
           </div>
           <h3 className="font-semibold text-slate-700 dark:text-slate-300">Không tìm thấy</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
-            {debouncedQuery
-              ? <>Không có kết quả cho &ldquo;<strong>{debouncedQuery}</strong>&rdquo;</>
-              : 'Nhóm này chưa có trải nghiệm nào.'}
+            {debouncedQuery ? (
+              <>Không có kết quả cho &ldquo;<strong>{debouncedQuery}</strong>&rdquo;</>
+            ) : subFilter !== 'all' ? (
+              <>Không có trải nghiệm nào dạng <strong>{subFilter === 'list' ? 'Danh sách' : 'Chi tiết'}</strong>.</>
+            ) : (
+              'Nhóm này chưa có trải nghiệm nào.'
+            )}
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {experiences.map((exp) => {
+          {filteredExperiences.map((exp) => {
             const Icon = iconMap[exp.icon] || FileText;
             const iconColorClass = GROUP_ICON_COLOR[exp.group] ?? GROUP_ICON_COLOR.content;
             const hoverColorClass = GROUP_HOVER_COLOR[exp.group] ?? GROUP_HOVER_COLOR.content;
@@ -255,7 +322,7 @@ export default function ExperiencesPage() {
       {/* Footer count */}
       {experiences !== undefined && experiences.length > 0 && (
         <p className="text-xs text-slate-400 dark:text-slate-600 text-right pb-4">
-          {experiences.length} trải nghiệm{activeGroup ? ` trong nhóm này` : ''}
+          Hiển thị {filteredExperiences.length} / {experiences.length} trải nghiệm{activeGroup ? ` trong nhóm này` : ''}
           {debouncedQuery ? ` khớp "${debouncedQuery}"` : ''}
         </p>
       )}
