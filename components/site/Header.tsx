@@ -1911,119 +1911,179 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                     getDropdownPositionClass(dropdownAlign[item._id] ?? 'center')
                   )}
                 >
-                  <div
-                    className={cn(r.popup, 'border p-6', dropdownWidth)}
-                    style={{
-                      backgroundColor: tokens.dropdownBg,
-                      borderColor: tokens.dropdownBorder,
-                      maxWidth: getViewportSafeMaxWidth(),
-                    }}
-                  >
-                    <div className={cn('grid gap-6', gridCols)}>
-                      {item.children.map((child) => (
-                        <div key={child._id} className="space-y-3">
-                          <Link
-                             href={child.url}
-                             target={child.openInNewTab ? '_blank' : undefined}
-                             className="text-sm font-semibold"
-                             style={{ color: level1Color }}
-                           >
-                             {child.label}
-                           </Link>
-                           <div className="space-y-2">
-                             {child.children.length > 0 && child.children.map((sub) => {
-                               const isLevel3Active = activeLevel3Id === sub._id;
+                  {isDeepMenuForItem(item._id) ? (
+                    <div
+                      className={cn(r.popup, 'border p-5 shadow-xl', getMegaMenuWidthClass(Math.min(Math.max(item.children.length, 1), 5)))}
+                      style={{
+                        backgroundColor: tokens.dropdownBg,
+                        borderColor: tokens.dropdownBorder,
+                        maxWidth: getViewportSafeMaxWidth(),
+                      }}
+                    >
+                      <div className={cn('grid gap-6', getMegaMenuGridClass(Math.min(Math.max(item.children.length, 1), 5)))}>
+                        {item.children.map((child) => (
+                          <div key={child._id} className="space-y-3">
+                            <Link
+                              href={child.url}
+                              target={child.openInNewTab ? '_blank' : undefined}
+                              className="block text-sm font-semibold whitespace-normal break-words leading-snug"
+                              style={{ color: level1Color }}
+                            >
+                              {child.label}
+                            </Link>
+                            <div className="space-y-1">
+                              {child.children.length > 0 && child.children.map((sub) => {
+                                const isLevel3Active = activeLevel3Id === sub._id;
 
-                               if (config.flatSubMenus && sub.children.length > 0) {
-                                 return (
-                                   <div key={sub._id} className="mt-4 mb-2 first:mt-0">
-                                     <div
-                                       className="mb-1.5 font-bold uppercase tracking-wider text-[11px] border-l-2 pl-2"
-                                       style={{ color: tokens.brandBadgeBg || tokens.textPrimary, borderColor: tokens.brandBadgeBg || tokens.borderStrong }}
-                                     >
-                                       {sub.label}
-                                     </div>
-                                     <div className="space-y-0.5 pl-2 max-h-[220px] overflow-y-auto scrollbar-menu-thin">
-                                       {sub.children.map(leaf => (
-                                         <Link
-                                           key={leaf._id}
-                                           href={leaf.url}
-                                           target={leaf.openInNewTab ? '_blank' : undefined}
-                                           className={cn('block py-1.5 text-[13px] transition-colors hover:text-[var(--menu-dropdown-hover-text)]', r.item)}
-                                           style={{ color: tokens.textSubtle, ...menuVars }}
-                                         >
-                                           {leaf.label}
-                                         </Link>
-                                       ))}
-                                     </div>
-                                   </div>
-                                 );
-                               }
+                                if (config.flatSubMenus && sub.children.length > 0) {
+                                  return (
+                                    <div key={sub._id} className="mt-4 mb-2 first:mt-0">
+                                      <div
+                                        className="mb-1.5 font-bold uppercase tracking-wider text-[11px] border-l-2 pl-2"
+                                        style={{ color: tokens.brandBadgeBg || tokens.textPrimary, borderColor: tokens.brandBadgeBg || tokens.borderStrong }}
+                                      >
+                                        {sub.label}
+                                      </div>
+                                      <div className="space-y-0.5 pl-2 max-h-[220px] overflow-y-auto scrollbar-menu-thin">
+                                        {sub.children.map(leaf => (
+                                          <Link
+                                            key={leaf._id}
+                                            href={leaf.url}
+                                            target={leaf.openInNewTab ? '_blank' : undefined}
+                                            className={cn('block py-1.5 text-[13px] transition-colors hover:text-[var(--menu-dropdown-hover-text)]', r.item)}
+                                            style={{ color: tokens.textSubtle, ...menuVars }}
+                                          >
+                                            {leaf.label}
+                                          </Link>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                }
 
-                               return (
-                                 <div
-                                   key={sub._id}
-                                   className="relative"
-                                   onMouseEnter={() => {
-                                     clearDeepMenuCloseIntent();
-                                     setActiveLevel3Id(sub._id);
-                                   }}
-                                   onMouseLeave={() => {
-                                     if (activeLevel4Id !== sub._id) {
-                                       setActiveLevel3Id(prev => (prev === sub._id ? null : prev));
-                                     }
-                                     scheduleDeepMenuClose();
-                                   }}
-                                 >
-                                   <Link
-                                     href={sub.url}
-                                     target={sub.openInNewTab ? '_blank' : undefined}
-                                     rel={sub.openInNewTab ? 'noreferrer' : undefined}
-                                     className={cn('flex items-center justify-between px-2 py-1.5 text-sm hover:text-[var(--menu-dropdown-sub-hover-text)]', r.item)}
-                                     style={{
-                                       ...(isLevel3Active ? { backgroundColor: tokens.dropdownItemHoverBg, color: tokens.dropdownItemHoverText } : { color: tokens.dropdownSubItemText }),
-                                       ...menuVars,
-                                     }}
-                                   >
-                                     <span>{sub.label}</span>
-                                     {sub.children.length > 0 && <ChevronRight size={10} className={cn('transition-transform duration-200', isLevel3Active && 'rotate-90')} />}
-                                   </Link>
-                                   {sub.children.length > 0 && isLevel3Active && (
-                                     <div
-                                       className="absolute left-full top-0 ml-1 z-50"
-                                       onMouseEnter={clearDeepMenuCloseIntent}
-                                       onMouseLeave={scheduleDeepMenuClose}
-                                     >
-                                       <div
-                                         className={cn(r.dropdown, 'border py-2 min-w-[200px] overflow-y-auto scrollbar-menu-thin')}
-                                         style={{
-                                           backgroundColor: tokens.dropdownBg,
-                                           borderColor: tokens.dropdownBorder,
-                                           maxHeight: 'min(70vh, 290px)',
-                                         }}
-                                       >
-                                         {sub.children.map((leaf) => (
-                                           <Link
-                                             key={leaf._id}
-                                             href={leaf.url}
-                                             target={leaf.openInNewTab ? '_blank' : undefined}
-                                             className={cn('block px-4 py-2 text-sm hover:bg-[var(--menu-dropdown-hover-bg)] hover:text-[var(--menu-dropdown-hover-text)]', r.item)}
-                                             style={{ color: tokens.dropdownItemText, ...menuVars }}
-                                           >
-                                             {leaf.label}
-                                           </Link>
-                                         ))}
-                                       </div>
-                                     </div>
-                                   )}
-                                 </div>
-                               );
-                             })}
-                           </div>
-                         </div>
-                       ))}
+                                return (
+                                  <div
+                                    key={sub._id}
+                                    className="relative"
+                                    onMouseEnter={() => {
+                                      clearDeepMenuCloseIntent();
+                                      setActiveLevel3Id(sub._id);
+                                    }}
+                                    onMouseLeave={() => {
+                                      if (activeLevel4Id !== sub._id) {
+                                        setActiveLevel3Id(prev => (prev === sub._id ? null : prev));
+                                      }
+                                      scheduleDeepMenuClose();
+                                    }}
+                                  >
+                                    <Link
+                                      href={sub.url}
+                                      target={sub.openInNewTab ? '_blank' : undefined}
+                                      rel={sub.openInNewTab ? 'noreferrer' : undefined}
+                                      className={cn('flex min-w-0 items-start justify-between gap-2 px-3 py-2 text-sm transition-colors hover:bg-[var(--menu-dropdown-hover-bg)] hover:text-[var(--menu-dropdown-hover-text)]', r.item)}
+                                      style={{
+                                        ...(isLevel3Active ? { backgroundColor: tokens.dropdownItemHoverBg, color: tokens.dropdownItemHoverText } : { color: tokens.dropdownItemText }),
+                                        ...menuVars,
+                                      }}
+                                    >
+                                      <span className="min-w-0 flex-1 whitespace-normal break-words leading-snug">{sub.label}</span>
+                                      {sub.children.length > 0 && <ChevronRight size={10} className={cn('transition-transform duration-200', isLevel3Active && 'rotate-90')} />}
+                                    </Link>
+                                    {sub.children.length > 0 && isLevel3Active && (
+                                      <div
+                                        className="absolute left-full top-0 ml-1 z-50"
+                                        onMouseEnter={clearDeepMenuCloseIntent}
+                                        onMouseLeave={scheduleDeepMenuClose}
+                                      >
+                                        <div
+                                          className={cn(
+                                            r.dropdown,
+                                            'border py-2 min-w-[220px] max-w-[min(300px,calc(100vw-2rem))] shadow-xl',
+                                            !sub.children.some((child) => child.children && child.children.length > 0) && "overflow-y-auto scrollbar-menu-thin"
+                                          )}
+                                          style={{
+                                            backgroundColor: tokens.dropdownBg,
+                                            borderColor: tokens.dropdownBorder,
+                                            maxHeight: !sub.children.some((child) => child.children && child.children.length > 0) ? 'min(60vh, 290px)' : undefined,
+                                          }}
+                                        >
+                                          {renderDesktopFlyoutNodes(sub.children, true)}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div
+                      className={cn(
+                        "rounded-lg border py-2 min-w-[200px]",
+                        !item.children.some((child) => child.children && child.children.length > 0) && "overflow-y-auto scrollbar-menu-thin"
+                      )}
+                      style={{
+                        backgroundColor: tokens.dropdownBg,
+                        borderColor: tokens.dropdownBorder,
+                        maxWidth: getViewportSafeMaxWidth(),
+                        maxHeight: !item.children.some((child) => child.children && child.children.length > 0) ? 'min(70vh, 290px)' : undefined,
+                      }}
+                    >
+                      {item.children.map((child) => (
+                        <div
+                          key={child._id}
+                          className="relative group/child"
+                          onMouseEnter={(event) => {
+                            updateFlyoutDirection(`flyout-child-${child._id}`, event.currentTarget);
+                          }}
+                        >
+                          <Link
+                            href={child.url}
+                            target={child.openInNewTab ? '_blank' : undefined}
+                            rel={child.openInNewTab ? 'noreferrer' : undefined}
+                            className="flex min-w-0 items-start justify-between gap-2 px-4 py-2 text-sm transition-colors hover:bg-[var(--menu-dropdown-hover-bg)] hover:text-[var(--menu-dropdown-hover-text)]"
+                            style={{ color: tokens.dropdownItemText, ...menuVars }}
+                          >
+                            <span className="min-w-0 flex-1 whitespace-normal break-words leading-snug">{child.label}</span>
+                            {child.children.length > 0 && <ChevronRight size={10} className="transition-transform duration-200 group-hover/child:rotate-90" />}
+                          </Link>
+                          {child.children.length > 0 && (
+                            <div
+                              className={cn(
+                                'absolute top-0 hidden group-hover/child:block',
+                                (flyoutDirection[`flyout-child-${child._id}`] ?? 'right') === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                              )}
+                            >
+                              <div
+                                className="rounded-lg border py-2 min-w-[180px] overflow-y-auto scrollbar-menu-thin"
+                                style={{ 
+                                  backgroundColor: tokens.dropdownBg, 
+                                  borderColor: tokens.dropdownBorder,
+                                  maxHeight: 'min(70vh, 290px)',
+                                }}
+                              >
+                                {child.children.map((sub) => (
+                                  <Link
+                                    key={sub._id}
+                                    href={sub.url}
+                                    target={sub.openInNewTab ? '_blank' : undefined}
+                                    rel={sub.openInNewTab ? 'noreferrer' : undefined}
+                                    className="block px-4 py-2 text-sm whitespace-normal break-words leading-snug transition-colors hover:bg-[var(--menu-dropdown-hover-bg)] hover:text-[var(--menu-dropdown-sub-hover-text)]"
+                                    style={{ color: tokens.dropdownSubItemText, ...menuVars }}
+                                  >
+                                    {sub.label}
+                                  </Link>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -2350,31 +2410,32 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                     {item.children.length > 0 && hoveredItem === item._id && (
                       <div
                         className={cn(
-                          'absolute top-full pt-6 z-50',
-                          getDropdownPositionClass(dropdownAlign[item._id] ?? 'center')
+                          'absolute top-full z-50',
+                          getDropdownPositionClass(dropdownAlign[item._id] ?? 'center'),
+                          isDeepMenuForItem(item._id) ? 'pt-3' : 'pt-2'
                         )}
                       >
                         {isDeepMenuForItem(item._id) ? (
                           <div
-                            className={cn(r.popup, 'border p-6', dropdownWidth)}
+                            className={cn(r.popup, 'border p-5 shadow-xl', getMegaMenuWidthClass(Math.min(Math.max(item.children.length, 1), 5)))}
                             style={{
                               backgroundColor: tokens.dropdownBg,
                               borderColor: tokens.dropdownBorder,
                               maxWidth: getViewportSafeMaxWidth(),
                             }}
                           >
-                            <div className={cn('grid gap-6', gridCols)}>
+                            <div className={cn('grid gap-6', getMegaMenuGridClass(Math.min(Math.max(item.children.length, 1), 5)))}>
                               {item.children.map((child) => (
                                 <div key={child._id} className="space-y-3">
                                   <Link
                                     href={child.url}
                                     target={child.openInNewTab ? '_blank' : undefined}
-                                    className="text-sm font-semibold"
+                                    className="block text-sm font-semibold whitespace-normal break-words leading-snug"
                                     style={{ color: level1Color }}
                                   >
                                     {child.label}
                                   </Link>
-                                  <div className="space-y-2">
+                                  <div className="space-y-1">
                                     {child.children.length > 0 && child.children.map((sub) => {
                                       const isLevel3Active = activeLevel3Id === sub._id;
 
@@ -2423,13 +2484,13 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                                             href={sub.url}
                                             target={sub.openInNewTab ? '_blank' : undefined}
                                             rel={sub.openInNewTab ? 'noreferrer' : undefined}
-                                            className={cn('flex items-center justify-between px-2 py-1.5 text-sm hover:text-[var(--menu-dropdown-sub-hover-text)]', r.item)}
+                                            className={cn('flex min-w-0 items-start justify-between gap-2 px-3 py-2 text-sm transition-colors hover:bg-[var(--menu-dropdown-hover-bg)] hover:text-[var(--menu-dropdown-hover-text)]', r.item)}
                                             style={{
-                                              ...(isLevel3Active ? { backgroundColor: tokens.dropdownItemHoverBg, color: tokens.dropdownItemHoverText } : { color: tokens.dropdownSubItemText }),
+                                              ...(isLevel3Active ? { backgroundColor: tokens.dropdownItemHoverBg, color: tokens.dropdownItemHoverText } : { color: tokens.dropdownItemText }),
                                               ...menuVars,
                                             }}
                                           >
-                                            <span>{sub.label}</span>
+                                            <span className="min-w-0 flex-1 whitespace-normal break-words leading-snug">{sub.label}</span>
                                             {sub.children.length > 0 && <ChevronRight size={10} className={cn('transition-transform duration-200', isLevel3Active && 'rotate-90')} />}
                                           </Link>
                                           {sub.children.length > 0 && isLevel3Active && (
@@ -2438,18 +2499,18 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                                               onMouseEnter={clearDeepMenuCloseIntent}
                                               onMouseLeave={scheduleDeepMenuClose}
                                             >
-                                               <div 
-                                                 className={cn(
-                                                   r.dropdown,
-                                                   'border py-2 min-w-[220px] max-w-[min(320px,calc(100vw-2rem))] shadow-lg',
-                                                   !sub.children.some((child) => child.children && child.children.length > 0) && "overflow-y-auto scrollbar-menu-thin"
-                                                 )} 
-                                                 style={{ 
-                                                   backgroundColor: tokens.dropdownBg, 
-                                                   borderColor: tokens.dropdownBorder,
-                                                   maxHeight: !sub.children.some((child) => child.children && child.children.length > 0) ? 'min(70vh, 290px)' : undefined,
-                                                 }}
-                                               >
+                                              <div
+                                                className={cn(
+                                                  r.dropdown,
+                                                  'border py-2 min-w-[220px] max-w-[min(300px,calc(100vw-2rem))] shadow-xl',
+                                                  !sub.children.some((child) => child.children && child.children.length > 0) && "overflow-y-auto scrollbar-menu-thin"
+                                                )}
+                                                style={{
+                                                  backgroundColor: tokens.dropdownBg,
+                                                  borderColor: tokens.dropdownBorder,
+                                                  maxHeight: !sub.children.some((child) => child.children && child.children.length > 0) ? 'min(60vh, 290px)' : undefined,
+                                                }}
+                                              >
                                                 {renderDesktopFlyoutNodes(sub.children, true)}
                                               </div>
                                             </div>
@@ -2465,8 +2526,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                         ) : (
                           <div
                             className={cn(
-                              r.dropdown,
-                              'border py-2 min-w-[240px]',
+                              "rounded-lg border py-2 min-w-[200px]",
                               !item.children.some((child) => child.children && child.children.length > 0) && "overflow-y-auto scrollbar-menu-thin"
                             )}
                             style={{
@@ -2477,16 +2537,54 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                             }}
                           >
                             {item.children.map((child) => (
-                              <Link
+                              <div
                                 key={child._id}
-                                href={child.url}
-                                target={child.openInNewTab ? '_blank' : undefined}
-                                rel={child.openInNewTab ? 'noreferrer' : undefined}
-                                className="block px-4 py-2.5 text-sm transition-colors hover:bg-[var(--menu-dropdown-hover-bg)] hover:text-[var(--menu-dropdown-hover-text)]"
-                                style={{ color: tokens.dropdownItemText, ...menuVars }}
+                                className="relative group/child"
+                                onMouseEnter={(event) => {
+                                  updateFlyoutDirection(`flyout-child-${child._id}`, event.currentTarget);
+                                }}
                               >
-                                {child.label}
-                              </Link>
+                                <Link
+                                  href={child.url}
+                                  target={child.openInNewTab ? '_blank' : undefined}
+                                  rel={child.openInNewTab ? 'noreferrer' : undefined}
+                                  className="flex min-w-0 items-start justify-between gap-2 px-4 py-2 text-sm transition-colors hover:bg-[var(--menu-dropdown-hover-bg)] hover:text-[var(--menu-dropdown-hover-text)]"
+                                  style={{ color: tokens.dropdownItemText, ...menuVars }}
+                                >
+                                  <span className="min-w-0 flex-1 whitespace-normal break-words leading-snug">{child.label}</span>
+                                  {child.children.length > 0 && <ChevronRight size={10} className="transition-transform duration-200 group-hover/child:rotate-90" />}
+                                </Link>
+                                {child.children.length > 0 && (
+                                  <div
+                                    className={cn(
+                                      'absolute top-0 hidden group-hover/child:block',
+                                      (flyoutDirection[`flyout-child-${child._id}`] ?? 'right') === 'left' ? 'right-full mr-1' : 'left-full ml-1'
+                                    )}
+                                  >
+                                    <div
+                                      className="rounded-lg border py-2 min-w-[180px] overflow-y-auto scrollbar-menu-thin"
+                                      style={{ 
+                                        backgroundColor: tokens.dropdownBg, 
+                                        borderColor: tokens.dropdownBorder,
+                                        maxHeight: 'min(70vh, 290px)',
+                                      }}
+                                    >
+                                      {child.children.map((sub) => (
+                                      <Link
+                                          key={sub._id}
+                                          href={sub.url}
+                                          target={sub.openInNewTab ? '_blank' : undefined}
+                                          rel={sub.openInNewTab ? 'noreferrer' : undefined}
+                                        className="block px-4 py-2 text-sm whitespace-normal break-words leading-snug transition-colors hover:bg-[var(--menu-dropdown-hover-bg)] hover:text-[var(--menu-dropdown-sub-hover-text)]"
+                                          style={{ color: tokens.dropdownSubItemText, ...menuVars }}
+                                        >
+                                          {sub.label}
+                                        </Link>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             ))}
                           </div>
                         )}

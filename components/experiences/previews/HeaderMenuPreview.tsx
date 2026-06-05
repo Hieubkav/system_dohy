@@ -294,7 +294,7 @@ export function HeaderMenuPreview({
     };
     return new Map<Id<'menuItems'>, number>(rootItems.map((root) => [root._id, getNodeMaxLevel(root, 1)]));
   }, [rootItems]);
-  const isDeepMenuForItem = (itemId: Id<'menuItems'>) => (maxLevelByRootId.get(itemId) ?? 1) >= 4;
+  const isDeepMenuForItem = (itemId: Id<'menuItems'>) => (maxLevelByRootId.get(itemId) ?? 1) >= 3;
 
   useLayoutEffect(() => {
     if (measureItemRefs.current.length !== rootItems.length) {
@@ -1675,53 +1675,86 @@ export function HeaderMenuPreview({
                     <ChevronDown size={12} className={cn("transition-transform duration-200 shrink-0", hoveredItem === item._id && "rotate-180")} />
                   )}
                 </a>
-                {item.children.length > 0 && hoveredItem === item._id && (
+                 {item.children.length > 0 && hoveredItem === item._id && (
                   <div className="absolute left-1/2 top-full mt-6 -translate-x-1/2 z-50">
-                    <div
-                      className={cn('rounded-2xl border p-6', dropdownWidth)}
-                      style={{ backgroundColor: tokens.dropdownBg, borderColor: tokens.dropdownBorder }}
-                    >
-                      <div className={cn('grid gap-6', gridCols)}>
-                        {item.children.map((child) => (
-                          <div key={child._id} className="space-y-3">
-                            <a href={child.url} className="text-sm font-semibold whitespace-normal break-words leading-snug" style={{ color: level1Color }}>
-                              {child.label}
-                            </a>
-                            <div className="space-y-2">
-                              {child.children.length > 0 ? child.children.map((sub) => (
-                                <div key={sub._id} className="relative group/menu-node">
+                    {isDeepMenuForItem(item._id) ? (
+                      <div
+                        className={cn('rounded-2xl border p-6', dropdownWidth)}
+                        style={{ backgroundColor: tokens.dropdownBg, borderColor: tokens.dropdownBorder }}
+                      >
+                        <div className={cn('grid gap-6', gridCols)}>
+                          {item.children.map((child) => (
+                            <div key={child._id} className="space-y-3">
+                              <a href={child.url} className="text-sm font-semibold whitespace-normal break-words leading-snug" style={{ color: level1Color }}>
+                                {child.label}
+                              </a>
+                              <div className="space-y-2">
+                                {child.children.length > 0 ? child.children.map((sub) => (
+                                  <div key={sub._id} className="relative group/menu-node">
+                                    <a
+                                      href={sub.url}
+                                      target={sub.openInNewTab ? '_blank' : undefined}
+                                      rel={sub.openInNewTab ? 'noreferrer' : undefined}
+                                      className="flex min-w-0 items-start justify-between gap-2 rounded-lg px-2 py-1.5 text-sm hover:text-[var(--menu-dropdown-sub-hover-text)]"
+                                      style={{ color: tokens.dropdownSubItemText, ...menuVars }}
+                                    >
+                                      <span className="min-w-0 flex-1 whitespace-normal break-words leading-snug">{sub.label}</span>
+                                      {sub.children.length > 0 && <ChevronRight size={10} className="transition-transform duration-200 group-hover/menu-node:rotate-90" />}
+                                    </a>
+                                    {sub.children.length > 0 && (
+                                      <div className="absolute left-full top-0 ml-2 hidden group-hover/menu-node:block">
+                                        <div className="rounded-xl border py-2 min-w-[220px] shadow-lg overflow-y-auto scrollbar-menu-thin" style={{ backgroundColor: tokens.dropdownBg, borderColor: tokens.dropdownBorder, maxHeight: 'min(70vh, 290px)' }}>
+                                          {renderDesktopFlyoutNodes(sub.children)}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                )) : (
                                   <a
-                                    href={sub.url}
-                                    target={sub.openInNewTab ? '_blank' : undefined}
-                                    rel={sub.openInNewTab ? 'noreferrer' : undefined}
-                                    className="flex min-w-0 items-start justify-between gap-2 rounded-lg px-2 py-1.5 text-sm hover:text-[var(--menu-dropdown-sub-hover-text)]"
+                                    href={child.url}
+                                    className="text-sm hover:text-[var(--menu-dropdown-sub-hover-text)]"
                                     style={{ color: tokens.dropdownSubItemText, ...menuVars }}
                                   >
-                                    <span className="min-w-0 flex-1 whitespace-normal break-words leading-snug">{sub.label}</span>
-                                    {sub.children.length > 0 && <ChevronRight size={10} className="transition-transform duration-200 group-hover/menu-node:rotate-90" />}
+                                    Xem thêm
                                   </a>
-                                  {sub.children.length > 0 && (
-                                    <div className="absolute left-full top-0 ml-2 hidden group-hover/menu-node:block">
-                                      <div className="rounded-xl border py-2 min-w-[220px] shadow-lg overflow-y-auto scrollbar-menu-thin" style={{ backgroundColor: tokens.dropdownBg, borderColor: tokens.dropdownBorder, maxHeight: 'min(70vh, 290px)' }}>
-                                        {renderDesktopFlyoutNodes(sub.children)}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              )) : (
-                                <a
-                                  href={child.url}
-                                  className="text-sm hover:text-[var(--menu-dropdown-sub-hover-text)]"
-                                  style={{ color: tokens.dropdownSubItemText, ...menuVars }}
-                                >
-                                  Xem thêm
-                                </a>
-                              )}
+                                )}
+                              </div>
                             </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="rounded-lg border py-2 min-w-[200px] overflow-y-auto scrollbar-menu-thin"
+                        style={{ 
+                          backgroundColor: tokens.dropdownBg, 
+                          borderColor: tokens.dropdownBorder,
+                          maxHeight: 'min(70vh, 290px)',
+                        }}
+                      >
+                        {item.children.map((child) => (
+                          <div key={child._id} className="relative group/menu-node">
+                            <a
+                              href={child.url}
+                              target={child.openInNewTab ? '_blank' : undefined}
+                              rel={child.openInNewTab ? 'noreferrer' : undefined}
+                              className="flex min-w-0 items-start justify-between gap-2 px-4 py-2 text-sm transition-colors hover:bg-[var(--menu-dropdown-hover-bg)] hover:text-[var(--menu-dropdown-hover-text)]"
+                              style={{ color: tokens.dropdownItemText, ...menuVars }}
+                            >
+                              <span className="min-w-0 flex-1 whitespace-normal break-words leading-snug">{child.label}</span>
+                              {child.children.length > 0 && <ChevronRight size={10} className="transition-transform duration-200 group-hover/menu-node:rotate-90" />}
+                            </a>
+                            {child.children.length > 0 && (
+                              <div className="absolute left-full top-0 pl-1 hidden group-hover/menu-node:block">
+                                <div className="rounded-lg border py-2 min-w-[180px] overflow-y-auto scrollbar-menu-thin" style={{ backgroundColor: tokens.dropdownBg, borderColor: tokens.dropdownBorder, maxHeight: 'min(70vh, 290px)' }}>
+                                  {renderDesktopFlyoutNodes(child.children)}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </li>
