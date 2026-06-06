@@ -4,7 +4,7 @@ import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'reac
 import { useMutation, useQuery } from 'convex/react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/convex/_generated/api';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { useCart, notifyAddToCart } from '@/lib/cart';
 import { buildDetailPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { getPublicPriceLabel } from '@/lib/products/public-price';
@@ -137,6 +137,9 @@ function SearchProductCardActions({
   onAddToCart: (e: React.MouseEvent) => void;
   onBuyNow: (e: React.MouseEvent) => void;
 }) {
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
   if (!showAddToCartButton && !showBuyNowButton) return null;
 
   const isOutOfStock = !product.hasVariants && product.stock <= 0;
@@ -152,9 +155,9 @@ function SearchProductCardActions({
           disabled={isOutOfStock}
           className="w-full flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all border disabled:opacity-55 disabled:cursor-not-allowed text-white hover:brightness-95 hover:scale-[1.02]"
           style={{
-            backgroundColor: !isOutOfStock ? primaryColor : '#f1f5f9',
-            color: !isOutOfStock ? '#ffffff' : '#64748b',
-            borderColor: !isOutOfStock ? 'transparent' : '#e2e8f0'
+            backgroundColor: !isOutOfStock ? primaryColor : (isDark ? '#2c2c2e' : '#f1f5f9'),
+            color: !isOutOfStock ? '#ffffff' : (isDark ? '#86868b' : '#64748b'),
+            borderColor: !isOutOfStock ? 'transparent' : (isDark ? '#3f3f46' : '#e2e8f0')
           }}
         >
           <ShoppingCart size={12} />
@@ -168,9 +171,9 @@ function SearchProductCardActions({
           disabled={isOutOfStock}
           className="w-full flex items-center justify-center gap-1 sm:gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all border disabled:opacity-55 disabled:cursor-not-allowed hover:brightness-95 hover:scale-[1.02]"
           style={{
-            backgroundColor: '#ffffff',
-            color: !isOutOfStock ? primaryColor : '#64748b',
-            borderColor: !isOutOfStock ? primaryColor : '#e2e8f0'
+            backgroundColor: isDark ? '#1c1c1e' : '#ffffff',
+            color: !isOutOfStock ? primaryColor : (isDark ? '#86868b' : '#64748b'),
+            borderColor: !isOutOfStock ? primaryColor : (isDark ? '#3f3f46' : '#e2e8f0')
           }}
         >
           <span>{isOutOfStock ? 'Hết hàng' : 'Mua ngay'}</span>
@@ -182,6 +185,9 @@ function SearchProductCardActions({
 
 function SearchContent() {
   const brandColors = useBrandColors();
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  
   const primaryColor = brandColors.primary || '#ea580c';
   const secondaryColor = brandColors.secondary || '#f97316';
   
@@ -702,7 +708,7 @@ function SearchContent() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Bạn muốn tìm gì hôm nay..."
-            className="w-full pl-6 pr-24 py-3.5 rounded-full border border-slate-200 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all placeholder:text-slate-400"
+            className="w-full pl-6 pr-24 py-3.5 rounded-full border border-slate-200 dark:border-zinc-850 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-slate-200 dark:focus:ring-zinc-800 bg-white dark:bg-[#161617] text-slate-800 dark:text-[#f5f5f7] transition-all placeholder:text-slate-400 dark:placeholder-zinc-500"
             style={{ borderColor: primaryColor + '20' }}
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
@@ -710,7 +716,7 @@ function SearchContent() {
               <button
                 type="button"
                 onClick={handleClearSearch}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+                className="p-2 text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-[#f5f5f7] hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
                 aria-label="Xóa từ khóa"
               >
                 <X size={16} />
@@ -728,15 +734,15 @@ function SearchContent() {
         </form>
 
         {query && (
-          <p className="text-slate-500 text-xs mt-3">
-            Kết quả cho từ khóa <span className="font-semibold text-slate-800">"{query}"</span>
+          <p className="text-slate-500 dark:text-[#86868b] text-xs mt-3">
+            Kết quả cho từ khóa <span className="font-semibold text-slate-800 dark:text-[#f5f5f7]">"{query}"</span>
           </p>
         )}
       </div>
 
       <div id="search-results-section" className="scroll-mt-6">
         {/* Tab Selection */}
-        <div className="flex border-b border-slate-100 overflow-x-auto scrollbar-none mb-6 md:mb-8 gap-2 pb-0.5">
+        <div className="flex border-b border-slate-100 dark:border-zinc-800 overflow-x-auto scrollbar-none mb-6 md:mb-8 gap-2 pb-0.5">
           {isProductsEnabled && (
             <button
               type="button"
@@ -744,7 +750,7 @@ function SearchContent() {
               className="flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap"
               style={{
                 borderColor: activeTab === 'product' ? primaryColor : 'transparent',
-                color: activeTab === 'product' ? primaryColor : '#64748b'
+                color: activeTab === 'product' ? primaryColor : (isDark ? '#86868b' : '#64748b')
               }}
             >
               <Package size={16} />
@@ -752,8 +758,8 @@ function SearchContent() {
               <span 
                 className="text-xs px-2 py-0.5 rounded-full font-bold transition-all"
                 style={{
-                  backgroundColor: activeTab === 'product' ? primaryColor + '15' : '#f1f5f9',
-                  color: activeTab === 'product' ? primaryColor : '#475569'
+                  backgroundColor: activeTab === 'product' ? primaryColor + '15' : (isDark ? '#2c2c2e' : '#f1f5f9'),
+                  color: activeTab === 'product' ? primaryColor : (isDark ? '#a1a1aa' : '#475569')
                 }}
               >
                 {prodCount ?? 0}
@@ -767,7 +773,7 @@ function SearchContent() {
               className="flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap"
               style={{
                 borderColor: activeTab === 'post' ? primaryColor : 'transparent',
-                color: activeTab === 'post' ? primaryColor : '#64748b'
+                color: activeTab === 'post' ? primaryColor : (isDark ? '#86868b' : '#64748b')
               }}
             >
               <FileText size={16} />
@@ -775,8 +781,8 @@ function SearchContent() {
               <span 
                 className="text-xs px-2 py-0.5 rounded-full font-bold transition-all"
                 style={{
-                  backgroundColor: activeTab === 'post' ? primaryColor + '15' : '#f1f5f9',
-                  color: activeTab === 'post' ? primaryColor : '#475569'
+                  backgroundColor: activeTab === 'post' ? primaryColor + '15' : (isDark ? '#2c2c2e' : '#f1f5f9'),
+                  color: activeTab === 'post' ? primaryColor : (isDark ? '#a1a1aa' : '#475569')
                 }}
               >
                 {postCount ?? 0}
@@ -790,7 +796,7 @@ function SearchContent() {
               className="flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap"
               style={{
                 borderColor: activeTab === 'service' ? primaryColor : 'transparent',
-                color: activeTab === 'service' ? primaryColor : '#64748b'
+                color: activeTab === 'service' ? primaryColor : (isDark ? '#86868b' : '#64748b')
               }}
             >
               <Briefcase size={16} />
@@ -798,8 +804,8 @@ function SearchContent() {
               <span 
                 className="text-xs px-2 py-0.5 rounded-full font-bold transition-all"
                 style={{
-                  backgroundColor: activeTab === 'service' ? primaryColor + '15' : '#f1f5f9',
-                  color: activeTab === 'service' ? primaryColor : '#475569'
+                  backgroundColor: activeTab === 'service' ? primaryColor + '15' : (isDark ? '#2c2c2e' : '#f1f5f9'),
+                  color: activeTab === 'service' ? primaryColor : (isDark ? '#a1a1aa' : '#475569')
                 }}
               >
                 {svcCount ?? 0}
@@ -813,7 +819,7 @@ function SearchContent() {
               className="flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap"
               style={{
                 borderColor: activeTab === 'course' ? primaryColor : 'transparent',
-                color: activeTab === 'course' ? primaryColor : '#64748b'
+                color: activeTab === 'course' ? primaryColor : (isDark ? '#86868b' : '#64748b')
               }}
             >
               <GraduationCap size={16} />
@@ -821,8 +827,8 @@ function SearchContent() {
               <span
                 className="text-xs px-2 py-0.5 rounded-full font-bold transition-all"
                 style={{
-                  backgroundColor: activeTab === 'course' ? primaryColor + '15' : '#f1f5f9',
-                  color: activeTab === 'course' ? primaryColor : '#475569'
+                  backgroundColor: activeTab === 'course' ? primaryColor + '15' : (isDark ? '#2c2c2e' : '#f1f5f9'),
+                  color: activeTab === 'course' ? primaryColor : (isDark ? '#a1a1aa' : '#475569')
                 }}
               >
                 {courseCount ?? 0}
@@ -836,7 +842,7 @@ function SearchContent() {
               className="flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm transition-all whitespace-nowrap"
               style={{
                 borderColor: activeTab === 'resource' ? primaryColor : 'transparent',
-                color: activeTab === 'resource' ? primaryColor : '#64748b'
+                color: activeTab === 'resource' ? primaryColor : (isDark ? '#86868b' : '#64748b')
               }}
             >
               <Download size={16} />
@@ -844,8 +850,8 @@ function SearchContent() {
               <span
                 className="text-xs px-2 py-0.5 rounded-full font-bold transition-all"
                 style={{
-                  backgroundColor: activeTab === 'resource' ? primaryColor + '15' : '#f1f5f9',
-                  color: activeTab === 'resource' ? primaryColor : '#475569'
+                  backgroundColor: activeTab === 'resource' ? primaryColor + '15' : (isDark ? '#2c2c2e' : '#f1f5f9'),
+                  color: activeTab === 'resource' ? primaryColor : (isDark ? '#a1a1aa' : '#475569')
                 }}
               >
                 {resourceCount ?? 0}
@@ -855,7 +861,7 @@ function SearchContent() {
         </div>
 
         {/* Filters Toolbar */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 bg-slate-50/50 p-3 sm:p-4 rounded-2xl border border-slate-100">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 bg-slate-50/50 dark:bg-[#161617]/50 p-3 sm:p-4 rounded-2xl border border-slate-100 dark:border-zinc-800">
           <div className="flex flex-wrap items-center gap-3">
             {/* Category Filter */}
             <CategoryCombobox
@@ -870,7 +876,7 @@ function SearchContent() {
               <select
                 value={sortBy}
                 onChange={handleSortChange}
-                className="appearance-none bg-white border border-slate-200 text-slate-700 rounded-xl px-4 py-2.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100 min-w-[150px] font-medium"
+                className="appearance-none bg-white dark:bg-[#1c1c1e] border border-slate-200 dark:border-zinc-850 text-slate-700 dark:text-[#f5f5f7] rounded-xl px-4 py-2.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-slate-100 dark:focus:ring-zinc-800 min-w-[150px] font-medium transition-colors"
               >
                 <option value="newest">Mới nhất</option>
                 <option value="oldest">Cũ nhất</option>
@@ -883,21 +889,21 @@ function SearchContent() {
                   </>
                 )}
               </select>
-              <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none text-slate-400" />
+              <ChevronRight size={14} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none text-slate-400 dark:text-zinc-550" />
             </div>
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-4">
-            <span className="text-slate-500 text-xs md:text-sm font-medium">
+            <span className="text-slate-500 dark:text-[#86868b] text-xs md:text-sm font-medium">
               Tìm thấy {totalCount} kết quả
             </span>
 
             {/* View Mode Grid/List Toggle */}
-            <div className="flex items-center border border-slate-200 rounded-xl bg-white p-1 gap-0.5">
+            <div className="flex items-center border border-slate-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-[#1c1c1e] p-1 gap-0.5">
               <button
                 type="button"
                 onClick={() => handleViewModeChange('grid')}
-                className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`p-1.5 rounded-lg transition-all ${viewMode === 'grid' ? 'text-white' : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-[#f5f5f7]'}`}
                 style={viewMode === 'grid' ? { backgroundColor: primaryColor } : undefined}
                 aria-label="Xem lưới"
               >
@@ -906,7 +912,7 @@ function SearchContent() {
               <button
                 type="button"
                 onClick={() => handleViewModeChange('list')}
-                className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`p-1.5 rounded-lg transition-all ${viewMode === 'list' ? 'text-white' : 'text-slate-400 dark:text-zinc-500 hover:text-slate-600 dark:hover:text-[#f5f5f7]'}`}
                 style={viewMode === 'list' ? { backgroundColor: primaryColor } : undefined}
                 aria-label="Xem danh sách"
               >
@@ -924,12 +930,12 @@ function SearchContent() {
           </div>
         ) : totalCount === 0 ? (
           // Empty State
-          <div className="text-center py-16 md:py-24 bg-white rounded-3xl border border-slate-100/80 p-8 shadow-sm">
-            <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-6">
-              <Compass size={32} className="text-slate-300" />
+          <div className="text-center py-16 md:py-24 bg-white dark:bg-[#161617] rounded-3xl border border-slate-100/80 dark:border-zinc-800 p-8 shadow-sm">
+            <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-6">
+              <Compass size={32} className="text-slate-300 dark:text-zinc-500" />
             </div>
-            <h3 className="text-lg font-bold text-slate-800 mb-2">Không tìm thấy kết quả phù hợp</h3>
-            <p className="text-slate-500 text-sm max-w-sm mx-auto mb-6">
+            <h3 className="text-lg font-bold text-slate-800 dark:text-[#f5f5f7] mb-2">Không tìm thấy kết quả phù hợp</h3>
+            <p className="text-slate-500 dark:text-[#86868b] text-sm max-w-sm mx-auto mb-6">
               Hãy thử tìm kiếm với từ khóa khác hoặc xóa bớt các bộ lọc danh mục đang chọn.
             </p>
             {activeCategoryVal && (
@@ -944,7 +950,7 @@ function SearchContent() {
                   params.delete('r_cat');
                   router.push(`${pathname}?${params.toString()}`);
                 }}
-                className="inline-flex items-center text-xs font-semibold px-4 py-2 border rounded-xl hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center text-xs font-semibold px-4 py-2 border border-slate-200 dark:border-zinc-800 rounded-xl hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 transition-colors"
               >
                 Xóa bộ lọc danh mục
               </button>
@@ -970,9 +976,9 @@ function SearchContent() {
                       <Link
                         key={product._id}
                         href={getProductDetailHref(product)}
-                        className={`group flex flex-col h-full bg-white border border-slate-100 overflow-hidden transition-all duration-300 hover:border-slate-200 hover:shadow-lg hover:-translate-y-1 ${cornerRadiusClass}`}
+                        className={`group flex flex-col h-full bg-white dark:bg-[#161617] border border-slate-100 dark:border-zinc-850 overflow-hidden transition-all duration-300 hover:border-slate-200 dark:hover:border-zinc-800 hover:shadow-lg hover:-translate-y-1 ${cornerRadiusClass}`}
                       >
-                        <div className="aspect-square w-full relative overflow-hidden bg-slate-50 border-b border-slate-100/50">
+                        <div className="aspect-square w-full relative overflow-hidden bg-slate-50 dark:bg-zinc-900 border-b border-slate-100/50 dark:border-zinc-850">
                           {product.image || productPlaceholder ? (
                             <Image
                               src={product.image || productPlaceholder}
@@ -983,7 +989,7 @@ function SearchContent() {
                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                            <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-zinc-650">
                               <Package size={40} />
                             </div>
                           )}
@@ -999,10 +1005,10 @@ function SearchContent() {
                             <button
                               type="button"
                               onClick={(e) => handleWishlistToggle(e, product._id)}
-                              className="absolute top-2 right-2 p-1.5 sm:p-2 rounded-full border transition-colors z-20 bg-white/90 backdrop-blur-sm"
+                              className="absolute top-2 right-2 p-1.5 sm:p-2 rounded-full border transition-colors z-20 bg-white/90 dark:bg-[#161617]/90 backdrop-blur-sm"
                               style={{
-                                borderColor: isWishlisted ? '#ef4444' : '#e2e8f0',
-                                color: isWishlisted ? '#ef4444' : '#94a3b8'
+                                borderColor: isWishlisted ? '#ef4444' : (isDark ? '#3f3f46' : '#e2e8f0'),
+                                color: isWishlisted ? '#ef4444' : (isDark ? '#a1a1aa' : '#94a3b8')
                               }}
                               aria-label="Thêm vào yêu thích"
                             >
@@ -1012,11 +1018,11 @@ function SearchContent() {
                         </div>
                         
                         <div className="p-3 sm:p-4 flex-1 flex flex-col">
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1.5 block">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5 block">
                             {productCategoryMap.get(product.categoryId) || 'Sản phẩm'}
                           </span>
                           <h3 
-                            className="font-semibold text-slate-800 text-sm line-clamp-2 mb-2 group-hover:text-slate-900 transition-colors"
+                            className="font-semibold text-slate-800 dark:text-[#f5f5f7] text-sm line-clamp-2 mb-2 group-hover:text-slate-900 dark:group-hover:text-white transition-colors"
                           >
                             {product.name}
                           </h3>
@@ -1024,11 +1030,11 @@ function SearchContent() {
                           <div className="mt-auto pt-3 flex flex-col gap-2">
                             {/* Price */}
                             <div className="flex flex-wrap items-baseline gap-1.5">
-                              <span className="font-bold text-slate-900 text-base">
+                              <span className="font-bold text-slate-900 dark:text-[#f5f5f7] text-base">
                                 {priceDisplay.label}
                               </span>
                               {product.salePrice && product.price > product.salePrice && (
-                                <span className="text-xs line-through text-slate-400">
+                                <span className="text-xs line-through text-slate-400 dark:text-zinc-500">
                                   {formatPrice(product.price)}
                                 </span>
                               )}
@@ -1067,10 +1073,10 @@ function SearchContent() {
                       <Link
                         key={product._id}
                         href={getProductDetailHref(product)}
-                        className={`group flex gap-4 md:gap-6 bg-white p-4 border border-slate-100 transition-all duration-300 hover:border-slate-200 hover:shadow-md ${cornerRadiusClass}`}
+                        className={`group flex gap-4 md:gap-6 bg-white dark:bg-[#161617] p-4 border border-slate-100 dark:border-zinc-850 transition-all duration-300 hover:border-slate-200 dark:hover:border-zinc-800 hover:shadow-md ${cornerRadiusClass}`}
                       >
                         {/* Thumbnail left */}
-                        <div className="w-24 md:w-32 aspect-square relative overflow-hidden bg-slate-50 rounded-xl shrink-0 border border-slate-100">
+                        <div className="w-24 md:w-32 aspect-square relative overflow-hidden bg-slate-50 dark:bg-zinc-900 rounded-xl shrink-0 border border-slate-100 dark:border-zinc-850">
                           {product.image || productPlaceholder ? (
                             <Image
                               src={product.image || productPlaceholder}
@@ -1081,7 +1087,7 @@ function SearchContent() {
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                            <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-zinc-650">
                               <Package size={32} />
                             </div>
                           )}
@@ -1089,10 +1095,10 @@ function SearchContent() {
                             <button
                               type="button"
                               onClick={(e) => handleWishlistToggle(e, product._id)}
-                              className="absolute top-1.5 right-1.5 p-1.5 rounded-full border transition-colors z-20 bg-white/90 backdrop-blur-sm"
+                              className="absolute top-1.5 right-1.5 p-1.5 rounded-full border transition-colors z-20 bg-white/90 dark:bg-[#161617]/90 backdrop-blur-sm"
                               style={{
-                                borderColor: isWishlisted ? '#ef4444' : '#e2e8f0',
-                                color: isWishlisted ? '#ef4444' : '#94a3b8'
+                                borderColor: isWishlisted ? '#ef4444' : (isDark ? '#3f3f46' : '#e2e8f0'),
+                                color: isWishlisted ? '#ef4444' : (isDark ? '#a1a1aa' : '#94a3b8')
                               }}
                               aria-label="Thêm vào yêu thích"
                             >
@@ -1104,21 +1110,21 @@ function SearchContent() {
                         {/* Details right */}
                         <div className="flex-1 min-w-0 flex flex-col justify-between">
                           <div>
-                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1.5 block">
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500 mb-1.5 block">
                               {productCategoryMap.get(product.categoryId) || 'Sản phẩm'}
                             </span>
-                            <h3 className="font-semibold text-slate-800 text-sm md:text-base line-clamp-1 mb-1 group-hover:text-slate-900 transition-colors">
+                            <h3 className="font-semibold text-slate-800 dark:text-[#f5f5f7] text-sm md:text-base line-clamp-1 mb-1 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                               {product.name}
                             </h3>
                           </div>
 
                           <div className="flex items-end justify-between mt-2 gap-3 flex-wrap">
                             <div className="flex flex-wrap items-baseline gap-2">
-                              <span className="font-bold text-slate-900 text-base md:text-lg">
+                              <span className="font-bold text-slate-900 dark:text-[#f5f5f7] text-base md:text-lg">
                                 {priceDisplay.label}
                               </span>
                               {product.salePrice && product.price > product.salePrice && (
-                                <span className="text-xs line-through text-slate-400">
+                                <span className="text-xs line-through text-slate-400 dark:text-zinc-500">
                                   {formatPrice(product.price)}
                                 </span>
                               )}
@@ -1132,9 +1138,9 @@ function SearchContent() {
                                   disabled={!product.hasVariants && product.stock <= 0}
                                   className="flex items-center justify-center gap-1 py-2 px-3 rounded-xl text-xs font-bold transition-all border disabled:opacity-55 disabled:cursor-not-allowed hover:brightness-95 hover:scale-[1.02]"
                                   style={{
-                                    backgroundColor: (product.hasVariants || product.stock > 0) ? primaryColor : '#f1f5f9',
-                                    color: (product.hasVariants || product.stock > 0) ? '#ffffff' : '#64748b',
-                                    borderColor: (product.hasVariants || product.stock > 0) ? 'transparent' : '#e2e8f0'
+                                    backgroundColor: (product.hasVariants || product.stock > 0) ? primaryColor : (isDark ? '#2c2c2e' : '#f1f5f9'),
+                                    color: (product.hasVariants || product.stock > 0) ? '#ffffff' : (isDark ? '#86868b' : '#64748b'),
+                                    borderColor: (product.hasVariants || product.stock > 0) ? 'transparent' : (isDark ? '#3f3f46' : '#e2e8f0')
                                   }}
                                 >
                                   <ShoppingCart size={12} />
@@ -1148,9 +1154,9 @@ function SearchContent() {
                                   disabled={!product.hasVariants && product.stock <= 0}
                                   className="hidden sm:flex items-center justify-center gap-1 py-2 px-3 rounded-xl text-xs font-bold transition-all border disabled:opacity-55 disabled:cursor-not-allowed hover:brightness-95"
                                   style={{
-                                    backgroundColor: '#ffffff',
-                                    color: (product.hasVariants || product.stock > 0) ? primaryColor : '#64748b',
-                                    borderColor: (product.hasVariants || product.stock > 0) ? primaryColor : '#e2e8f0'
+                                    backgroundColor: isDark ? '#1c1c1e' : '#ffffff',
+                                    color: (product.hasVariants || product.stock > 0) ? primaryColor : (isDark ? '#86868b' : '#64748b'),
+                                    borderColor: (product.hasVariants || product.stock > 0) ? primaryColor : (isDark ? '#3f3f46' : '#e2e8f0')
                                   }}
                                 >
                                   <span>{(product.hasVariants || product.stock > 0) ? 'Mua ngay' : 'Hết hàng'}</span>
@@ -1175,9 +1181,9 @@ function SearchContent() {
                     <Link
                       key={post._id}
                       href={getPostDetailHref(post)}
-                      className="group flex flex-col h-full bg-white rounded-2xl border border-slate-100 overflow-hidden transition-all duration-300 hover:border-slate-200 hover:shadow-lg hover:-translate-y-1"
+                      className="group flex flex-col h-full bg-white dark:bg-[#161617] rounded-2xl border border-slate-100 dark:border-zinc-850 overflow-hidden transition-all duration-300 hover:border-slate-200 dark:hover:border-zinc-800 hover:shadow-lg hover:-translate-y-1"
                     >
-                      <div className="aspect-video w-full relative overflow-hidden bg-slate-50 border-b border-slate-100/50">
+                      <div className="aspect-video w-full relative overflow-hidden bg-slate-50 dark:bg-zinc-900 border-b border-slate-100/50 dark:border-zinc-850">
                         {post.thumbnail ? (
                           <Image
                             src={post.thumbnail}
@@ -1189,25 +1195,25 @@ function SearchContent() {
                           />
                         ) : (
                           // Smart fallback banner
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2 bg-gradient-to-br from-slate-50 to-slate-100">
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 dark:text-zinc-650 gap-2 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-900 dark:to-zinc-950">
                             <FileText size={32} />
-                            <span className="text-[10px] font-medium text-slate-400">Tin tức & Bài viết</span>
+                            <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500">Tin tức & Bài viết</span>
                           </div>
                         )}
                       </div>
                       
                       <div className="p-5 flex-1 flex flex-col">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-2 block">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500 mb-2 block">
                           {postCategoryMap.get(post.categoryId) || 'Bài viết'}
                         </span>
-                        <h3 className="font-semibold text-slate-800 text-base line-clamp-2 mb-3 group-hover:text-slate-900 transition-colors">
+                        <h3 className="font-semibold text-slate-800 dark:text-[#f5f5f7] text-base line-clamp-2 mb-3 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                           {post.title}
                         </h3>
-                        <p className="text-slate-400 text-xs line-clamp-3 mb-4 flex-1">
+                        <p className="text-slate-400 dark:text-[#86868b] text-xs line-clamp-3 mb-4 flex-1">
                           {post.excerpt || 'Đọc bài viết để biết thêm thông tin chi tiết.'}
                         </p>
                         
-                        <div className="pt-4 border-t border-slate-50 flex items-center justify-between text-slate-400 text-[10px] font-medium">
+                        <div className="pt-4 border-t border-slate-50 dark:border-zinc-850 flex items-center justify-between text-slate-400 dark:text-zinc-500 text-[10px] font-medium">
                           <span className="flex items-center gap-1">
                             <Calendar size={12} />
                             {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('vi-VN') : 'Mới cập nhật'}
@@ -1228,10 +1234,10 @@ function SearchContent() {
                     <Link
                       key={post._id}
                       href={getPostDetailHref(post)}
-                      className="group flex gap-4 md:gap-6 bg-white p-4 rounded-2xl border border-slate-100 transition-all duration-300 hover:border-slate-200 hover:shadow-md"
+                      className="group flex gap-4 md:gap-6 bg-white dark:bg-[#161617] p-4 rounded-2xl border border-slate-100 dark:border-zinc-850 transition-all duration-300 hover:border-slate-200 dark:hover:border-zinc-800 hover:shadow-md"
                     >
                       {/* Thumbnail left */}
-                      <div className="w-28 md:w-44 aspect-video relative overflow-hidden bg-slate-50 rounded-xl shrink-0 border border-slate-100">
+                      <div className="w-28 md:w-44 aspect-video relative overflow-hidden bg-slate-50 dark:bg-zinc-900 rounded-xl shrink-0 border border-slate-100 dark:border-zinc-850">
                         {post.thumbnail ? (
                           <Image
                             src={post.thumbnail}
@@ -1242,9 +1248,9 @@ function SearchContent() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-1 bg-gradient-to-br from-slate-50 to-slate-100">
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 dark:text-zinc-650 gap-1 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-900 dark:to-zinc-950">
                             <FileText size={24} />
-                            <span className="text-[8px] font-medium text-slate-400">Bài viết</span>
+                            <span className="text-[8px] font-medium text-slate-400 dark:text-zinc-550">Bài viết</span>
                           </div>
                         )}
                       </div>
@@ -1252,18 +1258,18 @@ function SearchContent() {
                       {/* Details right */}
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div>
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1 block">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-550 mb-1 block">
                             {postCategoryMap.get(post.categoryId) || 'Bài viết'}
                           </span>
-                          <h3 className="font-semibold text-slate-800 text-sm md:text-base line-clamp-1 mb-1 group-hover:text-slate-900 transition-colors">
+                          <h3 className="font-semibold text-slate-800 dark:text-[#f5f5f7] text-sm md:text-base line-clamp-1 mb-1 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                             {post.title}
                           </h3>
-                          <p className="text-slate-400 text-xs line-clamp-2">
+                          <p className="text-slate-400 dark:text-[#86868b] text-xs line-clamp-2">
                             {post.excerpt || 'Đọc bài viết để biết thêm thông tin chi tiết.'}
                           </p>
                         </div>
 
-                        <div className="flex items-center justify-between text-slate-400 text-[10px] font-medium mt-2">
+                        <div className="flex items-center justify-between text-slate-400 dark:text-zinc-500 text-[10px] font-medium mt-2">
                           <span className="flex items-center gap-1">
                             <Calendar size={12} />
                             {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('vi-VN') : 'Mới cập nhật'}
@@ -1289,9 +1295,9 @@ function SearchContent() {
                     <Link
                       key={service._id}
                       href={getServiceDetailHref(service)}
-                      className="group flex flex-col h-full bg-white rounded-2xl border border-slate-100 overflow-hidden transition-all duration-300 hover:border-slate-200 hover:shadow-lg hover:-translate-y-1"
+                      className="group flex flex-col h-full bg-white dark:bg-[#161617] rounded-2xl border border-slate-100 dark:border-zinc-850 overflow-hidden transition-all duration-300 hover:border-slate-200 dark:hover:border-zinc-800 hover:shadow-lg hover:-translate-y-1"
                     >
-                      <div className="aspect-video w-full relative overflow-hidden bg-slate-50 border-b border-slate-100/50">
+                      <div className="aspect-video w-full relative overflow-hidden bg-slate-50 dark:bg-zinc-900 border-b border-slate-100/50 dark:border-zinc-850">
                         {service.thumbnail ? (
                           <Image
                             src={service.thumbnail}
@@ -1303,29 +1309,29 @@ function SearchContent() {
                           />
                         ) : (
                           // Smart fallback banner
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2 bg-gradient-to-br from-slate-50 to-slate-100">
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 dark:text-zinc-650 gap-2 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-900 dark:to-zinc-950">
                             <Briefcase size={32} />
-                            <span className="text-[10px] font-medium text-slate-400">Dịch vụ Spa giày</span>
+                            <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500">Dịch vụ Spa giày</span>
                           </div>
                         )}
                       </div>
                       
                       <div className="p-5 flex-1 flex flex-col">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-2 block">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500 mb-2 block">
                           {serviceCategoryMap.get(service.categoryId) || 'Dịch vụ'}
                         </span>
-                        <h3 className="font-semibold text-slate-800 text-base line-clamp-2 mb-3 group-hover:text-slate-900 transition-colors">
+                        <h3 className="font-semibold text-slate-800 dark:text-[#f5f5f7] text-base line-clamp-2 mb-3 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                           {service.title}
                         </h3>
-                        <p className="text-slate-400 text-xs line-clamp-3 mb-4 flex-1">
+                        <p className="text-slate-400 dark:text-[#86868b] text-xs line-clamp-3 mb-4 flex-1">
                           {service.excerpt || 'Xem chi tiết thông tin dịch vụ chăm sóc giày.'}
                         </p>
                         
-                        <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
+                        <div className="pt-4 border-t border-slate-50 dark:border-zinc-850 flex items-center justify-between">
                           <span className="text-sm font-bold" style={{ color: primaryColor }}>
                             {service.price ? formatPrice(service.price) : 'Liên hệ báo giá'}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-1">
                             <Eye size={12} />
                             {service.views || 0} lượt xem
                           </span>
@@ -1341,10 +1347,10 @@ function SearchContent() {
                     <Link
                       key={service._id}
                       href={getServiceDetailHref(service)}
-                      className="group flex gap-4 md:gap-6 bg-white p-4 rounded-2xl border border-slate-100 transition-all duration-300 hover:border-slate-200 hover:shadow-md"
+                      className="group flex gap-4 md:gap-6 bg-white dark:bg-[#161617] p-4 rounded-2xl border border-slate-100 dark:border-zinc-850 transition-all duration-300 hover:border-slate-200 dark:hover:border-zinc-800 hover:shadow-md"
                     >
                       {/* Thumbnail left */}
-                      <div className="w-28 md:w-44 aspect-video relative overflow-hidden bg-slate-50 rounded-xl shrink-0 border border-slate-100">
+                      <div className="w-28 md:w-44 aspect-video relative overflow-hidden bg-slate-50 dark:bg-zinc-900 rounded-xl shrink-0 border border-slate-100 dark:border-zinc-850">
                         {service.thumbnail ? (
                           <Image
                             src={service.thumbnail}
@@ -1355,9 +1361,9 @@ function SearchContent() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-1 bg-gradient-to-br from-slate-50 to-slate-100">
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 dark:text-zinc-650 gap-1 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-900 dark:to-zinc-950">
                             <Briefcase size={24} />
-                            <span className="text-[8px] font-medium text-slate-400">Dịch vụ</span>
+                            <span className="text-[8px] font-medium text-slate-400 dark:text-zinc-550">Dịch vụ</span>
                           </div>
                         )}
                       </div>
@@ -1365,13 +1371,13 @@ function SearchContent() {
                       {/* Details right */}
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div>
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1 block">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-550 mb-1 block">
                             {serviceCategoryMap.get(service.categoryId) || 'Dịch vụ'}
                           </span>
-                          <h3 className="font-semibold text-slate-800 text-sm md:text-base line-clamp-1 mb-1 group-hover:text-slate-900 transition-colors">
+                          <h3 className="font-semibold text-slate-800 dark:text-[#f5f5f7] text-sm md:text-base line-clamp-1 mb-1 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                             {service.title}
                           </h3>
-                          <p className="text-slate-400 text-xs line-clamp-2">
+                          <p className="text-slate-400 dark:text-[#86868b] text-xs line-clamp-2">
                             {service.excerpt || 'Xem chi tiết thông tin dịch vụ chăm sóc giày.'}
                           </p>
                         </div>
@@ -1380,7 +1386,7 @@ function SearchContent() {
                           <span className="text-sm md:text-base font-bold" style={{ color: primaryColor }}>
                             {service.price ? formatPrice(service.price) : 'Liên hệ báo giá'}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-1">
                             <Eye size={12} />
                             {service.views || 0} lượt xem
                           </span>
@@ -1400,9 +1406,9 @@ function SearchContent() {
                     <Link
                       key={course._id}
                       href={getCourseDetailHref(course)}
-                      className="group flex flex-col h-full bg-white rounded-2xl border border-slate-100 overflow-hidden transition-all duration-300 hover:border-slate-200 hover:shadow-lg hover:-translate-y-1"
+                      className="group flex flex-col h-full bg-white dark:bg-[#161617] rounded-2xl border border-slate-100 dark:border-zinc-850 overflow-hidden transition-all duration-300 hover:border-slate-200 dark:hover:border-zinc-800 hover:shadow-lg hover:-translate-y-1"
                     >
-                      <div className="aspect-video w-full relative overflow-hidden bg-slate-50 border-b border-slate-100/50">
+                      <div className="aspect-video w-full relative overflow-hidden bg-slate-50 dark:bg-zinc-900 border-b border-slate-100/50 dark:border-zinc-850">
                         {course.thumbnail ? (
                           <Image
                             src={course.thumbnail}
@@ -1413,29 +1419,29 @@ function SearchContent() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2 bg-gradient-to-br from-slate-50 to-slate-100">
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 dark:text-zinc-650 gap-2 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-900 dark:to-zinc-950">
                             <GraduationCap size={32} />
-                            <span className="text-[10px] font-medium text-slate-400">Khóa học</span>
+                            <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500">Khóa học</span>
                           </div>
                         )}
                       </div>
 
                       <div className="p-5 flex-1 flex flex-col">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-2 block">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500 mb-2 block">
                           {courseCategoryMap.get(course.categoryId) || 'Khóa học'}
                         </span>
-                        <h3 className="font-semibold text-slate-800 text-base line-clamp-2 mb-3 group-hover:text-slate-900 transition-colors">
+                        <h3 className="font-semibold text-slate-800 dark:text-[#f5f5f7] text-base line-clamp-2 mb-3 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                           {course.title}
                         </h3>
-                        <p className="text-slate-400 text-xs line-clamp-3 mb-4 flex-1">
+                        <p className="text-slate-400 dark:text-[#86868b] text-xs line-clamp-3 mb-4 flex-1">
                           {course.excerpt || 'Xem chi tiết chương trình học.'}
                         </p>
 
-                        <div className="pt-4 border-t border-slate-50 flex items-center justify-between gap-3">
+                        <div className="pt-4 border-t border-slate-50 dark:border-zinc-850 flex items-center justify-between gap-3">
                           <span className="text-sm font-bold" style={{ color: primaryColor }}>
                             {formatCoursePrice(course.pricingType, course.priceAmount)}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-1">
                             <BookOpen size={12} />
                             {course.lessonCount || 0} bài
                           </span>
@@ -1450,9 +1456,9 @@ function SearchContent() {
                     <Link
                       key={course._id}
                       href={getCourseDetailHref(course)}
-                      className="group flex gap-4 md:gap-6 bg-white p-4 rounded-2xl border border-slate-100 transition-all duration-300 hover:border-slate-200 hover:shadow-md"
+                      className="group flex gap-4 md:gap-6 bg-white dark:bg-[#161617] p-4 rounded-2xl border border-slate-100 dark:border-zinc-850 transition-all duration-300 hover:border-slate-200 dark:hover:border-zinc-800 hover:shadow-md"
                     >
-                      <div className="w-28 md:w-44 aspect-video relative overflow-hidden bg-slate-50 rounded-xl shrink-0 border border-slate-100">
+                      <div className="w-28 md:w-44 aspect-video relative overflow-hidden bg-slate-50 dark:bg-zinc-900 rounded-xl shrink-0 border border-slate-100 dark:border-zinc-850">
                         {course.thumbnail ? (
                           <Image
                             src={course.thumbnail}
@@ -1463,22 +1469,22 @@ function SearchContent() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-1 bg-gradient-to-br from-slate-50 to-slate-100">
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 dark:text-zinc-650 gap-1 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-900 dark:to-zinc-950">
                             <GraduationCap size={24} />
-                            <span className="text-[8px] font-medium text-slate-400">Khóa học</span>
+                            <span className="text-[8px] font-medium text-slate-400 dark:text-zinc-550">Khóa học</span>
                           </div>
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div>
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1 block">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-550 mb-1 block">
                             {courseCategoryMap.get(course.categoryId) || 'Khóa học'}
                           </span>
-                          <h3 className="font-semibold text-slate-800 text-sm md:text-base line-clamp-1 mb-1 group-hover:text-slate-900 transition-colors">
+                          <h3 className="font-semibold text-slate-800 dark:text-[#f5f5f7] text-sm md:text-base line-clamp-1 mb-1 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                             {course.title}
                           </h3>
-                          <p className="text-slate-400 text-xs line-clamp-2">
+                          <p className="text-slate-400 dark:text-[#86868b] text-xs line-clamp-2">
                             {course.excerpt || 'Xem chi tiết chương trình học.'}
                           </p>
                         </div>
@@ -1487,7 +1493,7 @@ function SearchContent() {
                           <span className="text-sm md:text-base font-bold" style={{ color: primaryColor }}>
                             {formatCoursePrice(course.pricingType, course.priceAmount)}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-1">
                             <BookOpen size={12} />
                             {course.lessonCount || 0} bài
                           </span>
@@ -1507,9 +1513,9 @@ function SearchContent() {
                     <Link
                       key={resource._id}
                       href={getResourceDetailHref(resource)}
-                      className="group flex flex-col h-full bg-white rounded-2xl border border-slate-100 overflow-hidden transition-all duration-300 hover:border-slate-200 hover:shadow-lg hover:-translate-y-1"
+                      className="group flex flex-col h-full bg-white dark:bg-[#161617] rounded-2xl border border-slate-100 dark:border-zinc-850 overflow-hidden transition-all duration-300 hover:border-slate-200 dark:hover:border-zinc-800 hover:shadow-lg hover:-translate-y-1"
                     >
-                      <div className="aspect-video w-full relative overflow-hidden bg-slate-50 border-b border-slate-100/50">
+                      <div className="aspect-video w-full relative overflow-hidden bg-slate-50 dark:bg-zinc-900 border-b border-slate-100/50 dark:border-zinc-850">
                         {resource.thumbnail ? (
                           <Image
                             src={resource.thumbnail}
@@ -1520,29 +1526,29 @@ function SearchContent() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-2 bg-gradient-to-br from-slate-50 to-slate-100">
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 dark:text-zinc-650 gap-2 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-900 dark:to-zinc-950">
                             <Download size={32} />
-                            <span className="text-[10px] font-medium text-slate-400">Tài nguyên</span>
+                            <span className="text-[10px] font-medium text-slate-400 dark:text-zinc-500">Tài nguyên</span>
                           </div>
                         )}
                       </div>
 
                       <div className="p-5 flex-1 flex flex-col">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-2 block">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-500 mb-2 block">
                           {resourceCategoryMap.get(resource.categoryId) || 'Tài nguyên'}
                         </span>
-                        <h3 className="font-semibold text-slate-800 text-base line-clamp-2 mb-3 group-hover:text-slate-900 transition-colors">
+                        <h3 className="font-semibold text-slate-800 dark:text-[#f5f5f7] text-base line-clamp-2 mb-3 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                           {resource.title}
                         </h3>
-                        <p className="text-slate-400 text-xs line-clamp-3 mb-4 flex-1">
+                        <p className="text-slate-400 dark:text-[#86868b] text-xs line-clamp-3 mb-4 flex-1">
                           {resource.excerpt || 'Xem chi tiết và tải tài nguyên.'}
                         </p>
 
-                        <div className="pt-4 border-t border-slate-50 flex items-center justify-between gap-3">
+                        <div className="pt-4 border-t border-slate-50 dark:border-zinc-850 flex items-center justify-between gap-3">
                           <span className="text-sm font-bold" style={{ color: primaryColor }}>
                             {formatResourcePrice(resource.pricingType, resource.priceAmount)}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-1">
                             <Download size={12} />
                             Tải xuống
                           </span>
@@ -1557,9 +1563,9 @@ function SearchContent() {
                     <Link
                       key={resource._id}
                       href={getResourceDetailHref(resource)}
-                      className="group flex gap-4 md:gap-6 bg-white p-4 rounded-2xl border border-slate-100 transition-all duration-300 hover:border-slate-200 hover:shadow-md"
+                      className="group flex gap-4 md:gap-6 bg-white dark:bg-[#161617] p-4 rounded-2xl border border-slate-100 dark:border-zinc-850 transition-all duration-300 hover:border-slate-200 dark:hover:border-zinc-800 hover:shadow-md"
                     >
-                      <div className="w-28 md:w-44 aspect-video relative overflow-hidden bg-slate-50 rounded-xl shrink-0 border border-slate-100">
+                      <div className="w-28 md:w-44 aspect-video relative overflow-hidden bg-slate-50 dark:bg-zinc-900 rounded-xl shrink-0 border border-slate-100 dark:border-zinc-850">
                         {resource.thumbnail ? (
                           <Image
                             src={resource.thumbnail}
@@ -1570,22 +1576,22 @@ function SearchContent() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 gap-1 bg-gradient-to-br from-slate-50 to-slate-100">
+                          <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 dark:text-zinc-650 gap-1 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-zinc-900 dark:to-zinc-950">
                             <Download size={24} />
-                            <span className="text-[8px] font-medium text-slate-400">Tài nguyên</span>
+                            <span className="text-[8px] font-medium text-slate-400 dark:text-zinc-550">Tài nguyên</span>
                           </div>
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div>
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1 block">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-zinc-550 mb-1 block">
                             {resourceCategoryMap.get(resource.categoryId) || 'Tài nguyên'}
                           </span>
-                          <h3 className="font-semibold text-slate-800 text-sm md:text-base line-clamp-1 mb-1 group-hover:text-slate-900 transition-colors">
+                          <h3 className="font-semibold text-slate-800 dark:text-[#f5f5f7] text-sm md:text-base line-clamp-1 mb-1 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                             {resource.title}
                           </h3>
-                          <p className="text-slate-400 text-xs line-clamp-2">
+                          <p className="text-slate-400 dark:text-[#86868b] text-xs line-clamp-2">
                             {resource.excerpt || 'Xem chi tiết và tải tài nguyên.'}
                           </p>
                         </div>
@@ -1594,7 +1600,7 @@ function SearchContent() {
                           <span className="text-sm md:text-base font-bold" style={{ color: primaryColor }}>
                             {formatResourcePrice(resource.pricingType, resource.priceAmount)}
                           </span>
-                          <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                          <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-medium flex items-center gap-1">
                             <Download size={12} />
                             Tải xuống
                           </span>
@@ -1613,7 +1619,7 @@ function SearchContent() {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 text-slate-500 dark:text-zinc-400 bg-white dark:bg-[#1c1c1e] hover:bg-slate-50 dark:hover:bg-[#2c2c2e] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                     aria-label="Trang trước"
                   >
                     <ChevronLeft size={16} />
@@ -1622,7 +1628,7 @@ function SearchContent() {
                   {generatePaginationItems(currentPage, totalPages).map((item, index) => {
                     if (item === 'ellipsis') {
                       return (
-                        <div key={`ellipsis-${index}`} className="flex h-10 w-10 items-center justify-center text-slate-400">
+                        <div key={`ellipsis-${index}`} className="flex h-10 w-10 items-center justify-center text-slate-400 dark:text-zinc-550">
                           …
                         </div>
                       );
@@ -1638,7 +1644,7 @@ function SearchContent() {
                         className={`inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm font-semibold transition-all ${
                           isActive
                             ? 'text-white shadow-sm border-0'
-                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200'
+                            : 'text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-[#2c2c2e] hover:text-slate-900 dark:hover:text-[#f5f5f7] border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e]'
                         }`}
                         style={isActive ? { backgroundColor: primaryColor } : undefined}
                         aria-current={isActive ? 'page' : undefined}
@@ -1651,7 +1657,7 @@ function SearchContent() {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 text-slate-500 dark:text-zinc-400 bg-white dark:bg-[#1c1c1e] hover:bg-slate-50 dark:hover:bg-[#2c2c2e] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                     aria-label="Trang sau"
                   >
                     <ChevronRight size={16} />
