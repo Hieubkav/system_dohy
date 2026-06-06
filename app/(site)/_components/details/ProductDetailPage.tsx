@@ -2249,7 +2249,7 @@ function ClassicStyle({
                       type="button"
                       disabled={!canScrollPrev}
                       onClick={(e) => { e.stopPropagation(); emblaApi?.scrollPrev(); }}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white dark:bg-[#2c2c2e]/90 dark:hover:bg-[#2c2c2e] text-slate-800 dark:text-[#f5f5f7] flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
                       aria-label="Ảnh trước"
                     >
                       <ChevronLeft size={16} />
@@ -2258,7 +2258,7 @@ function ClassicStyle({
                       type="button"
                       disabled={!canScrollNext}
                       onClick={(e) => { e.stopPropagation(); emblaApi?.scrollNext(); }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white dark:bg-[#2c2c2e]/90 dark:hover:bg-[#2c2c2e] text-slate-800 dark:text-[#f5f5f7] flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
                       aria-label="Ảnh sau"
                     >
                       <ChevronRight size={16} />
@@ -2968,7 +2968,7 @@ function PremiumStyle({
                           type="button"
                           disabled={!canScrollPrev}
                           onClick={(e) => { e.stopPropagation(); emblaApi?.scrollPrev(); }}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white dark:bg-[#2c2c2e]/90 dark:hover:bg-[#2c2c2e] text-slate-800 dark:text-[#f5f5f7] flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
                           aria-label="Ảnh trước"
                         >
                           <ChevronLeft size={16} />
@@ -2977,7 +2977,7 @@ function PremiumStyle({
                           type="button"
                           disabled={!canScrollNext}
                           onClick={(e) => { e.stopPropagation(); emblaApi?.scrollNext(); }}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white dark:bg-[#2c2c2e]/90 dark:hover:bg-[#2c2c2e] text-slate-800 dark:text-[#f5f5f7] flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
                           aria-label="Ảnh sau"
                         >
                           <ChevronRight size={16} />
@@ -3787,7 +3787,7 @@ function PremiumStyle({
                   <h3 className="text-xl font-extrabold" style={{ color: tokens.headingColor }}>
                     {activeMixCombo.name || 'Combo Trọn Bộ'}
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-[#86868b] mt-1">
                     {activeMixCombo.description || 'Sự kết hợp hoàn hảo từ chuyên gia Thiên Kim Wine.'}
                   </p>
                 </div>
@@ -3799,7 +3799,7 @@ function PremiumStyle({
                   <div className="flex items-center justify-between p-2.5 rounded-xl border" style={{ backgroundColor: tokens.surfaceMuted, borderColor: tokens.border }}>
                     <div className="flex items-center gap-3 min-w-0">
                       {product.image ? (
-                        <img src={product.image} alt={product.name} className="h-10 w-10 object-cover rounded-lg border shrink-0 bg-white" />
+                        <img src={product.image} alt={product.name} className="h-10 w-10 object-cover rounded-lg border shrink-0 bg-white dark:bg-[#2c2c2e]" />
                       ) : (
                         <div className="h-10 w-10 rounded-lg border shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
                           <Package size={16} />
@@ -3810,7 +3810,7 @@ function PremiumStyle({
                         <p className="text-[10px] text-slate-400">Sản phẩm chính</p>
                       </div>
                     </div>
-                    <span className="shrink-0 text-slate-600 font-extrabold px-2.5 py-1 bg-slate-200/50 dark:bg-slate-800 rounded-lg text-xs">x{curQty}</span>
+                    <span className="shrink-0 text-slate-600 dark:text-[#86868b] font-extrabold px-2.5 py-1 bg-slate-200/50 dark:bg-slate-800 rounded-lg text-xs">x{curQty}</span>
                   </div>
 
                   {/* Các sản phẩm mua kèm thêm */}
@@ -3821,7 +3821,7 @@ function PremiumStyle({
                         {pInfo ? (
                           <div className="flex items-center gap-3 min-w-0">
                             {pInfo.image ? (
-                              <img src={pInfo.image} alt={pInfo.name} className="h-10 w-10 object-cover rounded-lg border shrink-0 bg-white" />
+                              <img src={pInfo.image} alt={pInfo.name} className="h-10 w-10 object-cover rounded-lg border shrink-0 bg-white dark:bg-[#2c2c2e]" />
                             ) : (
                               <div className="h-10 w-10 rounded-lg border shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
                                 <Package size={16} />
@@ -3840,7 +3840,7 @@ function PremiumStyle({
                             <span className="font-medium text-slate-400 text-xs truncate">Sản phẩm đi kèm</span>
                           </div>
                         )}
-                        <span className="shrink-0 text-slate-600 font-extrabold px-2.5 py-1 bg-slate-200/50 dark:bg-slate-800 rounded-lg text-xs">x{item.quantity}</span>
+                        <span className="shrink-0 text-slate-600 dark:text-[#86868b] font-extrabold px-2.5 py-1 bg-slate-200/50 dark:bg-slate-800 rounded-lg text-xs">x{item.quantity}</span>
                       </div>
                     );
                   })}
@@ -3862,7 +3862,7 @@ function PremiumStyle({
                 <div className="flex gap-2">
                   <button 
                     type="button"
-                    className="flex-1 py-3 px-4 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all hover:bg-slate-50"
+                    className="flex-1 py-3 px-4 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 transition-all hover:bg-slate-50 dark:hover:bg-[#2c2c2e]"
                     style={{ color: tokens.bodyText, borderColor: tokens.border }}
                     onClick={() => setActiveMixCombo(null)}
                   >
@@ -4293,7 +4293,7 @@ function ModernStyle({
                             type="button"
                             disabled={!canScrollPrev}
                             onClick={(e) => { e.stopPropagation(); emblaApi?.scrollPrev(); }}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white dark:bg-[#2c2c2e]/90 dark:hover:bg-[#2c2c2e] text-slate-800 dark:text-[#f5f5f7] flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
                             aria-label="Ảnh trước"
                           >
                             <ChevronLeft size={16} />
@@ -4302,7 +4302,7 @@ function ModernStyle({
                             type="button"
                             disabled={!canScrollNext}
                             onClick={(e) => { e.stopPropagation(); emblaApi?.scrollNext(); }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white dark:bg-[#2c2c2e]/90 dark:hover:bg-[#2c2c2e] text-slate-800 dark:text-[#f5f5f7] flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
                             aria-label="Ảnh sau"
                           >
                             <ChevronRight size={16} />
@@ -4360,7 +4360,7 @@ function ModernStyle({
                             type="button"
                             disabled={!canScrollPrev}
                             onClick={(e) => { e.stopPropagation(); emblaApi?.scrollPrev(); }}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white dark:bg-[#2c2c2e]/90 dark:hover:bg-[#2c2c2e] text-slate-800 dark:text-[#f5f5f7] flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
                             aria-label="Ảnh trước"
                           >
                             <ChevronLeft size={16} />
@@ -4369,7 +4369,7 @@ function ModernStyle({
                             type="button"
                             disabled={!canScrollNext}
                             onClick={(e) => { e.stopPropagation(); emblaApi?.scrollNext(); }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white dark:bg-[#2c2c2e]/90 dark:hover:bg-[#2c2c2e] text-slate-800 dark:text-[#f5f5f7] flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
                             aria-label="Ảnh sau"
                           >
                             <ChevronRight size={16} />
@@ -4999,7 +4999,7 @@ function MinimalStyle({
                           type="button"
                           disabled={!canScrollPrev}
                           onClick={(e) => { e.stopPropagation(); emblaApi?.scrollPrev(); }}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white dark:bg-[#2c2c2e]/90 dark:hover:bg-[#2c2c2e] text-slate-800 dark:text-[#f5f5f7] flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
                           aria-label="Ảnh trước"
                         >
                           <ChevronLeft size={16} />
@@ -5008,7 +5008,7 @@ function MinimalStyle({
                           type="button"
                           disabled={!canScrollNext}
                           onClick={(e) => { e.stopPropagation(); emblaApi?.scrollNext(); }}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-800 flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 hover:bg-white dark:bg-[#2c2c2e]/90 dark:hover:bg-[#2c2c2e] text-slate-800 dark:text-[#f5f5f7] flex items-center justify-center shadow transition-all opacity-0 group-hover/carousel:opacity-100 disabled:opacity-0 pointer-events-auto z-30"
                           aria-label="Ảnh sau"
                         >
                           <ChevronRight size={16} />
@@ -6137,7 +6137,7 @@ function ProductCombosBlock({
                   <div className="flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50 p-1.5 rounded gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       {currentProductImage ? (
-                        <img src={currentProductImage} alt={currentProductName} className="h-7 w-7 object-cover rounded border shrink-0 bg-white" />
+                        <img src={currentProductImage} alt={currentProductName} className="h-7 w-7 object-cover rounded border shrink-0 bg-white dark:bg-[#2c2c2e]" />
                       ) : (
                         <div className="h-7 w-7 rounded border shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
                           <Package size={12} />
@@ -6156,7 +6156,7 @@ function ProductCombosBlock({
                         {pInfo ? (
                           <Link href={`/products/${pInfo.slug}`} className="flex items-center gap-2 min-w-0 group/item hover:opacity-90">
                             {pInfo.image ? (
-                              <img src={pInfo.image} alt={pInfo.name} className="h-7 w-7 object-cover rounded border shrink-0 bg-white" />
+                              <img src={pInfo.image} alt={pInfo.name} className="h-7 w-7 object-cover rounded border shrink-0 bg-white dark:bg-[#2c2c2e]" />
                             ) : (
                               <div className="h-7 w-7 rounded border shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
                                 <Package size={12} />

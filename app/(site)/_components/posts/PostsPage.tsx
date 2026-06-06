@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useInView } from 'react-intersection-observer';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '@/convex/_generated/api';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { getPostsListColors } from '@/components/site/posts/colors';
 import { usePostsListConfig } from '@/lib/experiences';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -150,9 +150,11 @@ export default function PostsPage() {
 function PostsContent() {
   const brandColors = useBrandColors();
   const brandColor = brandColors.primary;
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const tokens = useMemo(
-    () => getPostsListColors(brandColors.primary, brandColors.secondary, brandColors.mode || 'single'),
-    [brandColors.primary, brandColors.secondary, brandColors.mode]
+    () => getPostsListColors(brandColors.primary, brandColors.secondary, brandColors.mode || 'single', isDark),
+    [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]
   );
   const enabledFields = useEnabledPostFields();
   const listConfig = usePostsListConfig();
@@ -512,7 +514,7 @@ function PostsContent() {
                     <option key={size} value={size}>{size}</option>
                   ))}
                 </select>
-                <span>bài/trang</span>
+                <span className="dark:text-[#86868b]">bài/trang</span>
               </div>
 
               <div className="text-right sm:text-left">
@@ -530,7 +532,7 @@ function PostsContent() {
                 <button
                   onClick={() => handlePageChange(urlPage - 1)}
                   disabled={urlPage === 1}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed dark:border-zinc-800"
                   style={urlPage === 1 ? undefined : { color: tokens.paginationButtonText, borderColor: tokens.paginationButtonBorder }}
                   aria-label="Trang trước"
                 >
@@ -576,7 +578,7 @@ function PostsContent() {
                 <button
                   onClick={() => handlePageChange(urlPage + 1)}
                   disabled={urlPage === totalPages}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors disabled:opacity-40 disabled:cursor-not-allowed dark:border-zinc-800"
                   style={urlPage === totalPages ? undefined : { color: tokens.paginationButtonText, borderColor: tokens.paginationButtonBorder }}
                   aria-label="Trang sau"
                 >

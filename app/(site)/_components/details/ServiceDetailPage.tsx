@@ -220,21 +220,21 @@ export default function ServiceDetailPage({ params }: PageProps) {
 
 function ServiceDetailSkeleton() {
   return (
-    <div className="min-h-screen bg-white animate-pulse">
+    <div className="min-h-screen bg-white dark:bg-black animate-pulse">
       <div className="max-w-2xl mx-auto px-4 py-12">
-        <div className="h-4 w-24 bg-slate-200 rounded mb-12" />
+        <div className="h-4 w-24 bg-slate-200 dark:bg-zinc-800 rounded mb-12" />
         <div className="space-y-4 mb-8">
-          <div className="h-3 w-20 bg-slate-200 rounded" />
-          <div className="h-12 w-full bg-slate-200 rounded" />
-          <div className="h-12 w-3/4 bg-slate-200 rounded" />
+          <div className="h-3 w-20 bg-slate-200 dark:bg-zinc-800 rounded" />
+          <div className="h-12 w-full bg-slate-200 dark:bg-zinc-800 rounded" />
+          <div className="h-12 w-3/4 bg-slate-200 dark:bg-zinc-800 rounded" />
         </div>
-        <div className="h-6 w-32 bg-slate-200 rounded mb-12" />
-        <div className="aspect-[2/1] bg-slate-200 rounded-xl mb-12" />
+        <div className="h-6 w-32 bg-slate-200 dark:bg-zinc-800 rounded mb-12" />
+        <div className="aspect-[2/1] bg-slate-200 dark:bg-zinc-800 rounded-xl mb-12" />
         <div className="space-y-4">
-          <div className="h-4 bg-slate-200 rounded w-full" />
-          <div className="h-4 bg-slate-200 rounded w-5/6" />
-          <div className="h-4 bg-slate-200 rounded w-full" />
-          <div className="h-4 bg-slate-200 rounded w-4/6" />
+          <div className="h-4 bg-slate-200 dark:bg-zinc-800 rounded w-full" />
+          <div className="h-4 bg-slate-200 dark:bg-zinc-800 rounded w-5/6" />
+          <div className="h-4 bg-slate-200 dark:bg-zinc-800 rounded w-full" />
+          <div className="h-4 bg-slate-200 dark:bg-zinc-800 rounded w-4/6" />
         </div>
       </div>
     </div>

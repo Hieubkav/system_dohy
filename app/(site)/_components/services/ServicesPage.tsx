@@ -23,12 +23,12 @@ function ServicesGridSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="bg-white rounded-xl overflow-hidden border border-slate-100">
-          <div className="aspect-video bg-slate-200" />
+        <div key={i} className="bg-white dark:bg-[#161617] rounded-xl overflow-hidden border border-slate-100 dark:border-zinc-800">
+          <div className="aspect-video bg-slate-200 dark:bg-zinc-800" />
           <div className="p-5 space-y-3">
-            <div className="h-5 w-20 bg-slate-200 rounded-full" />
-            <div className="h-6 w-full bg-slate-200 rounded" />
-            <div className="h-4 w-3/4 bg-slate-200 rounded" />
+            <div className="h-5 w-20 bg-slate-200 dark:bg-zinc-800 rounded-full" />
+            <div className="h-6 w-full bg-slate-200 dark:bg-zinc-800 rounded" />
+            <div className="h-4 w-3/4 bg-slate-200 dark:bg-zinc-800 rounded" />
           </div>
         </div>
       ))}
@@ -101,26 +101,26 @@ function ServicesListSkeleton() {
     <div className="py-8 md:py-12 px-4 animate-pulse">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
-          <div className="h-10 w-64 bg-slate-200 rounded mx-auto" />
+          <div className="h-10 w-64 bg-slate-200 dark:bg-zinc-800 rounded mx-auto" />
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-8">
+        <div className="bg-white dark:bg-[#161617] rounded-xl border border-slate-200 dark:border-zinc-800 p-4 mb-8">
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="h-10 flex-1 max-w-xs bg-slate-200 rounded-lg" />
+            <div className="h-10 flex-1 max-w-xs bg-slate-200 dark:bg-zinc-800 rounded-lg" />
             <div className="flex gap-2">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-8 w-20 bg-slate-200 rounded-full" />
+                <div key={i} className="h-8 w-20 bg-slate-200 dark:bg-zinc-800 rounded-full" />
               ))}
             </div>
           </div>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-white rounded-xl overflow-hidden border border-slate-100">
-              <div className="aspect-video bg-slate-200" />
+            <div key={i} className="bg-white dark:bg-[#161617] rounded-xl overflow-hidden border border-slate-100 dark:border-zinc-800">
+              <div className="aspect-video bg-slate-200 dark:bg-zinc-800" />
               <div className="p-5 space-y-3">
-                <div className="h-5 w-20 bg-slate-200 rounded-full" />
-                <div className="h-6 w-full bg-slate-200 rounded" />
-                <div className="h-4 w-3/4 bg-slate-200 rounded" />
+                <div className="h-5 w-20 bg-slate-200 dark:bg-zinc-800 rounded-full" />
+                <div className="h-6 w-full bg-slate-200 dark:bg-zinc-800 rounded" />
+                <div className="h-4 w-3/4 bg-slate-200 dark:bg-zinc-800 rounded" />
               </div>
             </div>
           ))}
@@ -460,13 +460,13 @@ function ServicesContent() {
         {/* Pagination / Infinite Scroll */}
         {listConfig.paginationType === 'pagination' && totalCount && totalCount > postsPerPage && (
           <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="order-2 flex w-full items-center justify-between text-sm text-slate-500 sm:order-1 sm:w-auto sm:justify-start sm:gap-6">
+            <div className="order-2 flex w-full items-center justify-between text-sm text-slate-500 dark:text-[#86868b] sm:order-1 sm:w-auto sm:justify-start sm:gap-6">
               <div className="flex items-center gap-2">
-                <span className="text-slate-600">Hiển thị</span>
+                <span className="text-slate-600 dark:text-[#86868b]">Hiển thị</span>
                 <select
                   value={postsPerPage}
                   onChange={(event) => handlePageSizeChange(Number(event.target.value))}
-                  className="h-8 w-[70px] appearance-none rounded-md border border-slate-200 bg-white px-2 text-sm font-medium text-slate-900 shadow-sm focus:border-slate-300 focus:outline-none"
+                  className="h-8 w-[70px] appearance-none rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-2 text-sm font-medium text-slate-900 dark:text-[#f5f5f7] shadow-sm focus:border-slate-300 dark:focus:border-zinc-700 focus:outline-none"
                   style={{ borderColor: tokens.paginationButtonBorder }}
                   aria-label="Số bài mỗi trang"
                 >
@@ -478,12 +478,12 @@ function ServicesContent() {
               </div>
 
               <div className="text-right sm:text-left">
-                <span className="font-medium text-slate-900">
+                <span className="font-medium text-slate-900 dark:text-[#f5f5f7]">
                   {totalCount ? ((urlPage - 1) * postsPerPage) + 1 : 0}–{Math.min(urlPage * postsPerPage, totalCount ?? 0)}
                 </span>
-                <span className="mx-1 text-slate-300">/</span>
-                <span className="font-medium text-slate-900">{totalCount ?? 0}</span>
-                <span className="ml-1 text-slate-500">dịch vụ</span>
+                <span className="mx-1 text-slate-300 dark:text-[#6e6e73]">/</span>
+                <span className="font-medium text-slate-900 dark:text-[#f5f5f7]">{totalCount ?? 0}</span>
+                <span className="ml-1 text-slate-500 dark:text-[#86868b]">dịch vụ</span>
               </div>
             </div>
 
@@ -492,7 +492,7 @@ function ServicesContent() {
                 <button
                   onClick={() => handlePageChange(urlPage - 1)}
                   disabled={urlPage === 1}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-800 text-slate-500 dark:text-[#86868b] transition-colors hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-700 dark:hover:text-[#f5f5f7] disabled:opacity-40 disabled:cursor-not-allowed"
                   style={urlPage === 1 ? undefined : { color: tokens.paginationButtonText, borderColor: tokens.paginationButtonBorder }}
                   aria-label="Trang trước"
                 >
@@ -502,7 +502,7 @@ function ServicesContent() {
                 {generatePaginationItems(urlPage, Math.ceil(totalCount / postsPerPage)).map((item, index) => {
                   if (item === 'ellipsis') {
                     return (
-                      <div key={`ellipsis-${index}`} className="flex h-8 w-8 items-center justify-center text-slate-400">
+                      <div key={`ellipsis-${index}`} className="flex h-8 w-8 items-center justify-center text-slate-400 dark:text-[#86868b]">
                         …
                       </div>
                     );
@@ -519,7 +519,7 @@ function ServicesContent() {
                       className={`inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-all duration-200 ${
                         isActive
                           ? 'text-white shadow-sm border font-medium'
-                          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                          : 'text-slate-500 dark:text-[#86868b] hover:text-slate-900 dark:hover:text-[#f5f5f7] hover:bg-slate-100 dark:hover:bg-[#2c2c2e]'
                       } ${isMobileHidden ? 'hidden sm:inline-flex' : ''}`}
                       style={isActive ? { backgroundColor: tokens.paginationActiveBg, borderColor: tokens.paginationActiveBg, color: tokens.paginationActiveText } : undefined}
                       aria-current={isActive ? 'page' : undefined}
@@ -532,7 +532,7 @@ function ServicesContent() {
                 <button
                   onClick={() => handlePageChange(urlPage + 1)}
                   disabled={totalCount ? urlPage >= Math.ceil(totalCount / postsPerPage) : true}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-800 text-slate-500 dark:text-[#86868b] transition-colors hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-700 dark:hover:text-[#f5f5f7] disabled:opacity-40 disabled:cursor-not-allowed"
                   style={totalCount && urlPage < Math.ceil(totalCount / postsPerPage) ? { color: tokens.paginationButtonText, borderColor: tokens.paginationButtonBorder } : undefined}
                   aria-label="Trang sau"
                 >
@@ -552,14 +552,14 @@ function ServicesContent() {
                 <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: tokens.loadingDotSoft }} />
               </div>
             ) : infiniteStatus === 'CanLoadMore' ? (
-              <p className="text-sm text-slate-400">Cuộn để xem thêm...</p>
+              <p className="text-sm text-slate-400 dark:text-[#86868b]">Cuộn để xem thêm...</p>
             ) : null}
           </div>
         )}
 
         {listConfig.paginationType === 'infiniteScroll' && infiniteStatus === 'Exhausted' && services.length > 0 && (
           <div className="text-center mt-6">
-            <p className="text-sm text-slate-400">Đã hiển thị tất cả {services.length} dịch vụ</p>
+            <p className="text-sm text-slate-400 dark:text-[#86868b]">Đã hiển thị tất cả {services.length} dịch vụ</p>
           </div>
         )}
       </div>
