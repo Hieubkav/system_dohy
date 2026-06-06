@@ -12,6 +12,7 @@ export interface SiteSettings {
   site_brand_mode: 'single' | 'dual';
   site_timezone: string;
   site_language: string;
+  site_dark_mode?: 'light' | 'dark' | 'system';
 }
 
 export interface SEOSettings {
@@ -86,6 +87,7 @@ const SETTINGS_KEYS = {
     "site_brand_mode",
     "site_timezone",
     "site_language",
+    "site_dark_mode",
   ],
 };
 
@@ -100,6 +102,7 @@ const normalizeSiteSettings = (settings: Record<string, unknown>): SiteSettings 
   site_tagline: (settings.site_tagline as string) || "",
   site_timezone: (settings.site_timezone as string) || "Asia/Ho_Chi_Minh",
   site_url: (settings.site_url as string) || "",
+  site_dark_mode: (settings.site_dark_mode as any) || "light",
 });
 
 const normalizeSEOSettings = (settings: Record<string, unknown>): SEOSettings => ({

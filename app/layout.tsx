@@ -146,10 +146,12 @@ export default async function RootLayout({
   const brandSecondary = brandMode === 'single'
     ? ''
     : (site.site_brand_secondary || '');
+  const isDark = site.site_dark_mode === 'dark';
 
   return (
     <html
       lang="vi"
+      className={isDark ? 'dark' : ''}
       style={{
         '--site-brand-primary': brandPrimary,
         '--site-brand-mode': brandMode,

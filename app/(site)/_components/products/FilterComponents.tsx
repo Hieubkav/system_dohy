@@ -456,7 +456,7 @@ export function MobileProductsFilters({
                   placeholder="Tìm sản phẩm..."
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
-                  className="w-full h-10 pl-9 pr-8 rounded-lg border outline-none text-sm"
+                  className="w-full h-10 pl-9 pr-8 rounded-lg border outline-none text-sm bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100"
                   style={{ borderColor: tokens.inputBorder }}
                 />
                 {searchQuery && (

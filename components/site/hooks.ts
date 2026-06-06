@@ -103,6 +103,7 @@ export function useSiteSettings() {
     settings: settingsMap,
     siteDescription: (settingsMap.site_description as string) || '',
     siteName: (settingsMap.site_name as string) || 'Website',
+    siteDarkMode: (settingsMap.site_dark_mode as string) || 'light',
   };
 }
 

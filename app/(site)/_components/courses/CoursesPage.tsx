@@ -7,7 +7,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { BookOpen, Bookmark, ChevronDown, Clock, Filter, GraduationCap, Search, SlidersHorizontal, Star, UserRound, X } from 'lucide-react';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { COURSE_LEVEL_OPTIONS, getCourseLevelLabel } from '@/lib/courses/labels';
 import { useCoursesListConfig } from '@/lib/experiences';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
@@ -86,7 +86,7 @@ function CustomDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-slate-300 outline-none ${buttonRadiusClass}`}
+        className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-3.5 text-sm font-medium text-slate-700 dark:text-[#f5f5f7] shadow-sm transition hover:bg-slate-50 dark:hover:bg-[#2c2c2e] focus:border-slate-300 dark:focus:border-zinc-700 outline-none ${buttonRadiusClass}`}
       >
         <span className="flex items-center gap-2 truncate">
           {icon}
@@ -98,7 +98,7 @@ function CustomDropdown({
         />
       </button>
       {isOpen && (
-        <div className={`absolute right-0 left-0 md:left-auto md:right-0 z-30 mt-1.5 max-h-60 min-w-[180px] overflow-y-auto border border-slate-100 bg-white p-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none ${menuRadiusClass}`}>
+        <div className={`absolute right-0 left-0 md:left-auto md:right-0 z-30 mt-1.5 max-h-60 min-w-[180px] overflow-y-auto border border-slate-100 dark:border-zinc-800 bg-white dark:bg-[#161617] p-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none ${menuRadiusClass}`}>
           {options.map((option) => (
             <button
               key={option.value}
@@ -109,8 +109,8 @@ function CustomDropdown({
               }}
               className={`flex w-full items-center px-3 py-2 text-left text-sm transition-colors ${itemRadiusClass} ${
                 option.value === value
-                  ? 'bg-slate-50 font-semibold text-slate-900'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  ? 'bg-slate-50 dark:bg-[#2c2c2e] font-semibold text-slate-900 dark:text-[#f5f5f7]'
+                  : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-900 dark:hover:text-[#f5f5f7]'
               }`}
             >
               {option.label}
@@ -187,7 +187,7 @@ function CategoryDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:border-slate-300 outline-none ${buttonRadiusClass}`}
+        className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-3.5 text-sm font-medium text-slate-700 dark:text-[#f5f5f7] shadow-sm transition hover:bg-slate-50 dark:hover:bg-[#2c2c2e] focus:border-slate-300 dark:focus:border-zinc-700 outline-none ${buttonRadiusClass}`}
       >
         <span className="flex items-center gap-2 truncate">
           {icon}
@@ -199,15 +199,15 @@ function CategoryDropdown({
         />
       </button>
       {isOpen && (
-        <div className={`absolute right-0 left-0 md:left-auto md:right-0 z-30 mt-1.5 max-h-72 min-w-[190px] overflow-y-auto border border-slate-100 bg-white p-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none ${menuRadiusClass}`}>
+        <div className={`absolute right-0 left-0 md:left-auto md:right-0 z-30 mt-1.5 max-h-72 min-w-[190px] overflow-y-auto border border-slate-100 dark:border-zinc-800 bg-white dark:bg-[#161617] p-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none ${menuRadiusClass}`}>
           {options.length > 8 && (
-            <div className="p-1.5 border-b border-slate-100 sticky top-0 bg-white z-10">
+            <div className="p-1.5 border-b border-slate-100 dark:border-zinc-800 sticky top-0 bg-white dark:bg-[#161617] z-10">
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Tìm danh mục..."
-                className={`h-8 w-full border border-slate-200 px-2.5 text-xs outline-none focus:border-slate-300 transition-colors ${searchRadiusClass}`}
+                className={`h-8 w-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-2.5 text-xs text-slate-700 dark:text-[#f5f5f7] outline-none focus:border-slate-300 dark:focus:border-zinc-700 transition-colors ${searchRadiusClass}`}
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
@@ -224,15 +224,15 @@ function CategoryDropdown({
                   }}
                   className={`flex w-full items-center px-3 py-2 text-left text-sm transition-colors ${itemRadiusClass} ${
                     option.value === value
-                      ? 'bg-slate-50 font-semibold text-slate-900'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      ? 'bg-slate-50 dark:bg-[#2c2c2e] font-semibold text-slate-900 dark:text-[#f5f5f7]'
+                      : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-900 dark:hover:text-[#f5f5f7]'
                   }`}
                 >
                   {option.label}
                 </button>
               ))
             ) : (
-              <div className="px-3 py-2 text-xs text-slate-400 text-center">Không tìm thấy kết quả</div>
+              <div className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 text-center">Không tìm thấy kết quả</div>
             )}
           </div>
         </div>
@@ -251,6 +251,8 @@ export default function CoursesPage() {
 
 function CoursesContent() {
   const brandColors = useBrandColors();
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const config = useCoursesListConfig();
   const router = useRouter();
   const { token } = useCustomerAuth();
@@ -446,11 +448,11 @@ function CoursesContent() {
   const isLoading = courses === undefined || categories === undefined;
 
   return (
-    <main className="min-h-screen bg-slate-50 font-active" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
+    <main className="min-h-screen bg-slate-50 dark:bg-black font-active transition-colors duration-200" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
       <section className="px-4 py-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 text-center">
-            <h1 className="text-3xl font-bold text-slate-900">{activeCategoryName ?? 'Khóa học'}</h1>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-[#f5f5f7]">{activeCategoryName ?? 'Khóa học'}</h1>
           </div>
 
           <div className={config.layoutStyle === 'sidebar' || config.layoutStyle === 'list' ? 'grid gap-6 lg:grid-cols-[280px_1fr]' : 'space-y-6'}>
@@ -458,8 +460,8 @@ function CoursesContent() {
               config.layoutStyle === 'sidebar' || config.layoutStyle === 'list' ? (
                 <aside className="space-y-4 lg:block flex-shrink-0">
                   {config.showSearch && (
-                    <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
-                      <h3 className="font-semibold text-sm text-slate-700 mb-2.5 flex items-center gap-2">
+                    <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
+                      <h3 className="font-semibold text-sm text-slate-700 dark:text-zinc-300 mb-2.5 flex items-center gap-2">
                         <Search size={14} className="text-slate-400" />
                         Tìm kiếm
                       </h3>
@@ -468,7 +470,7 @@ function CoursesContent() {
                           value={search}
                           onChange={(event) => { setSearch(event.target.value); }}
                           placeholder="Tìm khóa học..."
-                          className={`h-11 w-full border border-slate-200 pl-10 pr-3 text-sm outline-none focus:border-slate-300 transition-colors ${getRadiusClass(config.cornerRadius, 'input')}`}
+                          className={`h-11 w-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] pl-10 pr-3 text-sm text-slate-700 dark:text-[#f5f5f7] outline-none focus:border-slate-300 dark:focus:border-zinc-700 transition-colors ${getRadiusClass(config.cornerRadius, 'input')}`}
                         />
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       </div>
@@ -476,8 +478,8 @@ function CoursesContent() {
                   )}
 
                   {config.showCategories && (
-                    <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
-                      <h3 className="font-semibold text-sm text-slate-700 mb-2.5 flex items-center gap-2">
+                    <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
+                      <h3 className="font-semibold text-sm text-slate-700 dark:text-zinc-300 mb-2.5 flex items-center gap-2">
                         <Bookmark size={14} className="text-slate-400" />
                         Danh mục khóa học
                       </h3>
@@ -488,7 +490,7 @@ function CoursesContent() {
                             placeholder="Tìm nhanh danh mục..."
                             value={categoryQuery}
                             onChange={(e) => setCategoryQuery(e.target.value)}
-                            className={`w-full pl-9 pr-9 py-2 border border-slate-200 text-xs outline-none focus:border-slate-300 transition-colors ${getRadiusClass(config.cornerRadius, 'input')}`}
+                            className={`w-full pl-9 pr-9 py-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-xs text-slate-750 dark:text-[#f5f5f7] outline-none focus:border-slate-300 dark:focus:border-zinc-700 transition-colors ${getRadiusClass(config.cornerRadius, 'input')}`}
                           />
                           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                           {categoryQuery && (
@@ -505,10 +507,10 @@ function CoursesContent() {
                         {(!categoryQuery || 'tất cả danh mục'.includes(categoryQuery.toLowerCase())) && (
                           <button
                             onClick={() => handleCategoryChange(null)}
-                            className={`w-full py-2 px-3.5 rounded-lg text-left text-sm transition-colors border border-transparent ${!activeCategoryId ? 'font-semibold' : ''}`}
+                            className={`w-full py-2 px-3.5 rounded-lg text-left text-sm transition-colors border border-transparent ${!activeCategoryId ? 'font-semibold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
                             style={!activeCategoryId
-                              ? { backgroundColor: `${brandColors.primary}18`, color: brandColors.primary }
-                              : { backgroundColor: 'transparent', color: '#475569' }
+                              ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary, borderColor: isDark ? '#3a3a3c' : 'transparent' }
+                              : undefined
                             }
                           >
                             Tất cả danh mục
@@ -518,17 +520,17 @@ function CoursesContent() {
                           <button
                             key={cat._id}
                             onClick={() => handleCategoryChange(cat._id)}
-                            className={`w-full py-2 px-3.5 rounded-lg text-left text-sm transition-colors border border-transparent ${activeCategoryId === cat._id ? 'font-semibold' : ''}`}
+                            className={`w-full py-2 px-3.5 rounded-lg text-left text-sm transition-colors border border-transparent ${activeCategoryId === cat._id ? 'font-semibold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
                             style={activeCategoryId === cat._id
-                              ? { backgroundColor: `${brandColors.primary}18`, color: brandColors.primary }
-                              : { backgroundColor: 'transparent', color: '#475569' }
+                              ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary, borderColor: isDark ? '#3a3a3c' : 'transparent' }
+                              : undefined
                             }
                           >
                             {cat.name}
                           </button>
                         ))}
                         {visibleCategories.length > 8 && filteredCategories.length === 0 && (
-                          <div className="px-3 py-2 text-xs text-slate-400 text-center">
+                          <div className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 text-center">
                             Không tìm thấy kết quả.
                           </div>
                         )}
@@ -537,8 +539,8 @@ function CoursesContent() {
                   )}
 
                   {config.showLevelFilter && (
-                    <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
-                      <h3 className="font-semibold text-sm text-slate-700 mb-2.5 flex items-center gap-2">
+                    <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
+                      <h3 className="font-semibold text-sm text-slate-700 dark:text-zinc-300 mb-2.5 flex items-center gap-2">
                         <GraduationCap size={14} className="text-slate-400" />
                         Trình độ
                       </h3>
@@ -550,10 +552,10 @@ function CoursesContent() {
                           <button
                             key={opt.value}
                             onClick={() => setLevel(opt.value)}
-                            className={`w-full py-2 px-3.5 rounded-lg text-left text-sm transition-colors border border-transparent ${level === opt.value ? 'font-semibold' : ''}`}
+                            className={`w-full py-2 px-3.5 rounded-lg text-left text-sm transition-colors border border-transparent ${level === opt.value ? 'font-semibold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
                             style={level === opt.value
-                              ? { backgroundColor: `${brandColors.primary}18`, color: brandColors.primary }
-                              : { backgroundColor: 'transparent', color: '#475569' }
+                              ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary, borderColor: isDark ? '#3a3a3c' : 'transparent' }
+                              : undefined
                             }
                           >
                             {opt.label}
@@ -564,8 +566,8 @@ function CoursesContent() {
                   )}
 
                   {courseFiltersFeature?.enabled && activeFilters && activeFilters.length > 0 && (
-                    <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
-                      <h3 className="font-semibold text-sm text-slate-700 mb-2.5 flex items-center gap-2">
+                    <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
+                      <h3 className="font-semibold text-sm text-slate-700 dark:text-zinc-300 mb-2.5 flex items-center gap-2">
                         <Filter size={14} className="text-slate-400" />
                         Bộ lọc khóa học
                       </h3>
@@ -573,10 +575,10 @@ function CoursesContent() {
                         <div>
                           <button
                             onClick={() => handleFilterChange(null)}
-                            className={`w-full py-1.5 px-2.5 rounded-lg text-left text-xs transition-colors border border-transparent flex items-center gap-2 ${activeFilterSlugs.length === 0 ? 'font-semibold' : ''}`}
+                            className={`w-full py-1.5 px-2.5 rounded-lg text-left text-xs transition-colors border border-transparent flex items-center gap-2 ${activeFilterSlugs.length === 0 ? 'font-semibold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
                             style={activeFilterSlugs.length === 0
-                              ? { backgroundColor: `${brandColors.primary}18`, color: brandColors.primary }
-                              : { backgroundColor: 'transparent', color: '#475569' }
+                              ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary }
+                              : undefined
                             }
                           >
                             Tất cả bộ lọc
@@ -587,7 +589,7 @@ function CoursesContent() {
                           if (childValues.length === 0) return null;
                           return (
                             <div key={filter._id} className="space-y-1">
-                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2.5">
+                              <div className="text-[10px] font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider px-2.5">
                                 {filter.name}
                               </div>
                               {childValues.map((val) => {
@@ -596,10 +598,10 @@ function CoursesContent() {
                                   <button
                                     key={val._id}
                                     onClick={() => handleFilterChange(val.slug)}
-                                    className={`w-full py-1.5 px-2.5 rounded-lg text-left text-xs transition-colors border border-transparent flex items-center gap-2 ${isValActive ? 'font-semibold' : ''}`}
+                                    className={`w-full py-1.5 px-2.5 rounded-lg text-left text-xs transition-colors border border-transparent flex items-center gap-2 ${isValActive ? 'font-semibold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
                                     style={isValActive
-                                      ? { backgroundColor: `${brandColors.primary}18`, color: brandColors.primary }
-                                      : { backgroundColor: 'transparent', color: '#475569' }
+                                      ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary }
+                                      : undefined
                                     }
                                   >
                                     {val.icon && (
@@ -618,7 +620,7 @@ function CoursesContent() {
                   )}
                 </aside>
               ) : (
-                <aside className={`border border-slate-200 bg-white p-5 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
+                <aside className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-5 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="flex flex-1 flex-col gap-4 md:flex-row md:items-center md:flex-wrap">
                       {config.showSearch && (
@@ -628,7 +630,7 @@ function CoursesContent() {
                             value={search}
                             onChange={(event) => { setSearch(event.target.value); }}
                             placeholder="Tìm khóa học..."
-                            className={`h-11 w-full border border-slate-200 pl-9 pr-3 text-sm outline-none focus:border-slate-300 transition-colors ${getRadiusClass(config.cornerRadius, 'input')}`}
+                            className={`h-11 w-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] pl-9 pr-3 text-sm text-slate-700 dark:text-[#f5f5f7] outline-none focus:border-slate-300 dark:focus:border-zinc-700 transition-colors ${getRadiusClass(config.cornerRadius, 'input')}`}
                           />
                         </div>
                       )}
@@ -695,21 +697,21 @@ function CoursesContent() {
             <div>
               {isLoading ? (
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  {Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-72 animate-pulse rounded-2xl bg-white" />)}
+                  {Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-72 animate-pulse rounded-2xl bg-white dark:bg-[#161617] border border-slate-200 dark:border-zinc-800" />)}
                 </div>
               ) : courseItems.length > 0 ? (
                 <>
-                  <div className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 mb-4">
-                    <p className="text-sm text-slate-500 font-medium">
-                      Hiển thị <span className="font-semibold text-slate-700">{courseItems.length}</span>
+                  <div className="flex items-center justify-between gap-4 py-2 border-b border-slate-100 dark:border-zinc-800 mb-4">
+                    <p className="text-sm text-slate-500 dark:text-zinc-400 font-medium">
+                      Hiển thị <span className="font-semibold text-slate-700 dark:text-[#f5f5f7]">{courseItems.length}</span>
                       {totalCourses > courseItems.length && (
-                        <> / <span className="font-semibold text-slate-700">{totalCourses}</span></>
+                        <> / <span className="font-semibold text-slate-700 dark:text-[#f5f5f7]">{totalCourses}</span></>
                       )} khóa học
                     </p>
 
                     {(config.layoutStyle === 'sidebar' || config.layoutStyle === 'list') && (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-slate-500">Sắp xếp:</span>
+                        <span className="text-xs font-semibold text-slate-500 dark:text-[#86868b]">Sắp xếp:</span>
                         <CustomDropdown
                           value={sortBy}
                           onChange={(value) => { setSortBy(value as typeof sortBy); }}
@@ -748,9 +750,9 @@ function CoursesContent() {
 
                       if (config.layoutStyle === 'list') {
                         return (
-                          <Link key={course._id} href={href} className={`group flex items-stretch gap-4 overflow-hidden ${getRadiusClass(config.cornerRadius)} border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}>
+                          <Link key={course._id} href={href} className={`group flex items-stretch gap-4 overflow-hidden ${getRadiusClass(config.cornerRadius)} border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}>
                             {/* Thumbnail */}
-                            <div className="relative w-40 shrink-0 overflow-hidden bg-slate-100" style={{ minHeight: '7rem' }}>
+                            <div className="relative w-40 shrink-0 overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]" style={{ minHeight: '7rem' }}>
                               {course.thumbnail ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
@@ -768,12 +770,12 @@ function CoursesContent() {
                             {/* Content */}
                             <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 py-3 pr-2">
                               <div className="flex flex-wrap items-center gap-1.5 text-xs">
-                                <span className="rounded-full px-2 py-0.5 font-semibold" style={{ backgroundColor: `${brandColors.primary}18`, color: brandColors.primary }}>{category?.name ?? 'Khóa học'}</span>
-                                {course.level && <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600">{getCourseLevelLabel(course.level)}</span>}
+                                <span className="rounded-full px-2 py-0.5 font-semibold" style={{ backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary, border: isDark ? '1px solid #3a3a3c' : 'none' }}>{category?.name ?? 'Khóa học'}</span>
+                                {course.level && <span className="rounded-full bg-slate-100 dark:bg-[#1c1c1e] px-2 py-0.5 font-medium text-slate-600 dark:text-zinc-350">{getCourseLevelLabel(course.level)}</span>}
                               </div>
-                              <h2 className="line-clamp-1 text-base font-bold text-slate-900 group-hover:underline">{course.title}</h2>
-                              {course.excerpt && <p className="line-clamp-1 text-xs text-slate-500 leading-relaxed">{course.excerpt}</p>}
-                              <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500">
+                              <h2 className="line-clamp-1 text-base font-bold text-slate-900 dark:text-[#f5f5f7] group-hover:underline">{course.title}</h2>
+                              {course.excerpt && <p className="line-clamp-1 text-xs text-slate-500 dark:text-zinc-450 leading-relaxed">{course.excerpt}</p>}
+                              <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500 dark:text-[#86868b]">
                                 <span className="inline-flex items-center gap-1"><BookOpen size={12} className="text-slate-400" />{course.lessonCount} bài học</span>
                                 {course.durationText && <span className="inline-flex items-center gap-1"><Clock size={12} className="text-slate-400" />{course.durationText}</span>}
                                 {course.instructorName && <span className="inline-flex items-center gap-1"><UserRound size={12} className="text-slate-400" />{course.instructorName}</span>}
@@ -800,8 +802,8 @@ function CoursesContent() {
                       }
 
                       return (
-                        <Link key={course._id} href={href} className={`group overflow-hidden ${getRadiusClass(config.cornerRadius)} border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md`}>
-                          <div className="relative flex aspect-video items-center justify-center bg-slate-100">
+                        <Link key={course._id} href={href} className={`group overflow-hidden ${getRadiusClass(config.cornerRadius)} border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] shadow-sm transition hover:-translate-y-1 hover:shadow-md`}>
+                          <div className="relative flex aspect-video items-center justify-center bg-slate-100 dark:bg-[#1c1c1e]">
                             {course.thumbnail ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
@@ -816,12 +818,12 @@ function CoursesContent() {
                           </div>
                           <div className="space-y-3 p-5">
                             <div className="flex flex-wrap items-center gap-2 text-xs">
-                              <span className="rounded-full px-2 py-1 font-medium" style={{ backgroundColor: `${brandColors.primary}18`, color: brandColors.primary }}>{category?.name ?? 'Khóa học'}</span>
-                              {course.level && <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">{getCourseLevelLabel(course.level)}</span>}
+                              <span className="rounded-full px-2 py-1 font-medium" style={{ backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary, border: isDark ? '1px solid #3a3a3c' : 'none' }}>{category?.name ?? 'Khóa học'}</span>
+                              {course.level && <span className="rounded-full bg-slate-100 dark:bg-[#1c1c1e] px-2 py-1 text-slate-650 dark:text-zinc-350">{getCourseLevelLabel(course.level)}</span>}
                             </div>
-                            <h2 className="line-clamp-2 text-lg font-semibold text-slate-900 group-hover:text-slate-700">{course.title}</h2>
-                            <p className="line-clamp-2 text-sm text-slate-500">{course.excerpt}</p>
-                            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                            <h2 className="line-clamp-2 text-lg font-semibold text-slate-900 dark:text-[#f5f5f7] group-hover:text-slate-700 dark:group-hover:text-[#e8e8ed]">{course.title}</h2>
+                            <p className="line-clamp-2 text-sm text-slate-500 dark:text-[#86868b]">{course.excerpt}</p>
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-[#86868b]">
                               <span className="inline-flex items-center gap-1"><BookOpen size={13} />{course.lessonCount} bài</span>
                               {course.durationText && <span className="inline-flex items-center gap-1"><Clock size={13} />{course.durationText}</span>}
                               {course.instructorName && <span className="inline-flex items-center gap-1"><UserRound size={13} />{course.instructorName}</span>}
@@ -829,7 +831,7 @@ function CoursesContent() {
                             {courseFiltersFeature?.enabled && courseFiltersMap.get(course._id) && (courseFiltersMap.get(course._id) ?? []).length > 0 && (
                               <div className="flex flex-wrap gap-1.5 pt-0.5">
                                 {(courseFiltersMap.get(course._id) ?? []).map((filter: any) => (
-                                  <span key={filter._id} title={filter.name} className="inline-flex items-center gap-1 rounded bg-slate-50 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                  <span key={filter._id} title={filter.name} className="inline-flex items-center gap-1 rounded bg-slate-50 dark:bg-[#1c1c1e] px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:text-zinc-300 border border-slate-200 dark:border-zinc-800">
                                     {filter.icon && (
                                       // eslint-disable-next-line @next/next/no-img-element
                                       <img src={filter.icon} alt={filter.name} className="h-3.5 w-3.5 object-contain" />
@@ -840,14 +842,14 @@ function CoursesContent() {
                               </div>
                             )}
                             {(hasLearningAccess || showPrice) && (
-                              <div className="border-t border-slate-100 pt-3">
+                              <div className="border-t border-slate-100 dark:border-zinc-800 pt-3">
                                 {hasLearningAccess ? (
                                   <div>
                                     <div className="mb-2 flex items-center justify-between text-xs font-semibold" style={{ color: brandColors.primary }}>
                                       <span>Vào học</span>
                                       <span>{progressPercent}%</span>
                                     </div>
-                                    <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                                    <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                                       <div className="h-full rounded-full" style={{ width: `${progressPercent}%`, backgroundColor: brandColors.primary }} />
                                     </div>
                                   </div>
@@ -869,7 +871,7 @@ function CoursesContent() {
                         type="button"
                         onClick={() => { handlePageChange(urlPage - 1); }}
                         disabled={urlPage <= 1}
-                        className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium disabled:opacity-50"
+                        className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] text-slate-700 dark:text-[#f5f5f7] px-3 py-2 text-sm font-medium disabled:opacity-50 disabled:pointer-events-none hover:bg-slate-50 dark:hover:bg-[#2c2c2e]"
                       >
                         Trước
                       </button>
@@ -878,7 +880,7 @@ function CoursesContent() {
                         type="button"
                         onClick={() => { handlePageChange(urlPage + 1); }}
                         disabled={urlPage >= totalPages}
-                        className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium disabled:opacity-50"
+                        className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] text-slate-700 dark:text-[#f5f5f7] px-3 py-2 text-sm font-medium disabled:opacity-50 disabled:pointer-events-none hover:bg-slate-50 dark:hover:bg-[#2c2c2e]"
                       >
                         Sau
                       </button>
@@ -898,7 +900,7 @@ function CoursesContent() {
                   )}
                 </>
               ) : (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">Chưa có khóa học phù hợp.</div>
+                <div className="rounded-2xl border border-dashed border-slate-350 dark:border-zinc-800 bg-white dark:bg-[#161617] p-10 text-center text-slate-500 dark:text-[#86868b]">Chưa có khóa học phù hợp.</div>
               )}
             </div>
           </div>
@@ -910,16 +912,16 @@ function CoursesContent() {
 
 function CoursesSkeleton() {
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen bg-slate-50 dark:bg-black transition-colors duration-200">
       <section className="px-4 py-12">
         <div className="mx-auto max-w-7xl">
           <div className="mb-8 space-y-3 text-center">
-            <div className="mx-auto h-10 w-48 animate-pulse rounded bg-slate-200" />
-            <div className="mx-auto h-5 w-96 max-w-full animate-pulse rounded bg-slate-200" />
+            <div className="mx-auto h-10 w-48 animate-pulse rounded bg-slate-200 dark:bg-[#161617]" />
+            <div className="mx-auto h-5 w-96 max-w-full animate-pulse rounded bg-slate-200 dark:bg-[#161617]" />
           </div>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div key={index} className="h-72 animate-pulse rounded-2xl bg-white" />
+              <div key={index} className="h-72 animate-pulse rounded-2xl bg-white dark:bg-[#161617] border border-slate-200 dark:border-zinc-800" />
             ))}
           </div>
         </div>

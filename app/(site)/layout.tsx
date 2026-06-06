@@ -101,8 +101,10 @@ const SiteLayout = ({
       url: baseUrl,
     });
 
+    const isDark = site.site_dark_mode === 'dark';
+
     return (
-      <div data-theme="light" style={{ colorScheme: 'light' }}>
+      <div data-theme={isDark ? 'dark' : 'light'} style={{ colorScheme: isDark ? 'dark' : 'light' }}>
         <SiteShell initialHeaderData={initialHeaderData}>
           {siteSchemas.map((schema, index) => (
             <JsonLd key={index} data={schema} />

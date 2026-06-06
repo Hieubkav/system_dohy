@@ -31,6 +31,9 @@ import {
   Ticket,
   User,
   X,
+  Sun,
+  Moon,
+  Laptop,
 } from 'lucide-react';
 import { Button, Card, CardContent, Input } from '@/app/admin/components/ui';
 import { api } from '@/convex/_generated/api';
@@ -146,24 +149,26 @@ const GROUP_HOVER_COLOR: Record<string, string> = {
 
 export default function ExperiencesPage() {
   const { t } = useI18n();
-  const [activeMainTab, setActiveMainTab] = useState<'hub' | 'layout_config'>('hub');
+  const [activeMainTab, setActiveMainTab] = useState<'hub' | 'layout_config' | 'dark_mode'>('hub');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [activeGroup, setActiveGroup] = useState<ExperienceGroup>(null);
   const [subFilter, setSubFilter] = useState<'all' | 'list' | 'detail'>('all');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Settings Queries cho Cấu hình nhanh danh sách
+  // Settings Queries cho Cấu hình nhanh danh sách & Dark Mode
   const postsSetting = useQuery(api.settings.getByKey, { key: 'posts_list_ui' });
   const resourcesSetting = useQuery(api.settings.getByKey, { key: 'resources_list_ui' });
   const coursesSetting = useQuery(api.settings.getByKey, { key: 'courses_list_ui' });
   const servicesSetting = useQuery(api.settings.getByKey, { key: 'services_list_ui' });
   const projectsSetting = useQuery(api.settings.getByKey, { key: 'projects_list_ui' });
   const productsSetting = useQuery(api.settings.getByKey, { key: 'products_list_ui' });
+  const darkModeSetting = useQuery(api.settings.getByKey, { key: 'site_dark_mode' });
 
   const setMultipleSettings = useMutation(api.settings.setMultiple);
 
   const [localLayouts, setLocalLayouts] = useState<Record<string, 'grid' | 'sidebar' | 'list'>>({});
+  const [localDarkMode, setLocalDarkMode] = useState<'light' | 'dark' | 'system'>('light');
   const [isInitialized, setIsInitialized] = useState(false);
 
   const isLoaded = postsSetting !== undefined &&
@@ -171,7 +176,8 @@ export default function ExperiencesPage() {
     coursesSetting !== undefined &&
     servicesSetting !== undefined &&
     projectsSetting !== undefined &&
-    productsSetting !== undefined;
+    productsSetting !== undefined &&
+    darkModeSetting !== undefined;
 
   useEffect(() => {
     if (isLoaded && !isInitialized) {
@@ -183,9 +189,10 @@ export default function ExperiencesPage() {
         projects: (projectsSetting?.value as any)?.layoutStyle ?? 'grid',
         products: (productsSetting?.value as any)?.layoutStyle ?? 'grid',
       });
+      setLocalDarkMode((darkModeSetting?.value as any) ?? 'light');
       setIsInitialized(true);
     }
-  }, [isLoaded, isInitialized, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting]);
+  }, [isLoaded, isInitialized, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
 
   const hasChanges = React.useMemo(() => {
     if (!isLoaded) return false;
@@ -195,9 +202,10 @@ export default function ExperiencesPage() {
       localLayouts.courses !== ((coursesSetting?.value as any)?.layoutStyle ?? 'grid') ||
       localLayouts.services !== ((servicesSetting?.value as any)?.layoutStyle ?? 'grid') ||
       localLayouts.projects !== ((projectsSetting?.value as any)?.layoutStyle ?? 'grid') ||
-      localLayouts.products !== ((productsSetting?.value as any)?.layoutStyle ?? 'grid')
+      localLayouts.products !== ((productsSetting?.value as any)?.layoutStyle ?? 'grid') ||
+      localDarkMode !== ((darkModeSetting?.value as any) ?? 'light')
     );
-  }, [localLayouts, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting]);
+  }, [localLayouts, localDarkMode, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
 
   const [isSaving, setIsSaving] = useState(false);
   const handleSaveAll = async () => {
@@ -251,11 +259,16 @@ export default function ExperiencesPage() {
             ...(productsSetting?.value as any),
             layoutStyle: localLayouts.products
           }
+        },
+        {
+          group: 'site',
+          key: 'site_dark_mode',
+          value: localDarkMode
         }
       ];
 
       await setMultipleSettings({ settings });
-      toast.success('Đã cập nhật cấu hình layout cho các trang danh sách!');
+      toast.success('Đã cập nhật cấu hình hệ thống thành công!');
       setIsInitialized(false);
     } catch (err) {
       console.error(err);
@@ -405,6 +418,17 @@ export default function ExperiencesPage() {
           <Sliders size={16} />
           Cấu hình nhanh danh sách
         </button>
+        <button
+          onClick={() => setActiveMainTab('dark_mode')}
+          className={`pb-3 text-sm font-semibold border-b-2 transition-all flex items-center gap-1.5 ${
+            activeMainTab === 'dark_mode'
+              ? 'border-cyan-500 text-cyan-600 dark:text-cyan-400'
+              : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          <Moon size={16} />
+          Cấu hình Chế độ tối
+        </button>
       </div>
 
       {activeMainTab === 'hub' ? (
@@ -545,7 +569,7 @@ export default function ExperiencesPage() {
             </p>
           )}
         </>
-      ) : (
+      ) : activeMainTab === 'layout_config' ? (
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* Quick Apply Card */}
           <Card className="border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
@@ -694,6 +718,131 @@ export default function ExperiencesPage() {
                 })
               )}
             </div>
+          </Card>
+        </div>
+      ) : (
+        <div className="space-y-6 animate-in fade-in duration-200 max-w-4xl mx-auto">
+          {/* Dark Mode configuration */}
+          <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden rounded-xl">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+              <div>
+                <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">Thiết lập giao diện hiển thị</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Lựa chọn chế độ hiển thị mặc định cho khách truy cập trang web public</p>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleSaveAll}
+                disabled={!hasChanges || isSaving}
+                className={`gap-1.5 transition-all text-xs font-semibold px-4 h-9 ${
+                  hasChanges
+                    ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed'
+                }`}
+              >
+                {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                <span>{hasChanges ? 'Lưu cấu hình' : 'Đã lưu cấu hình'}</span>
+              </Button>
+            </div>
+
+            <CardContent className="p-6 space-y-6">
+              {/* Option cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { id: 'light', label: 'Chế độ Sáng', icon: Sun, desc: 'Luôn hiển thị giao diện với tông màu sáng chủ đạo, mang lại cảm giác sạch sẽ, rõ ràng.' },
+                  { id: 'dark', label: 'Chế độ Tối', icon: Moon, desc: 'Luôn hiển thị giao diện với tông màu tối huyền bí, dịu mắt và tiết kiệm năng lượng.' },
+                  { id: 'system', label: 'Theo hệ thống', icon: Laptop, desc: 'Tự động chuyển đổi giữa giao diện Sáng và Tối dựa trên cấu hình hệ điều hành của thiết bị khách.' }
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isSelected = localDarkMode === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setLocalDarkMode(item.id as any)}
+                      className={`flex flex-col items-center text-center p-5 rounded-xl border transition-all cursor-default select-none group ${
+                        isSelected
+                          ? 'border-cyan-500 bg-cyan-500/5 dark:bg-cyan-500/10'
+                          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-700'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 transition-transform duration-200 group-hover:scale-105 ${
+                        isSelected
+                          ? 'bg-cyan-500 text-white'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                      }`}>
+                        <Icon size={20} strokeWidth={1.8} />
+                      </div>
+                      <h4 className={`text-xs font-bold uppercase tracking-wider ${
+                        isSelected ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-700 dark:text-slate-300'
+                      }`}>
+                        {item.label}
+                      </h4>
+                      <p className="text-[11px] text-slate-450 dark:text-slate-500 mt-2 leading-relaxed font-normal">
+                        {item.desc}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Preview Simulator */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Xem thử trực quan (Simulator)</h4>
+                
+                {/* Simulated Web Page Container */}
+                <div className={`border rounded-xl p-4 overflow-hidden transition-all duration-300 shadow-sm ${
+                  localDarkMode === 'dark' || (localDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+                    ? 'bg-slate-950 border-slate-800 text-slate-200'
+                    : 'bg-slate-50 border-slate-250 text-slate-800'
+                }`}>
+                  {/* Web Header Sim */}
+                  <div className="flex justify-between items-center border-b pb-2.5 mb-4 border-slate-200/40 dark:border-slate-800/40">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-cyan-500" />
+                      <span className="text-[11px] font-bold tracking-tight">Dohy System</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className="w-8 h-2 rounded bg-slate-200 dark:bg-slate-800" />
+                      <span className="w-8 h-2 rounded bg-slate-200 dark:bg-slate-800" />
+                    </div>
+                  </div>
+
+                  {/* Web Body Sim */}
+                  <div className="grid grid-cols-1 md:grid-cols-[1fr_200px] gap-4">
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <span className="inline-block px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 text-[9px] font-bold uppercase tracking-wider">
+                          Bài viết mới nhất
+                        </span>
+                        <h5 className="text-sm font-extrabold leading-snug">Hướng dẫn triển khai giao diện phẳng MacBook tối giản</h5>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed font-normal">
+                          Khám phá các nguyên tắc Calm Productivity UI để tối ưu hóa không gian hiển thị và giảm nhiễu thị giác cho người dùng...
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                        <span className="w-4 h-4 rounded-full bg-slate-200 dark:bg-slate-800" />
+                        <span>Admin</span>
+                        <span>•</span>
+                        <span>06/06/2026</span>
+                      </div>
+                    </div>
+
+                    {/* Sidebar Sim */}
+                    <div className="space-y-3 border-l pl-4 border-slate-200/40 dark:border-slate-800/40 md:block hidden">
+                      <div className="space-y-2">
+                        <h6 className="text-[10px] font-bold text-slate-450 dark:text-slate-500 uppercase tracking-wider">Tài nguyên liên quan</h6>
+                        {[1, 2].map((i) => (
+                          <div key={i} className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                            <span className="text-[10px] truncate max-w-[130px]">Tài liệu hướng dẫn v{i}.0</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
           </Card>
         </div>
       )}

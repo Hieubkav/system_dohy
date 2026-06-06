@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { MessageSquare, Send } from 'lucide-react';
 import type { ContactColorTokens } from '@/app/admin/home-components/contact/_lib/colors';
 import { useContactInquiryForm } from './useContactInquiryForm';
+import { useSiteSettings } from '@/components/site/hooks';
 
 type ContactInquiryFormProps = {
   brandColor: string;
@@ -36,6 +37,8 @@ export function ContactInquiryForm({
   isPreview = false,
   withContainer = true,
 }: ContactInquiryFormProps) {
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const {
     values,
     updateValue,
@@ -73,6 +76,12 @@ export function ContactInquiryForm({
     color: fieldTextColor,
     '--placeholder-color': formTokens.formFieldPlaceholder,
     '--focus-ring': formTokens.formFieldFocus,
+  } as React.CSSProperties : isDark ? {
+    backgroundColor: '#1c1c1e',
+    borderColor: '#27272a',
+    color: '#f5f5f7',
+    '--placeholder-color': '#86868b',
+    '--focus-ring': brandColor,
   } as React.CSSProperties : {
     backgroundColor: '#ffffff',
     borderColor: '#e2e8f0',
@@ -91,15 +100,15 @@ export function ContactInquiryForm({
     return (
       <div
         role="form"
-        className={withContainer ? 'space-y-4 rounded-xl border p-5' : 'space-y-4'}
+        className={withContainer ? 'space-y-4 rounded-xl border p-5 bg-white dark:bg-[#161617] border-slate-200 dark:border-zinc-800' : 'space-y-4'}
         style={formTokens && withContainer ? { backgroundColor: formTokens.formBackground, borderColor: formTokens.formBorder } : undefined}
       >
       <div className="flex items-center gap-2">
-        <MessageSquare size={20} style={{ color: formTokens?.formAccent ?? secondaryColor }} />
+        <MessageSquare size={20} style={{ color: formTokens?.formAccent ?? (isDark ? brandColor : secondaryColor) }} />
         <div>
-          <h3 className="font-semibold text-base" style={{ color: formTokens?.formTitle ?? '#0f172a' }}>{title}</h3>
+          <h3 className="font-semibold text-base text-slate-900 dark:text-[#f5f5f7]" style={!formTokens ? undefined : { color: formTokens.formTitle }}>{title}</h3>
           {description && (
-            <p className="text-xs mt-1" style={{ color: formTokens?.formDescription ?? '#64748b' }}>{description}</p>
+            <p className="text-xs mt-1 text-slate-500 dark:text-[#86868b]" style={!formTokens ? undefined : { color: formTokens.formDescription }}>{description}</p>
           )}
         </div>
       </div>
@@ -111,7 +120,7 @@ export function ContactInquiryForm({
             placeholder="Họ tên"
             value={values.name}
             onChange={(event) => updateValue('name', event.target.value)}
-            className="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)] placeholder:text-[color:var(--placeholder-color)]"
+            className="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)] placeholder:text-[color:var(--placeholder-color)] transition-all"
             required
             disabled={isDisabled}
             style={sharedInputStyle}
@@ -122,7 +131,7 @@ export function ContactInquiryForm({
               placeholder="Email"
               value={values.email}
               onChange={(event) => updateValue('email', event.target.value)}
-              className="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)] placeholder:text-[color:var(--placeholder-color)]"
+              className="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)] placeholder:text-[color:var(--placeholder-color)] transition-all"
               required={requireEmail}
               disabled={isDisabled}
               style={sharedInputStyle}
@@ -134,7 +143,7 @@ export function ContactInquiryForm({
               placeholder="Số điện thoại"
               value={values.phone}
               onChange={(event) => updateValue('phone', event.target.value)}
-              className="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)] placeholder:text-[color:var(--placeholder-color)]"
+              className="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)] placeholder:text-[color:var(--placeholder-color)] transition-all"
               required={requirePhone}
               disabled={isDisabled}
               style={sharedInputStyle}
@@ -146,7 +155,7 @@ export function ContactInquiryForm({
               placeholder="Chủ đề"
               value={values.subject}
               onChange={(event) => updateValue('subject', event.target.value)}
-              className="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)] placeholder:text-[color:var(--placeholder-color)]"
+              className="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)] placeholder:text-[color:var(--placeholder-color)] transition-all"
               required
               disabled={isDisabled}
               style={sharedInputStyle}
@@ -158,7 +167,7 @@ export function ContactInquiryForm({
           placeholder="Nội dung tin nhắn..."
           value={values.message}
           onChange={(event) => updateValue('message', event.target.value)}
-          className="w-full px-3 py-2.5 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)] placeholder:text-[color:var(--placeholder-color)]"
+          className="w-full px-3 py-2.5 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)] placeholder:text-[color:var(--placeholder-color)] transition-all"
           rows={4}
           required
           disabled={isDisabled}
@@ -182,7 +191,7 @@ export function ContactInquiryForm({
 
         <button
           type="button"
-          className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-70 border"
+          className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-70 border transition-all duration-200"
           style={buttonStyle}
           disabled={isDisabled || isSubmitting}
         >
@@ -197,15 +206,15 @@ export function ContactInquiryForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className={withContainer ? 'space-y-4 rounded-xl border p-5' : 'space-y-4'}
+      className={withContainer ? 'space-y-4 rounded-xl border p-5 bg-white dark:bg-[#161617] border-slate-200 dark:border-zinc-800' : 'space-y-4'}
       style={formTokens && withContainer ? { backgroundColor: formTokens.formBackground, borderColor: formTokens.formBorder } : undefined}
     >
       <div className="flex items-center gap-2">
-        <MessageSquare size={20} style={{ color: formTokens?.formAccent ?? secondaryColor }} />
+        <MessageSquare size={20} style={{ color: formTokens?.formAccent ?? (isDark ? brandColor : secondaryColor) }} />
         <div>
-          <h3 className="font-semibold text-base" style={{ color: formTokens?.formTitle ?? '#0f172a' }}>{title}</h3>
+          <h3 className="font-semibold text-base text-slate-900 dark:text-[#f5f5f7]" style={!formTokens ? undefined : { color: formTokens.formTitle }}>{title}</h3>
           {description && (
-            <p className="text-xs mt-1" style={{ color: formTokens?.formDescription ?? '#64748b' }}>{description}</p>
+            <p className="text-xs mt-1 text-slate-500 dark:text-[#86868b]" style={!formTokens ? undefined : { color: formTokens.formDescription }}>{description}</p>
           )}
         </div>
       </div>

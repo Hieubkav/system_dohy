@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import { Clock, Minus, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
 import { useCart, useCartExpiry } from '@/lib/cart';
 import { useCartConfig } from '@/lib/experiences';
-import { useBrandColors } from './hooks';
+import { useBrandColors, useSiteSettings } from './hooks';
 import { getCartColors } from './cart/colors';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -26,9 +26,11 @@ const itemTypeLabel = (itemType?: 'product' | 'service' | 'course' | 'resource')
 
 export function CartDrawer() {
   const brandColors = useBrandColors();
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const tokens = useMemo(
-    () => getCartColors(brandColors.primary, brandColors.secondary, brandColors.mode),
-    [brandColors.primary, brandColors.secondary, brandColors.mode]
+    () => getCartColors(brandColors.primary, brandColors.secondary, brandColors.mode, isDark),
+    [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]
   );
   const { cart, items, itemsCount, totalAmount, isDrawerOpen, closeDrawer, updateQuantity, removeItem, updateNote } = useCart();
   const { layoutStyle, showExpiry, showNote } = useCartConfig();

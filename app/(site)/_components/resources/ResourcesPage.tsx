@@ -7,7 +7,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { Bookmark, ChevronDown, FileText, Filter, Search, SlidersHorizontal, Star, X, Check } from 'lucide-react';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { useResourcesListConfig } from '@/lib/experiences';
 
@@ -76,10 +76,11 @@ function CustomDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 ${getRadiusClass(cornerRadius, 'input')}`}
+        className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-3.5 text-sm font-medium text-slate-700 dark:text-[#f5f5f7] shadow-sm transition hover:bg-slate-50 dark:hover:bg-[#2c2c2e] ${getRadiusClass(cornerRadius, 'input')}`}
       >
         <span className="flex items-center gap-2 truncate">
           {selectedOption?.icon ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img src={selectedOption.icon} alt={selectedOption.label} className="h-4 w-4 object-contain shrink-0" />
           ) : (
             icon
@@ -89,7 +90,7 @@ function CustomDropdown({
         <ChevronDown size={16} className={`shrink-0 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       {isOpen && (
-        <div className={`absolute left-0 right-0 z-30 mt-1.5 max-h-60 min-w-[180px] overflow-y-auto border border-slate-100 bg-white p-1 shadow-lg ${getRadiusClass(cornerRadius, 'input')}`}>
+        <div className={`absolute left-0 right-0 z-30 mt-1.5 max-h-60 min-w-[180px] overflow-y-auto border border-slate-100 dark:border-zinc-800 bg-white dark:bg-[#161617] p-1 shadow-lg ${getRadiusClass(cornerRadius, 'input')}`}>
           {options.map((option) => (
             <button
               key={option.value}
@@ -98,7 +99,7 @@ function CustomDropdown({
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`flex w-full items-center px-3 py-2 text-left text-sm transition-colors ${option.value === value ? 'bg-slate-50 font-semibold text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+              className={`flex w-full items-center px-3 py-2 text-left text-sm transition-colors ${option.value === value ? 'bg-slate-50 dark:bg-[#2c2c2e] font-semibold text-slate-900 dark:text-[#f5f5f7]' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
             >
               {option.icon && (
                 <img src={option.icon} alt={option.label} className="h-4 w-4 mr-2 object-contain shrink-0" />
@@ -166,7 +167,7 @@ function MultiSelectDropdown({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 ${getRadiusClass(cornerRadius, 'input')}`}
+          className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-3.5 text-sm font-medium text-slate-700 dark:text-[#f5f5f7] shadow-sm transition hover:bg-slate-50 dark:hover:bg-[#2c2c2e] ${getRadiusClass(cornerRadius, 'input')}`}
         >
           <span className="flex items-center gap-2 truncate">
             {displayIcon}
@@ -183,7 +184,7 @@ function MultiSelectDropdown({
               onClear();
             }}
             title="Xóa bộ lọc"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition shadow-sm"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-slate-400 dark:text-zinc-350 hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-650 dark:hover:text-[#f5f5f7] transition shadow-sm"
             style={{ borderRadius: cornerRadius === 'none' ? '0' : cornerRadius === 'sm' ? '8px' : '12px' }}
           >
             <X size={16} />
@@ -192,20 +193,20 @@ function MultiSelectDropdown({
       </div>
 
       {isOpen && (
-        <div className={`absolute left-0 right-0 z-30 mt-1.5 max-h-72 min-w-[200px] overflow-y-auto border border-slate-100 bg-white p-1.5 shadow-lg ${getRadiusClass(cornerRadius, 'input')}`}>
+        <div className={`absolute left-0 right-0 z-30 mt-1.5 max-h-72 min-w-[200px] overflow-y-auto border border-slate-100 dark:border-zinc-800 bg-white dark:bg-[#161617] p-1.5 shadow-lg ${getRadiusClass(cornerRadius, 'input')}`}>
           <button
             type="button"
             onClick={() => {
               onClear();
               setIsOpen(false);
             }}
-            className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors rounded-lg ${!hasSelection ? 'bg-slate-50 font-semibold text-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+            className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors rounded-lg ${!hasSelection ? 'bg-slate-50 dark:bg-[#2c2c2e] font-semibold text-slate-900 dark:text-[#f5f5f7]' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
           >
             <span className="truncate">Tất cả phần mềm</span>
             {!hasSelection && <Check size={14} style={{ color: brandColor }} className="shrink-0" />}
           </button>
 
-          <div className="my-1 border-t border-slate-100" />
+          <div className="my-1 border-t border-slate-100 dark:border-zinc-800" />
 
           {options
             .filter((opt) => opt.value !== '')
@@ -219,7 +220,7 @@ function MultiSelectDropdown({
                     onChange(option.value);
                   }}
                   className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors rounded-lg ${
-                    isSelected ? 'font-semibold font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                    isSelected ? 'font-semibold font-bold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-900 dark:hover:text-[#f5f5f7]'
                   }`}
                   style={isSelected ? { backgroundColor: `${brandColor}12`, color: brandColor } : undefined}
                 >
@@ -249,6 +250,8 @@ export default function ResourcesPage() {
 
 function ResourcesContent() {
   const brandColors = useBrandColors();
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const config = useResourcesListConfig();
   const router = useRouter();
   const pathname = usePathname();
@@ -429,12 +432,12 @@ function ResourcesContent() {
   const isLoading = resources === undefined || categories === undefined;
 
   return (
-    <main className="min-h-screen bg-slate-50 font-active" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
+    <main className="min-h-screen bg-slate-50 dark:bg-black font-active text-slate-700 dark:text-zinc-200 transition-colors duration-200" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
       <section className="px-4 py-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 text-center">
-            <h1 className="text-3xl font-bold text-slate-900">{activeCategoryName ?? 'Tài nguyên'}</h1>
-            <p className="mt-2 text-sm text-slate-500">Tải ebook, template, checklist và tài liệu hữu ích.</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-[#f5f5f7]">{activeCategoryName ?? 'Tài nguyên'}</h1>
+            <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400">Tải ebook, template, checklist và tài liệu hữu ích.</p>
           </div>
 
           <div className={config.layoutStyle === 'sidebar' || config.layoutStyle === 'list' ? 'grid gap-6 lg:grid-cols-[280px_1fr]' : 'space-y-6'}>
@@ -442,8 +445,8 @@ function ResourcesContent() {
               config.layoutStyle === 'sidebar' || config.layoutStyle === 'list' ? (
                 <aside className="space-y-4 lg:block flex-shrink-0">
                   {config.showSearch && (
-                    <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
-                      <h3 className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
+                      <h3 className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-zinc-300">
                         <Search size={14} className="text-slate-400" />
                         Tìm kiếm
                       </h3>
@@ -452,7 +455,7 @@ function ResourcesContent() {
                           value={search}
                           onChange={(event) => { setSearch(event.target.value); }}
                           placeholder="Tìm tài nguyên..."
-                          className={`h-11 w-full border border-slate-200 pl-10 pr-3 text-sm outline-none transition-colors focus:border-slate-300 ${getRadiusClass(config.cornerRadius, 'input')}`}
+                          className={`h-11 w-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-slate-700 dark:text-[#f5f5f7] pl-10 pr-3 text-sm outline-none transition-colors focus:border-slate-300 dark:focus:border-zinc-700 ${getRadiusClass(config.cornerRadius, 'input')}`}
                         />
                         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       </div>
@@ -460,8 +463,8 @@ function ResourcesContent() {
                   )}
 
                   {config.showCategories && (
-                    <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
-                      <h3 className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
+                      <h3 className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-zinc-300">
                         <Bookmark size={14} className="text-slate-400" />
                         Danh mục tài nguyên
                       </h3>
@@ -472,7 +475,7 @@ function ResourcesContent() {
                             placeholder="Tìm nhanh danh mục..."
                             value={categoryQuery}
                             onChange={(event) => setCategoryQuery(event.target.value)}
-                            className={`w-full border border-slate-200 py-2 pl-9 pr-9 text-xs outline-none transition-colors focus:border-slate-300 ${getRadiusClass(config.cornerRadius, 'input')}`}
+                            className={`w-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-slate-700 dark:text-[#f5f5f7] py-2 pl-9 pr-9 text-xs outline-none transition-colors focus:border-slate-300 dark:focus:border-zinc-700 ${getRadiusClass(config.cornerRadius, 'input')}`}
                           />
                           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                           {categoryQuery && (
@@ -486,8 +489,8 @@ function ResourcesContent() {
                         <button
                           type="button"
                           onClick={() => handleCategoryChange(null)}
-                          className={`w-full rounded-lg border border-transparent px-3.5 py-2 text-left text-sm transition-colors ${!activeCategoryId ? 'font-semibold' : ''}`}
-                          style={!activeCategoryId ? { backgroundColor: `${brandColors.primary}18`, color: brandColors.primary } : { color: '#475569' }}
+                          className={`w-full rounded-lg border border-transparent px-3.5 py-2 text-left text-sm transition-colors ${!activeCategoryId ? 'font-semibold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                          style={!activeCategoryId ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary, borderColor: isDark ? '#3a3a3c' : 'transparent' } : undefined}
                         >
                           Tất cả danh mục
                         </button>
@@ -496,8 +499,8 @@ function ResourcesContent() {
                             key={category._id}
                             type="button"
                             onClick={() => handleCategoryChange(category._id)}
-                            className={`w-full rounded-lg border border-transparent px-3.5 py-2 text-left text-sm transition-colors ${activeCategoryId === category._id ? 'font-semibold' : ''}`}
-                            style={activeCategoryId === category._id ? { backgroundColor: `${brandColors.primary}18`, color: brandColors.primary } : { color: '#475569' }}
+                            className={`w-full rounded-lg border border-transparent px-3.5 py-2 text-left text-sm transition-colors ${activeCategoryId === category._id ? 'font-semibold' : 'text-slate-600 dark:text-zinc-405 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                            style={activeCategoryId === category._id ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary, borderColor: isDark ? '#3a3a3c' : 'transparent' } : undefined}
                           >
                             {category.name}
                           </button>
@@ -507,8 +510,8 @@ function ResourcesContent() {
                   )}
 
                   {resourceFiltersFeature?.enabled && config.showResourceFilters && activeFilters && allFilterValues && activeFilters.length > 0 && (
-                    <div className={`border border-slate-200 bg-white p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
-                      <h3 className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
+                      <h3 className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-zinc-300">
                         <Filter size={14} className="text-slate-400" />
                         Bộ lọc
                       </h3>
@@ -517,7 +520,7 @@ function ResourcesContent() {
                           const values = allFilterValues.filter((value) => value.filterId === filter._id && value.active);
                           return (
                             <div key={filter._id}>
-                              <div className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-400">{filter.name}</div>
+                              <div className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-zinc-500">{filter.name}</div>
                               <div className="flex flex-wrap gap-2">
                                 {values.map((value) => {
                                   const active = activeFilterSlugs.includes(value.slug);
@@ -526,8 +529,8 @@ function ResourcesContent() {
                                       key={value._id}
                                       type="button"
                                       onClick={() => handleFilterChange(value.slug)}
-                                      className="rounded-full border px-3 py-1 text-xs font-medium transition inline-flex items-center gap-1.5"
-                                      style={active ? { backgroundColor: brandColors.primary, borderColor: brandColors.primary, color: '#fff' } : { borderColor: '#e2e8f0', color: '#475569' }}
+                                      className={`rounded-full border px-3 py-1 text-xs font-medium transition inline-flex items-center gap-1.5 ${active ? '' : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-[#2c2c2e] hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                                      style={active ? { backgroundColor: brandColors.primary, borderColor: brandColors.primary, color: '#fff' } : undefined}
                                     >
                                       {value.icon && (
                                         <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
@@ -541,20 +544,20 @@ function ResourcesContent() {
                           );
                         })}
                         {activeFilterSlugs.length > 0 && (
-                          <button type="button" onClick={() => handleFilterChange(null)} className="text-xs font-medium text-slate-500 hover:text-slate-900">Xóa bộ lọc</button>
+                          <button type="button" onClick={() => handleFilterChange(null)} className="text-xs font-medium text-slate-500 dark:text-[#86868b] hover:text-slate-900 dark:hover:text-[#f5f5f7]">Xóa bộ lọc</button>
                         )}
                       </div>
                     </div>
                   )}
                 </aside>
               ) : (
-                <div className={`flex flex-col gap-3 border border-slate-200 bg-white p-3 shadow-sm md:flex-row md:items-center md:justify-between ${getRadiusClass(config.cornerRadius, 'panel')}`}>
+                <div className={`flex flex-col gap-3 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-3 shadow-sm md:flex-row md:items-center md:justify-between ${getRadiusClass(config.cornerRadius, 'panel')}`}>
                   <div className="relative w-full md:max-w-sm">
                     <input
                       value={search}
                       onChange={(event) => { setSearch(event.target.value); }}
                       placeholder="Tìm tài nguyên..."
-                      className={`h-11 w-full border border-slate-200 pl-10 pr-3 text-sm outline-none transition-colors focus:border-slate-300 ${getRadiusClass(config.cornerRadius, 'input')}`}
+                      className={`h-11 w-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-slate-700 dark:text-[#f5f5f7] pl-10 pr-3 text-sm outline-none transition-colors focus:border-slate-350 dark:focus:border-zinc-700 ${getRadiusClass(config.cornerRadius, 'input')}`}
                     />
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   </div>
@@ -601,11 +604,10 @@ function ResourcesContent() {
 
             <div className="space-y-6">
               {config.layoutStyle === 'list' ? (
-                /* List layout: horizontal cards */
-                <div className="flex flex-col gap-4">
+                <div className="space-y-4">
                   {isLoading ? (
                     Array.from({ length: postsPerPage }).map((_, index) => (
-                      <div key={index} className={`h-28 animate-pulse border border-slate-200 bg-white ${getRadiusClass(config.cornerRadius)}`} />
+                      <div key={index} className={`h-28 animate-pulse border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] ${getRadiusClass(config.cornerRadius)}`} />
                     ))
                   ) : resourceItems.map((resource) => {
                     const category = categoryMap.get(resource.categoryId);
@@ -620,15 +622,15 @@ function ResourcesContent() {
                       <Link
                         key={resource._id}
                         href={detailHref}
-                        className={`group flex items-stretch gap-4 overflow-hidden border border-slate-200 bg-white shadow-sm transition hover:shadow-md hover:-translate-y-0.5 ${getRadiusClass(config.cornerRadius)}`}
+                        className={`group flex items-stretch gap-4 overflow-hidden border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] shadow-sm transition hover:shadow-md hover:-translate-y-0.5 ${getRadiusClass(config.cornerRadius)}`}
                       >
                         {/* Thumbnail */}
-                        <div className="relative w-40 shrink-0 overflow-hidden bg-slate-100" style={{ aspectRatio: '16/9' }}>
+                        <div className="relative w-40 shrink-0 overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]" style={{ aspectRatio: '16/9' }}>
                           {resource.thumbnail ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${brandColors.primary}18, ${brandColors.primary}05)` }}>
+                            <div className="flex h-full w-full items-center justify-center" style={{ background: isDark ? '#1c1c1e' : `linear-gradient(135deg, ${brandColors.primary}18, ${brandColors.primary}05)` }}>
                               <FileText size={28} style={{ color: brandColors.primary }} />
                             </div>
                           )}
@@ -641,16 +643,16 @@ function ResourcesContent() {
                         {/* Content */}
                         <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 py-3 pr-2">
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{category?.name ?? 'Tài nguyên'}</span>
+                            <span className="rounded-full bg-slate-100 dark:bg-[#1c1c1e] px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:text-zinc-350">{category?.name ?? 'Tài nguyên'}</span>
                             {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedValues.slice(0, 3).map((value) => (
-                              <span key={value._id} className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                              <span key={value._id} className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-zinc-800 px-2 py-0.5 text-[11px] font-medium text-slate-550 dark:text-[#86868b]">
                                 {value.icon && <img src={value.icon} alt={value.name} className="h-3 w-3 object-contain shrink-0" />}
                                 <span>{value.name}</span>
                               </span>
                             ))}
                           </div>
-                          <h2 className="line-clamp-1 text-base font-bold text-slate-900 group-hover:underline">{resource.title}</h2>
-                          {resource.excerpt && <p className="line-clamp-2 text-xs text-slate-500 leading-relaxed">{resource.excerpt}</p>}
+                          <h2 className="line-clamp-1 text-base font-bold text-slate-900 dark:text-[#f5f5f7] group-hover:underline">{resource.title}</h2>
+                          {resource.excerpt && <p className="line-clamp-2 text-xs text-slate-500 dark:text-zinc-450 leading-relaxed">{resource.excerpt}</p>}
                         </div>
                         {/* Price + CTA */}
                         <div className="flex shrink-0 flex-col items-end justify-center gap-2 py-3 pr-4">
@@ -666,7 +668,7 @@ function ResourcesContent() {
                 <div className={`grid gap-5 ${config.gridColumns >= 4 ? 'lg:grid-cols-4' : config.gridColumns === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} sm:grid-cols-2`}>
                   {isLoading ? (
                     Array.from({ length: postsPerPage }).map((_, index) => (
-                      <div key={index} className={`h-72 animate-pulse border border-slate-200 bg-white ${getRadiusClass(config.cornerRadius)}`} />
+                      <div key={index} className={`h-72 animate-pulse border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] ${getRadiusClass(config.cornerRadius)}`} />
                     ))
                   ) : resourceItems.map((resource) => {
                     const category = categoryMap.get(resource.categoryId);
@@ -681,14 +683,14 @@ function ResourcesContent() {
                       <Link
                         key={resource._id}
                         href={detailHref}
-                        className={`group mb-5 block overflow-hidden border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${getRadiusClass(config.cornerRadius)}`}
+                        className={`group mb-5 block overflow-hidden border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${getRadiusClass(config.cornerRadius)}`}
                       >
-                        <div className="relative aspect-video overflow-hidden bg-slate-100">
+                        <div className="relative aspect-video overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]">
                           {resource.thumbnail ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${brandColors.primary}18, ${brandColors.primary}05)` }}>
+                            <div className="flex h-full w-full items-center justify-center" style={{ background: isDark ? '#1c1c1e' : `linear-gradient(135deg, ${brandColors.primary}18, ${brandColors.primary}05)` }}>
                               <FileText size={42} style={{ color: brandColors.primary }} />
                             </div>
                           )}
@@ -700,15 +702,15 @@ function ResourcesContent() {
                         </div>
                         <div className="space-y-3 p-4">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{category?.name ?? 'Tài nguyên'}</span>
+                            <span className="rounded-full bg-slate-100 dark:bg-[#1c1c1e] px-2.5 py-1 text-xs font-semibold text-slate-655 dark:text-zinc-350">{category?.name ?? 'Tài nguyên'}</span>
                             <span className="text-sm font-bold" style={{ color: brandColors.primary }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
                           </div>
-                          <h2 className="line-clamp-2 text-lg font-bold text-slate-900 group-hover:underline">{resource.title}</h2>
-                          {resource.excerpt && <p className="line-clamp-2 text-sm text-slate-500">{resource.excerpt}</p>}
+                          <h2 className="line-clamp-2 text-lg font-bold text-slate-900 dark:text-[#f5f5f7] group-hover:underline">{resource.title}</h2>
+                          {resource.excerpt && <p className="line-clamp-2 text-sm text-slate-500 dark:text-[#86868b]">{resource.excerpt}</p>}
                           {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedValues.length > 0 && (
                             <div className="flex flex-wrap gap-1.5">
                               {assignedValues.slice(0, 4).map((value) => (
-                                <span key={value._id} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
+                                <span key={value._id} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-zinc-800 px-2 py-0.5 text-[11px] font-semibold text-slate-550 dark:text-[#86868b]">
                                   {value.icon && (
                                     <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
                                   )}
@@ -728,7 +730,7 @@ function ResourcesContent() {
               )}
 
               {!isLoading && resourceItems.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
+                <div className="rounded-2xl border border-dashed border-slate-300 dark:border-zinc-800 bg-white dark:bg-[#161617] p-10 text-center text-slate-500 dark:text-zinc-400">
                   Không có tài nguyên phù hợp.
                 </div>
               )}
@@ -736,9 +738,9 @@ function ResourcesContent() {
               {!isLoading && resourceItems.length > 0 && (
                 config.paginationType === 'pagination' || isPaginationMode ? (
                   <div className="flex items-center justify-center gap-2">
-                    <button type="button" disabled={urlPage <= 1} onClick={() => handlePageChange(urlPage - 1)} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 disabled:opacity-50">Trước</button>
+                    <button type="button" disabled={urlPage <= 1} onClick={() => handlePageChange(urlPage - 1)} className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] px-4 py-2 text-sm font-medium text-slate-600 dark:text-zinc-300 disabled:opacity-50 disabled:pointer-events-none hover:bg-slate-50 dark:hover:bg-[#2c2c2e]">Trước</button>
                     <span className="text-sm text-slate-500">Trang {urlPage}/{totalPages}</span>
-                    <button type="button" disabled={urlPage >= totalPages} onClick={() => handlePageChange(urlPage + 1)} className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 disabled:opacity-50">Sau</button>
+                    <button type="button" disabled={urlPage >= totalPages} onClick={() => handlePageChange(urlPage + 1)} className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] px-4 py-2 text-sm font-medium text-slate-600 dark:text-zinc-300 disabled:opacity-50 disabled:pointer-events-none hover:bg-slate-50 dark:hover:bg-[#2c2c2e]">Sau</button>
                   </div>
                 ) : (visibleLimit < totalResources && (
                   <div className="flex justify-center">
@@ -758,12 +760,12 @@ function ResourcesContent() {
 
 function ResourcesSkeleton() {
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8">
+    <main className="min-h-screen bg-slate-50 dark:bg-black px-4 py-8 transition-colors duration-200">
       <div className="mx-auto max-w-7xl space-y-6">
-        <div className="mx-auto h-9 w-56 animate-pulse rounded bg-slate-200" />
-        <div className="h-16 animate-pulse rounded-2xl bg-white" />
+        <div className="mx-auto h-9 w-56 animate-pulse rounded bg-slate-200 dark:bg-[#161617]" />
+        <div className="h-16 animate-pulse rounded-2xl bg-white dark:bg-[#161617] border border-slate-200 dark:border-zinc-800" />
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-72 animate-pulse rounded-xl bg-white" />)}
+          {Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-72 animate-pulse rounded-xl bg-white dark:bg-[#161617] border border-slate-200 dark:border-zinc-800" />)}
         </div>
       </div>
     </main>
