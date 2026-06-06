@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
 import { ArrowLeft, BookOpen, CheckCircle2, Clock, GraduationCap, PlayCircle, Star, UserRound, ChevronDown, Lock, Play, ShoppingCart, Award } from 'lucide-react';
 import { RichContent, withFormatMarker } from '@/components/common/RichContent';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { getCourseLevelLabel } from '@/lib/courses/labels';
 import { useCoursesDetailConfig } from '@/lib/experiences';
 import { getRadiusClass, getSmallRadiusClass, formatPrice, convertToSlug } from '@/lib/courses/courseUtils';
@@ -42,6 +42,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const router = useRouter();
   const config = useCoursesDetailConfig();
   const brandColors = useBrandColors();
+  const { siteDarkMode } = useSiteSettings();
   const { addItem, openDrawer } = useCart();
   const { customer, token } = useCustomerAuth();
   const course = useQuery(api.courses.getBySlug, { slug });
@@ -59,8 +60,10 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const brandColor = brandColors.primary;
   const secondaryColor = brandColors.secondary || '';
   const colorMode = brandColors.mode || 'single';
-  
-  // Tự sinh màu gradient Modern ở chế độ 1 màu (T2-02)
+
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  // Tự sinh màu gradient Modern ở chế độ 1 màu
   const accent = useMemo(() => {
     if (colorMode === 'single' || !secondaryColor) {
       return brandColor + 'dd';
@@ -88,7 +91,6 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     return course.introVideoUrl;
   }, [course?.introVideoUrl, course?.introVideoType]);
 
-  // Accordion cho danh sách bài học (T4-01)
   const [openChapters, setOpenChapters] = useState<Record<string, boolean>>({});
   const toggleChapter = (chapterId: string) => {
     setOpenChapters((prev) => ({ ...prev, [chapterId]: !prev[chapterId] }));
@@ -123,9 +125,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4">
         <div className="text-center">
-          <GraduationCap className="mx-auto mb-4 h-12 w-12 text-slate-300" />
-          <h1 className="text-2xl font-bold text-slate-900">Không tìm thấy khóa học</h1>
-          <p className="mt-2 text-slate-500">Khóa học không tồn tại hoặc chưa được xuất bản.</p>
+          <GraduationCap className="mx-auto mb-4 h-12 w-12 text-slate-300 dark:text-zinc-700" />
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-[#f5f5f7]">Không tìm thấy khóa học</h1>
+          <p className="mt-2 text-slate-500 dark:text-[#86868b]">Khóa học không tồn tại hoặc chưa được xuất bản.</p>
           <Link href="/khoa-hoc" className="mt-6 inline-flex items-center gap-2 rounded-full px-5 py-3 font-medium text-white" style={{ backgroundColor: brandColors.primary }}>
             <ArrowLeft size={18} /> Xem tất cả khóa học
           </Link>
@@ -175,11 +177,11 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const CtaCard = () => {
     const hasPromoVideo = !!promoVideoEmbedUrl;
     return (
-      <div className={`border border-slate-200 bg-white p-5 group ${radiusClass}`}>
-        {/* Thumbnail với hiệu ứng Hover Zoom (T4-02) */}
-        <div 
+      <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-5 group ${radiusClass}`}>
+        {/* Thumbnail với hiệu ứng Hover Zoom */}
+        <div
           onClick={hasPromoVideo ? () => setShowPromoVideo(true) : undefined}
-          className={`mb-4 flex aspect-video items-center justify-center overflow-hidden bg-slate-100 relative ${smallRadiusClass} ${hasPromoVideo ? 'cursor-pointer group/thumb' : ''}`}
+          className={`mb-4 flex aspect-video items-center justify-center overflow-hidden bg-slate-100 dark:bg-[#2c2c2e] relative ${smallRadiusClass} ${hasPromoVideo ? 'cursor-pointer group/thumb' : ''}`}
         >
           {course.thumbnail ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -194,7 +196,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           {/* Overlay nút Play tròn lớn nếu có video giới thiệu */}
           {hasPromoVideo && (
             <div className="absolute inset-0 bg-black/35 group-hover/thumb:bg-black/50 transition-colors flex items-center justify-center z-10">
-              <div 
+              <div
                 className="bg-white/90 text-slate-900 rounded-full shadow-xl transition-all duration-300 group-hover/thumb:scale-110 group-hover/thumb:bg-white flex items-center justify-center w-14 h-14"
               >
                 <Play size={22} fill={brandColor} style={{ color: brandColor }} className="translate-x-[2px]" />
@@ -207,27 +209,32 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         </div>
         {showPrice && (
           <>
-            <p className="text-sm text-slate-500">{course.priceNote || 'Học trọn đời'}</p>
+            <p className="text-sm text-slate-500 dark:text-[#86868b]">{course.priceNote || 'Học trọn đời'}</p>
             <p className="mt-1 text-2xl font-bold" style={{ color: accent }}>{price}</p>
           </>
         )}
         {showPrice && course.comparePriceAmount && course.pricingType === 'paid' && (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-400 dark:text-[#6e6e73]">
             Giá gốc: <span className="line-through">{formatPrice('paid', course.comparePriceAmount)}</span>
           </p>
         )}
         {hasCourseAccess && (
-          <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 p-3">
-            <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-600">
+          <div className="mt-4 rounded-xl border border-slate-100 dark:border-zinc-800 bg-slate-50 dark:bg-[#1c1c1e] p-3">
+            <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-[#86868b]">
               <span>Tiến độ học</span>
               <span>{completedLessonsCount}/{progressLessonCount} bài · {progressPercent}%</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white">
+            <div className="h-2 overflow-hidden rounded-full bg-white dark:bg-zinc-800">
               <div className="h-full rounded-full" style={{ width: `${progressPercent}%`, backgroundColor: brandColor }} />
             </div>
           </div>
         )}
-        <button type="button" onClick={() => void handleRegister()} className="mt-4 w-full px-5 py-3 font-semibold text-white transition hover:opacity-90 inline-flex items-center justify-center gap-2" style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
+        <button
+          type="button"
+          onClick={() => void handleRegister()}
+          className="mt-4 w-full px-5 py-3 font-semibold text-white transition hover:opacity-90 inline-flex items-center justify-center gap-2"
+          style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}
+        >
           {firstLessonHref ? <PlayCircle size={18} /> : commerceMode === 'cart' && course.pricingType !== 'contact' && <ShoppingCart size={18} />}
           {ctaLabel}
         </button>
@@ -236,11 +243,16 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   };
 
   return (
-    <main className="min-h-screen bg-white pb-24 lg:pb-0 font-active" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
-      <section className={`border-b border-slate-100 px-4 ${isModern ? 'py-10 text-white' : 'py-8'}`} style={isModern ? { background: `linear-gradient(135deg, ${brandColor}, ${accent})` } : undefined}>
+    <main className="min-h-screen bg-white dark:bg-black pb-24 lg:pb-0 font-active" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
+      {/* Hero header */}
+      <section
+        className={`border-b border-slate-100 dark:border-zinc-800/60 px-4 ${isModern ? 'py-10 text-white' : 'py-8'}`}
+        style={isModern ? { background: `linear-gradient(135deg, ${brandColor}, ${accent})` } : undefined}
+      >
+        {!isModern && <div className="absolute inset-0 pointer-events-none" />}
         <div className="mx-auto max-w-7xl">
           <div className="max-w-4xl space-y-4">
-            <Link href="/khoa-hoc" className={`inline-flex items-center gap-2 text-sm ${isModern ? 'text-white/80' : 'text-slate-500'}`}>
+            <Link href="/khoa-hoc" className={`inline-flex items-center gap-2 text-sm transition-colors ${isModern ? 'text-white/80 hover:text-white' : 'text-slate-500 dark:text-[#86868b] hover:text-slate-700 dark:hover:text-[#f5f5f7]'}`}>
               <ArrowLeft size={16} /> Tất cả khóa học
             </Link>
             <div className="flex flex-wrap items-center gap-2">
@@ -249,13 +261,25 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                   <Star size={12} className="fill-current" /> Nổi bật
                 </span>
               )}
-              <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: isModern ? 'rgba(255,255,255,.18)' : `${brandColor}12`, color: isModern ? '#fff' : '#334155' }}>
+              <span
+                className="rounded-full px-3 py-1 text-xs font-semibold"
+                style={{
+                  backgroundColor: isModern ? 'rgba(255,255,255,.18)' : isDark ? `${brandColor}20` : `${brandColor}12`,
+                  color: isModern ? '#fff' : isDark ? '#f5f5f7' : '#334155',
+                }}
+              >
                 {category?.name ?? 'Khóa học'}{course.level ? ` · ${getCourseLevelLabel(course.level)}` : ''}
               </span>
             </div>
-            <h1 className={`max-w-4xl text-4xl font-bold leading-tight md:text-5xl mt-2 ${isModern ? 'text-white' : 'text-slate-900'}`}>{course.title}</h1>
-            {course.excerpt && <p className={`max-w-2xl text-lg mt-2.5 ${isModern ? 'text-white/80' : 'text-slate-600'}`}>{course.excerpt}</p>}
-            <div className={`flex flex-wrap gap-4 text-sm mt-3 ${isModern ? 'text-white/80' : 'text-slate-500'}`}>
+            <h1 className={`max-w-4xl text-4xl font-bold leading-tight md:text-5xl mt-2 ${isModern ? 'text-white' : 'text-slate-900 dark:text-[#f5f5f7]'}`}>
+              {course.title}
+            </h1>
+            {course.excerpt && (
+              <p className={`max-w-2xl text-lg mt-2.5 ${isModern ? 'text-white/80' : 'text-slate-600 dark:text-[#86868b]'}`}>
+                {course.excerpt}
+              </p>
+            )}
+            <div className={`flex flex-wrap gap-4 text-sm mt-3 ${isModern ? 'text-white/80' : 'text-slate-500 dark:text-[#86868b]'}`}>
               <span className="inline-flex items-center gap-1"><BookOpen size={16} />{course.lessonCount} bài học</span>
               {course.durationText && <span className="inline-flex items-center gap-1"><Clock size={16} />{course.durationText}</span>}
               {config.showInstructor && course.instructorName && <span className="inline-flex items-center gap-1"><UserRound size={16} />{course.instructorName}</span>}
@@ -267,9 +291,9 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                     key={filter._id}
                     title={filter.name}
                     className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 text-xs font-semibold backdrop-blur-sm transition-all duration-300 ${
-                      isModern 
-                        ? 'border-white/20 bg-white/10 text-white hover:bg-white/15' 
-                        : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 hover:bg-slate-100'
+                      isModern
+                        ? 'border-white/20 bg-white/10 text-white hover:bg-white/15'
+                        : 'border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-[#2c2c2e] text-slate-700 dark:text-[#f5f5f7] hover:bg-slate-100 dark:hover:bg-[#3a3a3c]'
                     }`}
                   >
                     {filter.icon && (
@@ -285,22 +309,24 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         </div>
       </section>
 
-      {/* Sửa lỗi layout co giãn động khi ẩn cột bên (T0-01) */}
+      {/* Main content grid */}
       <section className={`mx-auto grid max-w-7xl gap-6 px-4 py-8 ${showAside ? 'lg:grid-cols-[minmax(0,1fr)_320px]' : 'max-w-4xl mx-auto'}`}>
         <div className="space-y-8">
-          <article className="prose prose-slate max-w-none prose-headings:text-slate-900 prose-p:text-slate-600">
+          {/* Rich content */}
+          <article className="prose prose-slate dark:prose-invert max-w-none prose-headings:text-slate-900 dark:prose-headings:text-[#f5f5f7] prose-p:text-slate-600 dark:prose-p:text-[#86868b]">
             <RichContent content={courseContent} />
           </article>
 
+          {/* Chứng chỉ hoàn thành */}
           {courseProgress?.completedAt && (
             <section className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <h2 className="text-2xl font-bold text-slate-900 dark:text-[#f5f5f7] flex items-center gap-2">
                     <Award className="text-amber-500" />
                     Chứng nhận hoàn thành của bạn
                   </h2>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-slate-500 dark:text-[#86868b] mt-1">
                     Bạn đã xuất sắc tốt nghiệp khóa học này. Dưới đây là chứng chỉ chính thức của bạn.
                   </p>
                 </div>
@@ -310,16 +336,15 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                       href={`/chung-nhan/${courseProgress.certificateCode}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-800 px-4 py-2.5 text-xs font-bold transition-all shadow-sm cursor-pointer"
+                      className="inline-flex items-center gap-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-[#2c2c2e] dark:hover:bg-[#3a3a3c] text-white border border-slate-200 dark:border-zinc-800 px-4 py-2.5 text-xs font-bold transition-all shadow-sm cursor-pointer"
                     >
                       Mở trang chứng nhận riêng
                     </a>
                   )}
                 </div>
               </div>
-              
-              {/* Render the Certificate directly! */}
-              <div className="relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl max-w-[1100px] mx-auto group">
+
+              <div className="relative overflow-hidden rounded-xl border border-slate-200 dark:border-zinc-800 shadow-xl max-w-[1100px] mx-auto group">
                 <CertificateCard
                   customerName={customer?.name || "Học viên"}
                   courseTitle={course.title}
@@ -331,12 +356,12 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             </section>
           )}
 
-          {/* Đồng bộ mục kiến thức và tiêu đề "Bạn sẽ học được gì?" (T1-01) */}
+          {/* Bạn sẽ học được gì */}
           <section>
-            <h2 className="mb-4 text-2xl font-bold text-slate-900">Bạn sẽ học được gì?</h2>
+            <h2 className="mb-4 text-2xl font-bold text-slate-900 dark:text-[#f5f5f7]">Bạn sẽ học được gì?</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               {['Biết cách tổ chức dự án rõ ràng', 'Tối ưu SEO cho trang học', 'Kết nối dữ liệu động', 'Đưa website lên online'].map((item) => (
-                <div key={item} className={`flex items-start gap-2 border border-slate-200 p-3 text-sm text-slate-700 ${smallRadiusClass}`}>
+                <div key={item} className={`flex items-start gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-3 text-sm text-slate-700 dark:text-[#f5f5f7] ${smallRadiusClass}`}>
                   <CheckCircle2 size={16} className="mt-0.5 shrink-0" style={{ color: brandColor }} />
                   <span>{item}</span>
                 </div>
@@ -344,73 +369,73 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
             </div>
           </section>
 
+          {/* Nội dung khóa học */}
           {config.showCurriculum && (
             <section>
-              <h2 className="mb-4 text-2xl font-bold text-slate-900">Nội dung khóa học</h2>
+              <h2 className="mb-4 text-2xl font-bold text-slate-900 dark:text-[#f5f5f7]">Nội dung khóa học</h2>
               <div className="space-y-3">
                 {chapters?.map((chapter, chapterIndex) => {
                   const chapterLessons = lessonsByChapter.get(chapter._id) ?? [];
                   const isOpen = openChapters[chapter._id] ?? false;
-                  
                   const shouldShowSummary = !!chapter.summary;
 
                   return (
-                    <div key={chapter._id} className={`border border-slate-200 bg-white overflow-hidden p-4 ${radiusClass}`}>
+                    <div key={chapter._id} className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] overflow-hidden p-4 ${radiusClass}`}>
                       <button
                         type="button"
                         onClick={() => toggleChapter(chapter._id)}
                         className="flex w-full items-center justify-between text-left focus:outline-none py-1"
                       >
                         <div>
-                          <h3 className="font-semibold text-slate-900 text-base md:text-lg">
+                          <h3 className="font-semibold text-slate-900 dark:text-[#f5f5f7] text-base md:text-lg">
                             {chapterIndex + 1}. {chapter.title}
                           </h3>
-                          <p className="text-xs text-slate-500 mt-0.5">
+                          <p className="text-xs text-slate-500 dark:text-[#86868b] mt-0.5">
                             {chapterLessons.length} bài học
                           </p>
                         </div>
                         <ChevronDown
                           size={18}
-                          className={`text-slate-400 transition-transform duration-200 shrink-0 ml-4 ${isOpen ? 'rotate-180' : ''}`}
+                          className={`text-slate-400 dark:text-[#6e6e73] transition-transform duration-200 shrink-0 ml-4 ${isOpen ? 'rotate-180' : ''}`}
                         />
                       </button>
-                      
+
                       {isOpen && (
-                        <div className="mt-3 border-t border-slate-100 pt-3 space-y-3">
+                        <div className="mt-3 border-t border-slate-100 dark:border-zinc-800 pt-3 space-y-3">
                           {shouldShowSummary && (
-                            <div className="text-sm text-slate-600 prose-sm prose dark:prose-invert max-w-none bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <div className="text-sm text-slate-600 dark:text-[#86868b] prose-sm prose dark:prose-invert max-w-none bg-slate-50 dark:bg-[#1c1c1e] p-3 rounded-lg border border-slate-100 dark:border-zinc-800">
                               <RichContent content={withFormatMarker('richtext', chapter.summary!)} />
                             </div>
                           )}
-                          
+
                           {chapterLessons.length > 0 && (
-                            <div className="divide-y divide-slate-100 pl-4 md:pl-6">
+                            <div className="divide-y divide-slate-100 dark:divide-zinc-800/60 pl-4 md:pl-6">
                               {chapterLessons.map((lesson, lessonIndex) => {
                                 const isCompletedLesson = completedLessonIds.has(lesson._id);
                                 return (
                                   <Link
                                     key={lesson._id}
                                     href={`/khoa-hoc/${course.slug}/bai-hoc/${convertToSlug(lesson.title)}--${lesson._id}`}
-                                    className="flex items-center justify-between gap-3 py-2.5 text-sm text-slate-700 hover:text-slate-900 transition-colors group/item"
+                                    className="flex items-center justify-between gap-3 py-2.5 text-sm text-slate-700 dark:text-[#86868b] hover:text-slate-900 dark:hover:text-[#f5f5f7] transition-colors group/item"
                                   >
                                     <span className="flex items-center gap-2">
-                                      <span className="text-slate-400 font-mono text-xs w-6 shrink-0">{chapterIndex + 1}.{lessonIndex + 1}</span>
+                                      <span className="text-slate-400 dark:text-[#6e6e73] font-mono text-xs w-6 shrink-0">{chapterIndex + 1}.{lessonIndex + 1}</span>
                                       <span className="group-hover/item:underline">{lesson.title}</span>
                                     </span>
                                     {isCompletedLesson ? (
-                                      <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 shrink-0 group-hover/item:bg-emerald-100 transition-colors">
+                                      <span className="rounded bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400 shrink-0 group-hover/item:bg-emerald-100 dark:group-hover/item:bg-emerald-900/30 transition-colors">
                                         Đã học
                                       </span>
                                     ) : hasCourseAccess ? (
-                                      <span className="rounded bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 shrink-0 group-hover/item:bg-sky-100 transition-colors">
+                                      <span className="rounded bg-sky-50 dark:bg-sky-900/20 px-2 py-0.5 text-[10px] font-medium text-sky-700 dark:text-sky-400 shrink-0 group-hover/item:bg-sky-100 dark:group-hover/item:bg-sky-900/30 transition-colors">
                                         Đã mở
                                       </span>
                                     ) : lesson.isPreview ? (
-                                      <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 shrink-0 group-hover/item:bg-emerald-100 transition-colors">
+                                      <span className="rounded bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400 shrink-0 group-hover/item:bg-emerald-100 dark:group-hover/item:bg-emerald-900/30 transition-colors">
                                         Học thử
                                       </span>
                                     ) : (
-                                      <Lock size={12} className="text-slate-300 group-hover/item:text-slate-400 shrink-0" />
+                                      <Lock size={12} className="text-slate-300 dark:text-zinc-700 group-hover/item:text-slate-400 dark:group-hover/item:text-zinc-600 shrink-0" />
                                     )}
                                   </Link>
                                 );
@@ -422,21 +447,28 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                     </div>
                   );
                 })}
-                {chapters?.length === 0 && <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-500">Nội dung khóa học đang được cập nhật.</div>}
+                {chapters?.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-slate-300 dark:border-zinc-700 p-6 text-center text-slate-500 dark:text-[#86868b]">
+                    Nội dung khóa học đang được cập nhật.
+                  </div>
+                )}
               </div>
             </section>
           )}
         </div>
 
+        {/* Sidebar */}
         {showAside && (
           <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
             {config.showStickyCta && <CtaCard />}
             {related.length > 0 && (
-              <div className={`border border-slate-200 bg-white p-5 ${radiusClass}`}>
-                <h3 className="font-semibold text-slate-900">Khóa học liên quan</h3>
+              <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-5 ${radiusClass}`}>
+                <h3 className="font-semibold text-slate-900 dark:text-[#f5f5f7]">Khóa học liên quan</h3>
                 <div className="mt-3 space-y-3">
                   {related.map((item) => (
-                    <Link key={item._id} href={`/khoa-hoc/${item.slug}`} className="block text-sm text-slate-600 hover:text-slate-900 hover:underline">{item.title}</Link>
+                    <Link key={item._id} href={`/khoa-hoc/${item.slug}`} className="block text-sm text-slate-600 dark:text-[#86868b] hover:text-slate-900 dark:hover:text-[#f5f5f7] hover:underline transition-colors">
+                      {item.title}
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -445,14 +477,19 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
         )}
       </section>
 
-      {/* Sticky Bottom CTA cho Mobile (T2-01) */}
+      {/* Sticky Bottom CTA cho Mobile */}
       {config.showStickyCta && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 p-4 shadow-lg flex items-center justify-between">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#111111] border-t border-slate-200 dark:border-zinc-800 p-4 shadow-lg dark:shadow-none flex items-center justify-between">
           <div>
-            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Học phí</p>
+            <p className="text-[10px] text-slate-400 dark:text-[#6e6e73] font-semibold uppercase tracking-wider">Học phí</p>
             <p className="text-lg font-bold" style={{ color: accent }}>{price}</p>
           </div>
-          <button type="button" onClick={() => void handleRegister()} className="px-5 py-2.5 text-xs font-bold text-white shadow-sm inline-flex items-center gap-2" style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}>
+          <button
+            type="button"
+            onClick={() => void handleRegister()}
+            className="px-5 py-2.5 text-xs font-bold text-white shadow-sm inline-flex items-center gap-2"
+            style={{ backgroundColor: brandColor, borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}
+          >
             {firstLessonHref ? <PlayCircle size={14} /> : commerceMode === 'cart' && course.pricingType !== 'contact' && <ShoppingCart size={14} />}
             {firstLessonHref ? 'Vào học' : commerceMode === 'cart' && course.pricingType !== 'contact' ? 'Thêm giỏ' : (!showPrice || course.pricingType === 'contact' ? 'Liên hệ' : 'Đăng ký')}
           </button>
@@ -461,11 +498,11 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
 
       {/* Promo Video Lightbox Modal */}
       {showPromoVideo && promoVideoEmbedUrl && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm transition-all duration-300"
           onClick={() => setShowPromoVideo(false)}
         >
-          <div 
+          <div
             className="relative w-full max-w-4xl aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10"
             onClick={(e) => e.stopPropagation()}
           >
@@ -475,7 +512,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen
             />
-            <button 
+            <button
               onClick={() => setShowPromoVideo(false)}
               className="absolute top-4 right-4 text-white/70 hover:text-white bg-black/40 hover:bg-black/60 p-2.5 rounded-full transition-colors font-medium text-xs flex items-center justify-center"
             >
@@ -494,7 +531,7 @@ function CourseDetailSkeleton() {
   const brandColor = brandColors.primary;
   const secondaryColor = brandColors.secondary || '';
   const colorMode = brandColors.mode || 'single';
-  
+
   const accent = useMemo(() => {
     if (colorMode === 'single' || !secondaryColor) {
       return brandColor + 'dd';
@@ -507,14 +544,14 @@ function CourseDetailSkeleton() {
   const smallRadiusClass = getSmallRadiusClass(cornerRadius);
   const isModern = config.layoutStyle === 'modern';
   const showAside = config.showStickyCta || config.showRelated;
-  const pulseHeaderClass = isModern ? 'bg-white/20' : 'bg-slate-200';
+  const pulseHeaderClass = isModern ? 'bg-white/20' : 'bg-slate-200 dark:bg-zinc-800';
 
   return (
-    <div className="min-h-screen bg-white pb-16">
+    <div className="min-h-screen bg-white dark:bg-black pb-16">
       {/* Header Skeleton */}
-      <section 
-        className={`border-b border-slate-100 px-4 ${isModern ? 'py-10 text-white' : 'py-8'}`} 
-        style={isModern ? { background: `linear-gradient(135deg, ${brandColor}, ${accent})` } : { backgroundColor: '#f8fafc' }}
+      <section
+        className={`border-b border-slate-100 dark:border-zinc-800/60 px-4 ${isModern ? 'py-10 text-white' : 'py-8'}`}
+        style={isModern ? { background: `linear-gradient(135deg, ${brandColor}, ${accent})` } : undefined}
       >
         <div className="mx-auto max-w-7xl">
           <div className="max-w-4xl space-y-4">
@@ -544,25 +581,25 @@ function CourseDetailSkeleton() {
       <section className={`mx-auto grid max-w-7xl gap-6 px-4 py-8 ${showAside ? 'lg:grid-cols-[minmax(0,1fr)_320px]' : 'max-w-4xl mx-auto'}`}>
         <div className="space-y-8">
           <div className="space-y-4">
-            <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
-            <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
-            <div className="h-4 w-11/12 animate-pulse rounded bg-slate-200" />
-            <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
-            <div className="h-4 w-4/5 animate-pulse rounded bg-slate-200" />
+            <div className="h-4 w-full animate-pulse rounded bg-slate-200 dark:bg-zinc-800" />
+            <div className="h-4 w-full animate-pulse rounded bg-slate-200 dark:bg-zinc-800" />
+            <div className="h-4 w-11/12 animate-pulse rounded bg-slate-200 dark:bg-zinc-800" />
+            <div className="h-4 w-full animate-pulse rounded bg-slate-200 dark:bg-zinc-800" />
+            <div className="h-4 w-4/5 animate-pulse rounded bg-slate-200 dark:bg-zinc-800" />
             <div className="space-y-2 pt-4">
-              <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
-              <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
-              <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200" />
+              <div className="h-4 w-full animate-pulse rounded bg-slate-200 dark:bg-zinc-800" />
+              <div className="h-4 w-full animate-pulse rounded bg-slate-200 dark:bg-zinc-800" />
+              <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200 dark:bg-zinc-800" />
             </div>
           </div>
 
           <div className="pt-4">
-            <div className="h-7 w-48 animate-pulse rounded bg-slate-200 mb-4" />
+            <div className="h-7 w-48 animate-pulse rounded bg-slate-200 dark:bg-zinc-800 mb-4" />
             <div className="grid gap-3 sm:grid-cols-2">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className={`flex items-start gap-2 border border-slate-100 p-3.5 ${smallRadiusClass}`}>
-                  <div className="h-5 w-5 animate-pulse rounded-full bg-slate-200 shrink-0 mt-0.5" />
-                  <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200" />
+                <div key={i} className={`flex items-start gap-2 border border-slate-100 dark:border-zinc-800 bg-white dark:bg-[#161617] p-3.5 ${smallRadiusClass}`}>
+                  <div className="h-5 w-5 animate-pulse rounded-full bg-slate-200 dark:bg-zinc-700 shrink-0 mt-0.5" />
+                  <div className="h-4 w-5/6 animate-pulse rounded bg-slate-200 dark:bg-zinc-700" />
                 </div>
               ))}
             </div>
@@ -570,15 +607,15 @@ function CourseDetailSkeleton() {
 
           {config.showCurriculum && (
             <div className="pt-4">
-              <div className="h-7 w-56 animate-pulse rounded bg-slate-200 mb-4" />
+              <div className="h-7 w-56 animate-pulse rounded bg-slate-200 dark:bg-zinc-800 mb-4" />
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className={`border border-slate-200 bg-white p-5 flex items-center justify-between ${radiusClass}`}>
+                  <div key={i} className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-5 flex items-center justify-between ${radiusClass}`}>
                     <div className="space-y-2 w-3/4">
-                      <div className="h-5 w-2/3 animate-pulse rounded bg-slate-200" />
-                      <div className="h-4 w-1/3 animate-pulse rounded bg-slate-200" />
+                      <div className="h-5 w-2/3 animate-pulse rounded bg-slate-200 dark:bg-zinc-700" />
+                      <div className="h-4 w-1/3 animate-pulse rounded bg-slate-200 dark:bg-zinc-700" />
                     </div>
-                    <div className="h-5 w-5 animate-pulse rounded bg-slate-200 shrink-0" />
+                    <div className="h-5 w-5 animate-pulse rounded bg-slate-200 dark:bg-zinc-700 shrink-0" />
                   </div>
                 ))}
               </div>
@@ -589,26 +626,26 @@ function CourseDetailSkeleton() {
         {showAside && (
           <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
             {config.showStickyCta && (
-              <div className={`border border-slate-200 bg-white p-5 space-y-4 ${radiusClass}`}>
-                <div className={`aspect-video animate-pulse bg-slate-200 ${smallRadiusClass}`} />
+              <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-5 space-y-4 ${radiusClass}`}>
+                <div className={`aspect-video animate-pulse bg-slate-200 dark:bg-zinc-700 ${smallRadiusClass}`} />
                 <div className="space-y-2 pt-2">
-                  <div className="h-4 w-24 animate-pulse rounded bg-slate-200" />
-                  <div className="h-8 w-40 animate-pulse rounded bg-slate-200" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-slate-200 dark:bg-zinc-700" />
+                  <div className="h-8 w-40 animate-pulse rounded bg-slate-200 dark:bg-zinc-700" />
                 </div>
-                <div 
-                  className="h-12 w-full animate-pulse bg-slate-200" 
-                  style={{ borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }} 
+                <div
+                  className="h-12 w-full animate-pulse bg-slate-200 dark:bg-zinc-700"
+                  style={{ borderRadius: cornerRadius === 'none' ? '0px' : cornerRadius === 'sm' ? '8px' : '12px' }}
                 />
               </div>
             )}
 
             {config.showRelated && (
-              <div className={`border border-slate-200 bg-white p-5 space-y-3.5 ${radiusClass}`}>
-                <div className="h-5 w-36 animate-pulse rounded bg-slate-200" />
+              <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-5 space-y-3.5 ${radiusClass}`}>
+                <div className="h-5 w-36 animate-pulse rounded bg-slate-200 dark:bg-zinc-700" />
                 <div className="space-y-2 pt-2">
-                  <div className="h-4 w-full animate-pulse rounded bg-slate-200" />
-                  <div className="h-4 w-11/12 animate-pulse rounded bg-slate-200" />
-                  <div className="h-4 w-4/5 animate-pulse rounded bg-slate-200" />
+                  <div className="h-4 w-full animate-pulse rounded bg-slate-200 dark:bg-zinc-700" />
+                  <div className="h-4 w-11/12 animate-pulse rounded bg-slate-200 dark:bg-zinc-700" />
+                  <div className="h-4 w-4/5 animate-pulse rounded bg-slate-200 dark:bg-zinc-700" />
                 </div>
               </div>
             )}
