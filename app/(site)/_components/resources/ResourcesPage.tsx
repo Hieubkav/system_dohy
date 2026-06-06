@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from 'convex/react';
@@ -363,13 +363,36 @@ function ResourcesContent() {
     return map;
   }, [assignments]);
 
+  const prevFiltersRef = useRef({
+    activeCategoryId,
+    debouncedSearch,
+    filter: searchParams.get('filter'),
+    sortBy,
+  });
+
   useEffect(() => {
-    if (urlPage === 1) {return;}
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('page');
-    const nextUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
-    router.replace(nextUrl, { scroll: false });
-  }, [activeCategoryId, debouncedSearch, searchParams.get('filter'), pathname, router, searchParams, sortBy, urlPage]);
+    const prev = prevFiltersRef.current;
+    const hasFilterChanged =
+      prev.activeCategoryId !== activeCategoryId ||
+      prev.debouncedSearch !== debouncedSearch ||
+      prev.filter !== searchParams.get('filter') ||
+      prev.sortBy !== sortBy;
+
+    // Cập nhật ref cho lần so sánh kế tiếp
+    prevFiltersRef.current = {
+      activeCategoryId,
+      debouncedSearch,
+      filter: searchParams.get('filter'),
+      sortBy,
+    };
+
+    if (hasFilterChanged && urlPage > 1) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('page');
+      const nextUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [activeCategoryId, debouncedSearch, searchParams, pathname, router, sortBy, urlPage]);
 
   const handleCategoryChange = useCallback((nextCategoryId: Id<'resourceCategories'> | null) => {
     const params = new URLSearchParams(searchParams.toString());
