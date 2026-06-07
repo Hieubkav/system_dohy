@@ -15,6 +15,7 @@ import {
   FullWidthLayout,
   PostsFilter,
   SidebarLayout,
+  ListLayout,
   type SortOption,
 } from '@/components/site/posts';
 
@@ -469,28 +470,40 @@ function PostsContent() {
         )}
 
         {layout === 'list' && (
-          isLoadingPosts ? (
-            <PostsGridSkeleton count={postsPerPage} />
-          ) : (
-            <SidebarLayout
-              posts={posts}
-              brandColor={brandColor}
-              tokens={tokens}
-              categoryMap={categoryMap}
-              categories={categoryOptions}
-              selectedCategory={activeCategory}
-              onCategoryChange={handleCategoryChange}
-              searchQuery={searchQuery}
-              onSearchChange={handleSearchChange}
-              sortBy={sortBy}
-              onSortChange={handleSortChange}
-              enabledFields={enabledFields}
-              showSearch={listConfig.showSearch}
-              showCategories={listConfig.showCategories}
-              getDetailHref={getPostDetailHref}
-              displayMode="list"
-            />
-          )
+          <>
+            {/* Filter Bar - Hide based on config */}
+            {(listConfig.showSearch || listConfig.showCategories) && (
+              <div className="mb-5">
+                <PostsFilter
+                  categories={categoryOptions}
+                  selectedCategory={activeCategory}
+                  onCategoryChange={handleCategoryChange}
+                  searchQuery={searchQuery}
+                  onSearchChange={handleSearchChange}
+                  sortBy={sortBy}
+                  onSortChange={handleSortChange}
+                  totalResults={totalCount ?? (posts?.length ?? 0)}
+                  tokens={tokens}
+                  showSearch={listConfig.showSearch}
+                  showCategories={listConfig.showCategories}
+                />
+              </div>
+            )}
+
+            {/* Posts */}
+            {isLoadingPosts ? (
+              <PostsGridSkeleton count={postsPerPage} />
+            ) : (
+              <ListLayout
+                posts={posts}
+                brandColor={brandColor}
+                tokens={tokens}
+                categoryMap={categoryMap}
+                enabledFields={enabledFields}
+                getDetailHref={getPostDetailHref}
+              />
+            )}
+          </>
         )}
 
         {/* Pagination / Infinite Scroll */}
