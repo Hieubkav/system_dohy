@@ -435,33 +435,56 @@ export function MobileProductsFilters({
         </select>
       </div>
 
-      {/* Drawer Overlay & Panel */}
+      {/* Bottom Sheet Overlay & Panel */}
       {isOpen && (
         <>
-          <div className="fixed inset-0 bg-black/50 z-50 transition-opacity" onClick={() => setIsOpen(false)} />
-          <div className="fixed inset-y-0 right-0 w-full max-w-xs bg-white dark:bg-slate-900 z-50 flex flex-col shadow-2xl p-4 overflow-y-auto">
-            <div className="flex items-center justify-between mb-6 pb-2 border-b">
-              <h3 className="font-bold text-lg">Bộ lọc tìm kiếm</h3>
-              <button onClick={() => setIsOpen(false)} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
-                <X size={20} />
+          {/* Overlay background */}
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300" 
+            onClick={() => setIsOpen(false)} 
+          />
+          {/* Sheet panel */}
+          <div 
+            className="fixed bottom-0 left-0 right-0 w-full max-h-[82vh] bg-white dark:bg-slate-900 z-50 flex flex-col rounded-t-[28px] shadow-2xl p-5 overflow-hidden transition-transform duration-300 ease-out transform translate-y-0"
+            style={{ borderColor: tokens.inputBorder }}
+          >
+            {/* Drag Handle indicator */}
+            <div 
+              className="w-12 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-full mx-auto mb-4 cursor-pointer hover:bg-slate-300 dark:hover:bg-zinc-700 transition-colors"
+              onClick={() => setIsOpen(false)}
+            />
+
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-zinc-850">
+              <h3 className="font-bold text-base" style={{ color: tokens.bodyText }}>Bộ lọc tìm kiếm</h3>
+              <button 
+                onClick={() => setIsOpen(false)} 
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                style={{ color: tokens.bodyText }}
+              >
+                <X size={18} />
               </button>
             </div>
 
-            {/* Content Filters */}
-            <div className="flex-1 space-y-6 overflow-y-auto pr-1">
+            {/* Scrollable Content Filters */}
+            <div className="flex-1 space-y-6 overflow-y-auto pr-1 pb-4">
               {/* Search Bar */}
               <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: tokens.inputIcon }} />
                 <input
                   type="text"
                   placeholder="Tìm sản phẩm..."
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
-                  className="w-full h-10 pl-9 pr-8 rounded-lg border outline-none text-sm bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100"
-                  style={{ borderColor: tokens.inputBorder }}
+                  className="w-full h-10 pl-9 pr-8 rounded-lg border outline-none text-sm"
+                  style={{ 
+                    borderColor: tokens.inputBorder, 
+                    backgroundColor: tokens.inputBackground, 
+                    color: tokens.inputText 
+                  }}
                 />
                 {searchQuery && (
-                  <button onClick={() => onSearchChange('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  <button onClick={() => onSearchChange('')} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: tokens.inputIcon }}>
                     <X size={14} />
                   </button>
                 )}
@@ -470,11 +493,15 @@ export function MobileProductsFilters({
               {/* Product Types Filter */}
               {enableProductTypes && productTypes && productTypes.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">Nhóm sản phẩm</h4>
+                  <h4 className="font-semibold text-sm" style={{ color: tokens.bodyText }}>Nhóm sản phẩm</h4>
                   <div className="space-y-1">
                     <button
                       onClick={() => { onProductTypeChange?.(null); setIsOpen(false); }}
-                      className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium ${!productType ? 'bg-slate-100 dark:bg-slate-800 font-semibold' : ''}`}
+                      className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium transition-colors ${!productType ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                      style={!productType
+                        ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                        : undefined
+                      }
                     >
                       Tất cả nhóm
                     </button>
@@ -482,7 +509,11 @@ export function MobileProductsFilters({
                       <button
                         key={t._id}
                         onClick={() => { onProductTypeChange?.(t.slug); setIsOpen(false); }}
-                        className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium ${productType?.slug === t.slug ? 'bg-slate-100 dark:bg-slate-800 font-semibold' : ''}`}
+                        className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium transition-colors ${productType?.slug === t.slug ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                        style={productType?.slug === t.slug
+                          ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                          : undefined
+                        }
                       >
                         {t.name}
                       </button>
@@ -493,11 +524,15 @@ export function MobileProductsFilters({
 
               {/* Categories Filter */}
               <div className="space-y-3">
-                <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">Danh mục sản phẩm</h4>
+                <h4 className="font-semibold text-sm" style={{ color: tokens.bodyText }}>Danh mục sản phẩm</h4>
                 <div className="space-y-1">
                   <button
                     onClick={() => { onCategoryChange(null); setIsOpen(false); }}
-                    className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium ${!selectedCategory ? 'bg-slate-100 dark:bg-slate-800 font-semibold' : ''}`}
+                    className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium transition-colors ${!selectedCategory ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                    style={!selectedCategory
+                      ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                      : undefined
+                    }
                   >
                     Tất cả danh mục
                   </button>
@@ -505,7 +540,11 @@ export function MobileProductsFilters({
                     <button
                       key={cat._id}
                       onClick={() => { onCategoryChange(cat._id); setIsOpen(false); }}
-                      className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium ${selectedCategory === cat._id ? 'bg-slate-100 dark:bg-slate-800 font-semibold' : ''}`}
+                      className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium transition-colors ${selectedCategory === cat._id ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                      style={selectedCategory === cat._id
+                        ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                        : undefined
+                      }
                     >
                       {cat.name}
                     </button>
@@ -516,11 +555,15 @@ export function MobileProductsFilters({
               {/* Price Ranges Filter */}
               {enableProductTypes && productType?.priceRanges && productType.priceRanges.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">Khoảng giá</h4>
+                  <h4 className="font-semibold text-sm" style={{ color: tokens.bodyText }}>Khoảng giá</h4>
                   <div className="space-y-1">
                     <button
                       onClick={() => { onPriceRangeChange?.(null); setIsOpen(false); }}
-                      className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium ${!selectedPriceRange ? 'bg-slate-100 dark:bg-slate-800 font-semibold' : ''}`}
+                      className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium transition-colors ${!selectedPriceRange ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                      style={!selectedPriceRange
+                        ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                        : undefined
+                      }
                     >
                       Tất cả khoảng giá
                     </button>
@@ -528,7 +571,11 @@ export function MobileProductsFilters({
                       <button
                         key={range.slug}
                         onClick={() => { onPriceRangeChange?.(range); setIsOpen(false); }}
-                        className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium ${selectedPriceRange?.slug === range.slug ? 'bg-slate-100 dark:bg-slate-800 font-semibold' : ''}`}
+                        className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium transition-colors ${selectedPriceRange?.slug === range.slug ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                        style={selectedPriceRange?.slug === range.slug
+                          ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                          : undefined
+                        }
                       >
                         {range.label}
                       </button>
@@ -539,10 +586,10 @@ export function MobileProductsFilters({
 
               {/* Attributes Filters */}
               {filterableGroups && filterableGroups.length > 0 && (
-                <div className="space-y-6 pt-4 border-t">
+                <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-zinc-800/80">
                   {filterableGroups.map((group) => (
                     <div key={group._id} className="space-y-3">
-                      <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">{group.name}</h4>
+                      <h4 className="font-semibold text-sm" style={{ color: tokens.bodyText }}>{group.name}</h4>
                       <AttributeFilterGroupWidget
                         group={group}
                         selectedAttributes={selectedAttributes}
@@ -555,19 +602,33 @@ export function MobileProductsFilters({
               )}
             </div>
 
-            {/* Clear All Filters Button */}
-            {hasActiveFilters && onClearFilters && (
-              <div className="pt-4 border-t mt-4">
-                <button
-                  type="button"
-                  onClick={() => { onClearFilters(); setIsOpen(false); }}
-                  className="w-full h-10 rounded-lg border font-semibold text-sm transition-colors text-slate-700 bg-slate-100 hover:bg-slate-200 flex items-center justify-center gap-2"
-                >
-                  <X size={16} />
-                  <span>Xóa bộ lọc</span>
-                </button>
-              </div>
-            )}
+            {/* Bottom Sheet Footer Sticky Buttons */}
+            <div className="pt-4 border-t border-slate-100 dark:border-zinc-800/80 mt-auto flex gap-3 pb-2 bg-white dark:bg-slate-900">
+              <button
+                type="button"
+                onClick={() => { onClearFilters?.(); setIsOpen(false); }}
+                disabled={!hasActiveFilters}
+                className="flex-1 h-11 rounded-xl border font-semibold text-sm transition-all flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ 
+                  borderColor: tokens.inputBorder, 
+                  color: tokens.bodyText, 
+                  backgroundColor: tokens.inputBackground 
+                }}
+              >
+                <span>Thiết lập lại</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="flex-1 h-11 rounded-xl font-bold text-sm transition-all flex items-center justify-center active:scale-95"
+                style={{ 
+                  backgroundColor: tokens.primary, 
+                  color: '#000000' 
+                }}
+              >
+                <span>Áp dụng</span>
+              </button>
+            </div>
           </div>
         </>
       )}
