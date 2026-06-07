@@ -401,13 +401,6 @@ function PostsContent() {
     prevFilterKeyRef.current = filterKey;
   }, [filterKey, listConfig.paginationType, pathname, router, searchParams, urlPage]);
 
-  // Initial loading state only (not on search/filter changes)
-  const isInitialLoading = categories === undefined;
-
-  if (isInitialLoading) {
-    return <PostsListSkeleton />;
-  }
-
   const [brokenThumbnails, setBrokenThumbnails] = useState<Set<string>>(new Set());
 
   const markThumbnailBroken = useCallback((id: Id<"posts">) => {
@@ -419,6 +412,13 @@ function PostsContent() {
       return next;
     });
   }, []);
+
+  // Initial loading state only (not on search/filter changes)
+  const isInitialLoading = categories === undefined;
+
+  if (isInitialLoading) {
+    return <PostsListSkeleton />;
+  }
 
   const PostGridCard = ({ post }: { post: typeof posts[number] }) => {
     const showImage = Boolean(post.thumbnail) && !brokenThumbnails.has(String(post._id));
