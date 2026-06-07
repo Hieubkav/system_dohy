@@ -1449,6 +1449,7 @@ function ProductsContent(props: ProductsPageProps) {
                   <option value="price_asc">Giá thấp → cao</option>
                   <option value="price_desc">Giá cao → thấp</option>
                   <option value="name">Tên A-Z</option>
+                  <option value="name_desc">Tên Z-A</option>
                 </select>
               </div>
             </div>

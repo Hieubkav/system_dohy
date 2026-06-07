@@ -6,7 +6,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { getCourseLevelLabel } from '@/lib/courses/labels';
-import { BookOpen, ChevronDown, Edit, ExternalLink, Plus, Search, Trash2 } from 'lucide-react';
+import { BookOpen, ChevronDown, Copy, Edit, ExternalLink, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminEntityImage } from '../components/AdminEntityImage';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
@@ -41,6 +41,7 @@ function CoursesContent() {
   const categoriesData = useQuery(api.courseCategories.listAll, {});
   const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'courses' });
   const deleteCourse = useMutation(api.courses.remove);
+  const duplicateCourse = useMutation(api.courses.duplicate);
   const bulkClearBrokenMedia = useMutation(api.courses.bulkClearBrokenMedia);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,6 +51,7 @@ function CoursesContent() {
   const [deleteTargetId, setDeleteTargetId] = useState<Id<'courses'> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const [cloningCourseId, setCloningCourseId] = useState<Id<'courses'> | null>(null);
   const [isClearingMedia, setIsClearingMedia] = useState(false);
 
   useEffect(() => {
@@ -99,6 +101,18 @@ function CoursesContent() {
   const openFrontend = (slug: string, categoryId: string) => {
     const categorySlug = categoryMap[categoryId]?.slug;
     window.open(categorySlug ? `/${categorySlug}/${slug}` : `/khoa-hoc/${slug}`, '_blank');
+  };
+
+  const handleDuplicateCourse = async (id: Id<'courses'>) => {
+    setCloningCourseId(id);
+    try {
+      const result = await duplicateCourse({ id });
+      toast.success(`Đã tạo bản sao: ${result.title}`);
+    } catch {
+      toast.error('Không thể copy khóa học');
+    } finally {
+      setCloningCourseId(null);
+    }
   };
 
   const handleDelete = (id: Id<'courses'>) => {
@@ -249,6 +263,15 @@ function CoursesContent() {
                   <div className="flex justify-end gap-2">
                     <Button variant="ghost" size="icon" title="Xem khóa học" onClick={() => { openFrontend(course.slug, course.categoryId); }}>
                       <ExternalLink size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Copy khóa học"
+                      onClick={() => { void handleDuplicateCourse(course._id); }}
+                      disabled={cloningCourseId === course._id}
+                    >
+                      {cloningCourseId === course._id ? <Loader2 size={16} className="animate-spin" /> : <Copy size={16} />}
                     </Button>
                     <Link href={`/admin/courses/${course._id}/edit`}><Button variant="ghost" size="icon"><Edit size={16} /></Button></Link>
                     <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => { handleDelete(course._id); }}>

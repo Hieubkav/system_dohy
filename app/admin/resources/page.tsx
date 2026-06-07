@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
-import { Edit, ExternalLink, FileText, Plus, Search, Trash2 } from 'lucide-react';
+import { Copy, Edit, ExternalLink, FileText, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -48,6 +48,7 @@ function ResourcesContent() {
   const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'resources' });
   const fieldsData = useQuery(api.admin.modules.listEnabledModuleFields, { moduleKey: 'resources' });
   const deleteResource = useMutation(api.resources.remove);
+  const duplicateResource = useMutation(api.resources.duplicate);
   const bulkClearBrokenMedia = useMutation(api.resources.bulkClearBrokenMedia);
 
   const enabledFields = useMemo(() => new Set(fieldsData?.map((field) => field.fieldKey) ?? []), [fieldsData]);
@@ -59,6 +60,7 @@ function ResourcesContent() {
   const [deleteTargetId, setDeleteTargetId] = useState<Id<'resources'> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const [cloningResourceId, setCloningResourceId] = useState<Id<'resources'> | null>(null);
   const [isClearingMedia, setIsClearingMedia] = useState(false);
 
   useEffect(() => {
@@ -101,6 +103,18 @@ function ResourcesContent() {
   const openFrontend = (slug: string, categoryId: string) => {
     const categorySlug = categoryMap[categoryId]?.slug;
     window.open(categorySlug ? `/${categorySlug}/${slug}` : `/resources/${slug}`, '_blank');
+  };
+
+  const handleDuplicateResource = async (id: Id<'resources'>) => {
+    setCloningResourceId(id);
+    try {
+      const result = await duplicateResource({ id });
+      toast.success(`Đã tạo bản sao: ${result.title}`);
+    } catch {
+      toast.error('Không thể copy tài nguyên');
+    } finally {
+      setCloningResourceId(null);
+    }
   };
 
   const handleDelete = (id: Id<'resources'>) => {
@@ -251,6 +265,15 @@ function ResourcesContent() {
                   <div className="flex justify-end gap-2">
                     <Button variant="ghost" size="icon" title="Xem tài nguyên" onClick={() => { openFrontend(resource.slug, resource.categoryId); }}>
                       <ExternalLink size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Copy tài nguyên"
+                      onClick={() => { void handleDuplicateResource(resource._id); }}
+                      disabled={cloningResourceId === resource._id}
+                    >
+                      {cloningResourceId === resource._id ? <Loader2 size={16} className="animate-spin" /> : <Copy size={16} />}
                     </Button>
                     <Link href={`/admin/resources/${resource._id}/edit`}><Button variant="ghost" size="icon"><Edit size={16} /></Button></Link>
                     <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => { handleDelete(resource._id); }}>

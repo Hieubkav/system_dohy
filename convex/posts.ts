@@ -367,7 +367,8 @@ export const searchPublished = query({
       v.literal("newest"),
       v.literal("oldest"),
       v.literal("popular"),
-      v.literal("title")
+      v.literal("title"),
+      v.literal("title_desc")
     )),
   },
   handler: async (ctx, args) => {
@@ -432,12 +433,18 @@ export const searchPublished = query({
           posts.sort((a, b) => a.title.localeCompare(b.title, 'vi'));
           break;
         }
+        case "title_desc": {
+          posts.sort((a, b) => b.title.localeCompare(a.title, 'vi'));
+          break;
+        }
         default: { // Newest
           posts.sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
         }
       }
     } else if (sortBy === "title") {
       posts.sort((a, b) => a.title.localeCompare(b.title, 'vi'));
+    } else if (sortBy === "title_desc") {
+      posts.sort((a, b) => b.title.localeCompare(a.title, 'vi'));
     }
     
     return posts.slice(0, limit);
@@ -581,7 +588,8 @@ export const listPublishedWithOffset = query({
       v.literal("newest"),
       v.literal("oldest"),
       v.literal("popular"),
-      v.literal("title")
+      v.literal("title"),
+      v.literal("title_desc")
     )),
   },
   handler: async (ctx, args) => {
@@ -641,6 +649,8 @@ export const listPublishedWithOffset = query({
       posts = ranked.map((entry) => entry.item);
     } else if (sortBy === "title") {
       posts.sort((a, b) => a.title.localeCompare(b.title, 'vi'));
+    } else if (sortBy === "title_desc") {
+      posts.sort((a, b) => b.title.localeCompare(a.title, 'vi'));
     } else if (args.categoryId) {
       // Re-sort if filtered by category
       switch (sortBy) {
@@ -672,7 +682,8 @@ export const searchPublishedPaginated = query({
       v.literal("newest"),
       v.literal("oldest"),
       v.literal("popular"),
-      v.literal("title")
+      v.literal("title"),
+      v.literal("title_desc")
     )),
   },
   handler: async (ctx, args) => {
@@ -724,6 +735,8 @@ export const searchPublishedPaginated = query({
     // Sort by title if needed (other sorts handled by index)
     if (sortBy === "title") {
       posts.sort((a, b) => a.title.localeCompare(b.title, 'vi'));
+    } else if (sortBy === "title_desc") {
+      posts.sort((a, b) => b.title.localeCompare(a.title, 'vi'));
     }
     
     return {
@@ -1237,6 +1250,74 @@ export const createFromGeneratedPayload = mutation({
     return id;
   },
   returns: v.id("posts"),
+});
+
+export const duplicate = mutation({
+  args: { id: v.id("posts") },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.id);
+    if (!source) {
+      throw new Error("Post not found");
+    }
+
+    const buildCopiedName = (base: string, attempt: number) =>
+      attempt <= 1 ? `${base} (copy)` : `${base} (copy ${attempt})`;
+      
+    let copiedTitle = "";
+    for (let attempt = 1; attempt <= 100; attempt += 1) {
+      const candidate = buildCopiedName(source.title, attempt);
+      const existing = await ctx.db
+        .query("posts")
+        .filter((q) => q.eq(q.field("title"), candidate))
+        .first();
+      if (!existing) {
+        copiedTitle = candidate;
+        break;
+      }
+    }
+    if (!copiedTitle) {
+      copiedTitle = `${source.title} (copy ${Date.now()})`;
+    }
+
+    const additionalCategoryIds = await listPostAdditionalCategoryIds(ctx, source._id, source.categoryId);
+
+    const newPostId = await PostsModel.create(ctx, {
+      authorName: source.authorName,
+      categoryId: source.categoryId,
+      content: source.content,
+      renderType: source.renderType,
+      markdownRender: source.markdownRender,
+      htmlRender: source.htmlRender,
+      excerpt: source.excerpt,
+      metaDescription: source.metaDescription,
+      metaTitle: source.metaTitle,
+      order: await PostsModel.getNextOrder(ctx),
+      slug: source.slug,
+      status: source.status,
+      thumbnail: source.thumbnail,
+      thumbnailStorageId: source.thumbnailStorageId,
+      title: copiedTitle,
+    });
+
+    if (await isMultiCategoryEnabled(ctx, "posts")) {
+      await syncPostCategoryAssignments(ctx, newPostId, source.categoryId, additionalCategoryIds);
+    }
+
+    if (source.thumbnailStorageId) {
+      await syncOwnerFilesAndCleanup(ctx, {
+        ownerField: "thumbnail",
+        ownerId: newPostId,
+        ownerTable: "posts",
+        purpose: "post-thumbnail",
+      }, [source.thumbnailStorageId]);
+    }
+
+    const newPost = await ctx.db.get(newPostId);
+    if (!newPost) {
+      throw new Error("Failed to duplicate post");
+    }
+    return newPost;
+  },
 });
 
 async function backfillPostAggregateBatch(

@@ -128,6 +128,7 @@ const sortByValidator = v.union(
   v.literal("oldest"),
   v.literal("popular"),
   v.literal("title"),
+  v.literal("title_desc"),
   v.literal("price_asc"),
   v.literal("price_desc")
 );
@@ -183,6 +184,9 @@ function sortResources(resources: Doc<"resources">[], sortBy: string) {
       break;
     case "title":
       resources.sort((a, b) => a.title.localeCompare(b.title, "vi"));
+      break;
+    case "title_desc":
+      resources.sort((a, b) => b.title.localeCompare(a.title, "vi"));
       break;
     case "price_asc":
       resources.sort((a, b) => (a.priceAmount ?? 0) - (b.priceAmount ?? 0));
@@ -1139,4 +1143,84 @@ export const activateAccess = mutation({
     return null;
   },
   returns: v.null(),
+});
+
+export const duplicate = mutation({
+  args: { id: v.id("resources") },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.id);
+    if (!source) {
+      throw new Error("Resource not found");
+    }
+
+    const buildCopiedName = (base: string, attempt: number) =>
+      attempt <= 1 ? `${base} (copy)` : `${base} (copy ${attempt})`;
+      
+    let copiedTitle = "";
+    for (let attempt = 1; attempt <= 100; attempt += 1) {
+      const candidate = buildCopiedName(source.title, attempt);
+      const existing = await ctx.db
+        .query("resources")
+        .filter((q) => q.eq(q.field("title"), candidate))
+        .first();
+      if (!existing) {
+        copiedTitle = candidate;
+        break;
+      }
+    }
+    if (!copiedTitle) {
+      copiedTitle = `${source.title} (copy ${Date.now()})`;
+    }
+
+    const additionalCategoryIds = await listResourceAdditionalCategoryIds(ctx, source._id, source.categoryId);
+    const filterAssignments = await ctx.db
+      .query("resourceFilterAssignments")
+      .withIndex("by_resource", (q) => q.eq("resourceId", source._id))
+      .collect();
+    const filterValueIds = filterAssignments.map((a) => a.valueId);
+
+    const newResourceId = await ctx.db.insert("resources", {
+      categoryId: source.categoryId,
+      comparePriceAmount: source.comparePriceAmount,
+      content: source.content,
+      downloadUrl: source.downloadUrl,
+      excerpt: source.excerpt,
+      featured: source.featured,
+      htmlRender: source.htmlRender,
+      images: source.images,
+      imageStorageIds: source.imageStorageIds,
+      isPriceVisible: source.isPriceVisible,
+      markdownRender: source.markdownRender,
+      metaDescription: source.metaDescription,
+      metaTitle: source.metaTitle,
+      order: await getNextOrder(ctx),
+      priceAmount: source.priceAmount,
+      priceNote: source.priceNote,
+      pricingType: source.pricingType,
+      publishedAt: source.status === "Published" ? Date.now() : undefined,
+      renderType: source.renderType,
+      slug: source.slug,
+      status: source.status,
+      thumbnail: source.thumbnail,
+      thumbnailStorageId: source.thumbnailStorageId,
+      title: copiedTitle,
+      views: 0,
+    });
+
+    await Promise.all([
+      syncResourceCategoryAssignments(ctx, newResourceId, source.categoryId, additionalCategoryIds),
+      syncResourceFilterAssignments(ctx, newResourceId, filterValueIds),
+      syncOwnerFilesAndCleanup(
+        ctx,
+        { ownerField: "media", ownerId: newResourceId, ownerTable: "resources", purpose: "resource-media" },
+        [source.thumbnailStorageId, ...(source.imageStorageIds ?? [])]
+      ),
+    ]);
+
+    const newResource = await ctx.db.get(newResourceId);
+    if (!newResource) {
+      throw new Error("Failed to duplicate resource");
+    }
+    return newResource;
+  },
 });

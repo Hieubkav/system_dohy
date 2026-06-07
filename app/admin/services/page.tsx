@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { Briefcase, ChevronDown, Edit, ExternalLink, Plus, Search, Trash2 } from 'lucide-react';
+import { Briefcase, ChevronDown, Copy, Edit, ExternalLink, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
 import { BulkActionBar, ColumnToggle, SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
@@ -43,6 +43,7 @@ function ServicesContent() {
   const fieldsData = useQuery(api.admin.modules.listEnabledModuleFields, { moduleKey: 'services' });
   const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'services' });
   const deleteService = useMutation(api.services.remove);
+  const duplicateService = useMutation(api.services.duplicate);
   const bulkClearBrokenMedia = useMutation(api.services.bulkClearBrokenMedia);
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -54,6 +55,7 @@ function ServicesContent() {
   const [deleteTargetId, setDeleteTargetId] = useState<Id<"services"> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const [cloningServiceId, setCloningServiceId] = useState<Id<"services"> | null>(null);
   const [isClearingBrokenMedia, setIsClearingBrokenMedia] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
     if (typeof window === 'undefined') {
@@ -213,6 +215,18 @@ function ServicesContent() {
       ? selectedIds.filter(i => i !== id)
       : [...selectedIds, id];
     applyManualSelection(next);
+  };
+
+  const handleDuplicateService = async (id: Id<"services">) => {
+    setCloningServiceId(id);
+    try {
+      const result = await duplicateService({ id });
+      toast.success(`Đã tạo bản sao: ${result.title}`);
+    } catch {
+      toast.error('Không thể copy dịch vụ');
+    } finally {
+      setCloningServiceId(null);
+    }
   };
 
   const handleDelete = async (id: Id<"services">) => {
@@ -407,6 +421,15 @@ function ServicesContent() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" className="text-teal-600 hover:text-teal-700" title="Xem dịch vụ" onClick={() =>{  openFrontend(service.slug, service.categoryId); }}><ExternalLink size={16}/></Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Copy dịch vụ"
+                          onClick={() => { void handleDuplicateService(service._id); }}
+                          disabled={cloningServiceId === service._id}
+                        >
+                          {cloningServiceId === service._id ? <Loader2 size={16} className="animate-spin" /> : <Copy size={16} />}
+                        </Button>
                         <Link href={`/admin/services/${service._id}/edit`}><Button variant="ghost" size="icon"><Edit size={16}/></Button></Link>
                         <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={ async () => handleDelete(service._id)}><Trash2 size={16}/></Button>
                       </div>

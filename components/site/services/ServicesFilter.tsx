@@ -5,7 +5,7 @@ import { ChevronDown, Search, SlidersHorizontal, X } from 'lucide-react';
 import type { Id } from '@/convex/_generated/dataModel';
 import type { ServicesListColors } from './colors';
 
-export type ServiceSortOption = 'newest' | 'oldest' | 'popular' | 'title' | 'price_asc' | 'price_desc';
+export type ServiceSortOption = 'newest' | 'oldest' | 'popular' | 'title' | 'title_desc' | 'price_asc' | 'price_desc';
 
 interface Category {
   _id: Id<"serviceCategories">;
@@ -30,6 +30,7 @@ const SORT_OPTIONS: { value: ServiceSortOption; label: string }[] = [
   { label: 'Cũ nhất', value: 'oldest' },
   { label: 'Xem nhiều', value: 'popular' },
   { label: 'Theo tên A-Z', value: 'title' },
+  { label: 'Theo tên Z-A', value: 'title_desc' },
   { label: 'Giá: Thấp đến cao', value: 'price_asc' },
   { label: 'Giá: Cao đến thấp', value: 'price_desc' },
 ];

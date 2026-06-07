@@ -264,7 +264,7 @@ function CoursesContent() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [level, setLevel] = useState('');
-  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'price_asc' | 'price_desc' | 'title'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'price_asc' | 'price_desc' | 'title' | 'title_desc'>('newest');
   const [categoryQuery, setCategoryQuery] = useState('');
   const postsPerPage = config.postsPerPage ?? 12;
   const [visibleLimit, setVisibleLimit] = useState(postsPerPage);
@@ -681,6 +681,7 @@ function CoursesContent() {
                           { value: 'newest', label: 'Mới nhất' },
                           { value: 'popular', label: 'Xem nhiều' },
                           { value: 'title', label: 'Tên A-Z' },
+                          { value: 'title_desc', label: 'Tên Z-A' },
                           { value: 'price_asc', label: 'Giá tăng dần' },
                           { value: 'price_desc', label: 'Giá giảm dần' },
                         ]}
@@ -714,11 +715,12 @@ function CoursesContent() {
                         <span className="text-xs font-semibold text-slate-500 dark:text-[#86868b]">Sắp xếp:</span>
                         <CustomDropdown
                           value={sortBy}
-                          onChange={(value) => { setSortBy(value as typeof sortBy); }}
+                          onChange={(value) => { setSortBy(value as 'newest' | 'popular' | 'title' | 'title_desc' | 'price_asc' | 'price_desc'); }}
                           options={[
                             { value: 'newest', label: 'Mới nhất' },
                             { value: 'popular', label: 'Xem nhiều' },
                             { value: 'title', label: 'Tên A-Z' },
+                            { value: 'title_desc', label: 'Tên Z-A' },
                             { value: 'price_asc', label: 'Giá tăng dần' },
                             { value: 'price_desc', label: 'Giá giảm dần' },
                           ]}

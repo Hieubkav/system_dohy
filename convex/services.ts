@@ -402,6 +402,7 @@ export const listPublishedWithOffset = query({
       v.literal("oldest"),
       v.literal("popular"),
       v.literal("title"),
+      v.literal("title_desc"),
       v.literal("price_asc"),
       v.literal("price_desc")
     )),
@@ -469,6 +470,9 @@ export const listPublishedWithOffset = query({
         case "title":
           services.sort((a, b) => a.title.localeCompare(b.title, 'vi'));
           break;
+        case "title_desc":
+          services.sort((a, b) => b.title.localeCompare(a.title, 'vi'));
+          break;
         case "price_asc":
           services.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
           break;
@@ -495,6 +499,7 @@ export const searchPublished = query({
       v.literal("oldest"),
       v.literal("popular"),
       v.literal("title"),
+      v.literal("title_desc"),
       v.literal("price_asc"),
       v.literal("price_desc")
     )),
@@ -552,6 +557,10 @@ export const searchPublished = query({
         }
         case "title": {
           services.sort((a, b) => a.title.localeCompare(b.title, 'vi'));
+          break;
+        }
+        case "title_desc": {
+          services.sort((a, b) => b.title.localeCompare(a.title, 'vi'));
           break;
         }
         case "price_asc": {
@@ -822,6 +831,82 @@ export const getDeleteInfo = query({
       preview: v.array(v.object({ id: v.string(), name: v.string() })),
     })),
   }),
+});
+
+export const duplicate = mutation({
+  args: { id: v.id("services") },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.id);
+    if (!source) {
+      throw new Error("Service not found");
+    }
+
+    const buildCopiedName = (base: string, attempt: number) =>
+      attempt <= 1 ? `${base} (copy)` : `${base} (copy ${attempt})`;
+      
+    let copiedTitle = "";
+    for (let attempt = 1; attempt <= 100; attempt += 1) {
+      const candidate = buildCopiedName(source.title, attempt);
+      const existing = await ctx.db
+        .query("services")
+        .filter((q) => q.eq(q.field("title"), candidate))
+        .first();
+      if (!existing) {
+        copiedTitle = candidate;
+        break;
+      }
+    }
+    if (!copiedTitle) {
+      copiedTitle = `${source.title} (copy ${Date.now()})`;
+    }
+
+    const additionalCategoryIds = await listServiceAdditionalCategoryIds(ctx, source._id, source.categoryId);
+
+    const newServiceId = await ServicesModel.create(ctx, {
+      categoryId: source.categoryId,
+      content: source.content,
+      renderType: source.renderType,
+      markdownRender: source.markdownRender,
+      htmlRender: source.htmlRender,
+      duration: source.duration,
+      bookingEnabled: source.bookingEnabled,
+      bookingDurationMin: source.bookingDurationMin,
+      bookingSlotIntervalMin: source.bookingSlotIntervalMin,
+      bookingCapacityPerSlot: source.bookingCapacityPerSlot,
+      bookingSlotTemplateDefault: source.bookingSlotTemplateDefault,
+      bookingSlotTemplateByWeekday: source.bookingSlotTemplateByWeekday,
+      excerpt: source.excerpt,
+      featured: source.featured,
+      metaDescription: source.metaDescription,
+      metaTitle: source.metaTitle,
+      order: await ServicesModel.getNextOrder(ctx),
+      price: source.price,
+      slug: source.slug,
+      status: source.status,
+      thumbnail: source.thumbnail,
+      thumbnailStorageId: source.thumbnailStorageId,
+      title: copiedTitle,
+    });
+
+    if (await isMultiCategoryEnabled(ctx, "services")) {
+      await syncServiceCategoryAssignments(ctx, newServiceId, source.categoryId, additionalCategoryIds);
+    }
+
+    if (source.thumbnailStorageId) {
+      await syncOwnerFilesAndCleanup(ctx, {
+        ownerField: "thumbnail",
+        ownerId: newServiceId,
+        ownerTable: "services",
+        purpose: "service-thumbnail",
+      }, [source.thumbnailStorageId]);
+    }
+
+    const newService = await ctx.db.get(newServiceId);
+    if (!newService) {
+      throw new Error("Failed to duplicate service");
+    }
+    return newService;
+  },
 });
 
 async function backfillServiceAggregateBatch(

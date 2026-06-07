@@ -474,6 +474,7 @@ export const listPublishedWithOffset = query({
       v.literal("oldest"),
       v.literal("popular"),
       v.literal("title"),
+      v.literal("title_desc"),
       v.literal("price_asc"),
       v.literal("price_desc")
     )),
@@ -595,6 +596,9 @@ export const listPublishedWithOffset = query({
         case "title":
           courses.sort((a, b) => a.title.localeCompare(b.title, "vi"));
           break;
+        case "title_desc":
+          courses.sort((a, b) => b.title.localeCompare(a.title, "vi"));
+          break;
         case "price_asc":
           courses.sort((a, b) => (a.priceAmount ?? 0) - (b.priceAmount ?? 0));
           break;
@@ -621,6 +625,7 @@ export const searchPublished = query({
       v.literal("oldest"),
       v.literal("popular"),
       v.literal("title"),
+      v.literal("title_desc"),
       v.literal("price_asc"),
       v.literal("price_desc")
     )),
@@ -673,6 +678,9 @@ export const searchPublished = query({
           break;
         case "title":
           courses.sort((a, b) => a.title.localeCompare(b.title, "vi"));
+          break;
+        case "title_desc":
+          courses.sort((a, b) => b.title.localeCompare(a.title, "vi"));
           break;
         case "price_asc":
           courses.sort((a, b) => (a.priceAmount ?? 0) - (b.priceAmount ?? 0));
@@ -1808,6 +1816,131 @@ export const removeCourseStudentAdmin = mutation({
     return null;
   },
   returns: v.null(),
+});
+
+export const duplicate = mutation({
+  args: { id: v.id("courses") },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.id);
+    if (!source) {
+      throw new Error("Course not found");
+    }
+
+    const buildCopiedName = (base: string, attempt: number) =>
+      attempt <= 1 ? `${base} (copy)` : `${base} (copy ${attempt})`;
+      
+    let copiedTitle = "";
+    for (let attempt = 1; attempt <= 100; attempt += 1) {
+      const candidate = buildCopiedName(source.title, attempt);
+      const existing = await ctx.db
+        .query("courses")
+        .filter((q) => q.eq(q.field("title"), candidate))
+        .first();
+      if (!existing) {
+        copiedTitle = candidate;
+        break;
+      }
+    }
+    if (!copiedTitle) {
+      copiedTitle = `${source.title} (copy ${Date.now()})`;
+    }
+
+    const additionalCategoryIds = await listCourseAdditionalCategoryIds(ctx, source._id, source.categoryId);
+    const filterAssignments = await ctx.db
+      .query("courseFilterAssignments")
+      .withIndex("by_course", (q) => q.eq("courseId", source._id))
+      .collect();
+    const valueIds = filterAssignments.map((a) => a.valueId);
+
+    const newCourseId = await CoursesModel.create(ctx, {
+      categoryId: source.categoryId,
+      comparePriceAmount: source.comparePriceAmount,
+      content: source.content,
+      durationSeconds: source.durationSeconds,
+      durationText: source.durationText,
+      excerpt: source.excerpt,
+      featured: source.featured,
+      htmlRender: source.htmlRender,
+      instructorName: source.instructorName,
+      introVideoType: source.introVideoType,
+      introVideoUrl: source.introVideoUrl,
+      isPriceVisible: source.isPriceVisible,
+      level: source.level,
+      markdownRender: source.markdownRender,
+      metaDescription: source.metaDescription,
+      metaTitle: source.metaTitle,
+      order: await CoursesModel.getNextOrder(ctx),
+      priceAmount: source.priceAmount,
+      priceNote: source.priceNote,
+      pricingType: source.pricingType,
+      renderType: source.renderType,
+      slug: source.slug,
+      status: source.status,
+      thumbnail: source.thumbnail,
+      thumbnailStorageId: source.thumbnailStorageId,
+      title: copiedTitle,
+    });
+
+    if (await isMultiCategoryEnabled(ctx, "courses")) {
+      await syncCourseCategoryAssignments(ctx, newCourseId, source.categoryId, additionalCategoryIds);
+    }
+    await syncCourseFilterAssignments(ctx, newCourseId, valueIds);
+
+    if (source.thumbnailStorageId) {
+      await syncOwnerFilesAndCleanup(ctx, {
+        ownerField: "thumbnail",
+        ownerId: newCourseId,
+        ownerTable: "courses",
+        purpose: "course-thumbnail",
+      }, [source.thumbnailStorageId]);
+    }
+
+    const chapters = await ctx.db
+      .query("courseChapters")
+      .withIndex("by_course", (q) => q.eq("courseId", source._id))
+      .collect();
+    
+    for (const chapter of chapters) {
+      const newChapterId = await ctx.db.insert("courseChapters", {
+        active: chapter.active,
+        courseId: newCourseId,
+        createdAt: Date.now(),
+        order: chapter.order,
+        summary: chapter.summary,
+        title: chapter.title,
+        updatedAt: Date.now(),
+      });
+
+      const lessons = await ctx.db
+        .query("courseLessons")
+        .withIndex("by_chapter_order", (q) => q.eq("chapterId", chapter._id))
+        .collect();
+
+      for (const lesson of lessons) {
+        await ctx.db.insert("courseLessons", {
+          active: lesson.active,
+          chapterId: newChapterId,
+          courseId: newCourseId,
+          createdAt: Date.now(),
+          description: lesson.description,
+          durationSeconds: lesson.durationSeconds,
+          exerciseLink: lesson.exerciseLink,
+          isPreview: lesson.isPreview,
+          order: lesson.order,
+          title: lesson.title,
+          updatedAt: Date.now(),
+          videoType: lesson.videoType,
+          videoUrl: lesson.videoUrl,
+        });
+      }
+    }
+
+    const newCourse = await ctx.db.get(newCourseId);
+    if (!newCourse) {
+      throw new Error("Failed to duplicate course");
+    }
+    return newCourse;
+  },
 });
 
 

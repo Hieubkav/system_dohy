@@ -475,7 +475,7 @@ function ResourcesContent() {
   const urlPage = Math.max(Number(searchParams.get('page')) || 1, 1);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'price_asc' | 'price_desc' | 'title'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'price_asc' | 'price_desc' | 'title' | 'title_desc'>('newest');
   const [categoryQuery, setCategoryQuery] = useState('');
   const [pageSizeOverride, setPageSizeOverride] = useState<number | null>(null);
   const postsPerPage = pageSizeOverride ?? (config.postsPerPage ?? 12);
@@ -846,6 +846,7 @@ function ResourcesContent() {
                         { value: 'price_asc', label: 'Giá tăng dần' },
                         { value: 'price_desc', label: 'Giá giảm dần' },
                         { value: 'title', label: 'Tên A-Z' },
+                        { value: 'title_desc', label: 'Tên Z-A' },
                       ]}
                       icon={<SlidersHorizontal size={15} className="text-slate-400" />}
                       cornerRadius={config.cornerRadius}

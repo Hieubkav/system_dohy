@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { Briefcase, Edit, ExternalLink, Loader2, Plus, Search, Trash2 } from 'lucide-react';
+import { Briefcase, Copy, Edit, ExternalLink, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdminEntityImage } from '../components/AdminEntityImage';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
@@ -30,10 +30,12 @@ function ProjectsContent() {
   const categoriesData = useQuery(api.projectCategories.listAll, {});
   const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'projects' });
   const deleteProject = useMutation(api.projects.remove);
+  const duplicateProject = useMutation(api.projects.duplicate);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'' | 'Published' | 'Draft' | 'Archived'>('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [cloningProjectId, setCloningProjectId] = useState<Id<'projects'> | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
@@ -67,6 +69,18 @@ function ProjectsContent() {
   const isLoading = projectsData === undefined || totalCountData === undefined || categoriesData === undefined;
   const totalCount = totalCountData?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / resolvedProjectsPerPage));
+
+  const handleDuplicateProject = async (id: Id<'projects'>) => {
+    setCloningProjectId(id);
+    try {
+      const result = await duplicateProject({ id });
+      toast.success(`Đã tạo bản sao: ${result.title}`);
+    } catch {
+      toast.error('Không thể copy dự án');
+    } finally {
+      setCloningProjectId(null);
+    }
+  };
 
   const handleDelete = async (id: Id<'projects'>) => {
     if (!confirm('Xóa dự án này? File media liên quan sẽ được dọn qua FLS nếu không còn được sử dụng.')) {return;}
@@ -185,6 +199,15 @@ function ProjectsContent() {
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" size="icon" className="text-teal-600 hover:text-teal-700" onClick={() => window.open(`/projects/${project.slug}`, '_blank')}>
                         <ExternalLink size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Copy dự án"
+                        onClick={() => { void handleDuplicateProject(project._id); }}
+                        disabled={cloningProjectId === project._id}
+                      >
+                        {cloningProjectId === project._id ? <Loader2 size={16} className="animate-spin" /> : <Copy size={16} />}
                       </Button>
                       <Link href={`/admin/projects/${project._id}/edit`}>
                         <Button variant="ghost" size="icon"><Edit size={16} /></Button>

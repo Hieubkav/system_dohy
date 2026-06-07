@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { ChevronDown, Edit, ExternalLink, Plus, Search, Trash2 } from 'lucide-react';
+import { ChevronDown, Copy, Edit, ExternalLink, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
 import { BulkActionBar, ColumnToggle, SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
@@ -48,6 +48,7 @@ function PostsContent() {
   const [deleteTargetId, setDeleteTargetId] = useState<Id<"posts"> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const [cloningPostId, setCloningPostId] = useState<Id<"posts"> | null>(null);
   const [bulkStatusLoading, setBulkStatusLoading] = useState<'publish' | 'unpublish' | null>(null);
   const [isClearingBrokenMedia, setIsClearingBrokenMedia] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<string[]>(() => {
@@ -71,6 +72,7 @@ function PostsContent() {
   const fieldsData = useQuery(api.admin.modules.listEnabledModuleFields, { moduleKey: 'posts' });
   const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'posts' });
   const deletePost = useMutation(api.posts.remove);
+  const duplicatePost = useMutation(api.posts.duplicate);
   const updatePost = useMutation(api.posts.update);
   const bulkClearBrokenMedia = useMutation(api.posts.bulkClearBrokenMedia);
   
@@ -217,6 +219,18 @@ function PostsContent() {
       ? selectedIds.filter(i => i !== id)
       : [...selectedIds, id];
     applyManualSelection(next);
+  };
+
+  const handleDuplicatePost = async (id: Id<"posts">) => {
+    setCloningPostId(id);
+    try {
+      const result = await duplicatePost({ id });
+      toast.success(`Đã tạo bản sao: ${result.title}`);
+    } catch {
+      toast.error('Không thể copy bài viết');
+    } finally {
+      setCloningPostId(null);
+    }
   };
 
   const handleDelete = async (id: Id<"posts">) => {
@@ -426,6 +440,15 @@ function PostsContent() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" className="text-blue-600 hover:text-blue-700" title="Xem bài viết" onClick={() =>{  openFrontend(post.slug, post.categoryId); }}><ExternalLink size={16}/></Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Copy bài viết"
+                          onClick={() => { void handleDuplicatePost(post._id); }}
+                          disabled={cloningPostId === post._id}
+                        >
+                          {cloningPostId === post._id ? <Loader2 size={16} className="animate-spin" /> : <Copy size={16} />}
+                        </Button>
                         <Link href={`/admin/posts/${post._id}/edit`}><Button variant="ghost" size="icon"><Edit size={16}/></Button></Link>
                         <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={ async () => handleDelete(post._id)}><Trash2 size={16}/></Button>
                       </div>

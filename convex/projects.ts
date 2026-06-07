@@ -277,7 +277,8 @@ export const listPublishedWithOffset = query({
       v.literal("newest"),
       v.literal("oldest"),
       v.literal("popular"),
-      v.literal("title")
+      v.literal("title"),
+      v.literal("title_desc")
     )),
   },
   handler: async (ctx, args) => {
@@ -342,6 +343,9 @@ export const listPublishedWithOffset = query({
         case "title":
           projects.sort((a, b) => a.title.localeCompare(b.title, "vi"));
           break;
+        case "title_desc":
+          projects.sort((a, b) => b.title.localeCompare(a.title, "vi"));
+          break;
         default:
           projects.sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
       }
@@ -361,7 +365,8 @@ export const searchPublished = query({
       v.literal("newest"),
       v.literal("oldest"),
       v.literal("popular"),
-      v.literal("title")
+      v.literal("title"),
+      v.literal("title_desc")
     )),
   },
   handler: async (ctx, args) => {
@@ -412,6 +417,9 @@ export const searchPublished = query({
           break;
         case "title":
           projects.sort((a, b) => a.title.localeCompare(b.title, "vi"));
+          break;
+        case "title_desc":
+          projects.sort((a, b) => b.title.localeCompare(a.title, "vi"));
           break;
         default:
           projects.sort((a, b) => (b.publishedAt ?? 0) - (a.publishedAt ?? 0));
@@ -699,4 +707,83 @@ export const getDeleteInfo = query({
       preview: v.array(v.object({ id: v.string(), name: v.string() })),
     })),
   }),
+});
+
+export const duplicate = mutation({
+  args: { id: v.id("projects") },
+  handler: async (ctx, args) => {
+    const source = await ctx.db.get(args.id);
+    if (!source) {
+      throw new Error("Project not found");
+    }
+
+    const buildCopiedName = (base: string, attempt: number) =>
+      attempt <= 1 ? `${base} (copy)` : `${base} (copy ${attempt})`;
+      
+    let copiedTitle = "";
+    for (let attempt = 1; attempt <= 100; attempt += 1) {
+      const candidate = buildCopiedName(source.title, attempt);
+      const existing = await ctx.db
+        .query("projects")
+        .filter((q) => q.eq(q.field("title"), candidate))
+        .first();
+      if (!existing) {
+        copiedTitle = candidate;
+        break;
+      }
+    }
+    if (!copiedTitle) {
+      copiedTitle = `${source.title} (copy ${Date.now()})`;
+    }
+
+    const additionalCategoryIds = await listProjectAdditionalCategoryIds(ctx, source._id, source.categoryId);
+
+    const newProjectId = await ProjectsModel.create(ctx, {
+      categoryId: source.categoryId,
+      clientName: source.clientName,
+      completedAt: source.completedAt,
+      content: source.content,
+      excerpt: source.excerpt,
+      featured: source.featured,
+      htmlRender: source.htmlRender,
+      images: source.images,
+      imageStorageIds: source.imageStorageIds,
+      introVideoType: source.introVideoType,
+      introVideoUrl: source.introVideoUrl,
+      markdownRender: source.markdownRender,
+      metaDescription: source.metaDescription,
+      metaTitle: source.metaTitle,
+      order: await ProjectsModel.getNextOrder(ctx),
+      projectUrl: source.projectUrl,
+      renderType: source.renderType,
+      slug: source.slug,
+      status: source.status,
+      thumbnail: source.thumbnail,
+      thumbnailStorageId: source.thumbnailStorageId,
+      title: copiedTitle,
+    });
+
+    if (await isMultiCategoryEnabled(ctx, "projects")) {
+      await syncProjectCategoryAssignments(ctx, newProjectId, source.categoryId, additionalCategoryIds);
+    }
+
+    const storageIds = collectProjectStorageIds({
+      imageStorageIds: source.imageStorageIds,
+      thumbnailStorageId: source.thumbnailStorageId ?? null,
+    });
+    if (storageIds.length > 0) {
+      await syncOwnerFilesAndCleanup(ctx, {
+        ownerField: "media",
+        ownerId: newProjectId,
+        ownerTable: "projects",
+        purpose: "project-media",
+      }, storageIds);
+    }
+
+    const newProject = await ctx.db.get(newProjectId);
+    if (!newProject) {
+      throw new Error("Failed to duplicate project");
+    }
+    return newProject;
+  },
 });

@@ -20,7 +20,7 @@ import { AttributeFilterGroupWidget, MobileProductsFilters } from './FilterCompo
 import { RangeSlider } from '@/components/shared/RangeSlider';
 import { PageHeaderWithCount } from '@/components/shared/PageHeaderWithCount';
 
-export type ProductSortOption = 'newest' | 'oldest' | 'popular' | 'price_asc' | 'price_desc' | 'name';
+export type ProductSortOption = 'newest' | 'oldest' | 'popular' | 'price_asc' | 'price_desc' | 'name' | 'name_desc';
 export type ProductsSaleMode = 'cart' | 'contact' | 'affiliate';
 
 export function generatePaginationItems(currentPage: number, totalPages: number): (number | 'ellipsis')[] {
@@ -760,6 +760,7 @@ export function CatalogLayout({
                   <option value="price_asc">Giá thấp → cao</option>
                   <option value="price_desc">Giá cao → thấp</option>
                   <option value="name">Tên A-Z</option>
+                  <option value="name_desc">Tên Z-A</option>
                 </select>
               </div>
             </div>
@@ -789,6 +790,7 @@ export function CatalogLayout({
                       <option value="price_asc">Giá thấp → cao</option>
                       <option value="price_desc">Giá cao → thấp</option>
                       <option value="name">Tên A-Z</option>
+                      <option value="name_desc">Tên Z-A</option>
                     </select>
                   </div>
                 </div>
@@ -1424,6 +1426,7 @@ export function ListLayout({
                   <option value="price_asc">Giá thấp → cao</option>
                   <option value="price_desc">Giá cao → thấp</option>
                   <option value="name">Tên A-Z</option>
+                  <option value="name_desc">Tên Z-A</option>
                 </select>
               </div>
             </div>

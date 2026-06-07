@@ -106,7 +106,7 @@ function ProjectsContent() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [pageSizeOverride, setPageSizeOverride] = useState<number | null>(null);
   const postsPerPage = pageSizeOverride ?? (listConfig.postsPerPage ?? 12);
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'title'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'title' | 'title_desc'>('newest');
 
   // Debounce search query
   useEffect(() => {
@@ -241,7 +241,7 @@ function ProjectsContent() {
     setSearchQuery(value);
   };
 
-  const handleSortChange = (value: 'newest' | 'oldest' | 'popular' | 'title') => {
+  const handleSortChange = (value: 'newest' | 'oldest' | 'popular' | 'title' | 'title_desc') => {
     setSortBy(value);
   };
 
@@ -299,13 +299,14 @@ function ProjectsContent() {
           )}
           <select
             value={sortBy}
-            onChange={(event) => handleSortChange(event.target.value as 'newest' | 'oldest' | 'popular' | 'title')}
+            onChange={(event) => handleSortChange(event.target.value as 'newest' | 'oldest' | 'popular' | 'title' | 'title_desc')}
             className="h-10 rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] px-3 text-sm dark:border-zinc-700 dark:text-[#f5f5f7]"
           >
             <option value="newest">Mới nhất</option>
             <option value="oldest">Cũ nhất</option>
             <option value="popular">Xem nhiều</option>
-            <option value="title">Theo tên</option>
+            <option value="title">Theo tên A-Z</option>
+            <option value="title_desc">Theo tên Z-A</option>
           </select>
         </div>
       </div>
@@ -361,13 +362,14 @@ function ProjectsContent() {
         <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">Sắp xếp</p>
         <select
           value={sortBy}
-          onChange={(event) => handleSortChange(event.target.value as 'newest' | 'oldest' | 'popular' | 'title')}
+          onChange={(event) => handleSortChange(event.target.value as 'newest' | 'oldest' | 'popular' | 'title' | 'title_desc')}
           className="h-9 w-full rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] px-3 text-sm dark:border-zinc-700 dark:text-[#f5f5f7]"
         >
           <option value="newest">Mới nhất</option>
           <option value="oldest">Cũ nhất</option>
           <option value="popular">Xem nhiều</option>
-          <option value="title">Theo tên</option>
+          <option value="title">Theo tên A-Z</option>
+          <option value="title_desc">Theo tên Z-A</option>
         </select>
       </div>
     </aside>

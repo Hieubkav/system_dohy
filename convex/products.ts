@@ -1100,7 +1100,8 @@ export const listPublishedWithOffset = query({
       v.literal("popular"),
       v.literal("price_asc"),
       v.literal("price_desc"),
-      v.literal("name")
+      v.literal("name"),
+      v.literal("name_desc")
     )),
     attributeTermIds: v.optional(v.array(v.array(v.id("attributeTerms")))),
   },
@@ -1227,7 +1228,11 @@ export const listPublishedWithOffset = query({
           break;
         }
         case "name": {
-          products.sort((a, b) => a.name.localeCompare(b.name));
+          products.sort((a, b) => a.name.localeCompare(b.name, "vi"));
+          break;
+        }
+        case "name_desc": {
+          products.sort((a, b) => b.name.localeCompare(a.name, "vi"));
           break;
         }
       }
@@ -1251,7 +1256,8 @@ export const searchPublished = query({
         v.literal("popular"),
         v.literal("price_asc"),
         v.literal("price_desc"),
-        v.literal("name")
+        v.literal("name"),
+        v.literal("name_desc")
       )
     ),
   },
@@ -1321,7 +1327,11 @@ export const searchPublished = query({
         break;
       }
       case "name": {
-        products.sort((a, b) => a.name.localeCompare(b.name));
+        products.sort((a, b) => a.name.localeCompare(b.name, "vi"));
+        break;
+      }
+      case "name_desc": {
+        products.sort((a, b) => b.name.localeCompare(a.name, "vi"));
         break;
       }
     }
