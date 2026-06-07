@@ -703,6 +703,11 @@ export function CatalogLayout({
               <h1 className="text-2xl md:text-3xl font-bold" style={{ color: tokens.headingColor }}>
                 {activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
               </h1>
+              {products.length > 0 && (
+                <p className="text-xs font-semibold tracking-widest uppercase opacity-65 mt-1.5" style={{ color: tokens.metaText }}>
+                  {products.length} {totalCount !== undefined && totalCount > products.length ? `/ ${totalCount}` : ''} sản phẩm
+                </p>
+              )}
               {showCategorySubtitle && activeCategoryDoc?.description && (
                 <p className="mt-2 text-sm md:text-base opacity-80" style={{ color: tokens.bodyText }}>
                   {activeCategoryDoc.description}
@@ -760,46 +765,38 @@ export function CatalogLayout({
               </div>
             </div>
 
-            {/* Results Count & Desktop Sort Controls */}
+            {/* Desktop Sort Control & Clear Filters (CatalogLayout) */}
             {products.length > 0 && (
-              <div className="flex items-center justify-between mb-5 gap-4">
-                <p className="text-xs sm:text-sm" style={{ color: tokens.metaText }}>
-                  Hiển thị <span className="font-medium" style={{ color: tokens.bodyText }}>{products.length}</span>
-                  {totalCount !== undefined && products.length > 0 && totalCount > products.length && <> / {totalCount}</>} sản phẩm
-                </p>
-                
-                <div className="flex items-center gap-4">
-                  {/* Desktop Sort Control */}
-                  <div className="hidden lg:flex items-center gap-2">
-                    <span className="text-sm font-medium" style={{ color: tokens.metaText }}>Sắp xếp:</span>
-                    <div className="relative">
-                      <select
-                        value={sortBy}
-                        onChange={(e) => onSortChange(e.target.value as ProductSortOption)}
-                        className="h-9 pl-3 pr-8 rounded-lg border text-sm outline-none font-medium appearance-none min-w-[130px]"
-                        style={{ 
-                          borderColor: tokens.inputBorder, 
-                          backgroundColor: tokens.inputBackground, 
-                          color: tokens.inputText,
-                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`,
-                          backgroundPosition: 'right 8px center',
-                          backgroundSize: '12px',
-                          backgroundRepeat: 'no-repeat'
-                        }}
-                      >
-                        <option value="newest">Mới nhất</option>
-                        <option value="popular">Bán chạy</option>
-                        <option value="price_asc">Giá thấp → cao</option>
-                        <option value="price_desc">Giá cao → thấp</option>
-                        <option value="name">Tên A-Z</option>
-                      </select>
-                    </div>
+              <div className="flex items-center justify-end mb-5 gap-3">
+                <div className="hidden lg:flex items-center gap-2">
+                  <span className="text-xs font-semibold tracking-widest uppercase opacity-65" style={{ color: tokens.metaText }}>Sắp xếp:</span>
+                  <div className="relative">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => onSortChange(e.target.value as ProductSortOption)}
+                      className="h-9 pl-3 pr-8 rounded-lg border text-xs outline-none font-medium appearance-none min-w-[120px]"
+                      style={{ 
+                        borderColor: tokens.inputBorder, 
+                        backgroundColor: tokens.inputBackground, 
+                        color: tokens.inputText,
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`,
+                        backgroundPosition: 'right 8px center',
+                        backgroundSize: '12px',
+                        backgroundRepeat: 'no-repeat'
+                      }}
+                    >
+                      <option value="newest">Mới nhất</option>
+                      <option value="popular">Bán chạy</option>
+                      <option value="price_asc">Giá thấp → cao</option>
+                      <option value="price_desc">Giá cao → thấp</option>
+                      <option value="name">Tên A-Z</option>
+                    </select>
                   </div>
-
-                  {hasActiveFilters && onClearFilters && (
-                    <ClearFiltersButton tokens={tokens} onClear={onClearFilters} />
-                  )}
                 </div>
+
+                {hasActiveFilters && onClearFilters && (
+                  <ClearFiltersButton tokens={tokens} onClear={onClearFilters} />
+                )}
               </div>
             )}
 
@@ -1193,8 +1190,13 @@ export function ListLayout({
           <h1 className="text-3xl md:text-4xl font-bold" style={{ color: tokens.headingColor }}>
             {activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
           </h1>
+          {products.length > 0 && (
+            <p className="text-xs font-semibold tracking-widest uppercase opacity-65 mt-2" style={{ color: tokens.metaText }}>
+              {products.length} {totalCount !== undefined && totalCount > products.length ? `/ ${totalCount}` : ''} sản phẩm
+            </p>
+          )}
           {showCategorySubtitle && activeCategoryDoc?.description && (
-            <p className="mt-2 text-base max-w-2xl mx-auto opacity-80" style={{ color: tokens.bodyText }}>
+            <p className="mt-3 text-base max-w-2xl mx-auto opacity-80" style={{ color: tokens.bodyText }}>
               {activeCategoryDoc.description}
             </p>
           )}
@@ -1407,7 +1409,10 @@ export function ListLayout({
                 </div>
               )}
 
-              <div className="flex items-center gap-2 ml-auto">
+              <div className="flex items-center gap-2 ml-auto shrink-0">
+                {hasActiveFilters && onClearFilters && (
+                  <ClearFiltersButton tokens={tokens} onClear={onClearFilters} />
+                )}
                 <select
                   value={sortBy}
                   onChange={(e) => onSortChange(e.target.value as ProductSortOption)}
@@ -1429,17 +1434,7 @@ export function ListLayout({
           </div>
         )}
 
-        {products.length > 0 && (
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-sm" style={{ color: tokens.metaText }}>
-              Hiển thị <span className="font-medium" style={{ color: tokens.bodyText }}>{products.length}</span>
-              {totalCount !== undefined && products.length > 0 && totalCount > products.length && <> / {totalCount}</>} sản phẩm
-            </p>
-            {hasActiveFilters && onClearFilters && (
-              <ClearFiltersButton tokens={tokens} onClear={onClearFilters} />
-            )}
-          </div>
-        )}
+
 
         {/* Products List View */}
         {isLoadingProducts ? (

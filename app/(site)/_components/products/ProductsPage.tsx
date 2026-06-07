@@ -1218,8 +1218,13 @@ function ProductsContent(props: ProductsPageProps) {
             <h1 className="text-3xl md:text-4xl font-bold" style={{ color: tokens.headingColor }}>
               {activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
             </h1>
+            {products.length > 0 && (
+              <p className="text-xs font-semibold tracking-widest uppercase opacity-65 mt-2" style={{ color: tokens.metaText }}>
+                {products.length} {totalCount !== undefined && totalCount > products.length ? `/ ${totalCount}` : ''} sản phẩm
+              </p>
+            )}
             {showCategorySubtitle && activeCategoryDoc?.description && (
-              <p className="mt-2 text-base max-w-2xl mx-auto opacity-80" style={{ color: tokens.bodyText }}>
+              <p className="mt-3 text-base max-w-2xl mx-auto opacity-80" style={{ color: tokens.bodyText }}>
                 {activeCategoryDoc.description}
               </p>
             )}
@@ -1426,7 +1431,10 @@ function ProductsContent(props: ProductsPageProps) {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 ml-auto">
+              <div className="flex items-center gap-2 ml-auto shrink-0">
+                {hasActiveProductFilters && (
+                  <ClearFiltersButton tokens={tokens} onClear={handleClearAllFilters} />
+                )}
                 <select
                   value={sortBy}
                   onChange={(e) => { setSortBy(e.target.value as ProductSortOption); }}
@@ -1447,17 +1455,7 @@ function ProductsContent(props: ProductsPageProps) {
             </div>
           </div>
 
-          {products.length > 0 && (
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-sm" style={{ color: tokens.metaText }}>
-                Hiển thị <span className="font-medium" style={{ color: tokens.bodyText }}>{products.length}</span>
-                {totalCount !== undefined && products.length > 0 && totalCount > products.length && <> / {totalCount}</>} sản phẩm
-              </p>
-              {hasActiveProductFilters && (
-                <ClearFiltersButton tokens={tokens} onClear={handleClearAllFilters} />
-              )}
-            </div>
-          )}
+
 
           {isLoadingProducts ? (
             <ProductsGridSkeleton count={postsPerPage} tokens={tokens} />
