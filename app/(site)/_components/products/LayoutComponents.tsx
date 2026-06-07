@@ -434,7 +434,20 @@ export function CatalogLayout({
   return (
     <div className="py-6 md:py-10 px-3 md:px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
+        {/* Header Title */}
+        <PageHeaderWithCount
+          title={activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
+          count={products.length}
+          totalCount={totalCount}
+          unit="sản phẩm"
+          titleColor={tokens.headingColor}
+          subtitleColor={tokens.metaText}
+          description={showCategorySubtitle && activeCategoryDoc?.description ? activeCategoryDoc.description : undefined}
+          descriptionColor={tokens.bodyText}
+          centered={true}
+        />
+
+        <div className="flex flex-col lg:flex-row gap-6 md:gap-8 mt-6 md:mt-8">
           {/* Sidebar Filters - Desktop */}
           <aside className="hidden lg:block w-64 shrink-0 space-y-4">
             {enableProductTypes && productTypes && productTypes.length > 0 && (
@@ -677,18 +690,6 @@ export function CatalogLayout({
 
           {/* Main Area */}
           <div className="flex-1 min-w-0">
-            {/* Header Title */}
-            <PageHeaderWithCount
-              title={activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
-              count={products.length}
-              totalCount={totalCount}
-              unit="sản phẩm"
-              titleColor={tokens.headingColor}
-              subtitleColor={tokens.metaText}
-              description={showCategorySubtitle && activeCategoryDoc?.description ? activeCategoryDoc.description : undefined}
-              descriptionColor={tokens.bodyText}
-              centered={false}
-            />
 
             {/* Toolbar Filters Mobile Controls - Chỉ hiện dưới lg */}
             <div
