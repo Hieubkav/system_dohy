@@ -2,18 +2,19 @@
 
 import React, { Suspense, useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useInView } from 'react-intersection-observer';
-import Link from 'next/link';
+
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { BookOpen, Bookmark, ChevronDown, Clock, Filter, GraduationCap, Search, Star, UserRound, X } from 'lucide-react';
+import { BookOpen, Bookmark, ChevronDown, Clock, Filter, GraduationCap, Search, UserRound, X } from 'lucide-react';
 import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { COURSE_LEVEL_OPTIONS, getCourseLevelLabel } from '@/lib/courses/labels';
 import { useCoursesListConfig } from '@/lib/experiences';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
 import { SharedListLayout } from '@/components/shared/SharedListLayout';
+import { StorefrontCard } from '@/components/shared/StorefrontCard';
 
 const formatPrice = (pricingType: string, price?: number) => {
   if (pricingType === 'free') {return 'Miễn phí';}
@@ -516,50 +517,44 @@ function CoursesContent() {
     const cardRadiusClass = getRadiusClass(config.cornerRadius);
 
     return (
-      <Link
+      <StorefrontCard
+        layout="grid"
         href={href}
-        className={`group block overflow-hidden border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${cardRadiusClass}`}
-      >
-        <div className="relative aspect-video overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]">
-          {course.thumbnail ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center" style={{ background: isDark ? '#1c1c1e' : `linear-gradient(135deg, ${brandColors.primary}18, ${brandColors.primary}05)` }}>
-              <GraduationCap size={42} style={{ color: brandColors.primary }} />
+        image={course.thumbnail}
+        imageAlt={course.title}
+        fallbackIcon={<GraduationCap size={42} style={{ color: brandColors.primary }} />}
+        categoryName={category?.name ?? 'Khóa học'}
+        title={course.title}
+        leftMetadata={
+          <div className="space-y-2.5 w-full">
+            <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500 dark:text-[#86868b]">
+              <span className="inline-flex items-center gap-1"><BookOpen size={12} className="text-slate-400" />{course.lessonCount} bài học</span>
+              {course.durationText && <span className="inline-flex items-center gap-1"><Clock size={12} className="text-slate-400" />{course.durationText}</span>}
             </div>
-          )}
-          {course.featured && (
-            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white">
-              <Star size={12} className="fill-current" /> Nổi bật
-            </span>
-          )}
-        </div>
-        <div className="space-y-3 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <span className="rounded-full bg-slate-100 dark:bg-[#1c1c1e] px-2.5 py-1 text-xs font-semibold text-slate-655 dark:text-zinc-350">{category?.name ?? 'Khóa học'}</span>
-            {showPrice && (
-              <span className="text-sm font-bold" style={{ color: brandColors.secondary || brandColors.primary }}>{formatPrice(course.pricingType, course.priceAmount)}</span>
+            {hasLearningAccess && (
+              <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                <div className="h-full rounded-full" style={{ backgroundColor: brandColors.primary, width: `${progressPercent}%` }} />
+              </div>
             )}
-          </div>
-          <h2 className="line-clamp-2 text-base font-bold text-slate-900 dark:text-[#f5f5f7] group-hover:underline">{course.title}</h2>
-          <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500 dark:text-[#86868b]">
-            <span className="inline-flex items-center gap-1"><BookOpen size={12} className="text-slate-400" />{course.lessonCount} bài học</span>
-            {course.durationText && <span className="inline-flex items-center gap-1"><Clock size={12} className="text-slate-400" />{course.durationText}</span>}
-          </div>
-          {hasLearningAccess && (
-            <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-              <div className="h-full rounded-full" style={{ backgroundColor: brandColors.primary, width: `${progressPercent}%` }} />
+            <div className="flex items-center justify-between pt-1 text-xs font-semibold border-t mt-2" style={{ borderColor: isDark ? '#27272a' : '#e2e8f0' }}>
+              <span className="group-hover:text-[var(--title-hover-color)] transition-colors" style={{ color: brandColors.primary, '--title-hover-color': brandColors.primary } as React.CSSProperties}>
+                {hasLearningAccess ? `Tiến độ: ${progressPercent}%` : 'Xem khóa học →'}
+              </span>
+              {course.level && <span className="text-slate-450 dark:text-zinc-500">{getCourseLevelLabel(course.level)}</span>}
             </div>
-          )}
-          <div className="flex items-center justify-between pt-1 text-xs font-semibold">
-            <span style={{ color: brandColors.primary }}>
-              {hasLearningAccess ? `Tiến độ: ${progressPercent}%` : 'Xem khóa học →'}
-            </span>
-            {course.level && <span className="text-slate-450 dark:text-zinc-500">{getCourseLevelLabel(course.level)}</span>}
           </div>
-        </div>
-      </Link>
+        }
+        rightDetails={
+          showPrice ? (
+            <div className="text-sm font-bold w-full" style={{ color: brandColors.secondary || brandColors.primary }}>
+              {formatPrice(course.pricingType, course.priceAmount)}
+            </div>
+          ) : undefined
+        }
+        brandColor={brandColors.primary}
+        radiusClass={cardRadiusClass}
+        isDark={isDark}
+      />
     );
   };
 
@@ -578,54 +573,43 @@ function CoursesContent() {
     const cardRadiusClass = getRadiusClass(config.cornerRadius);
 
     return (
-      <Link href={href} className={`group flex items-stretch gap-4 overflow-hidden ${cardRadiusClass} border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}>
-        {/* Thumbnail */}
-        <div className="relative w-40 shrink-0 overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]" style={{ minHeight: '7rem' }}>
-          {course.thumbnail ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center">
-              <GraduationCap size={32} style={{ color: brandColors.primary }} />
+      <StorefrontCard
+        layout="list"
+        href={href}
+        image={course.thumbnail}
+        imageAlt={course.title}
+        fallbackIcon={<GraduationCap size={28} style={{ color: brandColors.primary }} />}
+        categoryName={category?.name ?? 'Khóa học'}
+        title={course.title}
+        description={course.excerpt}
+        leftMetadata={
+          <div className="flex flex-col gap-2 w-full">
+            <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500 dark:text-[#86868b]">
+              <span className="inline-flex items-center gap-1"><BookOpen size={12} className="text-slate-400" />{course.lessonCount} bài học</span>
+              {course.durationText && <span className="inline-flex items-center gap-1"><Clock size={12} className="text-slate-400" />{course.durationText}</span>}
+              {course.instructorName && <span className="inline-flex items-center gap-1"><UserRound size={12} className="text-slate-400" />{course.instructorName}</span>}
             </div>
-          )}
-          {course.featured && (
-            <span className="absolute left-2 top-2 inline-flex items-center gap-0.5 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
-              <Star size={10} className="fill-current" /> Nổi bật
-            </span>
-          )}
-        </div>
-        {/* Content */}
-        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 py-3 pr-2">
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="rounded-full px-2 py-0.5 font-semibold" style={{ backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary, border: isDark ? '1px solid #3a3a3c' : 'none' }}>{category?.name ?? 'Khóa học'}</span>
-            {course.level && <span className="rounded-full bg-slate-100 dark:bg-[#1c1c1e] px-2 py-0.5 font-medium text-slate-600 dark:text-zinc-350">{getCourseLevelLabel(course.level)}</span>}
+            {hasLearningAccess && (
+              <div className="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                <div className="h-full rounded-full" style={{ backgroundColor: brandColors.primary, width: `${progressPercent}%` }} />
+              </div>
+            )}
           </div>
-          <h2 className="line-clamp-1 text-base font-bold text-slate-900 dark:text-[#f5f5f7] group-hover:underline">{course.title}</h2>
-          {course.excerpt && <p className="line-clamp-1 text-xs text-slate-505 dark:text-zinc-450 leading-relaxed">{course.excerpt}</p>}
-          <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-slate-500 dark:text-[#86868b]">
-            <span className="inline-flex items-center gap-1"><BookOpen size={12} className="text-slate-400" />{course.lessonCount} bài học</span>
-            {course.durationText && <span className="inline-flex items-center gap-1"><Clock size={12} className="text-slate-400" />{course.durationText}</span>}
-            {course.instructorName && <span className="inline-flex items-center gap-1"><UserRound size={12} className="text-slate-400" />{course.instructorName}</span>}
-          </div>
-        </div>
-        {/* Price + CTA */}
-        <div className="flex shrink-0 flex-col items-end justify-center gap-2 py-3 pr-4">
-          {hasLearningAccess ? (
-            <>
+        }
+        rightDetails={
+          <div className="flex flex-col items-start md:items-end justify-center gap-2 w-full">
+            {hasLearningAccess ? (
               <span className="text-xs font-semibold" style={{ color: brandColors.primary }}>Tiến độ: {progressPercent}%</span>
-              <span className="rounded-lg px-3 py-1.5 text-xs font-bold text-white" style={{ backgroundColor: brandColors.primary }}>Vào học</span>
-            </>
-          ) : showPrice ? (
-            <>
+            ) : showPrice ? (
               <span className="text-sm font-bold" style={{ color: brandColors.secondary || brandColors.primary }}>{formatPrice(course.pricingType, course.priceAmount)}</span>
-              <span className="text-xs font-semibold group-hover:underline" style={{ color: brandColors.primary }}>Xem khóa học →</span>
-            </>
-          ) : (
-            <span className="text-xs font-semibold group-hover:underline" style={{ color: brandColors.primary }}>Xem khóa học →</span>
-          )}
-        </div>
-      </Link>
+            ) : null}
+          </div>
+        }
+        ctaLabel={hasLearningAccess ? 'Vào học' : 'Xem khóa học'}
+        brandColor={brandColors.primary}
+        radiusClass={cardRadiusClass}
+        isDark={isDark}
+      />
     );
   };
 
@@ -971,7 +955,7 @@ function CoursesContent() {
   );
 
   return (
-    <div className="flex-1 w-full bg-slate-50 dark:bg-black font-active transition-colors duration-200">
+    <div className="flex-1 w-full font-active">
       <SharedListLayout
         items={courseItems}
         totalCount={totalCourses}

@@ -7,6 +7,13 @@ import { useInView } from 'react-intersection-observer';
 import { api } from '@/convex/_generated/api';
 import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { getServicesListColors } from '@/components/site/services/colors';
+import { useServicesListConfig } from '@/lib/experiences';
+import { ChevronLeft, ChevronRight, Briefcase, Clock, Star } from 'lucide-react';
+import type { Id } from '@/convex/_generated/dataModel';
+import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
+import { type ServiceSortOption } from '@/components/site/services';
+import { SharedListLayout } from '@/components/shared/SharedListLayout';
+import { StorefrontCard } from '@/components/shared/StorefrontCard';
 
 function getRadiusClass(radius?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full') {
   switch (radius) {
@@ -20,14 +27,6 @@ function getRadiusClass(radius?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'f
     default: return 'rounded-xl';
   }
 }
-import { useServicesListConfig } from '@/lib/experiences';
-import { ChevronLeft, ChevronRight, Briefcase, Clock, Star } from 'lucide-react';
-import type { Id } from '@/convex/_generated/dataModel';
-import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
-import { type ServiceSortOption } from '@/components/site/services';
-import { SharedListLayout } from '@/components/shared/SharedListLayout';
-import { PublicImage as Image } from '@/components/shared/PublicImage';
-import Link from 'next/link';
 
 function ServicesGridSkeleton({ count = 6 }: { count?: number }) {
   return (
@@ -165,7 +164,7 @@ function ServicesContent() {
   const routeMode = useMemo(() => normalizeRouteMode(routeModeSetting), [routeModeSetting]);
 
   const urlPage = Number(searchParams.get('page')) || 1;
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<ServiceSortOption>('newest');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
@@ -306,7 +305,7 @@ function ServicesContent() {
     } else {
       params.delete('category');
     }
-    
+
     const newUrl = params.toString()
       ? `${buildModuleListPath('services')}?${params.toString()}`
       : buildModuleListPath('services');
@@ -373,86 +372,43 @@ function ServicesContent() {
     prevFilterKeyRef.current = filterKey;
   }, [filterKey, listConfig.paginationType, pathname, router, searchParams, urlPage]);
 
-  const [brokenThumbnails, setBrokenThumbnails] = useState<Set<string>>(new Set());
 
-  const markThumbnailBroken = useCallback((id: Id<"services">) => {
-    setBrokenThumbnails((prev) => {
-      const key = String(id);
-      if (prev.has(key)) {return prev;}
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
-  }, []);
+
+
 
   const formatPriceValue = (price?: number): string => {
-    if (price === undefined || price === null) {return 'Liên hệ';} 
+    if (price === undefined || price === null) {return 'Liên hệ';}
     return new Intl.NumberFormat('vi-VN', { currency: 'VND', style: 'currency' }).format(price);
   };
 
   const ServiceGridCard = ({ service }: { service: typeof services[number] }) => {
-    const showImage = Boolean(service.thumbnail) && !brokenThumbnails.has(String(service._id));
+    const showImage = Boolean(service.thumbnail);
     const showExcerpt = enabledFields.has('excerpt');
     const showPrice = enabledFields.has('price');
     const showDuration = enabledFields.has('duration');
     const showFeatured = enabledFields.has('featured');
-    const cardRadiusClass = getRadiusClass('lg');
+    const radiusClass = getRadiusClass('lg');
+    const categoryName = categoryMap.get(service.categoryId);
 
     return (
-      <Link href={getServiceDetailHref(service)} className="group block h-full">
-        <article
-          className={`overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border h-full flex flex-col bg-white dark:bg-[#161617] dark:border-zinc-800 ${cardRadiusClass}`}
-          style={{ borderColor: tokens.cardBorder }}
-        >
-          <div className="relative aspect-video overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]" style={{ backgroundColor: tokens.cardBorder }}>
-            {showImage ? (
-              <Image
-                src={service.thumbnail as string}
-                alt={service.title}
-                fill
-                sizes="(max-width: 768px) 100vw, 33vw"
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                mode="thumb"
-                onLoadingComplete={(img) => {
-                  if (img.naturalWidth === 0) {
-                    markThumbnailBroken(service._id);
-                  }
-                }}
-                onError={() => { markThumbnailBroken(service._id); }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center min-h-[120px]">
-                <Briefcase size={32} style={{ color: tokens.neutralTextLight }} />
-              </div>
-            )}
+      <StorefrontCard
+        layout="grid"
+        href={getServiceDetailHref(service)}
+        image={showImage ? (service.thumbnail as string) : undefined}
+        imageAlt={service.title}
+        fallbackIcon={<Briefcase size={32} style={{ color: tokens.neutralTextLight }} />}
+        categoryName={categoryName}
+        title={service.title}
+        description={showExcerpt && service.excerpt ? service.excerpt : undefined}
+        leftMetadata={
+          <div className="flex flex-col gap-1 w-full">
             {showFeatured && service.featured && (
-              <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500 text-white text-xs font-medium rounded flex items-center gap-1">
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 w-fit">
                 <Star size={10} className="fill-current" /> Nổi bật
-              </div>
-            )}
-          </div>
-          <div className="p-3 flex-1 flex flex-col">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              {categoryMap.get(service.categoryId) && (
-                <span
-                  className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
-                  style={{
-                    backgroundColor: tokens.badgeBg,
-                    color: tokens.badgeText,
-                  }}
-                >
-                  {categoryMap.get(service.categoryId)}
-                </span>
-              )}
-            </div>
-            <h2 className="text-sm font-bold line-clamp-2 flex-1 text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" style={{ color: tokens.bodyText }}>
-              {service.title}
-            </h2>
-            {showExcerpt && service.excerpt && (
-              <p className="text-xs line-clamp-2 mt-1.5 text-slate-500 dark:text-slate-405 leading-relaxed">{service.excerpt}</p>
+              </span>
             )}
             <div
-              className="flex items-center justify-between text-xs mt-2.5 pt-2.5 border-t"
+              className="flex items-center justify-between text-xs mt-2.5 pt-2.5 border-t w-full"
               style={{ color: tokens.neutralTextLight, borderColor: tokens.cardBorder }}
             >
               <div className="flex items-center gap-2">
@@ -472,102 +428,62 @@ function ServicesContent() {
               </div>
             </div>
           </div>
-        </article>
-      </Link>
+        }
+        brandColor={brandColor}
+        radiusClass={radiusClass}
+        isDark={isDark}
+      />
     );
   };
 
   const ServiceListCard = ({ service }: { service: typeof services[number] }) => {
-    const showImage = Boolean(service.thumbnail) && !brokenThumbnails.has(String(service._id));
+    const showImage = Boolean(service.thumbnail);
     const showExcerpt = enabledFields.has('excerpt');
     const showPrice = enabledFields.has('price');
     const showDuration = enabledFields.has('duration');
     const showFeatured = enabledFields.has('featured');
-    const cardRadiusClass = getRadiusClass('lg');
+    const radiusClass = getRadiusClass('lg');
+    const categoryName = categoryMap.get(service.categoryId);
 
     return (
-      <Link href={getServiceDetailHref(service)} className="group block">
-        <article
-          className={`overflow-hidden hover:shadow-md transition-all duration-350 border bg-white dark:bg-[#161617] dark:border-zinc-800 ${cardRadiusClass}`}
-          style={{ borderColor: tokens.cardBorder }}
-        >
-          <div className="flex flex-col sm:flex-row">
-            {/* Image */}
-            <div className="sm:w-40 md:w-48 flex-shrink-0">
-              <div className="aspect-video sm:aspect-[4/3] sm:h-full overflow-hidden relative bg-slate-100 dark:bg-[#1c1c1e]" style={{ backgroundColor: tokens.cardBorder }}>
-                {showImage ? (
-                  <Image
-                    src={service.thumbnail as string}
-                    alt={service.title}
-                    fill
-                    sizes="(max-width: 640px) 100vw, 192px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    mode="thumb"
-                    onLoadingComplete={(img) => {
-                      if (img.naturalWidth === 0) {
-                        markThumbnailBroken(service._id);
-                      }
-                    }}
-                    onError={() => { markThumbnailBroken(service._id); }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center min-h-[100px]">
-                    <Briefcase size={28} style={{ color: tokens.neutralTextLight }} />
-                  </div>
-                )}
-                {showFeatured && service.featured && (
-                  <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500 text-white text-xs font-medium rounded flex items-center gap-1">
-                    <Star size={10} className="fill-current" /> Nổi bật
-                  </div>
-                )}
+      <StorefrontCard
+        layout="list"
+        href={getServiceDetailHref(service)}
+        image={showImage ? (service.thumbnail as string) : undefined}
+        imageAlt={service.title}
+        fallbackIcon={<Briefcase size={28} style={{ color: tokens.neutralTextLight }} />}
+        categoryName={categoryName}
+        title={service.title}
+        description={showExcerpt && service.excerpt ? service.excerpt : undefined}
+        leftMetadata={
+          <div className="flex flex-col gap-1.5 w-full">
+            {showFeatured && service.featured && (
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 w-fit">
+                <Star size={10} className="fill-current" /> Nổi bật
+              </span>
+            )}
+            {showDuration && service.duration && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-zinc-400">
+                <Clock size={12} />
+                <span>{service.duration}</span>
               </div>
-            </div>
-            
-            {/* Content */}
-            <div className="p-4 flex-1 flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-1.5">
-                {categoryMap.get(service.categoryId) && (
-                  <span
-                    className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
-                    style={{
-                      backgroundColor: tokens.badgeBg,
-                      color: tokens.badgeText,
-                    }}
-                  >
-                    {categoryMap.get(service.categoryId)}
-                  </span>
-                )}
-                <span className="text-xs text-slate-450 dark:text-zinc-500">
-                  {service.publishedAt ? new Date(service.publishedAt).toLocaleDateString('vi-VN') : ''}
-                </span>
-              </div>
-              <h2 className="text-sm font-bold line-clamp-2 mb-1.5 leading-snug text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" style={{ color: tokens.bodyText }}>
-                {service.title}
-              </h2>
-              {showExcerpt && service.excerpt && (
-                <p className="text-xs line-clamp-2 mb-2 leading-relaxed text-slate-500 dark:text-slate-400" style={{ color: tokens.metaText }}>{service.excerpt}</p>
-              )}
-              <div className="flex items-center justify-between text-xs mt-1 text-slate-450 dark:text-zinc-500">
-                <div className="flex items-center gap-2">
-                  {showDuration && service.duration && (
-                    <span className="flex items-center gap-1">
-                      <Clock size={12} />
-                      {service.duration}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {showPrice && (
-                    <span className="font-bold text-sm" style={{ color: tokens.priceColor }}>
-                      {formatPriceValue(service.price)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+            )}
           </div>
-        </article>
-      </Link>
+        }
+        rightDetails={
+          showPrice ? (
+            <div className="flex items-center md:justify-end gap-2 w-full">
+              <span className="text-lg font-bold" style={{ color: tokens.priceColor }}>
+                {formatPriceValue(service.price)}
+              </span>
+            </div>
+          ) : undefined
+        }
+        ctaLabel="Chi tiết"
+        brandColor={brandColor}
+        radiusClass={radiusClass}
+        isDark={isDark}
+      />
     );
   };
 
@@ -677,7 +593,7 @@ function ServicesContent() {
   const activeCategoryName = activeCategory && categoryMap ? categoryMap.get(activeCategory as any) : null;
 
   return (
-    <div className="flex-1 w-full bg-slate-50 dark:bg-black font-active transition-colors duration-200">
+    <div className="flex-1 w-full font-active">
       <SharedListLayout
         items={services}
         totalCount={totalCount ?? 0}
@@ -743,7 +659,7 @@ function ServicesContent() {
               value={activeCategory ?? ''}
               onChange={(event) => handleCategoryChange((event.target.value as any) || null)}
               className="h-9 pl-3 pr-8 rounded-lg border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] text-xs outline-none font-medium appearance-none min-w-[140px]"
-              style={{ 
+              style={{
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`,
                 backgroundPosition: 'right 8px center',
                 backgroundSize: '12px',

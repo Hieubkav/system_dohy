@@ -1,7 +1,6 @@
 'use client';
 
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -12,6 +11,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import type { Id } from '@/convex/_generated/dataModel';
 import { SharedListLayout } from '@/components/shared/SharedListLayout';
+import { StorefrontCard } from '@/components/shared/StorefrontCard';
 
 function getRadiusClass(radius?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full') {
   switch (radius) {
@@ -299,27 +299,26 @@ function ProjectsContent() {
     const radiusClass = getRadiusClass('lg');
 
     return (
-      <Link
+      <StorefrontCard
+        layout="grid"
         href={getDetailHref(project)}
-        className={`group overflow-hidden border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-zinc-800 dark:bg-[#161617] ${radiusClass}`}
-      >
-        <div className="aspect-video overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]">
-          {project.thumbnail ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={project.thumbnail} alt={project.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">Dự án</div>
-          )}
-        </div>
-        <div className="space-y-3 p-5">
-          <div className="flex items-center justify-between gap-3">
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-[#1c1c1e] dark:text-zinc-350">{category?.name ?? 'Dự án'}</span>
-            {listConfig.showClientName && project.clientName && <span className="truncate text-xs text-slate-400">{project.clientName}</span>}
-          </div>
-          <h2 className="line-clamp-2 text-xl font-semibold text-slate-950 transition group-hover:opacity-90 dark:text-[#f5f5f7]">{project.title}</h2>
-          {project.excerpt && <p className="line-clamp-2 text-sm leading-6 text-slate-650 dark:text-[#86868b]">{project.excerpt}</p>}
-        </div>
-      </Link>
+        image={project.thumbnail}
+        imageAlt={project.title}
+        fallbackIcon={<div className="text-sm text-slate-400">Dự án</div>}
+        categoryName={category?.name ?? 'Dự án'}
+        title={project.title}
+        description={project.excerpt}
+        leftMetadata={
+          listConfig.showClientName && project.clientName ? (
+            <div className="text-xs text-slate-400 dark:text-zinc-500 mt-1">
+              Khách hàng: <span className="font-medium text-slate-650 dark:text-[#86868b]">{project.clientName}</span>
+            </div>
+          ) : undefined
+        }
+        brandColor={brandColor}
+        radiusClass={radiusClass}
+        isDark={isDark}
+      />
     );
   };
 
@@ -328,47 +327,27 @@ function ProjectsContent() {
     const radiusClass = getRadiusClass('lg');
 
     return (
-      <Link
+      <StorefrontCard
+        layout="list"
         href={getDetailHref(project)}
-        className={`group flex overflow-hidden border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-zinc-800 dark:bg-[#161617] ${radiusClass}`}
-      >
-        {/* Thumbnail */}
-        <div className="w-40 flex-shrink-0 overflow-hidden bg-slate-100 dark:bg-[#1c1c1e] sm:w-52">
-          {project.thumbnail ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={project.thumbnail} alt={project.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-slate-400">Dự án</div>
-          )}
-        </div>
-
-        {/* Content layout: 2 columns on Desktop */}
-        <div className="flex flex-1 flex-col md:flex-row md:items-center justify-between gap-6 p-4">
-          {/* Left Column: Info */}
-          <div className="flex-1 min-w-0 flex flex-col justify-center space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600 dark:bg-[#1c1c1e] dark:text-[#f5f5f7]">{category?.name ?? 'Dự án'}</span>
-              {listConfig.showClientName && project.clientName && <span className="text-xs text-slate-400">{project.clientName}</span>}
+        image={project.thumbnail}
+        imageAlt={project.title}
+        fallbackIcon={<div className="text-sm text-slate-400">Dự án</div>}
+        categoryName={category?.name ?? 'Dự án'}
+        title={project.title}
+        description={project.excerpt}
+        leftMetadata={
+          listConfig.showClientName && project.clientName ? (
+            <div className="text-xs text-slate-400 dark:text-zinc-500 mt-1">
+              Khách hàng: <span className="font-medium text-slate-650 dark:text-[#86868b]">{project.clientName}</span>
             </div>
-            <h2 className="line-clamp-2 text-base font-semibold text-slate-950 transition group-hover:opacity-90 dark:text-[#f5f5f7]">{project.title}</h2>
-            {project.excerpt && <p className="line-clamp-2 text-sm leading-5 text-slate-650 dark:text-[#86868b]">{project.excerpt}</p>}
-          </div>
-
-          {/* Right Column: CTA */}
-          <div className="flex shrink-0 items-center justify-start md:justify-end border-t md:border-t-0 border-slate-150 dark:border-zinc-850/60 pt-3 md:pt-0">
-            <span
-              className="inline-flex items-center justify-center rounded-full border px-4 py-2 text-xs font-semibold transition-all duration-300 group-hover:bg-[var(--btn-hover-bg)] group-hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow whitespace-nowrap"
-              style={{
-                borderColor: brandColor,
-                color: brandColor,
-                '--btn-hover-bg': `${brandColor}08`,
-              } as React.CSSProperties}
-            >
-              Xem chi tiết →
-            </span>
-          </div>
-        </div>
-      </Link>
+          ) : undefined
+        }
+        ctaLabel="Xem chi tiết"
+        brandColor={brandColor}
+        radiusClass={radiusClass}
+        isDark={isDark}
+      />
     );
   };
 
@@ -504,7 +483,7 @@ function ProjectsContent() {
   );
 
   return (
-    <div className="flex-1 w-full bg-slate-50 dark:bg-black font-active transition-colors duration-200">
+    <div className="flex-1 w-full font-active">
       <SharedListLayout
         items={projects}
         totalCount={totalCount}

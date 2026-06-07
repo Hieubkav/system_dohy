@@ -1,7 +1,6 @@
 'use client';
 
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -15,6 +14,7 @@ import { useCart } from '@/lib/cart';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
 import { toast } from 'sonner';
 import { SharedListLayout } from '@/components/shared/SharedListLayout';
+import { StorefrontCard } from '@/components/shared/StorefrontCard';
 
 const formatPrice = (pricingType: string, price?: number) => {
   if (pricingType === 'free') {return 'Miễn phí';}
@@ -388,70 +388,63 @@ function ResourceListItem({
           : 'Liên hệ mua';
 
   return (
-    <Link
+    <StorefrontCard
+      layout="list"
       href={detailHref}
-      className={`group flex flex-col sm:flex-row items-stretch gap-4 overflow-hidden border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] shadow-sm transition hover:shadow-md hover:-translate-y-0.5 ${getRadiusClass(cornerRadius)}`}
-    >
-      {/* Thumbnail */}
-      <div className="relative w-full sm:w-40 shrink-0 overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]" style={{ aspectRatio: '16/9' }}>
-        {resource.thumbnail ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-50 dark:from-zinc-900 dark:to-zinc-850">
-            <FileText size={28} style={{ color: brandColor }} />
-          </div>
-        )}
-        {resource.featured && (
-          <span className="absolute left-2 top-2 inline-flex items-center gap-0.5 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
-            <Star size={10} className="fill-current" /> Nổi bật
-          </span>
-        )}
-      </div>
-
-      {/* Content + Price and CTA layout */}
-      <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center justify-between gap-6 p-4 sm:p-0 sm:py-3 sm:pr-4">
-        {/* Cột trái: Thông tin */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="rounded-full bg-slate-100 dark:bg-[#1c1c1e] px-2 py-0.5 text-[11px] font-semibold text-slate-605 dark:text-zinc-350">{category?.name ?? 'Tài nguyên'}</span>
-            {resourceFiltersFeatureEnabled && showResourceFilters && assignedValues.slice(0, 3).map((value) => (
-              <span key={value._id} className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 dark:border-zinc-800 px-2 py-0.5 text-[11px] font-medium text-slate-550 dark:text-[#86868b]">
-                {value.icon && <img src={value.icon} alt={value.name} className="h-3 w-3 object-contain shrink-0" />}
-                <span>{value.name}</span>
-              </span>
-            ))}
-          </div>
-          <h2 className="line-clamp-1 text-base font-bold text-slate-900 dark:text-[#f5f5f7] group-hover:underline">{resource.title}</h2>
-          {resource.excerpt && <p className="line-clamp-2 text-xs text-slate-500 dark:text-zinc-450 leading-relaxed">{resource.excerpt}</p>}
+      image={resource.thumbnail}
+      imageAlt={resource.title}
+      fallbackIcon={<FileText size={28} style={{ color: brandColor }} />}
+      categoryName={category?.name ?? 'Tài nguyên'}
+      title={resource.title}
+      description={resource.excerpt}
+      leftMetadata={
+        <div className="flex flex-col gap-1.5 w-full">
+          {resource.featured && (
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white w-fit">
+              <Star size={10} className="fill-current" /> Nổi bật
+            </span>
+          )}
+          {resourceFiltersFeatureEnabled && showResourceFilters && assignedValues.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {assignedValues.slice(0, 3).map((value) => (
+                <span key={value._id} className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 dark:border-zinc-800 px-2 py-0.5 text-[11px] font-medium text-slate-550 dark:text-[#86868b]">
+                  {value.icon && <img src={value.icon} alt={value.name} className="h-3 w-3 object-contain shrink-0" />}
+                  <span>{value.name}</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-
-        {/* Cột phải: Giá + Nút bấm */}
-        <div className="flex flex-col items-start md:items-end justify-center shrink-0 min-w-[180px] md:text-right gap-2 border-t md:border-t-0 border-slate-100 dark:border-zinc-850/60 pt-3 md:pt-0">
+      }
+      rightDetails={
+        <div className="flex flex-col items-start md:items-end justify-center gap-2 w-full">
           <span className="text-base font-bold" style={{ color: brandColor }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
           <button
             type="button"
             onClick={handleDownload}
             disabled={isDownloading}
-            className="inline-flex w-full md:w-auto items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+            className="inline-flex w-full md:w-auto items-center justify-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-white transition-all hover:brightness-95 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 shadow-sm hover:shadow"
             style={{ backgroundColor: brandColor }}
           >
             {isDownloading ? (
               <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent shrink-0" />
             ) : hasAccess || (resource.pricingType === 'free' && token) ? (
-              <Download size={14} />
+              <Download size={14} className="shrink-0" />
             ) : !token && resource.pricingType === 'free' ? (
-              <Lock size={14} />
+              <Lock size={14} className="shrink-0" />
             ) : commerceMode === 'cart' && resource.pricingType !== 'contact' ? (
-              <ShoppingCart size={14} />
+              <ShoppingCart size={14} className="shrink-0" />
             ) : (
-              <Lock size={14} />
+              <Lock size={14} className="shrink-0" />
             )}
-            <span>{isDownloading ? 'Đang tải...' : ctaLabel}</span>
+            <span className="ml-1">{isDownloading ? 'Đang tải...' : ctaLabel}</span>
           </button>
         </div>
-      </div>
-    </Link>
+      }
+      ctaLabel={undefined}
+      brandColor={brandColor}
+      radiusClass={getRadiusClass(cornerRadius)}
+    />
   );
 }
 
@@ -680,7 +673,7 @@ function ResourcesContent() {
       return;
     }
     if (inView && hasMore) {
-      setVisibleLimit((current) => current + postsPerPage);
+      setVisibleLimit((prev) => prev + postsPerPage);
     }
   }, [inView, hasMore, postsPerPage, isPaginationMode]);
 
@@ -696,49 +689,44 @@ function ResourcesContent() {
     const cardRadiusClass = getRadiusClass(config.cornerRadius);
 
     return (
-      <Link
+      <StorefrontCard
+        layout="grid"
         href={detailHref}
-        className={`group block overflow-hidden border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${cardRadiusClass}`}
-      >
-        <div className="relative aspect-video overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]">
-          {resource.thumbnail ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center" style={{ background: isDark ? '#1c1c1e' : `linear-gradient(135deg, ${brandColors.primary}18, ${brandColors.primary}05)` }}>
-              <FileText size={42} style={{ color: brandColors.primary }} />
+        image={resource.thumbnail}
+        imageAlt={resource.title}
+        fallbackIcon={<FileText size={42} style={{ color: brandColors.primary }} />}
+        categoryName={category?.name ?? 'Tài nguyên'}
+        title={resource.title}
+        description={resource.excerpt}
+        leftMetadata={
+          <div className="flex flex-col gap-1.5 w-full">
+            {resource.featured && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white z-10 w-fit">
+                <Star size={12} className="fill-current" /> Nổi bật
+              </span>
+            )}
+            {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedValues.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {assignedValues.slice(0, 4).map((value) => (
+                  <span key={value._id} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-zinc-800 px-2 py-0.5 text-[11px] font-semibold text-slate-550 dark:text-[#86868b]">
+                    {value.icon && (
+                      <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                    )}
+                    <span>{value.name}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-between text-sm font-semibold border-t pt-2 mt-2 w-full" style={{ borderColor: isDark ? '#27272a' : '#e2e8f0' }}>
+              <span style={{ color: brandColors.primary }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
+              <span style={{ color: brandColors.primary }}>Tải ngay →</span>
             </div>
-          )}
-          {resource.featured && (
-            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white">
-              <Star size={12} className="fill-current" /> Nổi bật
-            </span>
-          )}
-        </div>
-        <div className="space-y-3 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <span className="rounded-full bg-slate-100 dark:bg-[#1c1c1e] px-2.5 py-1 text-xs font-semibold text-slate-655 dark:text-zinc-350">{category?.name ?? 'Tài nguyên'}</span>
-            <span className="text-sm font-bold" style={{ color: brandColors.primary }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
           </div>
-          <h2 className="line-clamp-2 text-base font-bold text-slate-900 dark:text-[#f5f5f7] group-hover:underline">{resource.title}</h2>
-          {resource.excerpt && <p className="line-clamp-2 text-xs text-slate-505 dark:text-[#86868b]">{resource.excerpt}</p>}
-          {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedValues.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {assignedValues.slice(0, 4).map((value) => (
-                <span key={value._id} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-zinc-800 px-2 py-0.5 text-[11px] font-semibold text-slate-550 dark:text-[#86868b]">
-                  {value.icon && (
-                    <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
-                  )}
-                  <span>{value.name}</span>
-                </span>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center gap-2 text-sm font-semibold group-hover:underline" style={{ color: brandColors.primary }}>
-            Xem chi tiết →
-          </div>
-        </div>
-      </Link>
+        }
+        brandColor={brandColors.primary}
+        radiusClass={cardRadiusClass}
+        isDark={isDark}
+      />
     );
   };
 
@@ -1055,7 +1043,7 @@ function ResourcesContent() {
   );
 
   return (
-    <div className="flex-1 w-full bg-slate-50 dark:bg-black font-active transition-colors duration-200">
+    <div className="flex-1 w-full font-active">
       <SharedListLayout
         items={resourceItems}
         totalCount={totalResources}

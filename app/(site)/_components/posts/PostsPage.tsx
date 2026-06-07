@@ -13,9 +13,10 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { type SortOption } from '@/components/site/posts';
 import { SharedListLayout } from '@/components/shared/SharedListLayout';
+import { StorefrontCard } from '@/components/shared/StorefrontCard';
 import { Eye, FileText } from 'lucide-react';
-import { PublicImage as Image } from '@/components/shared/PublicImage';
-import Link from 'next/link';
+
+
 
 function getRadiusClass(radius?: 'none' | 'sm' | 'lg', type: 'card' | 'input' | 'panel' = 'card') {
   if (radius === 'none') return 'rounded-none';
@@ -397,18 +398,6 @@ function PostsContent() {
     prevFilterKeyRef.current = filterKey;
   }, [filterKey, listConfig.paginationType, pathname, router, searchParams, urlPage]);
 
-  const [brokenThumbnails, setBrokenThumbnails] = useState<Set<string>>(new Set());
-
-  const markThumbnailBroken = useCallback((id: Id<"posts">) => {
-    setBrokenThumbnails((prev) => {
-      const key = String(id);
-      if (prev.has(key)) {return prev;}
-      const next = new Set(prev);
-      next.add(key);
-      return next;
-    });
-  }, []);
-
   // Initial loading state only (not on search/filter changes)
   const isInitialLoading = categories === undefined;
 
@@ -417,148 +406,74 @@ function PostsContent() {
   }
 
   const PostGridCard = ({ post }: { post: typeof posts[number] }) => {
-    const showImage = Boolean(post.thumbnail) && !brokenThumbnails.has(String(post._id));
+    const showImage = Boolean(post.thumbnail);
     const showExcerpt = enabledFields.has('excerpt');
     const radiusClass = getRadiusClass('lg');
+    const categoryName = categoryMap.get(post.categoryId);
 
     return (
-      <Link href={getPostDetailHref(post)} className="group block h-full">
-        <article
-          className={`overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border h-full flex flex-col ${radiusClass}`}
-          style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}
-        >
-          <div className="relative aspect-video overflow-hidden" style={{ backgroundColor: tokens.cardBorder }}>
-            {showImage ? (
-              <Image
-                src={post.thumbnail as string}
-                alt={post.title}
-                fill
-                sizes="(max-width: 768px) 100vw, 33vw"
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                mode="thumb"
-                onLoadingComplete={(img) => {
-                  if (img.naturalWidth === 0) {
-                    markThumbnailBroken(post._id);
-                  }
-                }}
-                onError={() => { markThumbnailBroken(post._id); }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center min-h-[120px]">
-                <FileText size={32} style={{ color: tokens.neutralTextLight }} />
-              </div>
-            )}
+      <StorefrontCard
+        layout="grid"
+        href={getPostDetailHref(post)}
+        image={showImage ? (post.thumbnail as string) : undefined}
+        imageAlt={post.title}
+        fallbackIcon={<FileText size={32} style={{ color: tokens.neutralTextLight }} />}
+        categoryName={categoryName}
+        title={post.title}
+        description={showExcerpt && post.excerpt ? post.excerpt : undefined}
+        leftMetadata={
+          <div
+            className="flex items-center justify-between text-xs mt-2.5 pt-2.5 border-t w-full"
+            style={{ color: tokens.neutralTextLight, borderColor: tokens.cardBorder }}
+          >
+            <span>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('vi-VN') : ''}</span>
+            <span className="flex items-center gap-1">
+              <Eye size={11} />
+              {post.views.toLocaleString()}
+            </span>
           </div>
-          <div className="p-3 flex-1 flex flex-col">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              {categoryMap.get(post.categoryId) && (
-                <span
-                  className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
-                  style={{
-                    backgroundColor: tokens.categoryBadgeBg,
-                    color: tokens.categoryBadgeText,
-                    borderColor: tokens.categoryBadgeBorder,
-                  }}
-                >
-                  {categoryMap.get(post.categoryId)}
-                </span>
-              )}
-            </div>
-            <h2 className="text-sm font-bold line-clamp-2 flex-1 text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" style={{ color: tokens.bodyText }}>
-              {post.title}
-            </h2>
-            {showExcerpt && post.excerpt && (
-              <p className="text-xs line-clamp-2 mt-1.5 text-slate-500 dark:text-slate-400 leading-relaxed">{post.excerpt}</p>
-            )}
-            <div
-              className="flex items-center justify-between text-xs mt-2.5 pt-2.5 border-t"
-              style={{ color: tokens.neutralTextLight, borderColor: tokens.cardBorder }}
-            >
-              <span>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('vi-VN') : ''}</span>
-              <span className="flex items-center gap-1">
-                <Eye size={11} />
-                {post.views.toLocaleString()}
-              </span>
-            </div>
-          </div>
-        </article>
-      </Link>
+        }
+        brandColor={brandColor}
+        radiusClass={radiusClass}
+        isDark={isDark}
+      />
     );
   };
 
   const PostListCard = ({ post }: { post: typeof posts[number] }) => {
-    const showImage = Boolean(post.thumbnail) && !brokenThumbnails.has(String(post._id));
+    const showImage = Boolean(post.thumbnail);
     const showExcerpt = enabledFields.has('excerpt');
     const radiusClass = getRadiusClass('lg');
+    const categoryName = categoryMap.get(post.categoryId);
 
     return (
-      <Link href={getPostDetailHref(post)} className="group block">
-        <article
-          className={`overflow-hidden hover:shadow-md transition-all duration-350 border ${radiusClass}`}
-          style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}
-        >
-          <div className="flex flex-col sm:flex-row">
-            {/* Image */}
-            <div className="sm:w-40 md:w-48 flex-shrink-0">
-              <div className="aspect-video sm:aspect-[4/3] sm:h-full overflow-hidden relative" style={{ backgroundColor: tokens.cardBorder }}>
-                {showImage ? (
-                  <Image
-                    src={post.thumbnail as string}
-                    alt={post.title}
-                    fill
-                    sizes="(max-width: 640px) 100vw, 192px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    mode="thumb"
-                    onLoadingComplete={(img) => {
-                      if (img.naturalWidth === 0) {
-                        markThumbnailBroken(post._id);
-                      }
-                    }}
-                    onError={() => { markThumbnailBroken(post._id); }}
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center min-h-[100px]">
-                    <FileText size={28} style={{ color: tokens.neutralTextLight }} />
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Content */}
-            <div className="p-4 flex-1 flex flex-col justify-center">
-              <div className="flex items-center gap-2 mb-1.5">
-                {categoryMap.get(post.categoryId) && (
-                  <span
-                    className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
-                    style={{
-                      backgroundColor: tokens.categoryBadgeBg,
-                      color: tokens.categoryBadgeText,
-                      borderColor: tokens.categoryBadgeBorder,
-                    }}
-                  >
-                    {categoryMap.get(post.categoryId)}
-                  </span>
-                )}
-                {post.publishedAt && (
-                  <span className="text-xs text-slate-450 dark:text-slate-500">
-                    {new Date(post.publishedAt).toLocaleDateString('vi-VN')}
-                  </span>
-                )}
-              </div>
-              <h2 className="text-sm font-bold line-clamp-2 mb-1.5 leading-snug text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" style={{ color: tokens.bodyText }}>
-                {post.title}
-              </h2>
-              {showExcerpt && post.excerpt && (
-                <p className="text-xs line-clamp-2 mb-2 leading-relaxed text-slate-500 dark:text-slate-400" style={{ color: tokens.metaText }}>{post.excerpt}</p>
-              )}
-              <div className="flex items-center gap-1 text-xs mt-1 text-slate-450 dark:text-slate-500">
-                <Eye size={12} />
-                <span>{post.views.toLocaleString()}</span>
-              </div>
-            </div>
+      <StorefrontCard
+        layout="list"
+        href={getPostDetailHref(post)}
+        image={showImage ? (post.thumbnail as string) : undefined}
+        imageAlt={post.title}
+        fallbackIcon={<FileText size={28} style={{ color: tokens.neutralTextLight }} />}
+        categoryName={categoryName}
+        title={post.title}
+        description={showExcerpt && post.excerpt ? post.excerpt : undefined}
+        rightDetails={
+          <div className="flex flex-col md:items-end text-xs gap-1 w-full" style={{ color: tokens.neutralTextLight }}>
+            {post.publishedAt && (
+              <span className="font-medium">
+                {new Date(post.publishedAt).toLocaleDateString('vi-VN')}
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              <Eye size={12} />
+              <span>{post.views.toLocaleString()} lượt xem</span>
+            </span>
           </div>
-        </article>
-      </Link>
+        }
+        ctaLabel="Xem chi tiết"
+        brandColor={brandColor}
+        radiusClass={radiusClass}
+        isDark={isDark}
+      />
     );
   };
 
@@ -682,7 +597,7 @@ function PostsContent() {
   const activeCategoryName = activeCategory && categoryMap ? categoryMap.get(activeCategory as any) : null;
 
   return (
-    <div className="flex-1 w-full bg-slate-50 dark:bg-black font-active transition-colors duration-200">
+    <div className="flex-1 w-full font-active">
       <SharedListLayout
         items={posts}
         totalCount={totalCount}

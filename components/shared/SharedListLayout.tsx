@@ -108,12 +108,9 @@ export function SharedListLayout<T>({
   const radiusClass = getRadiusClass(cornerRadius);
   const panelRadiusClass = getRadiusClass(cornerRadius, 'panel');
 
-  // Xác định responsive grid columns dựa trên rule:
-  // - Màn hình 4 cột -> mobile/tablet là 2 cột.
-  // - Màn hình 3 cột -> mobile là 1, tablet là 3 cột (hoặc 2-3 cột tùy tablet).
   const gridClass = gridColumns === 4
-    ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6'
-    : 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6';
+    ? 'grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6'
+    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6';
 
   // Lắp ghép filter hiển thị trên mobile bottom sheet: ưu tiên renderMobileFilters, sau đó fallback renderSidebarFilters
   const mobileFiltersContent = useMemo(() => {
@@ -147,7 +144,7 @@ export function SharedListLayout<T>({
         )}
 
         {/* Mobile Toolbar */}
-        <div className="flex lg:hidden flex-col sm:flex-row gap-3 p-3 mb-5 border rounded-2xl border-slate-200 bg-white dark:border-zinc-800 dark:bg-[#161617]">
+        <div className={`flex lg:hidden flex-col sm:flex-row gap-3 p-3 mb-5 border border-slate-200 bg-white dark:border-zinc-800 dark:bg-[#161617] ${radiusClass}`}>
           {showSearch && (
             <div className="relative flex-1">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
@@ -156,7 +153,7 @@ export function SharedListLayout<T>({
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="w-full h-10 pl-10 pr-10 rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] outline-none text-sm transition focus:border-slate-350 dark:focus:border-zinc-600"
+                className="w-full h-10 pl-10 pr-10 rounded-lg border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] outline-none text-sm transition focus:border-slate-350 dark:focus:border-zinc-600"
               />
               {searchQuery && (
                 <button
@@ -176,7 +173,7 @@ export function SharedListLayout<T>({
               <button
                 type="button"
                 onClick={() => setMobileFilterOpen(true)}
-                className="h-10 px-4 rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 flex items-center justify-center gap-2 text-sm font-semibold transition-colors flex-1 sm:flex-initial dark:text-[#f5f5f7] hover:bg-slate-50 dark:hover:bg-[#2c2c2e]"
+                className="h-10 px-4 rounded-lg border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 flex items-center justify-center gap-2 text-sm font-semibold transition-colors flex-1 sm:flex-initial dark:text-[#f5f5f7] hover:bg-slate-50 dark:hover:bg-[#2c2c2e]"
               >
                 <SlidersHorizontal size={16} />
                 <span>Bộ lọc</span>
@@ -187,7 +184,7 @@ export function SharedListLayout<T>({
               <select
                 value={sortBy}
                 onChange={(e) => onSortChange(e.target.value)}
-                className="h-10 w-full sm:w-[150px] pl-3 pr-8 rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] text-sm outline-none font-medium appearance-none"
+                className="h-10 w-full sm:w-[150px] pl-3 pr-8 rounded-lg border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] text-sm outline-none font-medium appearance-none"
                 style={{
                   backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`,
                   backgroundPosition: 'right 10px center',
@@ -221,51 +218,63 @@ export function SharedListLayout<T>({
           {/* Main Content Area */}
           <div className="flex-1 min-w-0">
             {/* Desktop Toolbar: Search, Custom Filters & Sort dropdown */}
-            <div className="hidden lg:flex items-center justify-between mb-6 gap-4">
-              {showSearch && (
-                <div className="relative max-w-xs flex-1">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                    placeholder={searchPlaceholder}
-                    className="h-9 w-full pl-8 pr-8 py-2 border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] rounded-xl text-xs outline-none transition focus:border-slate-350 dark:focus:border-zinc-600"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => onSearchChange('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100 text-slate-400 dark:text-zinc-500"
-                      aria-label="Xóa tìm kiếm"
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                </div>
-              )}
+            <div className={`hidden lg:block border border-slate-200 bg-white p-3 mb-5 dark:border-zinc-800 dark:bg-[#161617] ${radiusClass}`}>
+              <div className="flex flex-col lg:flex-row gap-3">
+                {showSearch && (
+                  <div className="relative flex-1 max-w-md">
+                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => onSearchChange(e.target.value)}
+                      placeholder={searchPlaceholder}
+                      className="h-10 w-full pl-10 pr-9 rounded-lg border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] text-sm outline-none transition focus:border-slate-350 dark:focus:border-zinc-600"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => onSearchChange('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100 text-slate-400 dark:text-zinc-500"
+                        aria-label="Xóa tìm kiếm"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                )}
 
-              <div className="flex items-center gap-3 ml-auto shrink-0">
-                {/* Render các filter tùy chọn trên desktop toolbar */}
                 {renderToolbarFilters && (
                   <div className="flex items-center gap-2">
                     {renderToolbarFilters()}
                   </div>
                 )}
 
-                {/* Dropdown Sắp xếp Desktop */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold tracking-widest uppercase opacity-65 text-slate-500 dark:text-zinc-400">
-                    Sắp xếp:
-                  </span>
+                <div className="flex items-center gap-2 ml-auto shrink-0">
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={onClearFilters}
+                      className="inline-flex h-10 items-center gap-1.5 rounded-lg border px-3 text-sm font-semibold transition hover:opacity-85"
+                      style={{
+                        backgroundColor: isDark ? '#2c2c2e' : `${brandColor}0d`,
+                        borderColor: isDark ? '#3a3a3c' : `${brandColor}30`,
+                        color: brandColor,
+                      }}
+                      title="Xóa toàn bộ bộ lọc"
+                    >
+                      <X size={14} />
+                      <span>Xóa lọc</span>
+                    </button>
+                  )}
+
                   <div className="relative">
                     <select
                       value={sortBy}
                       onChange={(e) => onSortChange(e.target.value)}
-                      className="h-9 pl-3 pr-8 rounded-lg border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] text-xs outline-none font-medium appearance-none min-w-[130px]"
+                      className="h-10 min-w-[140px] pl-3 pr-8 rounded-lg border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] text-sm outline-none font-medium appearance-none"
                       style={{
                         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 8px center',
+                        backgroundPosition: 'right 10px center',
                         backgroundSize: '12px',
                         backgroundRepeat: 'no-repeat'
                       }}
@@ -279,23 +288,6 @@ export function SharedListLayout<T>({
                   </div>
                 </div>
 
-                {/* Nút Xóa Lọc */}
-                {hasActiveFilters && (
-                  <button
-                    type="button"
-                    onClick={onClearFilters}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition hover:opacity-85"
-                    style={{
-                      backgroundColor: isDark ? '#2c2c2e' : `${brandColor}0d`,
-                      borderColor: isDark ? '#3a3a3c' : `${brandColor}30`,
-                      color: brandColor,
-                    }}
-                    title="Xóa toàn bộ bộ lọc"
-                  >
-                    <X size={12} />
-                    <span>Xóa lọc</span>
-                  </button>
-                )}
               </div>
             </div>
 
