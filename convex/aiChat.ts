@@ -2,6 +2,7 @@ import { action, internalMutation, internalQuery } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 import { consumeRateLimit } from "./lib/rateLimit";
+import { normalizeSearchText } from "./lib/search";
 
 const AI_GROUP = "ai";
 const AI_SECRET_KEY = "gemini_api_key";
@@ -88,6 +89,24 @@ const toNumberValue = (value: unknown, fallback: number, min: number, max: numbe
 };
 
 const sanitizeMessage = (message: string) => message.trim().slice(0, 1200);
+
+const GREETING_ONLY_QUERIES = new Set([
+  "alo",
+  "cam on",
+  "chao",
+  "chao ban",
+  "hello",
+  "hey",
+  "hi",
+  "ok",
+  "test",
+  "thank you",
+  "thanks",
+  "xin chao",
+  "xin chao ban",
+]);
+
+const isGreetingOnly = (message: string) => GREETING_ONLY_QUERIES.has(normalizeSearchText(message));
 
 const formatSuggestionsForPrompt = (suggestions: SearchItem[]) => {
   if (suggestions.length === 0) {
@@ -277,18 +296,18 @@ export const sendMessage = action({
       throw new Error("Chatbot AI chưa có API key.");
     }
 
-    const searchResult = await ctx.runQuery(api.search.autocomplete, {
-      limit: 3,
-      query: message.slice(0, 180),
-      searchCourses: true,
-      searchPosts: true,
-      searchProducts: true,
-      searchProjects: true,
-      searchResources: true,
-      searchServices: true,
-    }) as SearchResult;
-
-    const suggestions = flattenSuggestions(searchResult);
+    const suggestions = isGreetingOnly(message)
+      ? []
+      : flattenSuggestions(await ctx.runQuery(api.search.autocomplete, {
+        limit: 3,
+        query: message.slice(0, 180),
+        searchCourses: true,
+        searchPosts: true,
+        searchProducts: true,
+        searchProjects: true,
+        searchResources: true,
+        searchServices: true,
+      }) as SearchResult);
     const answer = await generateGeminiAnswer({
       apiKey: config.apiKey,
       message,
