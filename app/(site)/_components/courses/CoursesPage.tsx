@@ -131,7 +131,7 @@ function CustomDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-3.5 text-sm font-medium text-slate-700 dark:text-[#f5f5f7] shadow-sm transition hover:bg-slate-50 dark:hover:bg-[#2c2c2e] focus:border-slate-350 dark:focus:border-zinc-700 outline-none ${getRadiusClass(cornerRadius, 'input')}`}
+        className={`flex h-10 w-full items-center justify-between gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-3 text-sm font-medium text-slate-700 dark:text-[#f5f5f7] transition hover:bg-slate-50 dark:hover:bg-[#2c2c2e] focus:border-slate-350 dark:focus:border-zinc-700 outline-none ${getRadiusClass(cornerRadius, 'input')}`}
       >
         <span className="flex items-center gap-2 truncate">
           {icon}
@@ -227,7 +227,7 @@ function CategoryDropdown({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-3.5 text-sm font-medium text-slate-700 dark:text-[#f5f5f7] shadow-sm transition hover:bg-slate-50 dark:hover:bg-[#2c2c2e] focus:border-slate-350 dark:focus:border-zinc-700 outline-none ${getRadiusClass(cornerRadius, 'input')}`}
+        className={`flex h-10 w-full items-center justify-between gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-3 text-sm font-medium text-slate-700 dark:text-[#f5f5f7] transition hover:bg-slate-50 dark:hover:bg-[#2c2c2e] focus:border-slate-350 dark:focus:border-zinc-700 outline-none ${getRadiusClass(cornerRadius, 'input')}`}
       >
         <span className="flex items-center gap-2 truncate">
           {icon}

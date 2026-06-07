@@ -658,7 +658,7 @@ function ServicesContent() {
             <select
               value={activeCategory ?? ''}
               onChange={(event) => handleCategoryChange((event.target.value as any) || null)}
-              className="h-9 pl-3 pr-8 rounded-lg border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] text-xs outline-none font-medium appearance-none min-w-[140px]"
+              className="h-10 pl-3 pr-8 rounded-lg border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] text-sm outline-none font-medium appearance-none min-w-[140px]"
               style={{
                 backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`,
                 backgroundPosition: 'right 8px center',

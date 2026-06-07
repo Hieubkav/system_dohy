@@ -83,16 +83,16 @@ export function StorefrontCard({
         </div>
 
         {/* Nội dung chữ */}
-        <div className="p-5 flex flex-1 flex-col justify-between">
+        <div className="p-3 sm:p-4 flex flex-1 flex-col justify-between">
           <div className="space-y-2">
             {categoryName && (
               <div className="flex mb-1.5">
                 <span
                   className="text-[9px] sm:text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-full border transition-all duration-300"
                   style={{
-                    backgroundColor: isDark ? 'rgba(39, 39, 42, 0.5)' : 'rgba(241, 245, 249, 0.8)',
-                    color: isDark ? '#a1a1aa' : '#475569',
-                    borderColor: isDark ? '#3f3f46' : '#cbd5e1'
+                    backgroundColor: `${brandColor}0d`,
+                    color: brandColor,
+                    borderColor: `${brandColor}25`
                   }}
                 >
                   {categoryName}
@@ -101,7 +101,7 @@ export function StorefrontCard({
             )}
 
             <h3
-              className="text-sm sm:text-base font-semibold line-clamp-2 transition-colors mb-1 group-hover:text-[var(--title-hover-color)]"
+              className="text-xs sm:text-sm font-medium line-clamp-2 transition-colors mb-1 sm:mb-2 group-hover:text-[var(--title-hover-color)]"
               style={{
                 color: isDark ? '#f5f5f7' : '#1d1d1f',
                 '--title-hover-color': brandColor
@@ -168,9 +168,9 @@ export function StorefrontCard({
               <span
                 className="text-[9px] sm:text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-full border transition-all duration-300"
                 style={{
-                  backgroundColor: isDark ? 'rgba(39, 39, 42, 0.5)' : 'rgba(241, 245, 249, 0.8)',
-                  color: isDark ? '#a1a1aa' : '#475569',
-                  borderColor: isDark ? '#3f3f46' : '#cbd5e1'
+                  backgroundColor: `${brandColor}0d`,
+                  color: brandColor,
+                  borderColor: `${brandColor}25`
                 }}
               >
                 {categoryName}
@@ -179,7 +179,7 @@ export function StorefrontCard({
           )}
 
           <h3
-            className="font-semibold text-base sm:text-lg transition-colors group-hover:text-[var(--title-hover-color)]"
+            className="font-semibold text-lg transition-colors mb-2 group-hover:text-[var(--title-hover-color)]"
             style={{
               color: isDark ? '#f5f5f7' : '#1d1d1f',
               '--title-hover-color': brandColor
@@ -189,7 +189,7 @@ export function StorefrontCard({
           </h3>
 
           {description && (
-            <p className="text-xs sm:text-sm line-clamp-2 text-slate-500 dark:text-[#86868b] leading-relaxed">
+            <p className="text-sm line-clamp-2 mb-2 text-slate-500 dark:text-[#86868b] leading-relaxed">
               {description}
             </p>
           )}
@@ -198,7 +198,7 @@ export function StorefrontCard({
         </div>
 
         {/* Right Column: Details & CTA */}
-        <div className="flex flex-col items-start md:items-end justify-center shrink-0 min-w-[200px] md:text-right gap-2 border-t md:border-t-0 border-slate-100 dark:border-zinc-800/40 pt-3 md:pt-0">
+        <div className="flex flex-col items-start md:items-end justify-center shrink-0 min-w-[220px] md:text-right gap-2 border-t md:border-t-0 border-slate-100 dark:border-zinc-800/40 pt-3 md:pt-0">
           {rightDetails && (
             <div className="w-full flex md:justify-end">
               {rightDetails}
@@ -206,14 +206,13 @@ export function StorefrontCard({
           )}
 
           {ctaLabel && (
-            <div className="w-full max-w-[200px] mt-2 md:mt-1 flex md:justify-end">
+            <div className="w-full max-w-[220px] mt-2 md:mt-1 flex md:justify-end">
               <span
-                className="inline-flex items-center justify-center rounded-full border px-4 py-2 text-xs font-semibold transition-all duration-300 group-hover:bg-[var(--btn-hover-bg)] group-hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow whitespace-nowrap"
+                className="inline-flex w-full items-center justify-center rounded-full px-4 py-2 text-xs font-semibold tracking-wide transition-all duration-300 group-hover:brightness-95 group-hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow whitespace-nowrap"
                 style={{
-                  borderColor: brandColor,
-                  color: brandColor,
-                  '--btn-hover-bg': `${brandColor}08`,
-                } as React.CSSProperties}
+                  backgroundColor: brandColor,
+                  color: '#ffffff',
+                }}
               >
                 {ctaLabel} →
               </span>

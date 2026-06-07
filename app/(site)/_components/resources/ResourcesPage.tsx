@@ -81,7 +81,7 @@ function CustomDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-3.5 text-sm font-medium text-slate-700 dark:text-[#f5f5f7] shadow-sm transition hover:bg-slate-50 dark:hover:bg-[#2c2c2e] ${getRadiusClass(cornerRadius, 'input')}`}
+        className={`flex h-10 w-full items-center justify-between gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-3 text-sm font-medium text-slate-700 dark:text-[#f5f5f7] transition hover:bg-slate-50 dark:hover:bg-[#2c2c2e] ${getRadiusClass(cornerRadius, 'input')}`}
       >
         <span className="flex items-center gap-2 truncate">
           {selectedOption?.icon ? (
@@ -172,7 +172,7 @@ function MultiSelectDropdown({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`flex h-11 w-full items-center justify-between gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-3.5 text-sm font-medium text-slate-700 dark:text-[#f5f5f7] shadow-sm transition hover:bg-slate-50 dark:hover:bg-[#2c2c2e] ${getRadiusClass(cornerRadius, 'input')}`}
+          className={`flex h-10 w-full items-center justify-between gap-2 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] px-3 text-sm font-medium text-slate-700 dark:text-[#f5f5f7] transition hover:bg-slate-50 dark:hover:bg-[#2c2c2e] ${getRadiusClass(cornerRadius, 'input')}`}
         >
           <span className="flex items-center gap-2 truncate">
             {displayIcon}
@@ -189,7 +189,7 @@ function MultiSelectDropdown({
               onClear();
             }}
             title="Xóa bộ lọc"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-slate-400 dark:text-zinc-350 hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-655 dark:hover:text-[#f5f5f7] transition shadow-sm"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-slate-400 dark:text-zinc-350 hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-655 dark:hover:text-[#f5f5f7] transition"
             style={{ borderRadius: cornerRadius === 'none' ? '0' : cornerRadius === 'sm' ? '8px' : '12px' }}
           >
             <X size={16} />
