@@ -169,6 +169,8 @@ export default function ExperiencesPage() {
 
   const [localLayouts, setLocalLayouts] = useState<Record<string, 'grid' | 'sidebar' | 'list'>>({});
   const [localGridColumns, setLocalGridColumns] = useState<Record<string, number>>({});
+  const [localCornerRadius, setLocalCornerRadius] = useState<Record<string, 'none' | 'sm' | 'lg'>>({});
+  const [localCartButtonsLayout, setLocalCartButtonsLayout] = useState<'stack' | 'grid-2'>('stack');
   const [localDarkMode, setLocalDarkMode] = useState<'light' | 'dark' | 'system'>('light');
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -198,6 +200,15 @@ export default function ExperiencesPage() {
         projects: (projectsSetting?.value as any)?.gridColumns ?? 3,
         products: (productsSetting?.value as any)?.gridColumns ?? 3,
       });
+      setLocalCornerRadius({
+        posts: (postsSetting?.value as any)?.cornerRadius ?? 'lg',
+        resources: (resourcesSetting?.value as any)?.cornerRadius ?? 'lg',
+        courses: (coursesSetting?.value as any)?.cornerRadius ?? 'lg',
+        services: (servicesSetting?.value as any)?.cornerRadius ?? 'lg',
+        projects: (projectsSetting?.value as any)?.cornerRadius ?? 'lg',
+        products: (productsSetting?.value as any)?.cornerRadius ?? 'lg',
+      });
+      setLocalCartButtonsLayout((productsSetting?.value as any)?.cartButtonsLayout ?? 'stack');
       setLocalDarkMode((darkModeSetting?.value as any) ?? 'light');
       setIsInitialized(true);
     }
@@ -218,9 +229,16 @@ export default function ExperiencesPage() {
       localGridColumns.services !== ((servicesSetting?.value as any)?.gridColumns ?? 3) ||
       localGridColumns.projects !== ((projectsSetting?.value as any)?.gridColumns ?? 3) ||
       localGridColumns.products !== ((productsSetting?.value as any)?.gridColumns ?? 3) ||
+      localCornerRadius.posts !== ((postsSetting?.value as any)?.cornerRadius ?? 'lg') ||
+      localCornerRadius.resources !== ((resourcesSetting?.value as any)?.cornerRadius ?? 'lg') ||
+      localCornerRadius.courses !== ((coursesSetting?.value as any)?.cornerRadius ?? 'lg') ||
+      localCornerRadius.services !== ((servicesSetting?.value as any)?.cornerRadius ?? 'lg') ||
+      localCornerRadius.projects !== ((projectsSetting?.value as any)?.cornerRadius ?? 'lg') ||
+      localCornerRadius.products !== ((productsSetting?.value as any)?.cornerRadius ?? 'lg') ||
+      localCartButtonsLayout !== ((productsSetting?.value as any)?.cartButtonsLayout ?? 'stack') ||
       localDarkMode !== ((darkModeSetting?.value as any) ?? 'light')
     );
-  }, [localLayouts, localGridColumns, localDarkMode, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
+  }, [localLayouts, localGridColumns, localCornerRadius, localCartButtonsLayout, localDarkMode, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
 
   const [isSaving, setIsSaving] = useState(false);
   const handleSaveAll = async () => {
@@ -233,7 +251,8 @@ export default function ExperiencesPage() {
           value: {
             ...(postsSetting?.value as any),
             layoutStyle: localLayouts.posts,
-            gridColumns: localGridColumns.posts
+            gridColumns: localGridColumns.posts,
+            cornerRadius: localCornerRadius.posts
           }
         },
         {
@@ -242,7 +261,8 @@ export default function ExperiencesPage() {
           value: {
             ...(resourcesSetting?.value as any),
             layoutStyle: localLayouts.resources,
-            gridColumns: localGridColumns.resources
+            gridColumns: localGridColumns.resources,
+            cornerRadius: localCornerRadius.resources
           }
         },
         {
@@ -251,7 +271,8 @@ export default function ExperiencesPage() {
           value: {
             ...(coursesSetting?.value as any),
             layoutStyle: localLayouts.courses,
-            gridColumns: localGridColumns.courses
+            gridColumns: localGridColumns.courses,
+            cornerRadius: localCornerRadius.courses
           }
         },
         {
@@ -260,7 +281,8 @@ export default function ExperiencesPage() {
           value: {
             ...(servicesSetting?.value as any),
             layoutStyle: localLayouts.services,
-            gridColumns: localGridColumns.services
+            gridColumns: localGridColumns.services,
+            cornerRadius: localCornerRadius.services
           }
         },
         {
@@ -269,7 +291,8 @@ export default function ExperiencesPage() {
           value: {
             ...(projectsSetting?.value as any),
             layoutStyle: localLayouts.projects,
-            gridColumns: localGridColumns.projects
+            gridColumns: localGridColumns.projects,
+            cornerRadius: localCornerRadius.projects
           }
         },
         {
@@ -278,7 +301,9 @@ export default function ExperiencesPage() {
           value: {
             ...(productsSetting?.value as any),
             layoutStyle: localLayouts.products,
-            gridColumns: localGridColumns.products
+            gridColumns: localGridColumns.products,
+            cornerRadius: localCornerRadius.products,
+            cartButtonsLayout: localCartButtonsLayout
           }
         },
         {
@@ -321,6 +346,18 @@ export default function ExperiencesPage() {
       products: cols,
     });
     toast.success(`Đã thay đổi tạm thời tất cả danh sách thành ${cols} cột. Nhớ bấm Lưu để áp dụng thực tế!`);
+  };
+
+  const handleApplyAllCornerRadius = (radius: 'none' | 'sm' | 'lg') => {
+    setLocalCornerRadius({
+      posts: radius,
+      resources: radius,
+      courses: radius,
+      services: radius,
+      projects: radius,
+      products: radius,
+    });
+    toast.success(`Đã thay đổi tạm thời tất cả bo góc thành: ${radius === 'none' ? 'BỎ BO GÓC' : radius === 'sm' ? 'BO ÍT' : 'BO NHIỀU'}. Nhớ bấm Lưu để áp dụng thực tế!`);
   };
 
   // Debounce
@@ -606,61 +643,103 @@ export default function ExperiencesPage() {
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* Quick Apply Card */}
           <Card className="border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-            <CardContent className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  <span className="w-1.5 h-4 rounded-full bg-cyan-500 inline-block" />
-                  Đồng bộ nhanh Layout cho tất cả danh sách
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-lg">
-                  Áp dụng nhanh một kiểu layout chung cho toàn bộ các trang danh sách (Bài viết, Khóa học, Tài nguyên, Dịch vụ, Dự án, Sản phẩm).
-                </p>
+            <CardContent className="p-5 space-y-4">
+              {/* Quick Layout & Columns */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-200/40 dark:border-zinc-800/40">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <span className="w-1.5 h-4 rounded-full bg-cyan-500 inline-block" />
+                    Đồng bộ nhanh Layout cho tất cả danh sách
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-lg">
+                    Áp dụng nhanh một kiểu layout chung cho toàn bộ các trang danh sách (Bài viết, Khóa học, Tài nguyên, Dịch vụ, Dự án, Sản phẩm).
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2.5 items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAll('grid')}
+                    className="text-xs font-semibold hover:border-cyan-500/50 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
+                  >
+                    <LayoutGrid size={14} />
+                    Tất cả Grid
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAll('sidebar')}
+                    className="text-xs font-semibold hover:border-cyan-500/5 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
+                  >
+                    <Columns size={14} />
+                    Tất cả Sidebar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAll('list')}
+                    className="text-xs font-semibold hover:border-cyan-500/5 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
+                  >
+                    <List size={14} />
+                    Tất cả List
+                  </Button>
+                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAllColumns(3)}
+                    className="text-xs font-semibold hover:border-cyan-500/5 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
+                  >
+                    Tất cả 3 Cột
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAllColumns(4)}
+                    className="text-xs font-semibold hover:border-cyan-500/5 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
+                  >
+                    Tất cả 4 Cột
+                  </Button>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2.5 items-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleApplyAll('grid')}
-                  className="text-xs font-semibold hover:border-cyan-500/50 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
-                >
-                  <LayoutGrid size={14} />
-                  Tất cả Grid
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleApplyAll('sidebar')}
-                  className="text-xs font-semibold hover:border-cyan-500/50 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
-                >
-                  <Columns size={14} />
-                  Tất cả Sidebar
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleApplyAll('list')}
-                  className="text-xs font-semibold hover:border-cyan-500/50 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
-                >
-                  <List size={14} />
-                  Tất cả List
-                </Button>
-                <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block" />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleApplyAllColumns(3)}
-                  className="text-xs font-semibold hover:border-cyan-500/50 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
-                >
-                  Tất cả 3 Cột
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleApplyAllColumns(4)}
-                  className="text-xs font-semibold hover:border-cyan-500/50 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
-                >
-                  Tất cả 4 Cột
-                </Button>
+
+              {/* Quick Corner Radius */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <span className="w-1.5 h-4 rounded-full bg-cyan-500 inline-block" />
+                    Đồng bộ nhanh Bo góc cho tất cả danh sách
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-lg">
+                    Cài đặt nhanh mức độ bo tròn viền (Border Radius) đồng nhất cho toàn bộ các trang danh sách.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2.5 items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAllCornerRadius('none')}
+                    className="text-xs font-semibold hover:border-cyan-500/5 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all"
+                  >
+                    Bỏ bo góc
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAllCornerRadius('sm')}
+                    className="text-xs font-semibold hover:border-cyan-500/5 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all"
+                  >
+                    Bo góc ít (sm)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAllCornerRadius('lg')}
+                    className="text-xs font-semibold hover:border-cyan-500/5 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all"
+                  >
+                    Bo góc nhiều (lg)
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -736,6 +815,57 @@ export default function ExperiencesPage() {
                             Xem thử
                           </a>
                         </div>
+
+                        {/* Bo góc (Corner Radius) */}
+                        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50 shadow-inner mr-1" title="Độ bo góc viền">
+                          {[
+                            { id: 'none', label: 'Bỏ bo' },
+                            { id: 'sm', label: 'Bo ít' },
+                            { id: 'lg', label: 'Bo nhiều' }
+                          ].map((opt) => {
+                            const isSelected = (localCornerRadius[item.id] || 'lg') === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => setLocalCornerRadius(prev => ({ ...prev, [item.id]: opt.id as any }))}
+                                className={`px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                                  isSelected
+                                    ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Bố cục nút (chỉ render cho products) */}
+                        {item.id === 'products' && (
+                          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50 shadow-inner mr-1 animate-in fade-in duration-200" title="Bố cục nút mua hàng">
+                            {[
+                              { id: 'stack', label: 'Nút dọc' },
+                              { id: 'grid-2', label: 'Nút ngang' }
+                            ].map((opt) => {
+                              const isSelected = localCartButtonsLayout === opt.id;
+                              return (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => setLocalCartButtonsLayout(opt.id as any)}
+                                  className={`px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                                    isSelected
+                                      ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-sm'
+                                      : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                  }`}
+                                >
+                                  {opt.label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
 
                         {/* Column Selector */}
                         <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50 shadow-inner mr-1">
