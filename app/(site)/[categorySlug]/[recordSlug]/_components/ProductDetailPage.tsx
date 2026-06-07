@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useInView } from 'react-intersection-observer';
 import { api } from '@/convex/_generated/api';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import {
   getProductDetailColors,
   resolveProductDetailElementColor,
@@ -411,9 +411,11 @@ export default function ProductDetailPage({ params }: PageProps) {
   const { slug } = use(params);
   const brandColors = useBrandColors();
   const brandColor = brandColors.primary;
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const tokens = useMemo(
-    () => getProductDetailColors(brandColors.primary, brandColors.secondary, brandColors.mode || 'single'),
-    [brandColors.primary, brandColors.secondary, brandColors.mode]
+    () => getProductDetailColors(brandColors.primary, brandColors.secondary, brandColors.mode || 'single', isDark),
+    [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]
   );
   const experienceConfig = useProductDetailExperienceConfig();
   const classicHighlights = useClassicHighlights();
@@ -958,7 +960,7 @@ export default function ProductDetailPage({ params }: PageProps) {
   };
 
   return (
-    <>
+    <div style={{ backgroundColor: tokens.pageBackground, color: tokens.bodyText }}>
       {experienceConfig.layoutStyle === 'classic' && (
         <ClassicStyle
           product={productData}
@@ -1135,7 +1137,7 @@ export default function ProductDetailPage({ params }: PageProps) {
         overlayUrl={overlayUrl}
         fallbackSrc={productImagePlaceholder}
       />
-    </>
+    </div>
   );
 }
 
