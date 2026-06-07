@@ -5,29 +5,40 @@ import { usePaginatedQuery, useQuery } from 'convex/react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useInView } from 'react-intersection-observer';
 import { api } from '@/convex/_generated/api';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { getServicesListColors } from '@/components/site/services/colors';
+
+function getRadiusClass(radius?: 'none' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full') {
+  switch (radius) {
+    case 'none': return 'rounded-none';
+    case 'sm': return 'rounded-sm';
+    case 'md': return 'rounded-md';
+    case 'lg': return 'rounded-lg';
+    case 'xl': return 'rounded-xl';
+    case '2xl': return 'rounded-2xl';
+    case 'full': return 'rounded-full';
+    default: return 'rounded-xl';
+  }
+}
 import { useServicesListConfig } from '@/lib/experiences';
-import { ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Briefcase, Clock, Star } from 'lucide-react';
 import type { Id } from '@/convex/_generated/dataModel';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
-import {
-  FullWidthLayout,
-  type ServiceSortOption,
-  ServicesFilter,
-  SidebarLayout,
-} from '@/components/site/services';
+import { type ServiceSortOption } from '@/components/site/services';
+import { SharedListLayout } from '@/components/shared/SharedListLayout';
+import { PublicImage as Image } from '@/components/shared/PublicImage';
+import Link from 'next/link';
 
 function ServicesGridSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="bg-white rounded-xl overflow-hidden border border-slate-100">
-          <div className="aspect-video bg-slate-200" />
+        <div key={i} className="bg-white dark:bg-[#161617] rounded-xl overflow-hidden border border-slate-100 dark:border-zinc-800">
+          <div className="aspect-video bg-slate-200 dark:bg-zinc-800" />
           <div className="p-5 space-y-3">
-            <div className="h-5 w-20 bg-slate-200 rounded-full" />
-            <div className="h-6 w-full bg-slate-200 rounded" />
-            <div className="h-4 w-3/4 bg-slate-200 rounded" />
+            <div className="h-5 w-20 bg-slate-200 dark:bg-zinc-800 rounded-full" />
+            <div className="h-6 w-full bg-slate-200 dark:bg-zinc-800 rounded" />
+            <div className="h-4 w-3/4 bg-slate-200 dark:bg-zinc-800 rounded" />
           </div>
         </div>
       ))}
@@ -86,7 +97,6 @@ function generatePaginationItems(currentPage: number, totalPages: number): (numb
   return items;
 }
 
-// Hook to get enabled service fields
 function useEnabledServiceFields(): Set<string> {
   const fields = useQuery(api.admin.modules.listEnabledModuleFields, { moduleKey: 'services' });
   return useMemo(() => {
@@ -100,26 +110,26 @@ function ServicesListSkeleton() {
     <div className="py-8 md:py-12 px-4 animate-pulse">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
-          <div className="h-10 w-64 bg-slate-200 rounded mx-auto" />
+          <div className="h-10 w-64 bg-slate-200 dark:bg-zinc-800 rounded mx-auto" />
         </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4 mb-8">
+        <div className="bg-white dark:bg-[#161617] rounded-xl border border-slate-200 dark:border-zinc-800 p-4 mb-8">
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="h-10 flex-1 max-w-xs bg-slate-200 rounded-lg" />
+            <div className="h-10 flex-1 max-w-xs bg-slate-200 dark:bg-zinc-800 rounded-lg" />
             <div className="flex gap-2">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-8 w-20 bg-slate-200 rounded-full" />
+                <div key={i} className="h-8 w-20 bg-slate-200 dark:bg-zinc-800 rounded-full" />
               ))}
             </div>
           </div>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-white rounded-xl overflow-hidden border border-slate-100">
-              <div className="aspect-video bg-slate-200" />
+            <div key={i} className="bg-white dark:bg-[#161617] rounded-xl overflow-hidden border border-slate-100 dark:border-zinc-800">
+              <div className="aspect-video bg-slate-200 dark:bg-zinc-800" />
               <div className="p-5 space-y-3">
-                <div className="h-5 w-20 bg-slate-200 rounded-full" />
-                <div className="h-6 w-full bg-slate-200 rounded" />
-                <div className="h-4 w-3/4 bg-slate-200 rounded" />
+                <div className="h-5 w-20 bg-slate-200 dark:bg-zinc-800 rounded-full" />
+                <div className="h-6 w-full bg-slate-200 dark:bg-zinc-800 rounded" />
+                <div className="h-4 w-3/4 bg-slate-200 dark:bg-zinc-800 rounded" />
               </div>
             </div>
           ))}
@@ -139,9 +149,11 @@ export default function ServicesPage() {
 
 function ServicesContent() {
   const { primary: brandColor, secondary, mode } = useBrandColors();
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const tokens = useMemo(
-    () => getServicesListColors(brandColor, secondary, mode || 'single'),
-    [brandColor, secondary, mode]
+    () => getServicesListColors(brandColor, secondary, mode || 'single', isDark),
+    [brandColor, secondary, mode, isDark]
   );
   const listConfig = useServicesListConfig();
   const layout = listConfig.layoutStyle;
@@ -361,207 +373,424 @@ function ServicesContent() {
     prevFilterKeyRef.current = filterKey;
   }, [filterKey, listConfig.paginationType, pathname, router, searchParams, urlPage]);
 
-  // Loading state
-  if (!categories) {
-    return <ServicesListSkeleton />;
-  }
+  const [brokenThumbnails, setBrokenThumbnails] = useState<Set<string>>(new Set());
 
-  return (
-    <div className="py-6 md:py-10 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold" style={{ color: tokens.headingColor }}>
-            {activeCategory && categoryMap ? categoryMap.get(activeCategory as any) ?? 'Dịch vụ của chúng tôi' : 'Dịch vụ của chúng tôi'}
-          </h1>
+  const markThumbnailBroken = useCallback((id: Id<"services">) => {
+    setBrokenThumbnails((prev) => {
+      const key = String(id);
+      if (prev.has(key)) {return prev;}
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+  }, []);
+
+  const formatPriceValue = (price?: number): string => {
+    if (price === undefined || price === null) {return 'Liên hệ';} 
+    return new Intl.NumberFormat('vi-VN', { currency: 'VND', style: 'currency' }).format(price);
+  };
+
+  const ServiceGridCard = ({ service }: { service: typeof services[number] }) => {
+    const showImage = Boolean(service.thumbnail) && !brokenThumbnails.has(String(service._id));
+    const showExcerpt = enabledFields.has('excerpt');
+    const showPrice = enabledFields.has('price');
+    const showDuration = enabledFields.has('duration');
+    const showFeatured = enabledFields.has('featured');
+    const cardRadiusClass = getRadiusClass('lg');
+
+    return (
+      <Link href={getServiceDetailHref(service)} className="group block h-full">
+        <article
+          className={`overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 border h-full flex flex-col bg-white dark:bg-[#161617] dark:border-zinc-800 ${cardRadiusClass}`}
+          style={{ borderColor: tokens.cardBorder }}
+        >
+          <div className="relative aspect-video overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]" style={{ backgroundColor: tokens.cardBorder }}>
+            {showImage ? (
+              <Image
+                src={service.thumbnail as string}
+                alt={service.title}
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                mode="thumb"
+                onLoadingComplete={(img) => {
+                  if (img.naturalWidth === 0) {
+                    markThumbnailBroken(service._id);
+                  }
+                }}
+                onError={() => { markThumbnailBroken(service._id); }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center min-h-[120px]">
+                <Briefcase size={32} style={{ color: tokens.neutralTextLight }} />
+              </div>
+            )}
+            {showFeatured && service.featured && (
+              <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500 text-white text-xs font-medium rounded flex items-center gap-1">
+                <Star size={10} className="fill-current" /> Nổi bật
+              </div>
+            )}
+          </div>
+          <div className="p-3 flex-1 flex flex-col">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              {categoryMap.get(service.categoryId) && (
+                <span
+                  className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                  style={{
+                    backgroundColor: tokens.badgeBg,
+                    color: tokens.badgeText,
+                  }}
+                >
+                  {categoryMap.get(service.categoryId)}
+                </span>
+              )}
+            </div>
+            <h2 className="text-sm font-bold line-clamp-2 flex-1 text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" style={{ color: tokens.bodyText }}>
+              {service.title}
+            </h2>
+            {showExcerpt && service.excerpt && (
+              <p className="text-xs line-clamp-2 mt-1.5 text-slate-500 dark:text-slate-405 leading-relaxed">{service.excerpt}</p>
+            )}
+            <div
+              className="flex items-center justify-between text-xs mt-2.5 pt-2.5 border-t"
+              style={{ color: tokens.neutralTextLight, borderColor: tokens.cardBorder }}
+            >
+              <div className="flex items-center gap-2">
+                {showDuration && service.duration && (
+                  <span className="flex items-center gap-1">
+                    <Clock size={12} />
+                    {service.duration}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {showPrice && (
+                  <span className="font-bold text-sm" style={{ color: tokens.priceColor }}>
+                    {formatPriceValue(service.price)}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </article>
+      </Link>
+    );
+  };
+
+  const ServiceListCard = ({ service }: { service: typeof services[number] }) => {
+    const showImage = Boolean(service.thumbnail) && !brokenThumbnails.has(String(service._id));
+    const showExcerpt = enabledFields.has('excerpt');
+    const showPrice = enabledFields.has('price');
+    const showDuration = enabledFields.has('duration');
+    const showFeatured = enabledFields.has('featured');
+    const cardRadiusClass = getRadiusClass('lg');
+
+    return (
+      <Link href={getServiceDetailHref(service)} className="group block">
+        <article
+          className={`overflow-hidden hover:shadow-md transition-all duration-350 border bg-white dark:bg-[#161617] dark:border-zinc-800 ${cardRadiusClass}`}
+          style={{ borderColor: tokens.cardBorder }}
+        >
+          <div className="flex flex-col sm:flex-row">
+            {/* Image */}
+            <div className="sm:w-40 md:w-48 flex-shrink-0">
+              <div className="aspect-video sm:aspect-[4/3] sm:h-full overflow-hidden relative bg-slate-100 dark:bg-[#1c1c1e]" style={{ backgroundColor: tokens.cardBorder }}>
+                {showImage ? (
+                  <Image
+                    src={service.thumbnail as string}
+                    alt={service.title}
+                    fill
+                    sizes="(max-width: 640px) 100vw, 192px"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    mode="thumb"
+                    onLoadingComplete={(img) => {
+                      if (img.naturalWidth === 0) {
+                        markThumbnailBroken(service._id);
+                      }
+                    }}
+                    onError={() => { markThumbnailBroken(service._id); }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center min-h-[100px]">
+                    <Briefcase size={28} style={{ color: tokens.neutralTextLight }} />
+                  </div>
+                )}
+                {showFeatured && service.featured && (
+                  <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500 text-white text-xs font-medium rounded flex items-center gap-1">
+                    <Star size={10} className="fill-current" /> Nổi bật
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Content */}
+            <div className="p-4 flex-1 flex flex-col justify-center">
+              <div className="flex items-center gap-2 mb-1.5">
+                {categoryMap.get(service.categoryId) && (
+                  <span
+                    className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                    style={{
+                      backgroundColor: tokens.badgeBg,
+                      color: tokens.badgeText,
+                    }}
+                  >
+                    {categoryMap.get(service.categoryId)}
+                  </span>
+                )}
+                <span className="text-xs text-slate-450 dark:text-zinc-500">
+                  {service.publishedAt ? new Date(service.publishedAt).toLocaleDateString('vi-VN') : ''}
+                </span>
+              </div>
+              <h2 className="text-sm font-bold line-clamp-2 mb-1.5 leading-snug text-slate-800 dark:text-slate-100 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" style={{ color: tokens.bodyText }}>
+                {service.title}
+              </h2>
+              {showExcerpt && service.excerpt && (
+                <p className="text-xs line-clamp-2 mb-2 leading-relaxed text-slate-500 dark:text-slate-400" style={{ color: tokens.metaText }}>{service.excerpt}</p>
+              )}
+              <div className="flex items-center justify-between text-xs mt-1 text-slate-450 dark:text-zinc-500">
+                <div className="flex items-center gap-2">
+                  {showDuration && service.duration && (
+                    <span className="flex items-center gap-1">
+                      <Clock size={12} />
+                      {service.duration}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {showPrice && (
+                    <span className="font-bold text-sm" style={{ color: tokens.priceColor }}>
+                      {formatPriceValue(service.price)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </Link>
+    );
+  };
+
+  const paginationBar = isPaginationMode && totalCount && totalCount > postsPerPage && (
+    <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
+      <div className="order-2 flex w-full items-center justify-between text-sm sm:order-1 sm:w-auto sm:justify-start sm:gap-6">
+        <div className="flex items-center gap-2">
+          <span className="text-slate-500 dark:text-zinc-400">Hiển thị</span>
+          <select
+            value={postsPerPage}
+            onChange={(event) => handlePageSizeChange(Number(event.target.value))}
+            className="h-8 w-[70px] appearance-none rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] px-2 text-sm font-medium shadow-sm focus:outline-none text-slate-705 dark:text-[#f5f5f7]"
+            aria-label="Số dịch vụ mỗi trang"
+          >
+            {[12, 20, 24, 48].map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+          <span className="text-slate-500 dark:text-zinc-400">dịch vụ/trang</span>
         </div>
 
-        {/* Layout based rendering */}
-        {layout === 'grid' && (
-          <>
-            <div className="mb-8">
-              <ServicesFilter
-                categories={categoryOptions}
-                selectedCategory={activeCategory}
-                onCategoryChange={handleCategoryChange}
-                searchQuery={searchQuery}
-                onSearchChange={handleSearchChange}
-                sortBy={sortBy}
-                onSortChange={handleSortChange}
-                totalResults={totalCount ?? 0}
-                tokens={tokens}
-              />
-            </div>
-
-            {isLoadingServices ? (
-              <ServicesGridSkeleton count={postsPerPage} />
-            ) : (
-              <FullWidthLayout
-                services={services}
-                tokens={tokens}
-                categoryMap={categoryMap}
-                viewMode="grid"
-                enabledFields={enabledFields}
-                getDetailHref={getServiceDetailHref}
-              />
-            )}
-          </>
-        )}
-
-        {layout === 'sidebar' && (
-          isLoadingServices ? (
-            <ServicesGridSkeleton count={postsPerPage} />
-          ) : (
-            <SidebarLayout
-              services={services}
-              tokens={tokens}
-              categoryMap={categoryMap}
-              categories={categoryOptions}
-              selectedCategory={activeCategory}
-              onCategoryChange={handleCategoryChange}
-              searchQuery={searchQuery}
-              onSearchChange={handleSearchChange}
-              sortBy={sortBy}
-              onSortChange={handleSortChange}
-              enabledFields={enabledFields}
-               showSearch={listConfig.showSearch}
-               showCategories={listConfig.showCategories}
-              getDetailHref={getServiceDetailHref}
-              displayMode="grid"
-            />
-          )
-        )}
-
-        {layout === 'list' && (
-          isLoadingServices ? (
-            <ServicesGridSkeleton count={postsPerPage} />
-          ) : (
-            <SidebarLayout
-              services={services}
-              tokens={tokens}
-              categoryMap={categoryMap}
-              categories={categoryOptions}
-              selectedCategory={activeCategory}
-              onCategoryChange={handleCategoryChange}
-              searchQuery={searchQuery}
-              onSearchChange={handleSearchChange}
-              sortBy={sortBy}
-              onSortChange={handleSortChange}
-              enabledFields={enabledFields}
-               showSearch={listConfig.showSearch}
-               showCategories={listConfig.showCategories}
-              getDetailHref={getServiceDetailHref}
-              displayMode="list"
-            />
-          )
-        )}
-
-        {/* Pagination / Infinite Scroll */}
-        {listConfig.paginationType === 'pagination' && totalCount && totalCount > postsPerPage && (
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="order-2 flex w-full items-center justify-between text-sm text-slate-500 sm:order-1 sm:w-auto sm:justify-start sm:gap-6">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-600">Hiển thị</span>
-                <select
-                  value={postsPerPage}
-                  onChange={(event) => handlePageSizeChange(Number(event.target.value))}
-                  className="h-8 w-[70px] appearance-none rounded-md border border-slate-200 bg-white px-2 text-sm font-medium text-slate-900 shadow-sm focus:border-slate-300 focus:outline-none"
-                  style={{ borderColor: tokens.paginationButtonBorder }}
-                  aria-label="Số bài mỗi trang"
-                >
-                  {[12, 20, 24, 48, 100].map((size) => (
-                    <option key={size} value={size}>{size}</option>
-                  ))}
-                </select>
-                <span>bài/trang</span>
-              </div>
-
-              <div className="text-right sm:text-left">
-                <span className="font-medium text-slate-900">
-                  {totalCount ? ((urlPage - 1) * postsPerPage) + 1 : 0}–{Math.min(urlPage * postsPerPage, totalCount ?? 0)}
-                </span>
-                <span className="mx-1 text-slate-300">/</span>
-                <span className="font-medium text-slate-900">{totalCount ?? 0}</span>
-                <span className="ml-1 text-slate-500">dịch vụ</span>
-              </div>
-            </div>
-
-            <div className="order-1 flex w-full justify-center sm:order-2 sm:w-auto sm:justify-end">
-              <nav className="flex items-center space-x-1 sm:space-x-2" aria-label="Phân trang">
-                <button
-                  onClick={() => handlePageChange(urlPage - 1)}
-                  disabled={urlPage === 1}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={urlPage === 1 ? undefined : { color: tokens.paginationButtonText, borderColor: tokens.paginationButtonBorder }}
-                  aria-label="Trang trước"
-                >
-                  <ChevronDown className="h-4 w-4 rotate-90" />
-                </button>
-
-                {generatePaginationItems(urlPage, Math.ceil(totalCount / postsPerPage)).map((item, index) => {
-                  if (item === 'ellipsis') {
-                    return (
-                      <div key={`ellipsis-${index}`} className="flex h-8 w-8 items-center justify-center text-slate-400">
-                        …
-                      </div>
-                    );
-                  }
-
-                  const pageNum = item as number;
-                  const isActive = pageNum === urlPage;
-                  const isMobileHidden = !isActive && pageNum !== 1 && pageNum !== Math.ceil(totalCount / postsPerPage);
-
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-all duration-200 ${
-                        isActive
-                          ? 'text-white shadow-sm border font-medium'
-                          : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
-                      } ${isMobileHidden ? 'hidden sm:inline-flex' : ''}`}
-                      style={isActive ? { backgroundColor: tokens.paginationActiveBg, borderColor: tokens.paginationActiveBg, color: tokens.paginationActiveText } : undefined}
-                      aria-current={isActive ? 'page' : undefined}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-
-                <button
-                  onClick={() => handlePageChange(urlPage + 1)}
-                  disabled={totalCount ? urlPage >= Math.ceil(totalCount / postsPerPage) : true}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={totalCount && urlPage < Math.ceil(totalCount / postsPerPage) ? { color: tokens.paginationButtonText, borderColor: tokens.paginationButtonBorder } : undefined}
-                  aria-label="Trang sau"
-                >
-                  <ChevronDown className="h-4 w-4 -rotate-90" />
-                </button>
-              </nav>
-            </div>
-          </div>
-        )}
-
-        {listConfig.paginationType === 'infiniteScroll' && infiniteStatus !== 'Exhausted' && (
-          <div ref={loadMoreRef} className="text-center mt-6 py-8">
-            {infiniteStatus === 'LoadingMore' ? (
-              <div className="flex justify-center gap-1">
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: tokens.loadingDotStrong }} />
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: tokens.loadingDotMedium }} />
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: tokens.loadingDotSoft }} />
-              </div>
-            ) : infiniteStatus === 'CanLoadMore' ? (
-              <p className="text-sm text-slate-400">Cuộn để xem thêm...</p>
-            ) : null}
-          </div>
-        )}
-
-        {listConfig.paginationType === 'infiniteScroll' && infiniteStatus === 'Exhausted' && services.length > 0 && (
-          <div className="text-center mt-6">
-            <p className="text-sm text-slate-400">Đã hiển thị tất cả {services.length} dịch vụ</p>
-          </div>
-        )}
+        <div>
+          <span className="font-medium text-slate-900 dark:text-[#f5f5f7]">
+            {totalCount ? ((urlPage - 1) * postsPerPage) + 1 : 0}–{Math.min(urlPage * postsPerPage, totalCount)}
+          </span>
+          <span className="mx-1 text-slate-300 dark:text-zinc-700">/</span>
+          <span className="font-medium text-slate-900 dark:text-[#f5f5f7]">{totalCount}</span>
+          <span className="ml-1 text-slate-500">dịch vụ</span>
+        </div>
       </div>
+
+      <div className="order-1 flex w-full justify-center sm:order-2 sm:w-auto sm:justify-end">
+        <nav className="flex items-center space-x-1 sm:space-x-2" aria-label="Phân trang">
+          <button
+            onClick={() => handlePageChange(urlPage - 1)}
+            disabled={urlPage === 1}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] text-slate-700 dark:text-[#f5f5f7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Trang trước"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          {generatePaginationItems(urlPage, Math.ceil(totalCount / postsPerPage)).map((item, index) => {
+            if (item === 'ellipsis') {
+              return (
+                <div key={`ellipsis-${index}`} className="flex h-8 w-8 items-center justify-center text-slate-400">
+                  …
+                </div>
+              );
+            }
+
+            const pageNum = item as number;
+            const isActive = pageNum === urlPage;
+
+            return (
+              <button
+                key={pageNum}
+                onClick={() => handlePageChange(pageNum)}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-all duration-200 ${
+                  isActive
+                    ? 'text-white shadow-sm border font-medium'
+                    : 'text-slate-700 dark:text-[#f5f5f7] hover:bg-slate-50 dark:hover:bg-[#2c2c2e]'
+                }`}
+                style={isActive ? {
+                  backgroundColor: brandColor,
+                  borderColor: brandColor,
+                  color: '#fff',
+                } : undefined}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => handlePageChange(urlPage + 1)}
+            disabled={urlPage === Math.ceil(totalCount / postsPerPage)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] text-slate-755 dark:text-[#f5f5f7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Trang sau"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </nav>
+      </div>
+    </div>
+  );
+
+  const infiniteScrollTrigger = !isPaginationMode && (
+    <>
+      {infiniteStatus !== 'Exhausted' && (
+        <div ref={loadMoreRef} className="text-center py-6 w-full animate-pulse">
+          <div className="flex justify-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-slate-400" />
+            <div className="w-2 h-2 rounded-full bg-slate-400 delay-75" />
+            <div className="w-2 h-2 rounded-full bg-slate-400 delay-150" />
+          </div>
+        </div>
+      )}
+      {infiniteStatus === 'Exhausted' && services.length > 0 && (
+        <div className="text-center py-6 w-full">
+          <p className="text-sm text-slate-450 dark:text-zinc-500">Đã hiển thị tất cả {services.length} dịch vụ</p>
+        </div>
+      )}
+    </>
+  );
+
+  const activeCategoryName = activeCategory && categoryMap ? categoryMap.get(activeCategory as any) : null;
+
+  return (
+    <div className="flex-1 w-full bg-slate-50 dark:bg-black font-active transition-colors duration-200">
+      <SharedListLayout
+        items={services}
+        totalCount={totalCount ?? 0}
+        isLoading={isLoadingServices}
+        unit="dịch vụ"
+        layoutStyle={layout}
+        gridColumns={listConfig.gridColumns}
+        cornerRadius="lg"
+        showSearch={listConfig.showSearch}
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        searchPlaceholder="Tìm dịch vụ..."
+        sortBy={sortBy}
+        onSortChange={handleSortChange}
+        sortOptions={[
+          { value: 'newest', label: 'Mới nhất' },
+          { value: 'oldest', label: 'Cũ nhất' },
+          { value: 'popular', label: 'Xem nhiều nhất' },
+          { value: 'title', label: 'Tên A-Z' },
+          { value: 'title_desc', label: 'Tên Z-A' },
+        ]}
+        hasActiveFilters={!!activeCategory || !!searchQuery}
+        onClearFilters={() => {
+          setSearchQuery('');
+          setDebouncedSearchQuery('');
+          setSortBy('newest');
+          handleCategoryChange(null);
+        }}
+        renderItem={(service) => layout === 'list' ? <ServiceListCard key={service._id} service={service} /> : <ServiceGridCard key={service._id} service={service} />}
+        renderSkeleton={() => <ServicesGridSkeleton count={postsPerPage} />}
+        renderSidebarFilters={() => listConfig.showCategories && (
+          <div className="space-y-3">
+            <h3 className="font-semibold text-sm flex items-center gap-2 dark:text-[#f5f5f7]">Danh mục</h3>
+            <ul className="space-y-0.5">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => handleCategoryChange(null)}
+                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${!activeCategory ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                  style={!activeCategory ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColor}18`, color: brandColor } : undefined}
+                >
+                  Tất cả
+                </button>
+              </li>
+              {categoryOptions.map((category) => (
+                <li key={category._id}>
+                  <button
+                    type="button"
+                    onClick={() => handleCategoryChange(category._id)}
+                    className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${activeCategory === category._id ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                    style={activeCategory === category._id ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColor}18`, color: brandColor } : undefined}
+                  >
+                    {category.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        renderToolbarFilters={() => listConfig.showCategories && (
+          <div className="relative">
+            <select
+              value={activeCategory ?? ''}
+              onChange={(event) => handleCategoryChange((event.target.value as any) || null)}
+              className="h-9 pl-3 pr-8 rounded-lg border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] text-xs outline-none font-medium appearance-none min-w-[140px]"
+              style={{ 
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`,
+                backgroundPosition: 'right 8px center',
+                backgroundSize: '12px',
+                backgroundRepeat: 'no-repeat'
+              }}
+            >
+              <option value="">Tất cả danh mục</option>
+              {categoryOptions.map((category) => (
+                <option key={category._id} value={category._id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        renderMobileFilters={(closeSheet) => listConfig.showCategories && (
+          <div className="space-y-3">
+            <h4 className="font-semibold text-sm dark:text-[#f5f5f7]">Danh mục</h4>
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => { handleCategoryChange(null); closeSheet(); }}
+                className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${!activeCategory ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                style={!activeCategory ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColor}18`, color: brandColor } : undefined}
+              >
+                Tất cả
+              </button>
+              {categoryOptions.map((category) => (
+                <button
+                  key={category._id}
+                  type="button"
+                  onClick={() => { handleCategoryChange(category._id); closeSheet(); }}
+                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${activeCategory === category._id ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                  style={activeCategory === category._id ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColor}18`, color: brandColor } : undefined}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        paginationNode={paginationBar}
+        infiniteScrollTriggerNode={infiniteScrollTrigger}
+        headerTitle={activeCategoryName ?? 'Dịch vụ của chúng tôi'}
+        brandColor={brandColor}
+        isDark={isDark}
+      />
     </div>
   );
 }

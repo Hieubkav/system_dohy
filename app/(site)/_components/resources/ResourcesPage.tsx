@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { Bookmark, ChevronDown, FileText, Filter, Search, SlidersHorizontal, Star, X, Check, ChevronLeft, ChevronRight, Download, ShoppingCart, Lock } from 'lucide-react';
+import { Bookmark, ChevronDown, FileText, Filter, Search, Star, X, Check, Download, ShoppingCart, Lock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { useResourcesListConfig } from '@/lib/experiences';
@@ -14,6 +14,7 @@ import { useInView } from 'react-intersection-observer';
 import { useCart } from '@/lib/cart';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
 import { toast } from 'sonner';
+import { SharedListLayout } from '@/components/shared/SharedListLayout';
 
 const formatPrice = (pricingType: string, price?: number) => {
   if (pricingType === 'free') {return 'Miễn phí';}
@@ -188,7 +189,7 @@ function MultiSelectDropdown({
               onClear();
             }}
             title="Xóa bộ lọc"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-slate-400 dark:text-zinc-350 hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-650 dark:hover:text-[#f5f5f7] transition shadow-sm"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-slate-400 dark:text-zinc-350 hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-655 dark:hover:text-[#f5f5f7] transition shadow-sm"
             style={{ borderRadius: cornerRadius === 'none' ? '0' : cornerRadius === 'sm' ? '8px' : '12px' }}
           >
             <X size={16} />
@@ -224,7 +225,7 @@ function MultiSelectDropdown({
                     onChange(option.value);
                   }}
                   className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors rounded-lg ${
-                    isSelected ? 'font-semibold font-bold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-900 dark:hover:text-[#f5f5f7]'
+                    isSelected ? 'font-bold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-50 dark:hover:bg-[#2c2c2e] hover:text-slate-900 dark:hover:text-[#f5f5f7]'
                   }`}
                   style={isSelected ? { backgroundColor: `${brandColor}12`, color: brandColor } : undefined}
                 >
@@ -598,7 +599,6 @@ function ResourcesContent() {
       prev.filter !== searchParams.get('filter') ||
       prev.sortBy !== sortBy;
 
-    // Cập nhật ref cho lần so sánh kế tiếp
     prevFiltersRef.current = {
       activeCategoryId,
       debouncedSearch,
@@ -673,7 +673,6 @@ function ResourcesContent() {
   const totalResources = totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalResources / postsPerPage));
   const isLoading = resources === undefined || categories === undefined;
-
   const hasMore = visibleLimit < totalResources;
 
   useEffect(() => {
@@ -685,392 +684,433 @@ function ResourcesContent() {
     }
   }, [inView, hasMore, postsPerPage, isPaginationMode]);
 
-  return (
-    <div className="flex-1 w-full bg-slate-50 dark:bg-black font-active text-slate-700 dark:text-zinc-200 transition-colors duration-200" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
-      <section className="px-4 py-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-6 text-center">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-[#f5f5f7]">{activeCategoryName ?? 'Tài nguyên'}</h1>
-          </div>
+  const ResourceGridCard = ({ resource }: { resource: typeof resourceItems[number] }) => {
+    const category = categoryMap.get(resource.categoryId);
+    const detailHref = buildDetailPath({
+      categorySlug: category?.slug,
+      mode: routeMode,
+      moduleKey: 'resources',
+      recordSlug: resource.slug,
+    });
+    const assignedValues = resourceFiltersMap.get(resource._id) ?? [];
+    const cardRadiusClass = getRadiusClass(config.cornerRadius);
 
-          <div className={config.layoutStyle === 'sidebar' || config.layoutStyle === 'list' ? 'grid gap-6 lg:grid-cols-[280px_1fr]' : 'space-y-6'}>
-            {(config.showSearch || config.showCategories) && (
-              config.layoutStyle === 'sidebar' || config.layoutStyle === 'list' ? (
-                <aside className="space-y-4 lg:block flex-shrink-0">
-                  {config.showSearch && (
-                    <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
-                      <h3 className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-zinc-300">
-                        <Search size={14} className="text-slate-400" />
-                        Tìm kiếm
-                      </h3>
-                      <div className="relative">
-                        <input
-                          value={search}
-                          onChange={(event) => { setSearch(event.target.value); }}
-                          placeholder="Tìm tài nguyên..."
-                          className={`h-11 w-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-slate-700 dark:text-[#f5f5f7] pl-10 pr-3 text-sm outline-none transition-colors focus:border-slate-300 dark:focus:border-zinc-700 ${getRadiusClass(config.cornerRadius, 'input')}`}
-                        />
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                      </div>
-                    </div>
-                  )}
-
-                  {config.showCategories && (
-                    <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
-                      <h3 className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-zinc-300">
-                        <Bookmark size={14} className="text-slate-400" />
-                        Danh mục tài nguyên
-                      </h3>
-                      {visibleCategories.length > 8 && (
-                        <div className="relative mb-2">
-                          <input
-                            type="text"
-                            placeholder="Tìm nhanh danh mục..."
-                            value={categoryQuery}
-                            onChange={(event) => setCategoryQuery(event.target.value)}
-                            className={`w-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-slate-700 dark:text-[#f5f5f7] py-2 pl-9 pr-9 text-xs outline-none transition-colors focus:border-slate-300 dark:focus:border-zinc-700 ${getRadiusClass(config.cornerRadius, 'input')}`}
-                          />
-                          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                          {categoryQuery && (
-                            <button type="button" onClick={() => setCategoryQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 opacity-60 hover:opacity-100">
-                              <X size={14} />
-                            </button>
-                          )}
-                        </div>
-                      )}
-                      <div className={`space-y-1 ${visibleCategories.length > 8 ? 'max-h-60 overflow-y-auto pr-1' : ''}`}>
-                        <button
-                          type="button"
-                          onClick={() => handleCategoryChange(null)}
-                          className={`w-full rounded-lg border border-transparent px-3.5 py-2 text-left text-sm transition-colors ${!activeCategoryId ? 'font-semibold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
-                          style={!activeCategoryId ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary, borderColor: isDark ? '#3a3a3c' : 'transparent' } : undefined}
-                        >
-                          Tất cả danh mục
-                        </button>
-                        {filteredCategories.map((category) => (
-                          <button
-                            key={category._id}
-                            type="button"
-                            onClick={() => handleCategoryChange(category._id)}
-                            className={`w-full rounded-lg border border-transparent px-3.5 py-2 text-left text-sm transition-colors ${activeCategoryId === category._id ? 'font-semibold' : 'text-slate-600 dark:text-zinc-405 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
-                            style={activeCategoryId === category._id ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary, borderColor: isDark ? '#3a3a3c' : 'transparent' } : undefined}
-                          >
-                            {category.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {resourceFiltersFeature?.enabled && config.showResourceFilters && activeFilters && allFilterValues && activeFilters.length > 0 && (
-                    <div className={`border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-4 shadow-sm ${getRadiusClass(config.cornerRadius, 'panel')}`}>
-                      <h3 className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-zinc-300">
-                        <Filter size={14} className="text-slate-400" />
-                        Bộ lọc
-                      </h3>
-                      <div className="space-y-3">
-                        {activeFilters.map((filter) => {
-                          const values = allFilterValues.filter((value) => value.filterId === filter._id && value.active);
-                          return (
-                            <div key={filter._id}>
-                              <div className="mb-1.5 text-xs font-bold uppercase tracking-wide text-slate-400 dark:text-zinc-500">{filter.name}</div>
-                              <div className="flex flex-wrap gap-2">
-                                {values.map((value) => {
-                                  const active = activeFilterSlugs.includes(value.slug);
-                                  return (
-                                    <button
-                                      key={value._id}
-                                      type="button"
-                                      onClick={() => handleFilterChange(value.slug)}
-                                      className={`rounded-full border px-3 py-1 text-xs font-medium transition inline-flex items-center gap-1.5 ${active ? '' : 'border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-[#2c2c2e] hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
-                                      style={active ? { backgroundColor: brandColors.primary, borderColor: brandColors.primary, color: '#fff' } : undefined}
-                                    >
-                                      {value.icon && (
-                                        <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
-                                      )}
-                                      <span>{value.name}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                        {activeFilterSlugs.length > 0 && (
-                          <button type="button" onClick={() => handleFilterChange(null)} className="text-xs font-medium text-slate-500 dark:text-[#86868b] hover:text-slate-900 dark:hover:text-[#f5f5f7]">Xóa bộ lọc</button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </aside>
-              ) : (
-                <div className={`flex flex-col gap-3 border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] p-3 shadow-sm md:flex-row md:items-center md:justify-between ${getRadiusClass(config.cornerRadius, 'panel')}`}>
-                  <div className="relative w-full md:max-w-sm">
-                    <input
-                      value={search}
-                      onChange={(event) => { setSearch(event.target.value); }}
-                      placeholder="Tìm tài nguyên..."
-                      className={`h-11 w-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-slate-700 dark:text-[#f5f5f7] pl-10 pr-3 text-sm outline-none transition-colors focus:border-slate-350 dark:focus:border-zinc-700 ${getRadiusClass(config.cornerRadius, 'input')}`}
-                    />
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <CustomDropdown
-                      value={activeCategoryId ?? ''}
-                      onChange={(value) => handleCategoryChange(value ? value as Id<'resourceCategories'> : null)}
-                      options={[{ value: '', label: 'Tất cả danh mục' }, ...visibleCategories.map((category) => ({ value: category._id, label: category.name }))]}
-                      icon={<Bookmark size={15} className="text-slate-400" />}
-                      cornerRadius={config.cornerRadius}
-                    />
-                    {resourceFiltersFeature?.enabled && config.showResourceFilters && allFilterValues && allFilterValues.filter((v) => v.active).length > 0 && (
-                      <MultiSelectDropdown
-                        values={activeFilterSlugs}
-                        onChange={(value) => handleFilterChange(value)}
-                        onClear={() => handleFilterChange(null)}
-                        options={[
-                          { value: '', label: activeFilters?.[0]?.name ? `Tất cả ${activeFilters[0].name.toLowerCase()}` : 'Tất cả bộ lọc' },
-                          ...allFilterValues.filter((v) => v.active).map((val) => ({ value: val.slug, label: val.name, icon: val.icon })),
-                        ]}
-                        placeholder={activeFilters?.[0]?.name ? `Tất cả ${activeFilters[0].name.toLowerCase()}` : 'Bộ lọc'}
-                        icon={<Filter size={15} className="text-slate-400" />}
-                        cornerRadius={config.cornerRadius}
-                        brandColor={brandColors.primary}
-                      />
-                    )}
-                    <CustomDropdown
-                      value={sortBy}
-                      onChange={(value) => setSortBy(value as typeof sortBy)}
-                      options={[
-                        { value: 'newest', label: 'Mới nhất' },
-                        { value: 'popular', label: 'Xem nhiều' },
-                        { value: 'price_asc', label: 'Giá tăng dần' },
-                        { value: 'price_desc', label: 'Giá giảm dần' },
-                        { value: 'title', label: 'Tên A-Z' },
-                        { value: 'title_desc', label: 'Tên Z-A' },
-                      ]}
-                      icon={<SlidersHorizontal size={15} className="text-slate-400" />}
-                      cornerRadius={config.cornerRadius}
-                    />
-                  </div>
-                </div>
-              )
-            )}
-
-            <div className="space-y-6">
-              {config.layoutStyle === 'list' ? (
-                <div className="space-y-4">
-                  {isLoading ? (
-                    Array.from({ length: postsPerPage }).map((_, index) => (
-                      <div key={index} className={`h-28 animate-pulse border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] ${getRadiusClass(config.cornerRadius)}`} />
-                    ))
-                  ) : resourceItems.map((resource) => {
-                    const category = categoryMap.get(resource.categoryId);
-                    const detailHref = buildDetailPath({
-                      categorySlug: category?.slug,
-                      mode: routeMode,
-                      moduleKey: 'resources',
-                      recordSlug: resource.slug,
-                    });
-                    const assignedValues = resourceFiltersMap.get(resource._id) ?? [];
-                    return (
-                      <ResourceListItem
-                        key={resource._id}
-                        resource={resource}
-                        category={category}
-                        detailHref={detailHref}
-                        assignedValues={assignedValues}
-                        resourceFiltersFeatureEnabled={resourceFiltersFeature?.enabled ?? false}
-                        showResourceFilters={config.showResourceFilters}
-                        cornerRadius={config.cornerRadius}
-                        brandColors={brandColors}
-                      />
-                    );
-                  })}
-                </div>
-              ) : (
-                /* Grid / Sidebar layout: vertical cards */
-                <div className={`grid gap-5 ${config.gridColumns === 4 ? 'grid-cols-2 md:grid-cols-2 lg:grid-cols-4' : config.gridColumns === 2 ? 'grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 md:grid-cols-3 lg:grid-cols-3'}`}>
-                  {isLoading ? (
-                    Array.from({ length: postsPerPage }).map((_, index) => (
-                      <div key={index} className={`h-72 animate-pulse border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] ${getRadiusClass(config.cornerRadius)}`} />
-                    ))
-                  ) : resourceItems.map((resource) => {
-                    const category = categoryMap.get(resource.categoryId);
-                    const detailHref = buildDetailPath({
-                      categorySlug: category?.slug,
-                      mode: routeMode,
-                      moduleKey: 'resources',
-                      recordSlug: resource.slug,
-                    });
-                    const assignedValues = resourceFiltersMap.get(resource._id) ?? [];
-                    return (
-                      <Link
-                        key={resource._id}
-                        href={detailHref}
-                        className={`group mb-5 block overflow-hidden border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${getRadiusClass(config.cornerRadius)}`}
-                      >
-                        <div className="relative aspect-video overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]">
-                          {resource.thumbnail ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center" style={{ background: isDark ? '#1c1c1e' : `linear-gradient(135deg, ${brandColors.primary}18, ${brandColors.primary}05)` }}>
-                              <FileText size={42} style={{ color: brandColors.primary }} />
-                            </div>
-                          )}
-                          {resource.featured && (
-                            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white">
-                              <Star size={12} className="fill-current" /> Nổi bật
-                            </span>
-                          )}
-                        </div>
-                        <div className="space-y-3 p-4">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="rounded-full bg-slate-100 dark:bg-[#1c1c1e] px-2.5 py-1 text-xs font-semibold text-slate-655 dark:text-zinc-350">{category?.name ?? 'Tài nguyên'}</span>
-                            <span className="text-sm font-bold" style={{ color: brandColors.primary }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
-                          </div>
-                          <h2 className="line-clamp-2 text-lg font-bold text-slate-900 dark:text-[#f5f5f7] group-hover:underline">{resource.title}</h2>
-                          {resource.excerpt && <p className="line-clamp-2 text-sm text-slate-500 dark:text-[#86868b]">{resource.excerpt}</p>}
-                          {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedValues.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">
-                              {assignedValues.slice(0, 4).map((value) => (
-                                <span key={value._id} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-zinc-800 px-2 py-0.5 text-[11px] font-semibold text-slate-550 dark:text-[#86868b]">
-                                  {value.icon && (
-                                    <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
-                                  )}
-                                  <span>{value.name}</span>
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2 text-sm font-semibold group-hover:underline" style={{ color: brandColors.primary }}>
-                            Xem chi tiết →
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-
-              {!isLoading && resourceItems.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-slate-300 dark:border-zinc-800 bg-white dark:bg-[#161617] p-10 text-center text-slate-500 dark:text-zinc-400">
-                  Không có tài nguyên phù hợp.
-                </div>
-              )}
-
-              {!isLoading && resourceItems.length > 0 && (
-                isPaginationMode ? (
-                  <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
-                    <div className="order-2 flex w-full items-center justify-between text-sm sm:order-1 sm:w-auto sm:justify-start sm:gap-6">
-                      <div className="flex items-center gap-2">
-                        <span className="text-slate-500 dark:text-zinc-400">Hiển thị</span>
-                        <select
-                          value={postsPerPage}
-                          onChange={(event) => {
-                            setPageSizeOverride(Number(event.target.value));
-                            const params = new URLSearchParams(searchParams.toString());
-                            params.delete('page');
-                            router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                          }}
-                          className="h-8 w-[70px] appearance-none rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] px-2 text-sm font-medium shadow-sm focus:outline-none text-slate-700 dark:text-[#f5f5f7]"
-                          aria-label="Số tài nguyên mỗi trang"
-                        >
-                          {[12, 20, 24, 48].map((size) => (
-                            <option key={size} value={size}>{size}</option>
-                          ))}
-                        </select>
-                        <span className="text-slate-500 dark:text-zinc-400">tài nguyên/trang</span>
-                      </div>
-
-                      <div>
-                        <span className="font-medium text-slate-900 dark:text-[#f5f5f7]">
-                          {totalResources ? ((urlPage - 1) * postsPerPage) + 1 : 0}–{Math.min(urlPage * postsPerPage, totalResources)}
-                        </span>
-                        <span className="mx-1 text-slate-300 dark:text-zinc-700">/</span>
-                        <span className="font-medium text-slate-900 dark:text-[#f5f5f7]">{totalResources}</span>
-                        <span className="ml-1 text-slate-500">tài nguyên</span>
-                      </div>
-                    </div>
-
-                    <div className="order-1 flex w-full justify-center sm:order-2 sm:w-auto sm:justify-end">
-                      <nav className="flex items-center space-x-1 sm:space-x-2" aria-label="Phân trang">
-                        <button
-                          onClick={() => handlePageChange(urlPage - 1)}
-                          disabled={urlPage === 1}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] text-slate-700 dark:text-[#f5f5f7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          aria-label="Trang trước"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                        </button>
-
-                        {generatePaginationItems(urlPage, totalPages).map((item, index) => {
-                          if (item === 'ellipsis') {
-                            return (
-                              <div key={`ellipsis-${index}`} className="flex h-8 w-8 items-center justify-center text-slate-400">
-                                …
-                              </div>
-                            );
-                          }
-
-                          const pageNum = item as number;
-                          const isActive = pageNum === urlPage;
-
-                          return (
-                            <button
-                              key={pageNum}
-                              onClick={() => handlePageChange(pageNum)}
-                              className={`inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-all duration-200 ${
-                                isActive
-                                  ? 'text-white shadow-sm border font-medium'
-                                  : 'text-slate-700 dark:text-[#f5f5f7] hover:bg-slate-50 dark:hover:bg-[#2c2c2e]'
-                              }`}
-                              style={isActive ? {
-                                backgroundColor: brandColors.primary,
-                                borderColor: brandColors.primary,
-                                color: '#fff',
-                              } : undefined}
-                            >
-                              {pageNum}
-                            </button>
-                          );
-                        })}
-
-                        <button
-                          onClick={() => handlePageChange(urlPage + 1)}
-                          disabled={urlPage === totalPages}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] text-slate-700 dark:text-[#f5f5f7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          aria-label="Trang sau"
-                        >
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
-                      </nav>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {hasMore && (
-                      <div ref={loadMoreRef} className="text-center py-6 w-full">
-                        <div className="flex justify-center gap-1">
-                          <div className="w-2 h-2 rounded-full animate-pulse bg-slate-400" />
-                          <div className="w-2 h-2 rounded-full animate-pulse bg-slate-400 delay-75" />
-                          <div className="w-2 h-2 rounded-full animate-pulse bg-slate-400 delay-150" />
-                        </div>
-                      </div>
-                    )}
-                    {!hasMore && resourceItems.length > 0 && (
-                      <div className="text-center py-6 w-full">
-                        <p className="text-sm text-slate-450 dark:text-zinc-500">Đã hiển thị tất cả {resourceItems.length} tài nguyên</p>
-                      </div>
-                    )}
-                  </>
-                )
-              )}
+    return (
+      <Link
+        href={detailHref}
+        className={`group block overflow-hidden border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${cardRadiusClass}`}
+      >
+        <div className="relative aspect-video overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]">
+          {resource.thumbnail ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center" style={{ background: isDark ? '#1c1c1e' : `linear-gradient(135deg, ${brandColors.primary}18, ${brandColors.primary}05)` }}>
+              <FileText size={42} style={{ color: brandColors.primary }} />
             </div>
+          )}
+          {resource.featured && (
+            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-amber-500 px-3 py-1 text-xs font-semibold text-white">
+              <Star size={12} className="fill-current" /> Nổi bật
+            </span>
+          )}
+        </div>
+        <div className="space-y-3 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="rounded-full bg-slate-100 dark:bg-[#1c1c1e] px-2.5 py-1 text-xs font-semibold text-slate-655 dark:text-zinc-350">{category?.name ?? 'Tài nguyên'}</span>
+            <span className="text-sm font-bold" style={{ color: brandColors.primary }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
+          </div>
+          <h2 className="line-clamp-2 text-base font-bold text-slate-900 dark:text-[#f5f5f7] group-hover:underline">{resource.title}</h2>
+          {resource.excerpt && <p className="line-clamp-2 text-xs text-slate-505 dark:text-[#86868b]">{resource.excerpt}</p>}
+          {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedValues.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {assignedValues.slice(0, 4).map((value) => (
+                <span key={value._id} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-zinc-800 px-2 py-0.5 text-[11px] font-semibold text-slate-550 dark:text-[#86868b]">
+                  {value.icon && (
+                    <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                  )}
+                  <span>{value.name}</span>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-sm font-semibold group-hover:underline" style={{ color: brandColors.primary }}>
+            Xem chi tiết →
           </div>
         </div>
-      </section>
+      </Link>
+    );
+  };
+
+  const ResourceListWrapper = ({ resource }: { resource: typeof resourceItems[number] }) => {
+    const category = categoryMap.get(resource.categoryId);
+    const detailHref = buildDetailPath({
+      categorySlug: category?.slug,
+      mode: routeMode,
+      moduleKey: 'resources',
+      recordSlug: resource.slug,
+    });
+    const assignedValues = resourceFiltersMap.get(resource._id) ?? [];
+    return (
+      <ResourceListItem
+        resource={resource}
+        category={category}
+        detailHref={detailHref}
+        assignedValues={assignedValues}
+        resourceFiltersFeatureEnabled={resourceFiltersFeature?.enabled ?? false}
+        showResourceFilters={config.showResourceFilters}
+        cornerRadius={config.cornerRadius}
+        brandColors={brandColors}
+      />
+    );
+  };
+
+  const paginationBar = isPaginationMode && totalPages > 1 && (
+    <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
+      <div className="order-2 flex w-full items-center justify-between text-sm sm:order-1 sm:w-auto sm:justify-start sm:gap-6">
+        <div className="flex items-center gap-2">
+          <span className="text-slate-500 dark:text-zinc-400">Hiển thị</span>
+          <select
+            value={postsPerPage}
+            onChange={(event) => {
+              setPageSizeOverride(Number(event.target.value));
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete('page');
+              router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="h-8 w-[70px] appearance-none rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] px-2 text-sm font-medium shadow-sm focus:outline-none text-slate-705 dark:text-[#f5f5f7]"
+            aria-label="Số tài nguyên mỗi trang"
+          >
+            {[12, 20, 24, 48].map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+          <span className="text-slate-500 dark:text-zinc-400">tài nguyên/trang</span>
+        </div>
+
+        <div>
+          <span className="font-medium text-slate-900 dark:text-[#f5f5f7]">
+            {totalResources ? ((urlPage - 1) * postsPerPage) + 1 : 0}–{Math.min(urlPage * postsPerPage, totalResources)}
+          </span>
+          <span className="mx-1 text-slate-300 dark:text-zinc-700">/</span>
+          <span className="font-medium text-slate-900 dark:text-[#f5f5f7]">{totalResources}</span>
+          <span className="ml-1 text-slate-500">tài nguyên</span>
+        </div>
+      </div>
+
+      <div className="order-1 flex w-full justify-center sm:order-2 sm:w-auto sm:justify-end">
+        <nav className="flex items-center space-x-1 sm:space-x-2" aria-label="Phân trang">
+          <button
+            onClick={() => handlePageChange(urlPage - 1)}
+            disabled={urlPage === 1}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] text-slate-700 dark:text-[#f5f5f7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Trang trước"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          {generatePaginationItems(urlPage, totalPages).map((item, index) => {
+            if (item === 'ellipsis') {
+              return (
+                <div key={`ellipsis-${index}`} className="flex h-8 w-8 items-center justify-center text-slate-400">
+                  …
+                </div>
+              );
+            }
+
+            const pageNum = item as number;
+            const isActive = pageNum === urlPage;
+
+            return (
+              <button
+                key={pageNum}
+                onClick={() => handlePageChange(pageNum)}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-all duration-200 ${
+                  isActive
+                    ? 'text-white shadow-sm border font-medium'
+                    : 'text-slate-750 dark:text-[#f5f5f7] hover:bg-slate-50 dark:hover:bg-[#2c2c2e]'
+                }`}
+                style={isActive ? {
+                  backgroundColor: brandColors.primary,
+                  borderColor: brandColors.primary,
+                  color: '#fff',
+                } : undefined}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => handlePageChange(urlPage + 1)}
+            disabled={urlPage === totalPages}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] text-slate-700 dark:text-[#f5f5f7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Trang sau"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </nav>
+      </div>
+    </div>
+  );
+
+  const infiniteScrollTrigger = !isPaginationMode && (
+    <>
+      {hasMore && (
+        <div ref={loadMoreRef} className="text-center py-6 w-full animate-pulse">
+          <div className="flex justify-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-slate-400" />
+            <div className="w-2 h-2 rounded-full bg-slate-400 delay-75" />
+            <div className="w-2 h-2 rounded-full bg-slate-400 delay-150" />
+          </div>
+        </div>
+      )}
+      {!hasMore && resourceItems.length > 0 && (
+        <div className="text-center py-6 w-full">
+          <p className="text-sm text-slate-450 dark:text-zinc-500">Đã hiển thị tất cả {resourceItems.length} tài nguyên</p>
+        </div>
+      )}
+    </>
+  );
+
+  const sidebarFilters = () => (
+    <div className="space-y-4">
+      {config.showCategories && (
+        <div className="space-y-3">
+          <h3 className="font-semibold text-sm flex items-center gap-2 dark:text-[#f5f5f7]">Danh mục</h3>
+          {visibleCategories.length > 8 && (
+            <div className="relative mb-2">
+              <input
+                type="text"
+                placeholder="Tìm nhanh danh mục..."
+                value={categoryQuery}
+                onChange={(event) => setCategoryQuery(event.target.value)}
+                className={`w-full border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#1c1c1e] text-slate-700 dark:text-[#f5f5f7] py-2 pl-9 pr-9 text-xs outline-none transition-colors focus:border-slate-300 dark:focus:border-zinc-700 ${getRadiusClass(config.cornerRadius, 'input')}`}
+              />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              {categoryQuery && (
+                <button type="button" onClick={() => setCategoryQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 opacity-60 hover:opacity-100">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          )}
+          <div className={`space-y-1 ${visibleCategories.length > 8 ? 'max-h-60 overflow-y-auto pr-1' : ''}`}>
+            <button
+              type="button"
+              onClick={() => handleCategoryChange(null)}
+              className={`w-full rounded-lg border border-transparent px-3.5 py-2 text-left text-sm transition-colors ${!activeCategoryId ? 'font-semibold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+              style={!activeCategoryId ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary, borderColor: isDark ? '#3a3a3c' : 'transparent' } : undefined}
+            >
+              Tất cả danh mục
+            </button>
+            {filteredCategories.map((category) => (
+              <button
+                key={category._id}
+                type="button"
+                onClick={() => handleCategoryChange(category._id)}
+                className={`w-full rounded-lg border border-transparent px-3.5 py-2 text-left text-sm transition-colors ${activeCategoryId === category._id ? 'font-semibold' : 'text-slate-600 dark:text-zinc-405 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                style={activeCategoryId === category._id ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary, borderColor: isDark ? '#3a3a3c' : 'transparent' } : undefined}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {resourceFiltersFeature?.enabled && config.showResourceFilters && activeFilters && allFilterValues && activeFilters.length > 0 && (
+        <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-zinc-800/50">
+          <h3 className="font-semibold text-sm flex items-center gap-2 dark:text-[#f5f5f7]">Bộ lọc thuộc tính</h3>
+          <div className="space-y-4">
+            {activeFilters.map((filter) => {
+              const values = allFilterValues.filter((value) => value.filterId === filter._id && value.active);
+              if (values.length === 0) return null;
+              return (
+                <div key={filter._id} className="space-y-2">
+                  <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-zinc-500">{filter.name}</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {values.map((value) => {
+                      const active = activeFilterSlugs.includes(value.slug);
+                      return (
+                        <button
+                          key={value._id}
+                          type="button"
+                          onClick={() => handleFilterChange(value.slug)}
+                          className={`rounded-full border px-2.5 py-1 text-xs font-semibold transition inline-flex items-center gap-1.5 ${active ? '' : 'border-slate-205 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-[#2c2c2e] hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                          style={active ? { backgroundColor: brandColors.primary, borderColor: brandColors.primary, color: '#fff' } : undefined}
+                        >
+                          {value.icon && (
+                            <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                          )}
+                          <span>{value.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const toolbarFilters = () => (
+    <div className="flex items-center gap-2">
+      {config.showCategories && (
+        <CustomDropdown
+          value={activeCategoryId ?? ''}
+          onChange={(value) => handleCategoryChange(value ? value as Id<'resourceCategories'> : null)}
+          options={[{ value: '', label: 'Tất cả danh mục' }, ...visibleCategories.map((category) => ({ value: category._id, label: category.name }))]}
+          icon={<Bookmark size={15} className="text-slate-400" />}
+          cornerRadius={config.cornerRadius}
+        />
+      )}
+      {resourceFiltersFeature?.enabled && config.showResourceFilters && allFilterValues && allFilterValues.filter((v) => v.active).length > 0 && (
+        <MultiSelectDropdown
+          values={activeFilterSlugs}
+          onChange={(value) => handleFilterChange(value)}
+          onClear={() => handleFilterChange(null)}
+          options={[
+            { value: '', label: activeFilters?.[0]?.name ? `Tất cả ${activeFilters[0].name.toLowerCase()}` : 'Tất cả bộ lọc' },
+            ...allFilterValues.filter((v) => v.active).map((val) => ({ value: val.slug, label: val.name, icon: val.icon })),
+          ]}
+          placeholder={activeFilters?.[0]?.name ? `Tất cả ${activeFilters[0].name.toLowerCase()}` : 'Bộ lọc'}
+          icon={<Filter size={15} className="text-slate-400" />}
+          cornerRadius={config.cornerRadius}
+          brandColor={brandColors.primary}
+        />
+      )}
+    </div>
+  );
+
+  const mobileFilters = (closeSheet: () => void) => (
+    <div className="space-y-5">
+      {config.showCategories && (
+        <div className="space-y-2.5">
+          <h4 className="font-bold text-sm dark:text-[#f5f5f7]">Danh mục</h4>
+          <div className="flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => { handleCategoryChange(null); closeSheet(); }}
+              className={`w-full rounded-xl px-3 py-2.5 text-left text-sm transition ${!activeCategoryId ? 'font-semibold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+              style={!activeCategoryId ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary } : undefined}
+            >
+              Tất cả danh mục
+            </button>
+            {visibleCategories.map((category) => (
+              <button
+                key={category._id}
+                type="button"
+                onClick={() => { handleCategoryChange(category._id); closeSheet(); }}
+                className={`w-full rounded-xl px-3 py-2.5 text-left text-sm transition ${activeCategoryId === category._id ? 'font-semibold' : 'text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                style={activeCategoryId === category._id ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColors.primary}18`, color: brandColors.primary } : undefined}
+              >
+                {category.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {resourceFiltersFeature?.enabled && config.showResourceFilters && activeFilters && allFilterValues && activeFilters.length > 0 && (
+        <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-zinc-800">
+          <h4 className="font-bold text-sm dark:text-[#f5f5f7]">Bộ lọc thuộc tính</h4>
+          <div className="space-y-4">
+            {activeFilters.map((filter) => {
+              const values = allFilterValues.filter((value) => value.filterId === filter._id && value.active);
+              if (values.length === 0) return null;
+              return (
+                <div key={filter._id} className="space-y-2">
+                  <div className="text-[10px] font-bold uppercase tracking-wide text-slate-400 dark:text-zinc-500">{filter.name}</div>
+                  <div className="flex flex-wrap gap-2">
+                    {values.map((value) => {
+                      const active = activeFilterSlugs.includes(value.slug);
+                      return (
+                        <button
+                          key={value._id}
+                          type="button"
+                          onClick={() => { handleFilterChange(value.slug); }}
+                          className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition inline-flex items-center gap-1.5 ${active ? '' : 'border-slate-205 dark:border-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-[#2c2c2e] hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                          style={active ? { backgroundColor: brandColors.primary, borderColor: brandColors.primary, color: '#fff' } : undefined}
+                        >
+                          {value.icon && (
+                            <img src={value.icon} alt={value.name} className="h-3.5 w-3.5 object-contain shrink-0" />
+                          )}
+                          <span>{value.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex-1 w-full bg-slate-50 dark:bg-black font-active transition-colors duration-200">
+      <SharedListLayout
+        items={resourceItems}
+        totalCount={totalResources}
+        isLoading={isLoading}
+        unit="tài nguyên"
+        layoutStyle={config.layoutStyle}
+        gridColumns={config.gridColumns}
+        cornerRadius={config.cornerRadius}
+        showSearch={config.showSearch}
+        searchQuery={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Tìm tài nguyên..."
+        sortBy={sortBy}
+        onSortChange={(val) => setSortBy(val)}
+        sortOptions={[
+          { value: 'newest', label: 'Mới nhất' },
+          { value: 'popular', label: 'Xem nhiều nhất' },
+          { value: 'price_asc', label: 'Giá tăng dần' },
+          { value: 'price_desc', label: 'Giá giảm dần' },
+          { value: 'title', label: 'Tên A-Z' },
+          { value: 'title_desc', label: 'Tên Z-A' },
+        ]}
+        hasActiveFilters={!!activeCategoryId || !!search || activeFilterSlugs.length > 0}
+        onClearFilters={() => {
+          setSearch('');
+          setDebouncedSearch('');
+          setSortBy('newest');
+          handleCategoryChange(null);
+          handleFilterChange(null);
+        }}
+        renderItem={(resource) => config.layoutStyle === 'list' ? <ResourceListWrapper key={resource._id} resource={resource} /> : <ResourceGridCard key={resource._id} resource={resource} />}
+        renderSkeleton={() => (
+          config.layoutStyle === 'list' ? (
+            <div className="space-y-4">
+              {Array.from({ length: postsPerPage }).map((_, index) => (
+                <div key={index} className={`h-28 animate-pulse border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] ${getRadiusClass(config.cornerRadius)}`} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-5 md:grid-cols-3">
+              {Array.from({ length: postsPerPage }).map((_, index) => (
+                <div key={index} className={`h-72 animate-pulse border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] ${getRadiusClass(config.cornerRadius)}`} />
+              ))}
+            </div>
+          )
+        )}
+        renderSidebarFilters={sidebarFilters}
+        renderToolbarFilters={toolbarFilters}
+        renderMobileFilters={mobileFilters}
+        paginationNode={paginationBar}
+        infiniteScrollTriggerNode={infiniteScrollTrigger}
+        headerTitle={activeCategoryName ?? 'Tài nguyên'}
+        brandColor={brandColors.primary}
+        isDark={isDark}
+      />
     </div>
   );
 }
