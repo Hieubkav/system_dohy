@@ -855,26 +855,50 @@ export function CatalogLayout({
         </div>
       </div>
 
-      {/* Drawer Filters Panel on Mobile */}
+      {/* Bottom Sheet Filters Panel on Mobile */}
       {mobileFilterOpen && (
         <>
-          <div className="fixed inset-0 bg-black/50 z-50 transition-opacity" onClick={() => setMobileFilterOpen(false)} />
-          <div className="fixed inset-y-0 right-0 w-full max-w-xs bg-white dark:bg-slate-900 z-50 flex flex-col shadow-2xl p-4 overflow-y-auto">
-            <div className="flex items-center justify-between mb-6 pb-2 border-b">
-              <h3 className="font-bold text-lg">Bộ lọc tìm kiếm</h3>
-              <button onClick={() => setMobileFilterOpen(false)} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
-                <X size={20} />
+          {/* Overlay background */}
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300" 
+            onClick={() => setMobileFilterOpen(false)} 
+          />
+          {/* Sheet panel */}
+          <div 
+            className="fixed bottom-0 left-0 right-0 w-full max-h-[82vh] bg-white dark:bg-slate-900 z-50 flex flex-col rounded-t-[28px] shadow-2xl p-5 overflow-hidden transition-transform duration-300 ease-out transform translate-y-0"
+            style={{ borderColor: tokens.inputBorder }}
+          >
+            {/* Drag Handle indicator */}
+            <div 
+              className="w-12 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-full mx-auto mb-4 cursor-pointer hover:bg-slate-300 dark:hover:bg-zinc-700 transition-colors"
+              onClick={() => setMobileFilterOpen(false)}
+            />
+
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-100 dark:border-zinc-850">
+              <h3 className="font-bold text-base" style={{ color: tokens.bodyText }}>Bộ lọc tìm kiếm</h3>
+              <button 
+                onClick={() => setMobileFilterOpen(false)} 
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800"
+                style={{ color: tokens.bodyText }}
+              >
+                <X size={18} />
               </button>
             </div>
 
-            <div className="flex-1 space-y-6 overflow-y-auto pr-1">
+            {/* Scrollable Content Filters */}
+            <div className="flex-1 space-y-6 overflow-y-auto pr-1 pb-4">
               {enableProductTypes && productTypes && productTypes.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">Nhóm sản phẩm</h4>
+                  <h4 className="font-semibold text-sm" style={{ color: tokens.bodyText }}>Nhóm sản phẩm</h4>
                   <div className="space-y-1">
                     <button
                       onClick={() => { onProductTypeChange?.(null); setMobileFilterOpen(false); }}
-                      className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium ${!productType ? 'bg-slate-100 font-semibold' : ''}`}
+                      className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium transition-colors border border-transparent ${!productType ? 'font-semibold' : ''}`}
+                      style={!productType
+                        ? { backgroundColor: tokens.filterChipActiveBg, color: tokens.filterChipActiveText }
+                        : { backgroundColor: tokens.filterChipBg, color: tokens.filterChipText }
+                      }
                     >
                       Tất cả nhóm
                     </button>
@@ -882,7 +906,11 @@ export function CatalogLayout({
                       <button
                         key={t._id}
                         onClick={() => { onProductTypeChange?.(t.slug); setMobileFilterOpen(false); }}
-                        className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium ${productType?.slug === t.slug ? 'bg-slate-100 font-semibold' : ''}`}
+                        className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium transition-colors border border-transparent ${productType?.slug === t.slug ? 'font-semibold' : ''}`}
+                        style={productType?.slug === t.slug
+                          ? { backgroundColor: tokens.filterChipActiveBg, color: tokens.filterChipActiveText }
+                          : { backgroundColor: tokens.filterChipBg, color: tokens.filterChipText }
+                        }
                       >
                         {t.name}
                       </button>
@@ -892,7 +920,7 @@ export function CatalogLayout({
               )}
 
               <div className="space-y-3">
-                <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">Danh mục sản phẩm</h4>
+                <h4 className="font-semibold text-sm" style={{ color: tokens.bodyText }}>Danh mục sản phẩm</h4>
                 {categories.length > 8 && (
                   <div className="relative mb-2">
                     <input
@@ -952,7 +980,7 @@ export function CatalogLayout({
                     </button>
                   ))}
                   {categories.length > 8 && filteredCategories.length === 0 && (!categoryQuery || !'tất cả danh mục'.includes(categoryQuery.toLowerCase())) && (
-                    <div className="px-2.5 py-2 text-xs opacity-60">
+                    <div className="px-2.5 py-2 text-xs opacity-60" style={{ color: tokens.metaText }}>
                       Không tìm thấy kết quả.
                     </div>
                   )}
@@ -961,8 +989,8 @@ export function CatalogLayout({
 
               {/* Bộ lọc khoảng giá nâng cao di động */}
               {priceFilterMode !== 'disabled' && (
-                <div className="space-y-3 pt-3 border-t">
-                  <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">Khoảng giá (đ)</h4>
+                <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-zinc-850">
+                  <h4 className="font-semibold text-sm" style={{ color: tokens.bodyText }}>Khoảng giá (đ)</h4>
                   {priceFilterMode === 'custom' && (
                     <div className="flex gap-1.5 items-center">
                       <input
@@ -1047,11 +1075,15 @@ export function CatalogLayout({
 
               {enableProductTypes && productType?.priceRanges && productType.priceRanges.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">Khoảng giá</h4>
+                  <h4 className="font-semibold text-sm" style={{ color: tokens.bodyText }}>Khoảng giá</h4>
                   <div className="space-y-1">
                     <button
                       onClick={() => { onPriceRangeChange?.(null); setMobileFilterOpen(false); }}
-                      className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium ${!selectedPriceRange ? 'bg-slate-100 font-semibold' : ''}`}
+                      className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium transition-colors ${!selectedPriceRange ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                      style={!selectedPriceRange
+                        ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                        : undefined
+                      }
                     >
                       Tất cả khoảng giá
                     </button>
@@ -1059,7 +1091,11 @@ export function CatalogLayout({
                       <button
                         key={range.slug}
                         onClick={() => { onPriceRangeChange?.(range); setMobileFilterOpen(false); }}
-                        className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium ${selectedPriceRange?.slug === range.slug ? 'bg-slate-100 font-semibold' : ''}`}
+                        className={`w-full py-2 px-3 rounded-lg text-left text-sm font-medium transition-colors ${selectedPriceRange?.slug === range.slug ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
+                        style={selectedPriceRange?.slug === range.slug
+                          ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                          : undefined
+                        }
                       >
                         {range.label}
                       </button>
@@ -1069,10 +1105,10 @@ export function CatalogLayout({
               )}
 
               {filterableGroups && filterableGroups.length > 0 && (
-                <div className="space-y-6 pt-4 border-t">
+                <div className="space-y-6 pt-4 border-t border-slate-100 dark:border-zinc-800/80">
                   {filterableGroups.map((group) => (
                     <div key={group._id} className="space-y-3">
-                      <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">{group.name}</h4>
+                      <h4 className="font-semibold text-sm" style={{ color: tokens.bodyText }}>{group.name}</h4>
                       <AttributeFilterGroupWidget
                         group={group}
                         selectedAttributes={selectedAttributes}
@@ -1085,18 +1121,33 @@ export function CatalogLayout({
               )}
             </div>
 
-            {hasActiveFilters && onClearFilters && (
-              <div className="pt-4 border-t mt-4">
-                <button
-                  type="button"
-                  onClick={() => { onClearFilters(); setMobileFilterOpen(false); }}
-                  className="w-full h-10 rounded-lg border font-semibold text-sm transition-colors text-slate-700 bg-slate-100 hover:bg-slate-200 flex items-center justify-center gap-2"
-                >
-                  <X size={16} />
-                  <span>Xóa bộ lọc</span>
-                </button>
-              </div>
-            )}
+            {/* Bottom Sheet Footer Sticky Buttons */}
+            <div className="pt-4 border-t border-slate-100 dark:border-zinc-800/80 mt-auto flex gap-3 pb-2 bg-white dark:bg-slate-900">
+              <button
+                type="button"
+                onClick={() => { onClearFilters?.(); setMobileFilterOpen(false); }}
+                disabled={!hasActiveFilters}
+                className="flex-1 h-11 rounded-xl border font-semibold text-sm transition-all flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ 
+                  borderColor: tokens.inputBorder, 
+                  color: tokens.bodyText, 
+                  backgroundColor: tokens.inputBackground 
+                }}
+              >
+                <span>Thiết lập lại</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileFilterOpen(false)}
+                className="flex-1 h-11 rounded-xl font-bold text-sm transition-all flex items-center justify-center active:scale-95"
+                style={{ 
+                  backgroundColor: tokens.primary, 
+                  color: '#000000' 
+                }}
+              >
+                <span>Áp dụng</span>
+              </button>
+            </div>
           </div>
         </>
       )}
