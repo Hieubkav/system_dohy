@@ -437,33 +437,9 @@ export function CatalogLayout({
         <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
           {/* Sidebar Filters - Desktop */}
           <aside className="hidden lg:block w-64 shrink-0 space-y-4">
-            {showSearch && (
-              <div className="bg-transparent border-b border-slate-200/60 dark:border-zinc-800/40 pb-5 mb-5 rounded-none">
-                <h3 className="font-bold text-[11px] tracking-widest text-slate-500 dark:text-zinc-500 uppercase mb-3 flex items-center gap-2">
-                  <Search size={14} style={{ color: tokens.inputIcon }} />
-                  Tìm kiếm
-                </h3>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Nhập từ khóa..."
-                    value={searchQuery}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                    className="w-full pl-3 pr-8 py-2 border rounded-xl text-sm outline-none transition focus:border-slate-450 dark:border-zinc-700"
-                    style={{ borderColor: tokens.inputBorder, backgroundColor: tokens.inputBackground, color: tokens.inputText }}
-                  />
-                  {searchQuery && (
-                    <button onClick={() => onSearchChange('')} className="absolute right-2.5 top-1/2 -translate-y-1/2" style={{ color: tokens.inputIcon }}>
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
             {enableProductTypes && productTypes && productTypes.length > 0 && (
-              <div className="bg-transparent border-b border-slate-200/60 dark:border-zinc-800/40 pb-5 mb-5 rounded-none">
-                <h3 className="font-bold text-[11px] tracking-widest text-slate-500 dark:text-zinc-500 uppercase mb-3">Nhóm sản phẩm</h3>
+              <div className={`${radiusClass} border p-4 space-y-3`} style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}>
+                <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: tokens.bodyText }}>Nhóm sản phẩm</h3>
                 <div className="space-y-1">
                   <button
                     onClick={() => onProductTypeChange?.(null)}
@@ -493,8 +469,8 @@ export function CatalogLayout({
             )}
 
             {showCategories && (
-              <div className="bg-transparent border-b border-slate-200/60 dark:border-zinc-800/40 pb-5 mb-5 rounded-none">
-                <h3 className="font-bold text-[11px] tracking-widest text-slate-500 dark:text-zinc-500 uppercase mb-3">
+              <div className={`${radiusClass} border p-4 space-y-3`} style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}>
+                <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: tokens.bodyText }}>
                   Danh mục sản phẩm
                 </h3>
                 {categories.length > 8 && (
@@ -565,8 +541,8 @@ export function CatalogLayout({
             )}
 
             {enableProductTypes && productType?.priceRanges && productType.priceRanges.length > 0 && (
-              <div className="bg-transparent border-b border-slate-200/60 dark:border-zinc-800/40 pb-5 mb-5 rounded-none">
-                <h3 className="font-bold text-[11px] tracking-widest text-slate-500 dark:text-zinc-500 uppercase mb-3">Khoảng giá</h3>
+              <div className={`${radiusClass} border p-4 space-y-3`} style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}>
+                <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: tokens.bodyText }}>Khoảng giá</h3>
                 <div className="space-y-1">
                   <button
                     onClick={() => onPriceRangeChange?.(null)}
@@ -597,8 +573,8 @@ export function CatalogLayout({
 
             {/* Khung Khoảng giá tự chọn hoặc nâng cao */}
             {priceFilterMode !== 'disabled' && (
-              <div className="bg-transparent pb-5 mb-5 rounded-none">
-                <h3 className="font-bold text-[11px] tracking-widest text-slate-500 dark:text-zinc-500 uppercase mb-3">Khoảng giá (đ)</h3>
+              <div className={`${radiusClass} border p-4 space-y-3`} style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}>
+                <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: tokens.bodyText }}>Khoảng giá (đ)</h3>
                 
                 {priceFilterMode === 'custom' && (
                   <div className="flex gap-1.5 items-center">
@@ -685,8 +661,8 @@ export function CatalogLayout({
             {filterableGroups && filterableGroups.length > 0 && (
               <div className="space-y-4">
                 {filterableGroups.map((group) => (
-                  <div key={group._id} className={`${radiusClass} border p-3`} style={{ backgroundColor: tokens.filterBarBackground, borderColor: tokens.filterBarBorder }}>
-                    <h3 className="font-bold text-sm mb-2" style={{ color: tokens.bodyText }}>{group.name}</h3>
+                  <div key={group._id} className={`${radiusClass} border p-4 space-y-3`} style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}>
+                    <h3 className="font-semibold text-sm flex items-center gap-2" style={{ color: tokens.bodyText }}>{group.name}</h3>
                     <AttributeFilterGroupWidget
                       group={group}
                       selectedAttributes={selectedAttributes}
@@ -765,9 +741,28 @@ export function CatalogLayout({
               </div>
             </div>
 
-            {/* Desktop Sort Control & Clear Filters (CatalogLayout) */}
-            {products.length > 0 && (
-              <div className="flex items-center justify-end mb-5 gap-3">
+            {/* Desktop Toolbar: Search & Sort Control */}
+            <div className="flex items-center justify-between mb-5 gap-4">
+              {showSearch && (
+                <div className="relative max-w-xs flex-1 hidden lg:block">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: tokens.inputIcon }} />
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm sản phẩm..."
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    className="h-9 w-full pl-8 pr-8 py-2 border rounded-xl text-xs outline-none transition focus:border-slate-450 dark:border-zinc-700"
+                    style={{ borderColor: tokens.inputBorder, backgroundColor: tokens.inputBackground, color: tokens.inputText }}
+                  />
+                  {searchQuery && (
+                    <button onClick={() => onSearchChange('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-60 hover:opacity-100" style={{ color: tokens.inputIcon }}>
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              )}
+              
+              <div className="flex items-center gap-3 ml-auto">
                 <div className="hidden lg:flex items-center gap-2">
                   <span className="text-xs font-semibold tracking-widest uppercase opacity-65" style={{ color: tokens.metaText }}>Sắp xếp:</span>
                   <div className="relative">
@@ -799,7 +794,7 @@ export function CatalogLayout({
                   <ClearFiltersButton tokens={tokens} onClear={onClearFilters} />
                 )}
               </div>
-            )}
+            </div>
 
             {/* Products Grid list */}
             {isLoadingProducts ? (
