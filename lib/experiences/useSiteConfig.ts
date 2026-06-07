@@ -12,6 +12,7 @@ type ResultsDisplayStyle = 'grid' | 'list';
 
 type PostsListConfig = {
   layoutStyle: 'grid' | 'sidebar' | 'list';
+  gridColumns: number;
   filterPosition: FilterPosition;
   paginationType: PaginationType;
   showSearch: boolean;
@@ -84,6 +85,7 @@ export function usePostsListConfig(): PostsListConfig {
   return useMemo(() => {
     const raw = experienceSetting?.value as {
       layoutStyle?: string;
+      gridColumns?: number;
       filterPosition?: FilterPosition;
       paginationType?: PaginationType;
       showSearch?: boolean;
@@ -97,6 +99,7 @@ export function usePostsListConfig(): PostsListConfig {
       : (rawStyle === 'magazine' || rawStyle === 'list' ? 'list' : 'grid');
     return {
       layoutStyle,
+      gridColumns: raw?.gridColumns ?? 3,
       filterPosition: raw?.filterPosition ?? 'sidebar',
       paginationType: normalizePaginationType(raw?.paginationType),
       showSearch: raw?.showSearch ?? true,
@@ -194,6 +197,7 @@ export function useBookingConfig(): BookingExperienceConfig {
 
 type ProductsListConfig = {
   layoutStyle: 'grid' | 'sidebar' | 'list';
+  gridColumns: number;
   paginationType: PaginationType;
   cornerRadius: 'none' | 'sm' | 'lg';
   showSearch: boolean;
@@ -219,6 +223,7 @@ export function useProductsListConfig(): ProductsListConfig {
   return useMemo(() => {
     const raw = experienceSetting?.value as {
       layoutStyle?: ProductsListConfig['layoutStyle'];
+      gridColumns?: number;
       layouts?: Partial<Record<ProductsListConfig['layoutStyle'], Partial<Omit<ProductsListConfig, 'layoutStyle'>>>>;
       paginationType?: PaginationType;
       showSearch?: boolean;
@@ -248,6 +253,7 @@ export function useProductsListConfig(): ProductsListConfig {
 
     return {
       layoutStyle,
+      gridColumns: raw?.gridColumns ?? 3,
       paginationType: normalizePaginationType(layoutConfig?.paginationType ?? raw?.paginationType),
       cornerRadius: raw?.cornerRadius ?? 'lg',
       showSearch: layoutConfig?.showSearch ?? raw?.showSearch ?? true,
@@ -305,6 +311,7 @@ export function useWishlistConfig(): WishlistConfig {
 
 type ServicesListConfig = {
   layoutStyle: 'grid' | 'sidebar' | 'list';
+  gridColumns: number;
   filterPosition: 'sidebar' | 'top' | 'none';
   paginationType: PaginationType;
   showSearch: boolean;
@@ -319,6 +326,7 @@ export function useServicesListConfig(): ServicesListConfig {
   return useMemo(() => {
     const raw = experienceSetting?.value as {
       layoutStyle?: string;
+      gridColumns?: number;
       layouts?: Partial<Record<'grid' | 'sidebar' | 'list', Partial<Omit<ServicesListConfig, 'layoutStyle'>>>>;
       filterPosition?: FilterPosition;
       paginationType?: PaginationType;
@@ -335,6 +343,7 @@ export function useServicesListConfig(): ServicesListConfig {
     const layoutConfig = raw?.layouts?.[layoutStyle];
     return {
       layoutStyle,
+      gridColumns: raw?.gridColumns ?? 3,
       filterPosition: layoutConfig?.filterPosition ?? raw?.filterPosition ?? 'sidebar',
       paginationType: normalizePaginationType(layoutConfig?.paginationType ?? raw?.paginationType),
       showSearch: layoutConfig?.showSearch ?? raw?.showSearch ?? true,
@@ -347,6 +356,7 @@ export function useServicesListConfig(): ServicesListConfig {
 
 type ProjectsListConfig = {
   layoutStyle: 'grid' | 'sidebar' | 'list';
+  gridColumns: number;
   filterPosition: 'sidebar' | 'top' | 'none';
   paginationType: PaginationType;
   showSearch: boolean;
@@ -363,6 +373,7 @@ export function useProjectsListConfig(): ProjectsListConfig {
   return useMemo(() => {
     const raw = experienceSetting?.value as {
       layoutStyle?: string;
+      gridColumns?: number;
       filterPosition?: FilterPosition;
       paginationType?: PaginationType;
       showSearch?: boolean;
@@ -378,6 +389,7 @@ export function useProjectsListConfig(): ProjectsListConfig {
       : (rawStyle === 'list' || rawStyle === 'masonry' ? 'list' : 'grid');
     return {
       layoutStyle,
+      gridColumns: raw?.gridColumns ?? 3,
       filterPosition: raw?.filterPosition ?? 'top',
       paginationType: normalizePaginationType(raw?.paginationType),
       showSearch: raw?.showSearch ?? true,

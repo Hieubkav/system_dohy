@@ -11,6 +11,7 @@ type ProductListCornerRadius = 'none' | 'sm' | 'lg';
 
 type PostsListPreviewProps = {
   layoutStyle: ListLayoutStyle;
+  gridColumns?: number;
   paginationType?: PaginationType;
   showSearch?: boolean;
   showCategories?: boolean;
@@ -78,6 +79,7 @@ function PaginationPreview({
 
 export function PostsListPreview({
   layoutStyle,
+  gridColumns,
   paginationType = 'pagination',
   showSearch = true,
   showCategories = true,
@@ -102,7 +104,12 @@ export function PostsListPreview({
   const isCompact = device !== 'desktop';
   const visiblePosts = device === 'mobile' ? 2 : 4;
   const showMobilePanel = isCompact && (showSearch || showCategories);
-  const gridClass = isMobile ? 'grid-cols-1' : 'sm:grid-cols-2 lg:grid-cols-3';
+  const gridCols = gridColumns ?? 3;
+  const gridClass = device === 'mobile'
+    ? (gridCols === 4 ? 'grid-cols-2' : 'grid-cols-1')
+    : device === 'tablet'
+      ? (gridCols === 4 ? 'grid-cols-2' : 'grid-cols-3')
+      : (gridCols === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3');
 
   if (style === 'grid') {
     return (
@@ -794,7 +801,7 @@ export function PostsListPreview({
               <span className="text-sm" style={{ color: tokens.metaText }}>4 bài viết</span>
             </div>
             
-            <div className={`grid ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'} gap-3`}>
+            <div className={`grid ${gridClass} gap-3`}>
               {mockPosts.slice(0, visiblePosts).map((post) => (
                 <div key={post.id} className="h-full flex flex-col rounded-lg overflow-hidden border" style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}>
                   <div className="relative aspect-video overflow-hidden" style={{ backgroundColor: tokens.cardBorder }}>
@@ -837,6 +844,7 @@ export function PostsListPreview({
 
 type ProductsListPreviewProps = {
   layoutStyle: ProductsListLayoutStyle;
+  gridColumns?: number;
   paginationType?: PaginationType;
   showSearch?: boolean;
   showCategories?: boolean;
@@ -1026,6 +1034,7 @@ function PreviewMobileProductsFilters({
 
 export function ProductsListPreview({
   layoutStyle,
+  gridColumns,
   paginationType = 'pagination',
   showSearch = true,
   showCategories = true,
@@ -1045,7 +1054,12 @@ export function ProductsListPreview({
   const isMobile = device === 'mobile';
   const isDesktop = device === 'desktop';
   const visibleProducts = isMobile ? 2 : 4;
-  const gridClass = isMobile ? 'grid-cols-1' : 'sm:grid-cols-2 lg:grid-cols-3';
+  const gridCols = gridColumns ?? 3;
+  const gridClass = device === 'mobile'
+    ? (gridCols === 4 ? 'grid-cols-2' : 'grid-cols-1')
+    : device === 'tablet'
+      ? (gridCols === 4 ? 'grid-cols-2' : 'grid-cols-3')
+      : (gridCols === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3');
   const tokens = getProductsListColors(brandColor, secondaryColor, colorMode);
   const radiusClass = getProductListRadiusClass(cornerRadius);
 

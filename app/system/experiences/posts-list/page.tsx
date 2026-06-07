@@ -32,6 +32,7 @@ type PaginationType = 'pagination' | 'infiniteScroll';
 
 type PostsListExperienceConfig = {
   layoutStyle: ListLayoutStyle;
+  gridColumns: number;
   showSearch: boolean;
   showCategories: boolean;
   hideEmptyCategories: boolean;
@@ -49,6 +50,7 @@ const LAYOUT_STYLES: LayoutOption<ListLayoutStyle>[] = [
 
 const DEFAULT_CONFIG: PostsListExperienceConfig = {
   layoutStyle: 'grid',
+  gridColumns: 3,
   showSearch: true,
   showCategories: true,
   hideEmptyCategories: true,
@@ -92,6 +94,7 @@ export default function PostsListExperiencePage() {
     
     return {
       layoutStyle: normalizeLayoutStyle(rawLayout),
+      gridColumns: raw?.gridColumns ?? 3,
       showSearch: raw?.showSearch ?? true,
       showCategories: raw?.showCategories ?? true,
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
@@ -168,6 +171,15 @@ export default function PostsListExperiencePage() {
               checked={config.hideEmptyCategories}
               onChange={(v) => setConfig(prev => ({ ...prev, hideEmptyCategories: v }))}
               accentColor={brandColor}
+            />
+            <SelectRow
+              label="Số cột hiển thị (Desktop)"
+              value={String(config.gridColumns ?? 3)}
+              options={[
+                { value: '3', label: '3 cột' },
+                { value: '4', label: '4 cột' },
+              ]}
+              onChange={(v) => setConfig(prev => ({ ...prev, gridColumns: Number(v) }))}
             />
           </ControlCard>
 
@@ -247,6 +259,7 @@ export default function PostsListExperiencePage() {
             <BrowserFrame url="yoursite.com/posts">
               <PostsListPreview
                 layoutStyle={config.layoutStyle}
+                gridColumns={config.gridColumns}
                 brandColor={brandColor}
                 secondaryColor={secondaryColor}
                 colorMode={colorMode}

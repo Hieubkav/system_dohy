@@ -168,6 +168,7 @@ export default function ExperiencesPage() {
   const setMultipleSettings = useMutation(api.settings.setMultiple);
 
   const [localLayouts, setLocalLayouts] = useState<Record<string, 'grid' | 'sidebar' | 'list'>>({});
+  const [localGridColumns, setLocalGridColumns] = useState<Record<string, number>>({});
   const [localDarkMode, setLocalDarkMode] = useState<'light' | 'dark' | 'system'>('light');
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -189,6 +190,14 @@ export default function ExperiencesPage() {
         projects: (projectsSetting?.value as any)?.layoutStyle ?? 'grid',
         products: (productsSetting?.value as any)?.layoutStyle ?? 'grid',
       });
+      setLocalGridColumns({
+        posts: (postsSetting?.value as any)?.gridColumns ?? 3,
+        resources: (resourcesSetting?.value as any)?.gridColumns ?? 3,
+        courses: (coursesSetting?.value as any)?.gridColumns ?? 3,
+        services: (servicesSetting?.value as any)?.gridColumns ?? 3,
+        projects: (projectsSetting?.value as any)?.gridColumns ?? 3,
+        products: (productsSetting?.value as any)?.gridColumns ?? 3,
+      });
       setLocalDarkMode((darkModeSetting?.value as any) ?? 'light');
       setIsInitialized(true);
     }
@@ -203,9 +212,15 @@ export default function ExperiencesPage() {
       localLayouts.services !== ((servicesSetting?.value as any)?.layoutStyle ?? 'grid') ||
       localLayouts.projects !== ((projectsSetting?.value as any)?.layoutStyle ?? 'grid') ||
       localLayouts.products !== ((productsSetting?.value as any)?.layoutStyle ?? 'grid') ||
+      localGridColumns.posts !== ((postsSetting?.value as any)?.gridColumns ?? 3) ||
+      localGridColumns.resources !== ((resourcesSetting?.value as any)?.gridColumns ?? 3) ||
+      localGridColumns.courses !== ((coursesSetting?.value as any)?.gridColumns ?? 3) ||
+      localGridColumns.services !== ((servicesSetting?.value as any)?.gridColumns ?? 3) ||
+      localGridColumns.projects !== ((projectsSetting?.value as any)?.gridColumns ?? 3) ||
+      localGridColumns.products !== ((productsSetting?.value as any)?.gridColumns ?? 3) ||
       localDarkMode !== ((darkModeSetting?.value as any) ?? 'light')
     );
-  }, [localLayouts, localDarkMode, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
+  }, [localLayouts, localGridColumns, localDarkMode, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
 
   const [isSaving, setIsSaving] = useState(false);
   const handleSaveAll = async () => {
@@ -217,7 +232,8 @@ export default function ExperiencesPage() {
           key: 'posts_list_ui',
           value: {
             ...(postsSetting?.value as any),
-            layoutStyle: localLayouts.posts
+            layoutStyle: localLayouts.posts,
+            gridColumns: localGridColumns.posts
           }
         },
         {
@@ -225,7 +241,8 @@ export default function ExperiencesPage() {
           key: 'resources_list_ui',
           value: {
             ...(resourcesSetting?.value as any),
-            layoutStyle: localLayouts.resources
+            layoutStyle: localLayouts.resources,
+            gridColumns: localGridColumns.resources
           }
         },
         {
@@ -233,7 +250,8 @@ export default function ExperiencesPage() {
           key: 'courses_list_ui',
           value: {
             ...(coursesSetting?.value as any),
-            layoutStyle: localLayouts.courses
+            layoutStyle: localLayouts.courses,
+            gridColumns: localGridColumns.courses
           }
         },
         {
@@ -241,7 +259,8 @@ export default function ExperiencesPage() {
           key: 'services_list_ui',
           value: {
             ...(servicesSetting?.value as any),
-            layoutStyle: localLayouts.services
+            layoutStyle: localLayouts.services,
+            gridColumns: localGridColumns.services
           }
         },
         {
@@ -249,7 +268,8 @@ export default function ExperiencesPage() {
           key: 'projects_list_ui',
           value: {
             ...(projectsSetting?.value as any),
-            layoutStyle: localLayouts.projects
+            layoutStyle: localLayouts.projects,
+            gridColumns: localGridColumns.projects
           }
         },
         {
@@ -257,7 +277,8 @@ export default function ExperiencesPage() {
           key: 'products_list_ui',
           value: {
             ...(productsSetting?.value as any),
-            layoutStyle: localLayouts.products
+            layoutStyle: localLayouts.products,
+            gridColumns: localGridColumns.products
           }
         },
         {
@@ -288,6 +309,18 @@ export default function ExperiencesPage() {
       products: layout,
     });
     toast.success(`Đã thay đổi tạm thời tất cả danh sách thành ${layout.toUpperCase()}. Nhớ bấm Lưu để áp dụng thực tế!`);
+  };
+
+  const handleApplyAllColumns = (cols: number) => {
+    setLocalGridColumns({
+      posts: cols,
+      resources: cols,
+      courses: cols,
+      services: cols,
+      projects: cols,
+      products: cols,
+    });
+    toast.success(`Đã thay đổi tạm thời tất cả danh sách thành ${cols} cột. Nhớ bấm Lưu để áp dụng thực tế!`);
   };
 
   // Debounce
@@ -583,7 +616,7 @@ export default function ExperiencesPage() {
                   Áp dụng nhanh một kiểu layout chung cho toàn bộ các trang danh sách (Bài viết, Khóa học, Tài nguyên, Dịch vụ, Dự án, Sản phẩm).
                 </p>
               </div>
-              <div className="flex flex-wrap gap-2.5">
+              <div className="flex flex-wrap gap-2.5 items-center">
                 <Button
                   variant="outline"
                   size="sm"
@@ -610,6 +643,23 @@ export default function ExperiencesPage() {
                 >
                   <List size={14} />
                   Tất cả List
+                </Button>
+                <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleApplyAllColumns(3)}
+                  className="text-xs font-semibold hover:border-cyan-500/50 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
+                >
+                  Tất cả 3 Cột
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleApplyAllColumns(4)}
+                  className="text-xs font-semibold hover:border-cyan-500/50 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
+                >
+                  Tất cả 4 Cột
                 </Button>
               </div>
             </CardContent>
@@ -647,6 +697,7 @@ export default function ExperiencesPage() {
                 CONFIG_ITEMS.map((item) => {
                   const Icon = item.icon;
                   const currentLayout = localLayouts[item.id] || 'grid';
+                  const currentGridColumns = localGridColumns[item.id] || 3;
                   
                   return (
                     <div key={item.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-950/10 transition-colors">
@@ -684,6 +735,30 @@ export default function ExperiencesPage() {
                             <ExternalLink size={12} />
                             Xem thử
                           </a>
+                        </div>
+
+                        {/* Column Selector */}
+                        <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50 shadow-inner mr-1">
+                          {[
+                            { id: 3, label: '3 Cột' },
+                            { id: 4, label: '4 Cột' }
+                          ].map((opt) => {
+                            const isSelected = currentGridColumns === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => setLocalGridColumns(prev => ({ ...prev, [item.id]: opt.id }))}
+                                className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
+                                  isSelected
+                                    ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
+                              >
+                                {opt.label}
+                              </button>
+                            );
+                          })}
                         </div>
 
                         {/* Segmented Control */}

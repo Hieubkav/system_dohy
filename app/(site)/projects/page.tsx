@@ -1,14 +1,16 @@
 'use client';
 
-import React, { Suspense, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from 'convex/react';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePaginatedQuery, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
+import { PageHeaderWithCount } from '@/components/shared/PageHeaderWithCount';
 import { useProjectsListConfig } from '@/lib/experiences';
-import { buildDetailPath, normalizeRouteMode } from '@/lib/ia/route-mode';
-import { Search } from 'lucide-react';
+import { buildDetailPath, normalizeRouteMode, buildCategoryPath, buildModuleListPath } from '@/lib/ia/route-mode';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { useInView } from 'react-intersection-observer';
 import type { Id } from '@/convex/_generated/dataModel';
 
 function ProjectsSkeleton() {
@@ -30,6 +32,57 @@ function ProjectsSkeleton() {
   );
 }
 
+function generatePaginationItems(currentPage: number, totalPages: number): (number | 'ellipsis')[] {
+  const items: (number | 'ellipsis')[] = [];
+  const siblingCount = 1;
+
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) {
+      items.push(i);
+    }
+    return items;
+  }
+
+  const leftSiblingIndex = Math.max(currentPage - siblingCount, 1);
+  const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages);
+
+  const shouldShowLeftDots = leftSiblingIndex > 2;
+  const shouldShowRightDots = rightSiblingIndex < totalPages - 2;
+
+  const firstPageIndex = 1;
+  const lastPageIndex = totalPages;
+
+  if (!shouldShowLeftDots && shouldShowRightDots) {
+    const leftRange = 3 + 2 * siblingCount;
+    for (let i = 1; i <= leftRange; i++) {
+      items.push(i);
+    }
+    items.push('ellipsis');
+    items.push(totalPages);
+    return items;
+  }
+
+  if (shouldShowLeftDots && !shouldShowRightDots) {
+    items.push(firstPageIndex);
+    items.push('ellipsis');
+    const rightRange = 3 + 2 * siblingCount;
+    for (let i = totalPages - rightRange + 1; i <= totalPages; i++) {
+      items.push(i);
+    }
+    return items;
+  }
+
+  items.push(firstPageIndex);
+  items.push('ellipsis');
+  for (let i = leftSiblingIndex; i <= rightSiblingIndex; i++) {
+    items.push(i);
+  }
+  items.push('ellipsis');
+  items.push(lastPageIndex);
+
+  return items;
+}
+
 export default function ProjectsPage() {
   return (
     <Suspense fallback={<ProjectsSkeleton />}>
@@ -39,63 +92,182 @@ export default function ProjectsPage() {
 }
 
 function ProjectsContent() {
-  const { primary: brandColor } = useBrandColors();
+  const brandColors = useBrandColors();
+  const brandColor = brandColors.primary;
   const { siteDarkMode } = useSiteSettings();
   const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const listConfig = useProjectsListConfig();
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const urlPage = Number(searchParams.get('page')) || 1;
+
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') ?? '');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [pageSizeOverride, setPageSizeOverride] = useState<number | null>(null);
+  const postsPerPage = pageSizeOverride ?? (listConfig.postsPerPage ?? 12);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'title'>('newest');
-  const [offset, setOffset] = useState(0);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const routeModeSetting = useQuery(api.settings.getValue, { key: 'ia_route_mode', defaultValue: 'unified' });
   const routeMode = useMemo(() => normalizeRouteMode(routeModeSetting), [routeModeSetting]);
+  
   const categories = useQuery(api.projectCategories.listActive, { limit: 100 });
+
+  const categorySlugFromPath = useMemo(() => {
+    if (routeMode !== 'unified') {return null;}
+    const segment = pathname.split('/').filter(Boolean)[0];
+    if (!segment || segment === 'projects') {return null;}
+    return segment;
+  }, [pathname, routeMode]);
+
+  const categoryFromUrl = useMemo(() => {
+    const catSlug = categorySlugFromPath ?? searchParams.get('category');
+    if (!catSlug || !categories) {return null;}
+    return categories.find((c) => c.slug === catSlug)?._id ?? null;
+  }, [categorySlugFromPath, searchParams, categories]);
+
   const activeCategory = useMemo(
-    () => categories?.find((category) => category.slug === selectedCategory || category._id === selectedCategory),
-    [categories, selectedCategory]
+    () => categories?.find((category) => category._id === categoryFromUrl),
+    [categories, categoryFromUrl]
   );
-  const projects = useQuery(api.projects.listPublishedWithOffset, {
-    categoryId: activeCategory?._id,
-    limit: listConfig.postsPerPage,
-    offset,
-    search: searchQuery.trim() || undefined,
-    sortBy,
+
+  const isPaginationMode = listConfig.paginationType === 'pagination';
+  const offset = (urlPage - 1) * postsPerPage;
+
+  // Intersection observer for infinite scroll
+  const { ref: loadMoreRef, inView } = useInView({
+    threshold: 0.1,
+    rootMargin: '100px',
   });
+
+  const paginatedSortBy = sortBy === 'popular' ? 'popular' : (sortBy === 'oldest' ? 'oldest' : 'newest');
+
+  const {
+    results: infiniteResults,
+    status: infiniteStatus,
+    loadMore,
+  } = usePaginatedQuery(
+    api.projects.listPublishedPaginated,
+    {
+      categoryId: activeCategory?._id,
+      sortBy: paginatedSortBy,
+    },
+    { initialNumItems: postsPerPage }
+  );
+
+  const paginatedProjects = useQuery(
+    api.projects.listPublishedWithOffset,
+    isPaginationMode
+      ? {
+          categoryId: activeCategory?._id,
+          limit: postsPerPage,
+          offset,
+          search: debouncedSearchQuery || undefined,
+          sortBy,
+        }
+      : 'skip'
+  );
+
+  const projects = useMemo(() => {
+    if (isPaginationMode) {
+      return paginatedProjects ?? [];
+    }
+    return infiniteResults;
+  }, [infiniteResults, isPaginationMode, paginatedProjects]);
+
+  const isLoadingProjects = isPaginationMode && paginatedProjects === undefined;
+
   const totalCount = useQuery(api.projects.countPublished, {
     categoryId: activeCategory?._id,
-    search: searchQuery.trim() || undefined,
+    search: debouncedSearchQuery || undefined,
   });
+
+  // Load more when scrolling (infinite scroll mode)
+  useEffect(() => {
+    if (isPaginationMode) {
+      return;
+    }
+    if (inView && infiniteStatus === 'CanLoadMore') {
+      loadMore(postsPerPage);
+    }
+  }, [inView, infiniteStatus, loadMore, postsPerPage, isPaginationMode]);
+
+  const totalPages = useMemo(() => {
+    if (!totalCount) return 1;
+    return Math.ceil(totalCount / postsPerPage);
+  }, [totalCount, postsPerPage]);
+
   const categoryMap = useMemo(() => new Map((categories ?? []).map((category) => [category._id, category])), [categories]);
+
+  const getDetailHref = useCallback((project: { categoryId: Id<'projectCategories'>; slug: string }) => buildDetailPath({
+    categorySlug: categoryMap.get(project.categoryId)?.slug,
+    mode: routeMode,
+    moduleKey: 'projects',
+    recordSlug: project.slug,
+  }), [categoryMap, routeMode]);
+
+  const handleCategoryChange = useCallback((value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('page');
+
+    if (value && categories) {
+      const category = categories.find(c => c.slug === value || c._id === value);
+      if (category) {
+        if (routeMode === 'unified') {
+          router.push(buildCategoryPath({ categorySlug: category.slug, mode: routeMode, moduleKey: 'projects' }), { scroll: false });
+          return;
+        }
+        params.set('category', category.slug);
+      }
+    } else {
+      params.delete('category');
+    }
+
+    const nextUrl = params.toString()
+      ? `${buildModuleListPath('projects')}?${params.toString()}`
+      : buildModuleListPath('projects');
+    router.push(nextUrl, { scroll: false });
+  }, [categories, routeMode, router, searchParams]);
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+  };
+
+  const handleSortChange = (value: 'newest' | 'oldest' | 'popular' | 'title') => {
+    setSortBy(value);
+  };
+
+  const filterKey = `${activeCategory?._id ?? ''}|${debouncedSearchQuery}|${sortBy}|${postsPerPage}`;
+  const prevFilterKeyRef = useRef(filterKey);
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    if (!isPaginationMode) {
+      prevFilterKeyRef.current = filterKey;
+      return;
+    }
+
+    const hasFilterChanged = prevFilterKeyRef.current !== filterKey;
+    if (hasFilterChanged && urlPage !== 1) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('page');
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+    prevFilterKeyRef.current = filterKey;
+  }, [filterKey, isPaginationMode, pathname, router, searchParams, urlPage]);
 
   if (!categories || !projects) {
     return <ProjectsSkeleton />;
   }
 
-  const getDetailHref = (project: { categoryId: Id<'projectCategories'>; slug: string }) => buildDetailPath({
-    categorySlug: categoryMap.get(project.categoryId)?.slug,
-    mode: routeMode,
-    moduleKey: 'projects',
-    recordSlug: project.slug,
-  });
-
-  const handleCategoryChange = (value: string) => {
-    setSelectedCategory(value);
-    setOffset(0);
-  };
-
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    setOffset(0);
-  };
-
-  const handleSortChange = (value: 'newest' | 'oldest' | 'popular' | 'title') => {
-    setSortBy(value);
-    setOffset(0);
-  };
-
-  const total = totalCount ?? projects.length;
-  const hasMore = offset + listConfig.postsPerPage < total;
   const layoutStyle = listConfig.layoutStyle ?? 'grid';
 
   const topFilterBar = (listConfig.showSearch || listConfig.showCategories) && (
@@ -115,7 +287,7 @@ function ProjectsContent() {
         <div className="flex flex-wrap gap-2">
           {listConfig.showCategories && (
             <select
-              value={selectedCategory}
+              value={activeCategory?.slug ?? ''}
               onChange={(event) => handleCategoryChange(event.target.value)}
               className="h-10 rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] px-3 text-sm dark:border-zinc-700 dark:text-[#f5f5f7]"
             >
@@ -164,8 +336,8 @@ function ProjectsContent() {
               <button
                 type="button"
                 onClick={() => handleCategoryChange('')}
-                className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${!selectedCategory ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
-                style={!selectedCategory ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColor}18`, color: brandColor, borderColor: isDark ? '#3a3a3c' : 'transparent', borderWidth: isDark ? '1px' : '0' } : undefined}
+                className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${!activeCategory ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                style={!activeCategory ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColor}18`, color: brandColor, borderColor: isDark ? '#3a3a3c' : 'transparent', borderWidth: isDark ? '1px' : '0' } : undefined}
               >
                 Tất cả
               </button>
@@ -175,8 +347,8 @@ function ProjectsContent() {
                 <button
                   type="button"
                   onClick={() => handleCategoryChange(category.slug)}
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${selectedCategory === category.slug ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
-                  style={selectedCategory === category.slug ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColor}18`, color: brandColor, borderColor: isDark ? '#3a3a3c' : 'transparent', borderWidth: isDark ? '1px' : '0' } : undefined}
+                  className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${activeCategory?._id === category._id ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                  style={activeCategory?._id === category._id ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColor}18`, color: brandColor, borderColor: isDark ? '#3a3a3c' : 'transparent', borderWidth: isDark ? '1px' : '0' } : undefined}
                 >
                   {category.name}
                 </button>
@@ -201,31 +373,135 @@ function ProjectsContent() {
     </aside>
   );
 
-  const paginationBar = (
-    <div className="flex items-center justify-between pt-4">
-      <span className="text-sm text-slate-500">{total} dự án</span>
-      <div className="flex gap-2">
-        {offset > 0 && (
-          <button
-            type="button"
-            onClick={() => setOffset(Math.max(0, offset - listConfig.postsPerPage))}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm transition hover:bg-slate-50 dark:border-zinc-800 dark:bg-[#161617] text-slate-700 dark:text-[#f5f5f7] hover:dark:bg-[#2c2c2e]"
+  const paginationBar = isPaginationMode && totalPages > 1 && (
+    <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="order-2 flex w-full items-center justify-between text-sm sm:order-1 sm:w-auto sm:justify-start sm:gap-6">
+        <div className="flex items-center gap-2">
+          <span className="text-slate-500">Hiển thị</span>
+          <select
+            value={postsPerPage}
+            onChange={(event) => {
+              setPageSizeOverride(Number(event.target.value));
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete('page');
+              router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="h-8 w-[70px] appearance-none rounded-md border px-2 text-sm font-medium shadow-sm focus:outline-none dark:border-zinc-800 bg-white dark:bg-[#161617]"
+            aria-label="Số dự án mỗi trang"
           >
-            Trước
-          </button>
-        )}
-        {hasMore && (
+            {[6, 12, 20, 24].map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+          <span className="text-slate-500">dự án/trang</span>
+        </div>
+
+        <div>
+          <span className="font-medium text-slate-900 dark:text-[#f5f5f7]">
+            {totalCount ? ((urlPage - 1) * postsPerPage) + 1 : 0}–{Math.min(urlPage * postsPerPage, totalCount ?? 0)}
+          </span>
+          <span className="mx-1 text-slate-300 dark:text-zinc-700">/</span>
+          <span className="font-medium text-slate-900 dark:text-[#f5f5f7]">{totalCount ?? 0}</span>
+          <span className="ml-1 text-slate-500">dự án</span>
+        </div>
+      </div>
+
+      <div className="order-1 flex w-full justify-center sm:order-2 sm:w-auto sm:justify-end">
+        <nav className="flex items-center space-x-1 sm:space-x-2" aria-label="Phân trang">
           <button
-            type="button"
-            onClick={() => setOffset(offset + listConfig.postsPerPage)}
-            className="rounded-xl px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 animate-pulse"
-            style={{ backgroundColor: brandColor }}
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              const page = urlPage - 1;
+              if (page <= 1) params.delete('page');
+              else params.set('page', String(page));
+              router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={urlPage === 1}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] text-slate-700 dark:text-[#f5f5f7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Trang trước"
           >
-            Xem thêm
+            <ChevronLeft className="h-4 w-4" />
           </button>
-        )}
+
+          {generatePaginationItems(urlPage, totalPages).map((item, index) => {
+            if (item === 'ellipsis') {
+              return (
+                <div key={`ellipsis-${index}`} className="flex h-8 w-8 items-center justify-center text-slate-400">
+                  …
+                </div>
+              );
+            }
+
+            const pageNum = item as number;
+            const isActive = pageNum === urlPage;
+
+            return (
+              <button
+                key={pageNum}
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams.toString());
+                  if (pageNum <= 1) params.delete('page');
+                  else params.set('page', String(pageNum));
+                  router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-all duration-200 ${
+                  isActive
+                    ? 'text-white shadow-sm border font-medium'
+                    : 'text-slate-700 dark:text-[#f5f5f7] hover:bg-slate-50 dark:hover:bg-[#2c2c2e]'
+                }`}
+                style={isActive ? {
+                  backgroundColor: brandColor,
+                  borderColor: brandColor,
+                  color: '#fff',
+                } : undefined}
+              >
+                {pageNum}
+              </button>
+            );
+          })}
+
+          <button
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set('page', String(urlPage + 1));
+              router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            disabled={urlPage === totalPages}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] text-slate-700 dark:text-[#f5f5f7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Trang sau"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </nav>
       </div>
     </div>
+  );
+
+  const infiniteScrollTrigger = !isPaginationMode && (
+    <>
+      {infiniteStatus !== 'Exhausted' && (
+        <div ref={loadMoreRef} className="text-center py-6">
+          {infiniteStatus === 'LoadingMore' ? (
+            <div className="flex justify-center gap-1">
+              <div className="w-2 h-2 rounded-full animate-pulse bg-slate-400" />
+              <div className="w-2 h-2 rounded-full animate-pulse bg-slate-400 delay-75" />
+              <div className="w-2 h-2 rounded-full animate-pulse bg-slate-400 delay-150" />
+            </div>
+          ) : infiniteStatus === 'CanLoadMore' ? (
+            <p className="text-sm text-slate-450 dark:text-zinc-500">Cuộn để xem thêm...</p>
+          ) : null}
+        </div>
+      )}
+      {infiniteStatus === 'Exhausted' && projects.length > 0 && (
+        <div className="text-center py-6">
+          <p className="text-sm text-slate-450 dark:text-zinc-500">Đã hiển thị tất cả {projects.length} dự án</p>
+        </div>
+      )}
+    </>
   );
 
   const emptyState = (
@@ -261,7 +537,11 @@ function ProjectsContent() {
   const ListCard = ({ project }: { project: typeof projects[number] }) => {
     const category = categoryMap.get(project.categoryId);
     return (
-      <Link href={getDetailHref(project)} className="group flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-zinc-800 dark:bg-[#161617]">
+      <Link
+        href={getDetailHref(project)}
+        className="group flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-zinc-800 dark:bg-[#161617]"
+      >
+        {/* Thumbnail */}
         <div className="w-40 flex-shrink-0 overflow-hidden bg-slate-100 dark:bg-[#1c1c1e] sm:w-52">
           {project.thumbnail ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -270,80 +550,109 @@ function ProjectsContent() {
             <div className="flex h-full items-center justify-center text-sm text-slate-400">Dự án</div>
           )}
         </div>
-        <div className="flex flex-1 flex-col justify-center space-y-2 p-4">
-          <div className="flex items-center gap-2">
-            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600 dark:bg-[#1c1c1e] dark:text-[#f5f5f7]">{category?.name ?? 'Dự án'}</span>
-            {listConfig.showClientName && project.clientName && <span className="text-xs text-slate-400">{project.clientName}</span>}
+
+        {/* Content layout: 2 columns on Desktop */}
+        <div className="flex flex-1 flex-col md:flex-row md:items-center justify-between gap-6 p-4">
+          {/* Left Column: Info */}
+          <div className="flex-1 min-w-0 flex flex-col justify-center space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600 dark:bg-[#1c1c1e] dark:text-[#f5f5f7]">{category?.name ?? 'Dự án'}</span>
+              {listConfig.showClientName && project.clientName && <span className="text-xs text-slate-400">{project.clientName}</span>}
+            </div>
+            <h2 className="line-clamp-2 text-base font-semibold text-slate-950 transition group-hover:opacity-90 dark:text-[#f5f5f7]">{project.title}</h2>
+            {project.excerpt && <p className="line-clamp-2 text-sm leading-5 text-slate-650 dark:text-[#86868b]">{project.excerpt}</p>}
           </div>
-          <h2 className="line-clamp-2 text-base font-semibold text-slate-950 transition group-hover:opacity-90 dark:text-[#f5f5f7]">{project.title}</h2>
-          {project.excerpt && <p className="line-clamp-2 text-sm leading-5 text-slate-600 dark:text-[#86868b]">{project.excerpt}</p>}
+
+          {/* Right Column: CTA */}
+          <div className="flex shrink-0 items-center justify-start md:justify-end border-t md:border-t-0 border-slate-150 dark:border-zinc-850/60 pt-3 md:pt-0">
+            <span
+              className="inline-flex items-center justify-center rounded-full border px-4 py-2 text-xs font-semibold transition-all duration-300 group-hover:bg-[var(--btn-hover-bg)] group-hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow whitespace-nowrap"
+              style={{
+                borderColor: brandColor,
+                color: brandColor,
+                '--btn-hover-bg': `${brandColor}08`,
+              } as React.CSSProperties}
+            >
+              Xem chi tiết →
+            </span>
+          </div>
         </div>
       </Link>
     );
   };
 
   const pageHeader = (
-    <div className="mx-auto max-w-3xl text-center">
-      <p className="text-sm font-semibold uppercase tracking-[0.3em]" style={{ color: brandColor }}>Projects</p>
-      <h1 className="mt-3 text-3xl font-bold text-slate-950 dark:text-[#f5f5f7] md:text-5xl">Dự án đã thực hiện</h1>
-      <p className="mt-4 text-base text-slate-600 dark:text-[#86868b]">Các case study, hình ảnh và video giới thiệu nổi bật.</p>
-    </div>
+    <PageHeaderWithCount
+      title={activeCategory ? activeCategory.name : 'Dự án đã thực hiện'}
+      count={projects.length}
+      totalCount={totalCount}
+      unit="Dự án"
+      titleColor={isDark ? '#f5f5f7' : '#0f172a'}
+      subtitleColor={isDark ? '#86868b' : '#64748b'}
+      description={activeCategory?.description}
+    />
   );
 
-  if (layoutStyle === 'grid') {
-    return (
-      <main className="px-4 py-10 md:py-14 min-h-screen bg-slate-50 dark:bg-black font-active text-slate-700 dark:text-[#f5f5f7] transition-colors duration-200">
-        <div className="mx-auto max-w-7xl space-y-8">
-          {pageHeader}
+  const renderContent = () => {
+    const gridCols = listConfig.gridColumns ?? 3;
+    const gridClass = gridCols === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+    const sidebarGridClass = gridCols === 4 ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2';
+
+    if (layoutStyle === 'grid') {
+      return (
+        <div className="space-y-6">
           {topFilterBar}
-          {projects.length === 0 ? emptyState : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {isLoadingProjects ? (
+            <div className={`grid gap-6 ${gridClass}`}>
+              {Array.from({ length: postsPerPage }).map((_, i) => (
+                <div key={i} className="animate-pulse h-64 bg-slate-200 dark:bg-[#1c1c1e] rounded-2xl" />
+              ))}
+            </div>
+          ) : projects.length === 0 ? emptyState : (
+            <div className={`grid gap-6 ${gridClass}`}>
               {projects.map((project) => <GridCard key={project._id} project={project} />)}
             </div>
           )}
           {paginationBar}
+          {infiniteScrollTrigger}
         </div>
-      </main>
-    );
-  }
+      );
+    }
 
-  if (layoutStyle === 'sidebar') {
     return (
-      <main className="px-4 py-10 md:py-14 min-h-screen bg-slate-50 dark:bg-black font-active text-slate-700 dark:text-[#f5f5f7] transition-colors duration-200">
-        <div className="mx-auto max-w-7xl space-y-8">
-          {pageHeader}
-          <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-            {sidebarFilter}
-            <div className="min-w-0 flex-1 space-y-6">
-              {projects.length === 0 ? emptyState : (
-                <div className="grid gap-6 md:grid-cols-2">
-                  {projects.map((project) => <GridCard key={project._id} project={project} />)}
-                </div>
-              )}
-              {paginationBar}
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+        {sidebarFilter}
+        <div className="min-w-0 flex-1 space-y-6">
+          {isLoadingProjects ? (
+            <div className="space-y-4">
+              {Array.from({ length: postsPerPage }).map((_, i) => (
+                <div key={i} className="animate-pulse h-28 bg-slate-200 dark:bg-[#1c1c1e] rounded-2xl" />
+              ))}
             </div>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className="px-4 py-10 md:py-14 min-h-screen bg-slate-50 dark:bg-black font-active text-slate-700 dark:text-[#f5f5f7] transition-colors duration-200">
-      <div className="mx-auto max-w-7xl space-y-8">
-        {pageHeader}
-        <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-          {sidebarFilter}
-          <div className="min-w-0 flex-1 space-y-6">
-            {projects.length === 0 ? emptyState : (
+          ) : projects.length === 0 ? emptyState : (
+            layoutStyle === 'sidebar' ? (
+              <div className={`grid gap-6 ${sidebarGridClass}`}>
+                {projects.map((project) => <GridCard key={project._id} project={project} />)}
+              </div>
+            ) : (
               <div className="flex flex-col gap-4">
                 {projects.map((project) => <ListCard key={project._id} project={project} />)}
               </div>
-            )}
-            {paginationBar}
-          </div>
+            )
+          )}
+          {paginationBar}
+          {infiniteScrollTrigger}
         </div>
       </div>
-    </main>
+    );
+  };
+
+  return (
+    <div className="flex-1 w-full px-4 py-6 md:py-10 bg-slate-50 dark:bg-black font-active text-slate-700 dark:text-[#f5f5f7] transition-colors duration-200">
+      <div className="mx-auto max-w-7xl space-y-6">
+        {pageHeader}
+        {renderContent()}
+      </div>
+    </div>
   );
 }

@@ -33,6 +33,7 @@ type PaginationType = 'pagination' | 'infiniteScroll';
 
 type ServicesListExperienceConfig = {
   layoutStyle: ListLayoutStyle;
+  gridColumns: number;
   layouts: {
     grid: LayoutConfig;
     sidebar: LayoutConfig;
@@ -65,6 +66,7 @@ const DEFAULT_LAYOUT_CONFIG: LayoutConfig = {
 
 const DEFAULT_CONFIG: ServicesListExperienceConfig = {
   layoutStyle: 'grid',
+  gridColumns: 3,
   layouts: {
     grid: { ...DEFAULT_LAYOUT_CONFIG },
     sidebar: { ...DEFAULT_LAYOUT_CONFIG },
@@ -113,6 +115,7 @@ export default function ServicesListExperiencePage() {
         if (raw === 'masonry') return 'list';
         return 'grid';
       })() as ListLayoutStyle,
+      gridColumns: raw?.gridColumns ?? 3,
       layouts: {
         grid: normalizeLayoutConfig(raw?.layouts?.grid),
         sidebar: normalizeLayoutConfig(raw?.layouts?.sidebar),
@@ -243,6 +246,16 @@ export default function ServicesListExperiencePage() {
               onChange={(v) => setConfig(prev => ({ ...prev, hideEmptyCategories: v }))}
               accentColor={brandColor}
             />
+            <SelectRow
+              label="Số cột hiển thị (Desktop)"
+              value={String(config.gridColumns ?? 3)}
+              options={[
+                { value: '3', label: '3 cột' },
+                { value: '4', label: '4 cột' },
+              ]}
+              onChange={(v) => setConfig(prev => ({ ...prev, gridColumns: Number(v) }))}
+              disabled={!canUseServices}
+            />
           </ControlCard>
 
           <ControlCard title="Phân trang">
@@ -323,6 +336,7 @@ export default function ServicesListExperiencePage() {
             <BrowserFrame url="yoursite.com/services">
               <ServicesListPreview
                 layoutStyle={config.layoutStyle}
+                gridColumns={config.gridColumns}
                 showSearch={currentLayoutConfig.showSearch}
                 showCategories={currentLayoutConfig.showCategories}
                 paginationType={currentLayoutConfig.paginationType}

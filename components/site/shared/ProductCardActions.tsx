@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { ShoppingCart } from 'lucide-react';
 import { type ProductsListColors } from '@/components/site/products/colors';
 
 interface ProductCardActionsProps {
@@ -44,11 +45,23 @@ export function ProductCardActions({
   }
 
   const isOutOfStock = showStock && !product.hasVariants && (product.stock ?? 0) <= 0;
+
+  if (isOutOfStock) {
+    return (
+      <div className="mt-1.5 sm:mt-2 w-full">
+        <div
+          className="w-full rounded-full py-1.5 sm:py-2 text-[10px] xs:text-[11px] sm:text-xs font-medium tracking-wide flex items-center justify-center bg-slate-100/70 dark:bg-zinc-800/80 text-slate-400 dark:text-zinc-500 border border-slate-200/10 cursor-not-allowed select-none"
+        >
+          <span>Hết hàng</span>
+        </div>
+      </div>
+    );
+  }
+
   const isGrid2 = cartButtonsLayout === 'grid-2' && showAddToCartButton && showBuyNowButton;
   const actionHeightClass = showAddToCartButton && showBuyNowButton && !isGrid2 ? 'min-h-[72px]' : 'min-h-[32px]';
   const gridColsClass = isGrid2 ? 'grid-cols-2' : 'grid-cols-1';
 
-  // Tối ưu font size và padding để gọn đẹp không bao giờ rớt dòng (whitespace-nowrap)
   const isCompact = isGrid2 || device === 'mobile';
   const fontSizeClass = isCompact
     ? 'text-[10px] xs:text-[11px] sm:text-xs font-semibold px-0.5'
@@ -60,17 +73,17 @@ export function ProductCardActions({
     <div className={`mt-1.5 sm:mt-2 grid ${gridColsClass} ${gapClass} ${actionHeightClass}`}>
       {showAddToCartButton && (
         <button
-          className={`w-full rounded-lg ${paddingClass} ${fontSizeClass} transition-all duration-300 flex items-center justify-center whitespace-nowrap disabled:opacity-55 disabled:cursor-not-allowed hover:brightness-95 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md`}
+          className={`w-full rounded-full ${paddingClass} ${fontSizeClass} transition-all duration-300 flex items-center justify-center whitespace-nowrap disabled:opacity-55 disabled:cursor-not-allowed hover:brightness-95 hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow`}
           style={{ backgroundColor: tokens.primaryActionBg, color: tokens.primaryActionText }}
           onClick={(event) => { event.preventDefault(); event.stopPropagation(); onAddToCart(product); }}
-          disabled={isOutOfStock}
         >
-          Thêm giỏ
+          <ShoppingCart size={13} className="mr-1 sm:mr-1.5 shrink-0" />
+          <span>Thêm giỏ</span>
         </button>
       )}
       {showBuyNowButton && (
         <button
-          className={`w-full rounded-lg ${paddingClass} ${fontSizeClass} border transition-all duration-300 flex items-center justify-center whitespace-nowrap disabled:opacity-55 disabled:cursor-not-allowed hover:bg-[var(--btn-hover-bg)] hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md`}
+          className={`w-full rounded-full ${paddingClass} ${fontSizeClass} border transition-all duration-300 flex items-center justify-center whitespace-nowrap disabled:opacity-55 disabled:cursor-not-allowed hover:bg-[var(--btn-hover-bg)] hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow`}
           style={{
             backgroundColor: isOnDarkBg ? (tokens.secondaryActionHoverBg || '#f8fafc') : 'transparent',
             borderColor: isOnDarkBg ? 'transparent' : tokens.secondaryActionBorder,
@@ -78,9 +91,8 @@ export function ProductCardActions({
             '--btn-hover-bg': isOnDarkBg ? '#ffffff' : tokens.secondaryActionHoverBg,
           } as React.CSSProperties}
           onClick={(event) => { event.preventDefault(); event.stopPropagation(); onBuyNow(product); }}
-          disabled={isOutOfStock}
         >
-          {isOutOfStock ? 'Hết hàng' : 'Mua ngay'}
+          <span>Mua ngay</span>
         </button>
       )}
     </div>

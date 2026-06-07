@@ -3,13 +3,17 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { Bookmark, ChevronDown, FileText, Filter, Search, SlidersHorizontal, Star, X, Check } from 'lucide-react';
+import { Bookmark, ChevronDown, FileText, Filter, Search, SlidersHorizontal, Star, X, Check, ChevronLeft, ChevronRight, Download, ShoppingCart, Lock } from 'lucide-react';
 import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { useResourcesListConfig } from '@/lib/experiences';
+import { useInView } from 'react-intersection-observer';
+import { useCart } from '@/lib/cart';
+import { useCustomerAuth } from '@/app/(site)/auth/context';
+import { toast } from 'sonner';
 
 const formatPrice = (pricingType: string, price?: number) => {
   if (pricingType === 'free') {return 'Miễn phí';}
@@ -240,6 +244,216 @@ function MultiSelectDropdown({
   );
 }
 
+function generatePaginationItems(currentPage: number, totalPages: number): (number | 'ellipsis')[] {
+  const items: (number | 'ellipsis')[] = [];
+  const siblingCount = 1;
+
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) {
+      items.push(i);
+    }
+    return items;
+  }
+
+  const leftSiblingIndex = Math.max(currentPage - siblingCount, 1);
+  const rightSiblingIndex = Math.min(currentPage + siblingCount, totalPages);
+
+  const shouldShowLeftDots = leftSiblingIndex > 2;
+  const shouldShowRightDots = rightSiblingIndex < totalPages - 2;
+
+  const firstPageIndex = 1;
+  const lastPageIndex = totalPages;
+
+  if (!shouldShowLeftDots && shouldShowRightDots) {
+    const leftRange = 3 + 2 * siblingCount;
+    for (let i = 1; i <= leftRange; i++) {
+      items.push(i);
+    }
+    items.push('ellipsis');
+    items.push(totalPages);
+    return items;
+  }
+
+  if (shouldShowLeftDots && !shouldShowRightDots) {
+    items.push(firstPageIndex);
+    items.push('ellipsis');
+    const rightRange = 3 + 2 * siblingCount;
+    for (let i = totalPages - rightRange + 1; i <= totalPages; i++) {
+      items.push(i);
+    }
+    return items;
+  }
+
+  items.push(firstPageIndex);
+  items.push('ellipsis');
+  for (let i = leftSiblingIndex; i <= rightSiblingIndex; i++) {
+    items.push(i);
+  }
+  items.push('ellipsis');
+  items.push(lastPageIndex);
+
+  return items;
+}
+
+function ResourceListItem({
+  resource,
+  category,
+  detailHref,
+  assignedValues,
+  resourceFiltersFeatureEnabled,
+  showResourceFilters,
+  cornerRadius,
+  brandColors,
+}: {
+  resource: any;
+  category: any;
+  detailHref: string;
+  assignedValues: AssignedResourceFilterValue[];
+  resourceFiltersFeatureEnabled: boolean;
+  showResourceFilters: boolean;
+  cornerRadius?: 'none' | 'sm' | 'lg';
+  brandColors: { primary: string; secondary?: string; mode?: string };
+}) {
+  const brandColor = brandColors.primary;
+  const { openLoginModal, token } = useCustomerAuth();
+  const { addItem, openDrawer } = useCart();
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const resourceCommerceSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'resources', settingKey: 'commerceMode' });
+  const commerceMode = resourceCommerceSetting?.value === 'contact' ? 'contact' : 'cart';
+
+  const resourceAccess = useQuery(api.resources.getResourceAccess, { resourceId: resource._id, token: token ?? undefined });
+  const requestDownload = useMutation(api.resources.requestDownload);
+  const hasAccess = Boolean(resourceAccess?.hasAccess);
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!token) {
+      toast.info('Vui lòng đăng nhập để tải tài nguyên.');
+      openLoginModal();
+      return;
+    }
+    if (resource.pricingType === 'contact') {
+      window.location.href = `/contact?subject=${encodeURIComponent(`Tư vấn tài nguyên: ${resource.title}`)}`;
+      return;
+    }
+    if (!hasAccess && resource.pricingType === 'paid') {
+      if (commerceMode === 'cart') {
+        const ok = await addItem({ itemType: 'resource', resourceId: resource._id, quantity: 1 });
+        if (ok) {
+          toast.success('Đã thêm tài nguyên vào giỏ hàng');
+          openDrawer();
+        }
+        return;
+      }
+      window.location.href = `/contact?subject=${encodeURIComponent(`Mua tài nguyên: ${resource.title}`)}`;
+      return;
+    }
+
+    setIsDownloading(true);
+    try {
+      const result = await requestDownload({ resourceId: resource._id, token });
+      if (result.ok && result.url) {
+        window.open(result.url, '_blank', 'noopener,noreferrer');
+        toast.success('Đang mở link tải');
+        return;
+      }
+      if (result.reason === 'login_required') {
+        openLoginModal();
+        return;
+      }
+      if (result.reason === 'purchase_required') {
+        toast.error('Bạn cần mua tài nguyên trước khi tải.');
+        return;
+      }
+      toast.error('Không thể tải tài nguyên.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể tải tài nguyên.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const ctaLabel = resource.pricingType === 'contact'
+    ? 'Liên hệ'
+    : !token
+      ? (resource.pricingType === 'free' ? 'Đăng nhập tải' : 'Đăng nhập mua')
+      : hasAccess || resource.pricingType === 'free'
+        ? 'Tải ngay'
+        : commerceMode === 'cart'
+          ? 'Thêm giỏ'
+          : 'Liên hệ mua';
+
+  return (
+    <Link
+      href={detailHref}
+      className={`group flex flex-col sm:flex-row items-stretch gap-4 overflow-hidden border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] shadow-sm transition hover:shadow-md hover:-translate-y-0.5 ${getRadiusClass(cornerRadius)}`}
+    >
+      {/* Thumbnail */}
+      <div className="relative w-full sm:w-40 shrink-0 overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]" style={{ aspectRatio: '16/9' }}>
+        {resource.thumbnail ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-50 dark:from-zinc-900 dark:to-zinc-850">
+            <FileText size={28} style={{ color: brandColor }} />
+          </div>
+        )}
+        {resource.featured && (
+          <span className="absolute left-2 top-2 inline-flex items-center gap-0.5 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+            <Star size={10} className="fill-current" /> Nổi bật
+          </span>
+        )}
+      </div>
+
+      {/* Content + Price and CTA layout */}
+      <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center justify-between gap-6 p-4 sm:p-0 sm:py-3 sm:pr-4">
+        {/* Cột trái: Thông tin */}
+        <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="rounded-full bg-slate-100 dark:bg-[#1c1c1e] px-2 py-0.5 text-[11px] font-semibold text-slate-605 dark:text-zinc-350">{category?.name ?? 'Tài nguyên'}</span>
+            {resourceFiltersFeatureEnabled && showResourceFilters && assignedValues.slice(0, 3).map((value) => (
+              <span key={value._id} className="inline-flex items-center gap-1 rounded-full border border-slate-200/80 dark:border-zinc-800 px-2 py-0.5 text-[11px] font-medium text-slate-550 dark:text-[#86868b]">
+                {value.icon && <img src={value.icon} alt={value.name} className="h-3 w-3 object-contain shrink-0" />}
+                <span>{value.name}</span>
+              </span>
+            ))}
+          </div>
+          <h2 className="line-clamp-1 text-base font-bold text-slate-900 dark:text-[#f5f5f7] group-hover:underline">{resource.title}</h2>
+          {resource.excerpt && <p className="line-clamp-2 text-xs text-slate-500 dark:text-zinc-450 leading-relaxed">{resource.excerpt}</p>}
+        </div>
+
+        {/* Cột phải: Giá + Nút bấm */}
+        <div className="flex flex-col items-start md:items-end justify-center shrink-0 min-w-[180px] md:text-right gap-2 border-t md:border-t-0 border-slate-100 dark:border-zinc-850/60 pt-3 md:pt-0">
+          <span className="text-base font-bold" style={{ color: brandColor }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="inline-flex w-full md:w-auto items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-60"
+            style={{ backgroundColor: brandColor }}
+          >
+            {isDownloading ? (
+              <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent shrink-0" />
+            ) : hasAccess || (resource.pricingType === 'free' && token) ? (
+              <Download size={14} />
+            ) : !token && resource.pricingType === 'free' ? (
+              <Lock size={14} />
+            ) : commerceMode === 'cart' && resource.pricingType !== 'contact' ? (
+              <ShoppingCart size={14} />
+            ) : (
+              <Lock size={14} />
+            )}
+            <span>{isDownloading ? 'Đang tải...' : ctaLabel}</span>
+          </button>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function ResourcesPage() {
   return (
     <Suspense fallback={<ResourcesSkeleton />}>
@@ -263,8 +477,14 @@ function ResourcesContent() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'price_asc' | 'price_desc' | 'title'>('newest');
   const [categoryQuery, setCategoryQuery] = useState('');
-  const postsPerPage = config.postsPerPage ?? 12;
+  const [pageSizeOverride, setPageSizeOverride] = useState<number | null>(null);
+  const postsPerPage = pageSizeOverride ?? (config.postsPerPage ?? 12);
   const [visibleLimit, setVisibleLimit] = useState(postsPerPage);
+
+  const { ref: loadMoreRef, inView } = useInView({
+    threshold: 0.1,
+    rootMargin: '100px',
+  });
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -454,13 +674,23 @@ function ResourcesContent() {
   const totalPages = Math.max(1, Math.ceil(totalResources / postsPerPage));
   const isLoading = resources === undefined || categories === undefined;
 
+  const hasMore = visibleLimit < totalResources;
+
+  useEffect(() => {
+    if (isPaginationMode) {
+      return;
+    }
+    if (inView && hasMore) {
+      setVisibleLimit((current) => current + postsPerPage);
+    }
+  }, [inView, hasMore, postsPerPage, isPaginationMode]);
+
   return (
-    <main className="min-h-screen bg-slate-50 dark:bg-black font-active text-slate-700 dark:text-zinc-200 transition-colors duration-200" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
+    <div className="flex-1 w-full bg-slate-50 dark:bg-black font-active text-slate-700 dark:text-zinc-200 transition-colors duration-200" style={{ fontFamily: 'var(--font-be-vietnam-pro), sans-serif' }}>
       <section className="px-4 py-8">
         <div className="mx-auto max-w-7xl">
           <div className="mb-6 text-center">
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-[#f5f5f7]">{activeCategoryName ?? 'Tài nguyên'}</h1>
-            <p className="mt-2 text-sm text-slate-500 dark:text-zinc-400">Tải ebook, template, checklist và tài liệu hữu ích.</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-[#f5f5f7]">{activeCategoryName ?? 'Tài nguyên'}</h1>
           </div>
 
           <div className={config.layoutStyle === 'sidebar' || config.layoutStyle === 'list' ? 'grid gap-6 lg:grid-cols-[280px_1fr]' : 'space-y-6'}>
@@ -642,47 +872,17 @@ function ResourcesContent() {
                     });
                     const assignedValues = resourceFiltersMap.get(resource._id) ?? [];
                     return (
-                      <Link
+                      <ResourceListItem
                         key={resource._id}
-                        href={detailHref}
-                        className={`group flex items-stretch gap-4 overflow-hidden border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] shadow-sm transition hover:shadow-md hover:-translate-y-0.5 ${getRadiusClass(config.cornerRadius)}`}
-                      >
-                        {/* Thumbnail */}
-                        <div className="relative w-40 shrink-0 overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]" style={{ aspectRatio: '16/9' }}>
-                          {resource.thumbnail ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center" style={{ background: isDark ? '#1c1c1e' : `linear-gradient(135deg, ${brandColors.primary}18, ${brandColors.primary}05)` }}>
-                              <FileText size={28} style={{ color: brandColors.primary }} />
-                            </div>
-                          )}
-                          {resource.featured && (
-                            <span className="absolute left-2 top-2 inline-flex items-center gap-0.5 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
-                              <Star size={10} className="fill-current" /> Nổi bật
-                            </span>
-                          )}
-                        </div>
-                        {/* Content */}
-                        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 py-3 pr-2">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="rounded-full bg-slate-100 dark:bg-[#1c1c1e] px-2 py-0.5 text-[11px] font-semibold text-slate-600 dark:text-zinc-350">{category?.name ?? 'Tài nguyên'}</span>
-                            {resourceFiltersFeature?.enabled && config.showResourceFilters && assignedValues.slice(0, 3).map((value) => (
-                              <span key={value._id} className="inline-flex items-center gap-1 rounded-full border border-slate-200 dark:border-zinc-800 px-2 py-0.5 text-[11px] font-medium text-slate-550 dark:text-[#86868b]">
-                                {value.icon && <img src={value.icon} alt={value.name} className="h-3 w-3 object-contain shrink-0" />}
-                                <span>{value.name}</span>
-                              </span>
-                            ))}
-                          </div>
-                          <h2 className="line-clamp-1 text-base font-bold text-slate-900 dark:text-[#f5f5f7] group-hover:underline">{resource.title}</h2>
-                          {resource.excerpt && <p className="line-clamp-2 text-xs text-slate-500 dark:text-zinc-450 leading-relaxed">{resource.excerpt}</p>}
-                        </div>
-                        {/* Price + CTA */}
-                        <div className="flex shrink-0 flex-col items-end justify-center gap-2 py-3 pr-4">
-                          <span className="text-sm font-bold" style={{ color: brandColors.primary }}>{formatPrice(resource.pricingType, resource.priceAmount)}</span>
-                          <span className="text-xs font-semibold group-hover:underline" style={{ color: brandColors.primary }}>Xem chi tiết →</span>
-                        </div>
-                      </Link>
+                        resource={resource}
+                        category={category}
+                        detailHref={detailHref}
+                        assignedValues={assignedValues}
+                        resourceFiltersFeatureEnabled={resourceFiltersFeature?.enabled ?? false}
+                        showResourceFilters={config.showResourceFilters}
+                        cornerRadius={config.cornerRadius}
+                        brandColors={brandColors}
+                      />
                     );
                   })}
                 </div>
@@ -759,25 +959,118 @@ function ResourcesContent() {
               )}
 
               {!isLoading && resourceItems.length > 0 && (
-                config.paginationType === 'pagination' || isPaginationMode ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <button type="button" disabled={urlPage <= 1} onClick={() => handlePageChange(urlPage - 1)} className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] px-4 py-2 text-sm font-medium text-slate-600 dark:text-zinc-300 disabled:opacity-50 disabled:pointer-events-none hover:bg-slate-50 dark:hover:bg-[#2c2c2e]">Trước</button>
-                    <span className="text-sm text-slate-500">Trang {urlPage}/{totalPages}</span>
-                    <button type="button" disabled={urlPage >= totalPages} onClick={() => handlePageChange(urlPage + 1)} className="rounded-lg border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] px-4 py-2 text-sm font-medium text-slate-600 dark:text-zinc-300 disabled:opacity-50 disabled:pointer-events-none hover:bg-slate-50 dark:hover:bg-[#2c2c2e]">Sau</button>
+                isPaginationMode ? (
+                  <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between w-full">
+                    <div className="order-2 flex w-full items-center justify-between text-sm sm:order-1 sm:w-auto sm:justify-start sm:gap-6">
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500 dark:text-zinc-400">Hiển thị</span>
+                        <select
+                          value={postsPerPage}
+                          onChange={(event) => {
+                            setPageSizeOverride(Number(event.target.value));
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.delete('page');
+                            router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="h-8 w-[70px] appearance-none rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] px-2 text-sm font-medium shadow-sm focus:outline-none text-slate-700 dark:text-[#f5f5f7]"
+                          aria-label="Số tài nguyên mỗi trang"
+                        >
+                          {[12, 20, 24, 48].map((size) => (
+                            <option key={size} value={size}>{size}</option>
+                          ))}
+                        </select>
+                        <span className="text-slate-500 dark:text-zinc-400">tài nguyên/trang</span>
+                      </div>
+
+                      <div>
+                        <span className="font-medium text-slate-900 dark:text-[#f5f5f7]">
+                          {totalResources ? ((urlPage - 1) * postsPerPage) + 1 : 0}–{Math.min(urlPage * postsPerPage, totalResources)}
+                        </span>
+                        <span className="mx-1 text-slate-300 dark:text-zinc-700">/</span>
+                        <span className="font-medium text-slate-900 dark:text-[#f5f5f7]">{totalResources}</span>
+                        <span className="ml-1 text-slate-500">tài nguyên</span>
+                      </div>
+                    </div>
+
+                    <div className="order-1 flex w-full justify-center sm:order-2 sm:w-auto sm:justify-end">
+                      <nav className="flex items-center space-x-1 sm:space-x-2" aria-label="Phân trang">
+                        <button
+                          onClick={() => handlePageChange(urlPage - 1)}
+                          disabled={urlPage === 1}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] text-slate-700 dark:text-[#f5f5f7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          aria-label="Trang trước"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+
+                        {generatePaginationItems(urlPage, totalPages).map((item, index) => {
+                          if (item === 'ellipsis') {
+                            return (
+                              <div key={`ellipsis-${index}`} className="flex h-8 w-8 items-center justify-center text-slate-400">
+                                …
+                              </div>
+                            );
+                          }
+
+                          const pageNum = item as number;
+                          const isActive = pageNum === urlPage;
+
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => handlePageChange(pageNum)}
+                              className={`inline-flex h-8 w-8 items-center justify-center rounded-md text-sm transition-all duration-200 ${
+                                isActive
+                                  ? 'text-white shadow-sm border font-medium'
+                                  : 'text-slate-700 dark:text-[#f5f5f7] hover:bg-slate-50 dark:hover:bg-[#2c2c2e]'
+                              }`}
+                              style={isActive ? {
+                                backgroundColor: brandColors.primary,
+                                borderColor: brandColors.primary,
+                                color: '#fff',
+                              } : undefined}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+
+                        <button
+                          onClick={() => handlePageChange(urlPage + 1)}
+                          disabled={urlPage === totalPages}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] text-slate-700 dark:text-[#f5f5f7] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          aria-label="Trang sau"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </nav>
+                    </div>
                   </div>
-                ) : (visibleLimit < totalResources && (
-                  <div className="flex justify-center">
-                    <button type="button" onClick={() => setVisibleLimit((current) => current + postsPerPage)} className="rounded-full px-6 py-3 text-sm font-semibold text-white" style={{ backgroundColor: brandColors.primary }}>
-                      Tải thêm
-                    </button>
-                  </div>
-                ))
+                ) : (
+                  <>
+                    {hasMore && (
+                      <div ref={loadMoreRef} className="text-center py-6 w-full">
+                        <div className="flex justify-center gap-1">
+                          <div className="w-2 h-2 rounded-full animate-pulse bg-slate-400" />
+                          <div className="w-2 h-2 rounded-full animate-pulse bg-slate-400 delay-75" />
+                          <div className="w-2 h-2 rounded-full animate-pulse bg-slate-400 delay-150" />
+                        </div>
+                      </div>
+                    )}
+                    {!hasMore && resourceItems.length > 0 && (
+                      <div className="text-center py-6 w-full">
+                        <p className="text-sm text-slate-450 dark:text-zinc-500">Đã hiển thị tất cả {resourceItems.length} tài nguyên</p>
+                      </div>
+                    )}
+                  </>
+                )
               )}
             </div>
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 

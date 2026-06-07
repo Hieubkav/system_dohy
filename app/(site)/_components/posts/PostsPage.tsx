@@ -444,6 +444,7 @@ function PostsContent() {
                 categoryMap={categoryMap}
                 enabledFields={enabledFields}
                 getDetailHref={getPostDetailHref}
+                gridColumns={listConfig.gridColumns}
               />
             )}
           </>
@@ -470,6 +471,7 @@ function PostsContent() {
               showCategories={listConfig.showCategories}
               getDetailHref={getPostDetailHref}
               displayMode="grid"
+              gridColumns={listConfig.gridColumns}
             />
           )
         )}

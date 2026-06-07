@@ -404,6 +404,7 @@ function ServicesContent() {
                 viewMode="grid"
                 enabledFields={enabledFields}
                 getDetailHref={getServiceDetailHref}
+                gridColumns={listConfig.gridColumns}
               />
             )}
           </>
@@ -429,6 +430,7 @@ function ServicesContent() {
                showCategories={listConfig.showCategories}
               getDetailHref={getServiceDetailHref}
               displayMode="grid"
+              gridColumns={listConfig.gridColumns}
             />
           )
         )}
@@ -453,6 +455,7 @@ function ServicesContent() {
                showCategories={listConfig.showCategories}
               getDetailHref={getServiceDetailHref}
               displayMode="list"
+              gridColumns={listConfig.gridColumns}
             />
           )
         )}

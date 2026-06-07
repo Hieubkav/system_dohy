@@ -44,6 +44,7 @@ interface SidebarLayoutProps {
    showCategories?: boolean;
   getDetailHref: (service: Service) => string;
   displayMode?: 'grid' | 'list';
+  gridColumns?: number;
 }
 
 function formatPrice(price?: number): string {
@@ -76,6 +77,7 @@ export function SidebarLayout({
    showCategories = true,
   getDetailHref,
   displayMode = 'list',
+  gridColumns,
 }: SidebarLayoutProps) {
   const ringStyle = (style?: React.CSSProperties) =>
     ({ ...style, ['--tw-ring-color' as string]: tokens.filterRing } as React.CSSProperties);
@@ -202,7 +204,7 @@ export function SidebarLayout({
             <p className="text-sm text-slate-500">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
           </div>
         ) : displayMode === 'grid' ? (
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className={`grid ${gridColumns === 4 ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'} gap-3`}>
             {services.map((service) => {
               const showImage = Boolean(service.thumbnail) && !brokenThumbnails.has(String(service._id));
               return (

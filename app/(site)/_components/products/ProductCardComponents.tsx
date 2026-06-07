@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { PublicImage as Image } from '@/components/shared/PublicImage';
-import { Package, Heart, X } from 'lucide-react';
+import { Package, Heart, X, ShoppingCart } from 'lucide-react';
 import type { Id } from '@/convex/_generated/dataModel';
 import type { ProductsListColors } from '@/components/site/products/colors';
 import { getPublicPriceLabel } from '@/lib/products/public-price';
@@ -66,34 +66,46 @@ export function ProductCardActions({
   }
 
   const isOutOfStock = showStock && !product.hasVariants && product.stock <= 0;
+
+  if (isOutOfStock) {
+    return (
+      <div className="mt-2 sm:mt-3 w-full">
+        <div
+          className="w-full rounded-full py-1.5 sm:py-2 text-[10px] xs:text-xs lg:text-[11px] xl:text-xs font-medium tracking-wide flex items-center justify-center bg-slate-100/70 dark:bg-zinc-800/80 text-slate-400 dark:text-zinc-500 border border-slate-200/10 cursor-not-allowed select-none"
+        >
+          <span>Hết hàng</span>
+        </div>
+      </div>
+    );
+  }
+
   const isGrid2 = cartButtonsLayout === 'grid-2' && showAddToCartButton && showBuyNowButton;
   const actionHeightClass = showAddToCartButton && showBuyNowButton && !isGrid2 ? 'min-h-[76px]' : 'min-h-[36px]';
   const gridColsClass = isGrid2 ? 'grid-cols-2' : 'grid-cols-1';
 
   return (
-    <div className={`mt-2 sm:mt-3 grid ${gridColsClass} gap-1 sm:gap-2 ${actionHeightClass}`}>
+    <div className={`mt-2 sm:mt-3 grid ${gridColsClass} gap-1.5 sm:gap-2 ${actionHeightClass}`}>
       {showAddToCartButton && (
         <button
-          className="w-full rounded-lg py-1.5 sm:py-2 text-[10px] xs:text-xs lg:text-[11px] xl:text-xs font-semibold tracking-tight transition-all duration-300 flex items-center justify-center disabled:opacity-55 disabled:cursor-not-allowed hover:brightness-95 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md px-1 whitespace-nowrap"
+          className="w-full rounded-full py-1.5 sm:py-2 text-[10px] xs:text-xs lg:text-[11px] xl:text-xs font-semibold tracking-wide transition-all duration-300 flex items-center justify-center disabled:opacity-55 disabled:cursor-not-allowed hover:brightness-95 hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow px-1.5 whitespace-nowrap"
           style={{ backgroundColor: tokens.primaryActionBg, color: tokens.primaryActionText }}
           onClick={(event) => { event.preventDefault(); event.stopPropagation(); onAddToCart(product); }}
-          disabled={isOutOfStock}
         >
+          <ShoppingCart size={13} className="mr-1 sm:mr-1.5 shrink-0" />
           <span>Thêm giỏ</span>
         </button>
       )}
       {showBuyNowButton && (
         <button
-          className="w-full rounded-lg py-1.5 sm:py-2 text-[10px] xs:text-xs lg:text-[11px] xl:text-xs font-semibold tracking-tight border transition-all duration-300 disabled:opacity-55 disabled:cursor-not-allowed hover:bg-[var(--btn-hover-bg)] hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md px-1 whitespace-nowrap"
+          className="w-full rounded-full py-1.5 sm:py-2 text-[10px] xs:text-xs lg:text-[11px] xl:text-xs font-semibold tracking-wide border transition-all duration-300 flex items-center justify-center disabled:opacity-55 disabled:cursor-not-allowed hover:bg-[var(--btn-hover-bg)] hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow px-1.5 whitespace-nowrap"
           style={{
             borderColor: tokens.secondaryActionBorder,
             color: tokens.secondaryActionText,
             '--btn-hover-bg': tokens.secondaryActionHoverBg,
           } as React.CSSProperties}
           onClick={(event) => { event.preventDefault(); event.stopPropagation(); onBuyNow(product); }}
-          disabled={isOutOfStock}
         >
-          <span>{isOutOfStock ? 'Hết hàng' : 'Mua ngay'}</span>
+          <span>Mua ngay</span>
         </button>
       )}
     </div>
@@ -287,7 +299,8 @@ export function ProductGrid({
   productAttributesMap,
   onAttributeChange,
   selectedAttributes,
-  cartButtonsLayout
+  cartButtonsLayout,
+  gridColumns
 }: {
   products: ProductCardProps['product'][];
   categoryMap: Map<string, string>;
@@ -315,10 +328,13 @@ export function ProductGrid({
   onAttributeChange?: (groupSlug: string, termSlug: any, checked: boolean) => void;
   selectedAttributes?: Record<string, string[]>;
   cartButtonsLayout?: 'stack' | 'grid-2';
+  gridColumns?: number;
 }) {
   const productImagePlaceholder = useProductImagePlaceholder();
+  const gridCols = gridColumns ?? 3;
+  const gridClass = gridCols === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+    <div className={`grid ${gridClass} gap-4 md:gap-6`}>
       {products.map((product) => (
         (() => {
           const priceDisplay = getPublicPriceLabel({ saleMode, price: product.price, salePrice: product.salePrice, isRangeFromVariant: product.hasVariants });
@@ -540,36 +556,41 @@ export function ProductList({
                   </button>
                 )}
               </ProductImageWithOverlay>
-              <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <div className="flex mb-1.5">
-                  <span
-                    className="text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-full border transition-all duration-300"
-                    style={{
-                      backgroundColor: tokens.categoryBadgeBg,
-                      color: tokens.categoryBadgeText,
-                      borderColor: tokens.categoryBadgeBorder
-                    }}
-                  >
-                    {categoryMap.get(product.categoryId) ?? 'Sản phẩm'}
-                  </span>
+              <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                {/* Cột trái: Chi tiết sản phẩm */}
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <div className="flex mb-1.5">
+                    <span
+                      className="text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-full border transition-all duration-300"
+                      style={{
+                        backgroundColor: tokens.categoryBadgeBg,
+                        color: tokens.categoryBadgeText,
+                        borderColor: tokens.categoryBadgeBorder
+                      }}
+                    >
+                      {categoryMap.get(product.categoryId) ?? 'Sản phẩm'}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-lg transition-colors mb-2 group-hover:text-[var(--title-hover-color)]" style={{ color: tokens.bodyText, '--title-hover-color': tokens.primary } as React.CSSProperties}>{product.name}</h3>
+                  {product.description && <p className="text-sm line-clamp-2 mb-2" style={{ color: tokens.metaText }} dangerouslySetInnerHTML={{ __html: product.description.slice(0, 150) }} />}
+                  <ProductAttributesBadges
+                    productId={product._id}
+                    productAttributesMap={productAttributesMap}
+                    tokens={tokens}
+                    className="flex flex-col gap-1.5 w-full mb-1"
+                    onAttributeChange={onAttributeChange}
+                    selectedAttributes={selectedAttributes}
+                    productTypeId={product.productTypeId}
+                    limit={4}
+                    itemClassName="text-xs md:text-[13.2px]"
+                    iconClassName="h-[15px] w-[15px] md:h-[16.5px] md:w-[16.5px]"
+                  />
                 </div>
-                <h3 className="font-semibold text-lg transition-colors mb-2 group-hover:text-[var(--title-hover-color)]" style={{ color: tokens.bodyText, '--title-hover-color': tokens.primary } as React.CSSProperties}>{product.name}</h3>
-                {product.description && <p className="text-sm line-clamp-2 mb-2" style={{ color: tokens.metaText }} dangerouslySetInnerHTML={{ __html: product.description.slice(0, 150) }} />}
-                <ProductAttributesBadges
-                  productId={product._id}
-                  productAttributesMap={productAttributesMap}
-                  tokens={tokens}
-                  className="flex flex-col gap-1.5 w-full mb-3"
-                  onAttributeChange={onAttributeChange}
-                  selectedAttributes={selectedAttributes}
-                  productTypeId={product.productTypeId}
-                  limit={4}
-                  itemClassName="text-xs md:text-[13.2px]"
-                  iconClassName="h-[15px] w-[15px] md:h-[16.5px] md:w-[16.5px]"
-                />
-                <div className="flex items-center gap-4">
+
+                {/* Cột phải: Giá cả và CTA buttons */}
+                <div className="flex flex-col items-start md:items-end justify-center shrink-0 min-w-[220px] md:text-right gap-2 border-t md:border-t-0 border-slate-100 dark:border-zinc-805/40 pt-3 md:pt-0">
                   {showPrice && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center md:justify-end gap-2">
                       <span className="text-xl font-bold" style={{ color: tokens.priceColor }}>{priceDisplay.label}</span>
                       {showSalePrice && priceDisplay.comparePrice && (
                         <span className="text-sm line-through" style={{ color: tokens.priceOriginalText }}>
@@ -578,24 +599,24 @@ export function ProductList({
                       )}
                     </div>
                   )}
-                  {showStock && !product.hasVariants && product.stock <= 5 && product.stock > 0 && <span className="text-xs" style={{ color: tokens.stockLowText }}>Chỉ còn {product.stock}</span>}
+                  {showStock && !product.hasVariants && product.stock <= 5 && product.stock > 0 && <span className="text-xs" style={{ color: tokens.stockLowText }}>Chỉ còn {product.stock} SP</span>}
                   {showStock && !product.hasVariants && product.stock === 0 && <span className="text-xs" style={{ color: tokens.stockOutText }}>Hết hàng</span>}
+                  {(showAddToCartButton || showBuyNowButton) && (
+                    <div className="w-full max-w-[220px] mt-2 md:mt-1">
+                      <ProductCardActions
+                        product={product}
+                        tokens={tokens}
+                        showStock={showStock}
+                        showAddToCartButton={showAddToCartButton}
+                        showBuyNowButton={showBuyNowButton}
+                        buyNowLabel={buyNowLabel}
+                        onAddToCart={onAddToCart}
+                        onBuyNow={onBuyNow}
+                        cartButtonsLayout={_cartButtonsLayout}
+                      />
+                    </div>
+                  )}
                 </div>
-                {(showAddToCartButton || showBuyNowButton) && (
-                  <div className="mt-4 max-w-xs">
-                    <ProductCardActions
-                      product={product}
-                      tokens={tokens}
-                      showStock={showStock}
-                      showAddToCartButton={showAddToCartButton}
-                      showBuyNowButton={showBuyNowButton}
-                      buyNowLabel={buyNowLabel}
-                      onAddToCart={onAddToCart}
-                      onBuyNow={onBuyNow}
-                      cartButtonsLayout={_cartButtonsLayout}
-                    />
-                  </div>
-                )}
               </div>
             </Link>
           );

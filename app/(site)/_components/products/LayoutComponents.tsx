@@ -128,6 +128,7 @@ interface LayoutProps {
   showSearch?: boolean;
   showCategories?: boolean;
   priceFilterMode?: 'disabled' | 'custom' | 'smart_dropdown' | 'slider';
+  gridColumns?: number;
 }
 
 function roundDownToNiceNumber(num: number) {
@@ -377,7 +378,8 @@ export function CatalogLayout({
   cartButtonsLayout,
   showSearch = true,
   showCategories = true,
-  priceFilterMode = 'custom'
+  priceFilterMode = 'custom',
+  gridColumns
 }: LayoutProps) {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [categoryQuery, setCategoryQuery] = useState('');
@@ -840,6 +842,7 @@ export function CatalogLayout({
                 onAttributeChange={onAttributeChange}
                 selectedAttributes={selectedAttributes}
                 cartButtonsLayout={cartButtonsLayout}
+                gridColumns={gridColumns}
               />
             )}
 

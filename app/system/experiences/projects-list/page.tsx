@@ -33,6 +33,7 @@ type FilterPosition = 'sidebar' | 'top' | 'none';
 
 type ProjectsListExperienceConfig = {
   layoutStyle: ListLayoutStyle;
+  gridColumns: number;
   filterPosition: FilterPosition;
   paginationType: PaginationType;
   showSearch: boolean;
@@ -55,6 +56,7 @@ const DEFAULT_CONFIG: ProjectsListExperienceConfig = {
   filterPosition: 'top',
   hideEmptyCategories: true,
   layoutStyle: 'grid',
+  gridColumns: 3,
   paginationType: 'pagination',
   postsPerPage: 12,
   showCategories: true,
@@ -91,6 +93,7 @@ export default function ProjectsListExperiencePage() {
       ...DEFAULT_CONFIG,
       ...raw,
       layoutStyle: normalizeLayout(rawLayout),
+      gridColumns: raw?.gridColumns ?? 3,
       paginationType: raw?.paginationType === 'infiniteScroll' ? 'infiniteScroll' : 'pagination',
     };
   }, [experienceSetting?.value]);
@@ -170,6 +173,15 @@ export default function ProjectsListExperiencePage() {
             <ToggleRow label="Tên khách hàng" checked={config.showClientName} onChange={(v) => updateConfig('showClientName', v)} accentColor={brandColor} />
             <ToggleRow label="Icon video" checked={config.showIntroVideo} onChange={(v) => updateConfig('showIntroVideo', v)} accentColor={brandColor} />
             <ToggleRow label="Ẩn danh mục rỗng" checked={config.hideEmptyCategories} onChange={(v) => updateConfig('hideEmptyCategories', v)} accentColor={brandColor} />
+            <SelectRow
+              label="Số cột hiển thị (Desktop)"
+              value={String(config.gridColumns ?? 3)}
+              options={[
+                { value: '3', label: '3 cột' },
+                { value: '4', label: '4 cột' },
+              ]}
+              onChange={(v) => updateConfig('gridColumns', Number(v))}
+            />
           </ControlCard>
           <ControlCard title="Phân trang">
             <SelectRow
@@ -219,6 +231,7 @@ export default function ProjectsListExperiencePage() {
             <BrowserFrame url="yoursite.com/projects">
               <ProjectsListPreview
                 layoutStyle={config.layoutStyle}
+                gridColumns={config.gridColumns}
                 filterPosition={config.filterPosition}
                 showSearch={config.showSearch}
                 showCategories={config.showCategories}

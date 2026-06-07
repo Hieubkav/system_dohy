@@ -10,6 +10,7 @@ type PaginationType = 'pagination' | 'infiniteScroll';
 
 type ServicesListPreviewProps = {
   layoutStyle: ListLayoutStyle;
+  gridColumns?: number;
   filterPosition?: FilterPosition;
   paginationType?: PaginationType;
   showSearch?: boolean;
@@ -59,7 +60,14 @@ function PaginationPreviewServices({ paginationType, tokens }: { paginationType:
 }
 
 // FullWidth Layout (Grid view only)
-function FullWidthPreview({ showSearch, showCategories, paginationType = 'pagination', tokens }: ServicesListPreviewProps & { tokens: ServicesListColors }) {
+function FullWidthPreview({ showSearch, showCategories, paginationType = 'pagination', tokens, gridColumns, device }: ServicesListPreviewProps & { tokens: ServicesListColors }) {
+  const gridCols = gridColumns ?? 3;
+  const gridClass = device === 'mobile'
+    ? (gridCols === 4 ? 'grid-cols-2' : 'grid-cols-1')
+    : device === 'tablet'
+      ? (gridCols === 4 ? 'grid-cols-2' : 'grid-cols-3')
+      : (gridCols === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3');
+
   return (
     <div className="py-6 md:py-10 px-4">
       <div className="max-w-7xl mx-auto">
@@ -110,7 +118,7 @@ function FullWidthPreview({ showSearch, showCategories, paginationType = 'pagina
         )}
 
         {/* Services Grid */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className={`grid ${gridClass} gap-3`}>
           {MOCK_SERVICES.map(service => (
             <article key={service._id} className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200 border border-slate-100 h-full flex flex-col">
               <div className="aspect-[16/10] bg-slate-100 overflow-hidden relative">
@@ -282,10 +290,16 @@ function SidebarPreview({ showSearch, showCategories, paginationType = 'paginati
 }
 
 // Magazine Layout
-function MagazinePreview({ showCategories, paginationType = 'pagination', tokens }: ServicesListPreviewProps & { tokens: ServicesListColors }) {
+function MagazinePreview({ showCategories, paginationType = 'pagination', tokens, gridColumns, device }: ServicesListPreviewProps & { tokens: ServicesListColors }) {
   const mainFeatured = MOCK_SERVICES[0];
   const secondaryFeatured = MOCK_SERVICES.slice(1, 3);
   const trendingServices = MOCK_SERVICES.slice(0, 4);
+  const gridCols = gridColumns ?? 3;
+  const gridClass = device === 'mobile'
+    ? (gridCols === 4 ? 'grid-cols-2' : 'grid-cols-1')
+    : device === 'tablet'
+      ? (gridCols === 4 ? 'grid-cols-2' : 'grid-cols-3')
+      : (gridCols === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3');
 
   return (
     <div className="py-6 md:py-10 px-4">
@@ -416,7 +430,7 @@ function MagazinePreview({ showCategories, paginationType = 'pagination', tokens
               <h2 className="text-base font-bold" style={{ color: tokens.sectionHeadingColor }}>Dịch vụ mới nhất</h2>
               <span className="text-sm text-slate-500">{MOCK_SERVICES.length} dịch vụ</span>
             </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className={`grid ${gridClass} gap-4`}>
               {MOCK_SERVICES.map(service => (
                 <article key={service._id} className="h-full flex flex-col">
                   <div className="aspect-[16/10] rounded-lg overflow-hidden bg-slate-100 mb-3 relative">
@@ -460,6 +474,7 @@ function MagazinePreview({ showCategories, paginationType = 'pagination', tokens
 // Main Component
 export function ServicesListPreview({
   layoutStyle,
+  gridColumns,
   filterPosition = 'sidebar',
   paginationType = 'pagination',
   showSearch = true,
@@ -473,6 +488,7 @@ export function ServicesListPreview({
   const tokens = getServicesListColors(primaryColor, secondaryColor, colorMode);
   const props = {
     layoutStyle,
+    gridColumns,
     filterPosition,
     paginationType,
     showSearch,

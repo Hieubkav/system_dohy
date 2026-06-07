@@ -1142,6 +1142,7 @@ function ProductsContent(props: ProductsPageProps) {
           showCategories={listConfig.showCategories}
           cartButtonsLayout={listConfig.cartButtonsLayout}
           priceFilterMode={listConfig.priceFilterMode}
+          gridColumns={listConfig.gridColumns}
         />
         {quickAddModal}
       </>
@@ -1205,6 +1206,7 @@ function ProductsContent(props: ProductsPageProps) {
           showCategories={listConfig.showCategories}
           cartButtonsLayout={listConfig.cartButtonsLayout}
           priceFilterMode={listConfig.priceFilterMode}
+          gridColumns={listConfig.gridColumns}
         />
         {quickAddModal}
       </>

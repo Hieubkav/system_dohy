@@ -42,6 +42,7 @@ interface SidebarLayoutProps {
   showCategories?: boolean;
   getDetailHref: (post: Post) => string;
   displayMode?: 'grid' | 'list';
+  gridColumns?: number;
 }
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -68,6 +69,7 @@ export function SidebarLayout({
   showCategories = true,
   getDetailHref,
   displayMode = 'list',
+  gridColumns,
 }: SidebarLayoutProps) {
   const showExcerpt = enabledFields.has('excerpt');
   const [brokenThumbnails, setBrokenThumbnails] = React.useState<Set<string>>(new Set());
@@ -81,6 +83,9 @@ export function SidebarLayout({
       return next;
     });
   }, []);
+
+  const gridCols = gridColumns ?? 3;
+  const gridClass = gridCols === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3';
 
   return (
     <div className="flex flex-col lg:flex-row gap-5">
@@ -195,7 +200,7 @@ export function SidebarLayout({
             <p className="text-sm" style={{ color: tokens.neutralTextLight }}>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
           </div>
         ) : displayMode === 'grid' ? (
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className={`grid ${gridClass} gap-3`}>
             {posts.map((post) => {
               const showImage = Boolean(post.thumbnail) && !brokenThumbnails.has(String(post._id));
               return (

@@ -5,6 +5,7 @@ type ColorMode = 'single' | 'dual';
 
 type ProjectsListPreviewProps = {
   layoutStyle: 'grid' | 'sidebar' | 'list';
+  gridColumns?: number;
   filterPosition?: 'sidebar' | 'top' | 'none';
   showSearch?: boolean;
   showCategories?: boolean;
@@ -104,6 +105,7 @@ function ProjectCard({
 
 export function ProjectsListPreview({
   layoutStyle,
+  gridColumns,
   filterPosition: _filterPosition = 'top',
   showSearch = true,
   showCategories = true,
@@ -116,7 +118,12 @@ export function ProjectsListPreview({
 }: ProjectsListPreviewProps) {
   const accent = getAccent(brandColor, secondaryColor, colorMode);
   const isMobile = device === 'mobile';
-  const _columns = isMobile || layoutStyle === 'list' ? 'grid-cols-1' : layoutStyle === 'sidebar' ? 'grid-cols-2' : 'grid-cols-3';
+  const gridCols = gridColumns ?? 3;
+  const gridClass = device === 'mobile'
+    ? (gridCols === 4 ? 'grid-cols-2' : 'grid-cols-1')
+    : device === 'tablet'
+      ? (gridCols === 4 ? 'grid-cols-2' : 'grid-cols-3')
+      : (gridCols === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3');
   const showSidebar = (layoutStyle === 'sidebar' || layoutStyle === 'list') && !isMobile;
 
   const pageHeader = (
@@ -233,7 +240,7 @@ export function ProjectsListPreview({
           // Grid Layout
           <div className="space-y-6">
             {topFilterBar}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className={`grid gap-6 ${gridClass}`}>
               {sampleProjects.map((project) => (
                 <ProjectCard key={project.title} project={project} accent={accent} showClientName={showClientName} showIntroVideo={showIntroVideo} isList={false} />
               ))}
@@ -246,7 +253,7 @@ export function ProjectsListPreview({
             {sidebarFilter}
             <div className="min-w-0 flex-1 space-y-6">
               {layoutStyle === 'sidebar' ? (
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className={`grid gap-6 ${gridClass}`}>
                   {sampleProjects.map((project) => (
                     <ProjectCard key={project.title} project={project} accent={accent} showClientName={showClientName} showIntroVideo={showIntroVideo} isList={false} />
                   ))}
