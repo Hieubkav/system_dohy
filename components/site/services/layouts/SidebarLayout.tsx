@@ -205,7 +205,7 @@ export function SidebarLayout({
             <p className="text-sm text-slate-500">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
           </div>
         ) : displayMode === 'grid' ? (
-          <div className={`grid ${gridColumns === 4 ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'} gap-3`}>
+          <div className={`grid ${gridColumns === 4 ? 'grid-cols-2 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3 lg:grid-cols-3'} gap-3`}>
             {services.map((service) => {
               const showImage = Boolean(service.thumbnail) && !brokenThumbnails.has(String(service._id));
               return (

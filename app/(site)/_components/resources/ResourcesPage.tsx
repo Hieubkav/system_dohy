@@ -889,7 +889,7 @@ function ResourcesContent() {
                 </div>
               ) : (
                 /* Grid / Sidebar layout: vertical cards */
-                <div className={`grid gap-5 ${config.gridColumns >= 4 ? 'lg:grid-cols-4' : config.gridColumns === 2 ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} sm:grid-cols-2`}>
+                <div className={`grid gap-5 ${config.gridColumns === 4 ? 'grid-cols-2 md:grid-cols-2 lg:grid-cols-4' : config.gridColumns === 2 ? 'grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 md:grid-cols-3 lg:grid-cols-3'}`}>
                   {isLoading ? (
                     Array.from({ length: postsPerPage }).map((_, index) => (
                       <div key={index} className={`h-72 animate-pulse border border-slate-200 dark:border-zinc-800 bg-white dark:bg-[#161617] ${getRadiusClass(config.cornerRadius)}`} />

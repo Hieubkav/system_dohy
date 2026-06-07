@@ -589,7 +589,7 @@ function ProjectsContent() {
       count={projects.length}
       totalCount={totalCount}
       unit="Dự án"
-      titleColor={isDark ? '#f5f5f7' : '#0f172a'}
+      titleColor={brandColor}
       subtitleColor={isDark ? '#86868b' : '#64748b'}
       description={activeCategory?.description}
     />
@@ -597,8 +597,8 @@ function ProjectsContent() {
 
   const renderContent = () => {
     const gridCols = listConfig.gridColumns ?? 3;
-    const gridClass = gridCols === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
-    const sidebarGridClass = gridCols === 4 ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 md:grid-cols-2';
+    const gridClass = gridCols === 4 ? 'grid-cols-2 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3 lg:grid-cols-3';
+    const sidebarGridClass = gridCols === 4 ? 'grid-cols-2 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3 lg:grid-cols-3';
 
     if (layoutStyle === 'grid') {
       return (

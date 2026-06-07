@@ -87,22 +87,25 @@ export function ProductCardActions({
     <div className={`mt-2 sm:mt-3 grid ${gridColsClass} gap-1.5 sm:gap-2 ${actionHeightClass}`}>
       {showAddToCartButton && (
         <button
-          className="w-full rounded-full py-1.5 sm:py-2 text-[10px] xs:text-xs lg:text-[11px] xl:text-xs font-semibold tracking-wide transition-all duration-300 flex items-center justify-center disabled:opacity-55 disabled:cursor-not-allowed hover:brightness-95 hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow px-1.5 whitespace-nowrap"
-          style={{ backgroundColor: tokens.primaryActionBg, color: tokens.primaryActionText }}
+          className="w-full rounded-full py-1.5 sm:py-2 text-[10px] xs:text-xs lg:text-[11px] xl:text-xs font-semibold tracking-wide border transition-all duration-300 flex items-center justify-center disabled:opacity-55 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow px-1.5 whitespace-nowrap"
+          style={{
+            backgroundColor: 'rgba(250, 204, 21, 0.08)',
+            borderColor: `${tokens.primary}25`,
+            color: tokens.primary
+          }}
           onClick={(event) => { event.preventDefault(); event.stopPropagation(); onAddToCart(product); }}
         >
-          <ShoppingCart size={13} className="mr-1 sm:mr-1.5 shrink-0" />
+          <ShoppingCart size={13} className="mr-1 sm:mr-1.5 shrink-0" style={{ color: tokens.primary }} />
           <span>Thêm giỏ</span>
         </button>
       )}
       {showBuyNowButton && (
         <button
-          className="w-full rounded-full py-1.5 sm:py-2 text-[10px] xs:text-xs lg:text-[11px] xl:text-xs font-semibold tracking-wide border transition-all duration-300 flex items-center justify-center disabled:opacity-55 disabled:cursor-not-allowed hover:bg-[var(--btn-hover-bg)] hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow px-1.5 whitespace-nowrap"
+          className="w-full rounded-full py-1.5 sm:py-2 text-[10px] xs:text-xs lg:text-[11px] xl:text-xs font-semibold tracking-wide transition-all duration-300 flex items-center justify-center disabled:opacity-55 disabled:cursor-not-allowed hover:brightness-95 hover:scale-[1.01] active:scale-[0.99] shadow-sm hover:shadow px-1.5 whitespace-nowrap"
           style={{
-            borderColor: tokens.secondaryActionBorder,
-            color: tokens.secondaryActionText,
-            '--btn-hover-bg': tokens.secondaryActionHoverBg,
-          } as React.CSSProperties}
+            backgroundColor: tokens.primary,
+            color: tokens.primaryActionText
+          }}
           onClick={(event) => { event.preventDefault(); event.stopPropagation(); onBuyNow(product); }}
         >
           <span>Mua ngay</span>

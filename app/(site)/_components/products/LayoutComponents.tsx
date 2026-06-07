@@ -438,8 +438,8 @@ export function CatalogLayout({
           {/* Sidebar Filters - Desktop */}
           <aside className="hidden lg:block w-64 shrink-0 space-y-4">
             {showSearch && (
-              <div className={`${radiusClass} border p-3`} style={{ backgroundColor: tokens.filterBarBackground, borderColor: tokens.filterBarBorder }}>
-                <h3 className="font-semibold text-sm mb-2 flex items-center gap-2" style={{ color: tokens.bodyText }}>
+              <div className="bg-transparent border-b border-slate-200/60 dark:border-zinc-800/40 pb-5 mb-5 rounded-none">
+                <h3 className="font-bold text-[11px] tracking-widest text-slate-500 dark:text-zinc-500 uppercase mb-3 flex items-center gap-2">
                   <Search size={14} style={{ color: tokens.inputIcon }} />
                   Tìm kiếm
                 </h3>
@@ -449,7 +449,7 @@ export function CatalogLayout({
                     placeholder="Nhập từ khóa..."
                     value={searchQuery}
                     onChange={(e) => onSearchChange(e.target.value)}
-                    className="w-full pl-3 pr-8 py-2 border rounded-lg text-sm outline-none"
+                    className="w-full pl-3 pr-8 py-2 border rounded-xl text-sm outline-none transition focus:border-slate-450 dark:border-zinc-700"
                     style={{ borderColor: tokens.inputBorder, backgroundColor: tokens.inputBackground, color: tokens.inputText }}
                   />
                   {searchQuery && (
@@ -462,15 +462,15 @@ export function CatalogLayout({
             )}
 
             {enableProductTypes && productTypes && productTypes.length > 0 && (
-              <div className={`${radiusClass} border p-3`} style={{ backgroundColor: tokens.filterBarBackground, borderColor: tokens.filterBarBorder }}>
-                <h3 className="font-bold text-sm mb-2" style={{ color: tokens.bodyText }}>Nhóm sản phẩm</h3>
+              <div className="bg-transparent border-b border-slate-200/60 dark:border-zinc-800/40 pb-5 mb-5 rounded-none">
+                <h3 className="font-bold text-[11px] tracking-widest text-slate-500 dark:text-zinc-500 uppercase mb-3">Nhóm sản phẩm</h3>
                 <div className="space-y-1">
                   <button
                     onClick={() => onProductTypeChange?.(null)}
-                    className={`w-full py-1.5 px-2.5 rounded text-left text-sm transition-colors border ${!productType ? 'font-semibold' : ''}`}
+                    className={`w-full py-2 px-3 rounded-lg text-left text-sm transition-colors ${!productType ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
                     style={!productType
-                      ? { backgroundColor: tokens.filterChipActiveBg, color: tokens.filterChipActiveText, borderColor: tokens.filterChipActiveBorder }
-                      : { backgroundColor: tokens.filterChipBg, color: tokens.filterChipText, borderColor: tokens.filterChipBorder }
+                      ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                      : undefined
                     }
                   >
                     Tất cả nhóm
@@ -479,10 +479,10 @@ export function CatalogLayout({
                     <button
                       key={t._id}
                       onClick={() => onProductTypeChange?.(t.slug)}
-                      className={`w-full py-1.5 px-2.5 rounded text-left text-sm transition-colors border ${productType?.slug === t.slug ? 'font-semibold' : ''}`}
+                      className={`w-full py-2 px-3 rounded-lg text-left text-sm transition-colors ${productType?.slug === t.slug ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
                       style={productType?.slug === t.slug
-                        ? { backgroundColor: tokens.filterChipActiveBg, color: tokens.filterChipActiveText, borderColor: tokens.filterChipActiveBorder }
-                        : { backgroundColor: tokens.filterChipBg, color: tokens.filterChipText, borderColor: tokens.filterChipBorder }
+                        ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                        : undefined
                       }
                     >
                       {t.name}
@@ -493,8 +493,8 @@ export function CatalogLayout({
             )}
 
             {showCategories && (
-              <div className={`${radiusClass} border p-3`} style={{ backgroundColor: tokens.filterBarBackground, borderColor: tokens.filterBarBorder }}>
-                <h3 className="font-semibold text-sm mb-2" style={{ color: tokens.bodyText }}>
+              <div className="bg-transparent border-b border-slate-200/60 dark:border-zinc-800/40 pb-5 mb-5 rounded-none">
+                <h3 className="font-bold text-[11px] tracking-widest text-slate-500 dark:text-zinc-500 uppercase mb-3">
                   Danh mục sản phẩm
                 </h3>
                 {categories.length > 8 && (
@@ -533,10 +533,10 @@ export function CatalogLayout({
                   {(!categoryQuery || 'tất cả danh mục'.includes(categoryQuery.toLowerCase())) && (
                     <button
                       onClick={() => onCategoryChange(null)}
-                      className={`w-full py-2 px-3 rounded-lg text-left text-sm transition-colors border border-transparent ${!selectedCategory ? 'font-semibold' : ''}`}
+                      className={`w-full py-2 px-3 rounded-lg text-left text-sm transition-colors ${!selectedCategory ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
                       style={!selectedCategory
-                        ? { backgroundColor: tokens.filterChipActiveBg, color: tokens.filterChipActiveText }
-                        : { backgroundColor: tokens.filterChipBg, color: tokens.filterChipText }
+                        ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                        : undefined
                       }
                     >
                       Tất cả danh mục
@@ -546,10 +546,10 @@ export function CatalogLayout({
                     <button
                       key={cat._id}
                       onClick={() => onCategoryChange(cat._id)}
-                      className={`w-full py-2 px-3 rounded-lg text-left text-sm transition-colors border border-transparent ${selectedCategory === cat._id ? 'font-semibold' : ''}`}
+                      className={`w-full py-2 px-3 rounded-lg text-left text-sm transition-colors ${selectedCategory === cat._id ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
                       style={selectedCategory === cat._id
-                        ? { backgroundColor: tokens.filterChipActiveBg, color: tokens.filterChipActiveText }
-                        : { backgroundColor: tokens.filterChipBg, color: tokens.filterChipText }
+                        ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                        : undefined
                       }
                     >
                       {cat.name}
@@ -565,15 +565,15 @@ export function CatalogLayout({
             )}
 
             {enableProductTypes && productType?.priceRanges && productType.priceRanges.length > 0 && (
-              <div className={`${radiusClass} border p-3`} style={{ backgroundColor: tokens.filterBarBackground, borderColor: tokens.filterBarBorder }}>
-                <h3 className="font-bold text-sm mb-2" style={{ color: tokens.bodyText }}>Khoảng giá</h3>
+              <div className="bg-transparent border-b border-slate-200/60 dark:border-zinc-800/40 pb-5 mb-5 rounded-none">
+                <h3 className="font-bold text-[11px] tracking-widest text-slate-500 dark:text-zinc-500 uppercase mb-3">Khoảng giá</h3>
                 <div className="space-y-1">
                   <button
                     onClick={() => onPriceRangeChange?.(null)}
-                    className={`w-full py-1.5 px-2.5 rounded text-left text-sm transition-colors border ${!selectedPriceRange ? 'font-semibold' : ''}`}
+                    className={`w-full py-2 px-3 rounded-lg text-left text-sm transition-colors ${!selectedPriceRange ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
                     style={!selectedPriceRange
-                      ? { backgroundColor: tokens.filterChipActiveBg, color: tokens.filterChipActiveText, borderColor: tokens.filterChipActiveBorder }
-                      : { backgroundColor: tokens.filterChipBg, color: tokens.filterChipText, borderColor: tokens.filterChipBorder }
+                      ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                      : undefined
                     }
                   >
                     Tất cả khoảng giá
@@ -582,10 +582,10 @@ export function CatalogLayout({
                     <button
                       key={range.slug}
                       onClick={() => onPriceRangeChange?.(range)}
-                      className={`w-full py-1.5 px-2.5 rounded text-left text-sm transition-colors border ${selectedPriceRange?.slug === range.slug ? 'font-semibold' : ''}`}
+                      className={`w-full py-2 px-3 rounded-lg text-left text-sm transition-colors ${selectedPriceRange?.slug === range.slug ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-zinc-200'}`}
                       style={selectedPriceRange?.slug === range.slug
-                        ? { backgroundColor: tokens.filterChipActiveBg, color: tokens.filterChipActiveText, borderColor: tokens.filterChipActiveBorder }
-                        : { backgroundColor: tokens.filterChipBg, color: tokens.filterChipText, borderColor: tokens.filterChipBorder }
+                        ? { backgroundColor: `${tokens.primary}12`, color: tokens.primary }
+                        : undefined
                       }
                     >
                       {range.label}
@@ -597,8 +597,8 @@ export function CatalogLayout({
 
             {/* Khung Khoảng giá tự chọn hoặc nâng cao */}
             {priceFilterMode !== 'disabled' && (
-              <div className={`${radiusClass} border p-3`} style={{ backgroundColor: tokens.filterBarBackground, borderColor: tokens.filterBarBorder }}>
-                <h3 className="font-semibold text-sm mb-2 text-slate-800 dark:text-slate-200">Khoảng giá (đ)</h3>
+              <div className="bg-transparent pb-5 mb-5 rounded-none">
+                <h3 className="font-bold text-[11px] tracking-widest text-slate-500 dark:text-zinc-500 uppercase mb-3">Khoảng giá (đ)</h3>
                 
                 {priceFilterMode === 'custom' && (
                   <div className="flex gap-1.5 items-center">
@@ -634,10 +634,10 @@ export function CatalogLayout({
                     <button
                       type="button"
                       onClick={handleApplyPrice}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center font-bold transition-all hover:opacity-90 active:scale-95 text-sm shrink-0"
+                      className="w-8 h-8 rounded-xl flex items-center justify-center font-semibold transition-all hover:bg-slate-200 dark:hover:bg-zinc-800 active:scale-95 text-sm shrink-0 border border-slate-200 dark:border-zinc-800"
                       style={{
-                        backgroundColor: tokens.filterChipActiveBg,
-                        color: tokens.filterChipActiveText,
+                        backgroundColor: tokens.filterChipBg,
+                        color: tokens.primary,
                       }}
                       title="Áp dụng lọc giá"
                     >
