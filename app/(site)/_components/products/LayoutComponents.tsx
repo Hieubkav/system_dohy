@@ -18,6 +18,7 @@ import {
 } from './ProductCardComponents';
 import { AttributeFilterGroupWidget, MobileProductsFilters } from './FilterComponents';
 import { RangeSlider } from '@/components/shared/RangeSlider';
+import { PageHeaderWithCount } from '@/components/shared/PageHeaderWithCount';
 
 export type ProductSortOption = 'newest' | 'oldest' | 'popular' | 'price_asc' | 'price_desc' | 'name';
 export type ProductsSaleMode = 'cart' | 'contact' | 'affiliate';
@@ -699,21 +700,17 @@ export function CatalogLayout({
           {/* Main Area */}
           <div className="flex-1 min-w-0">
             {/* Header Title */}
-            <div className="mb-6">
-              <h1 className="text-2xl md:text-3xl font-bold" style={{ color: tokens.headingColor }}>
-                {activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
-              </h1>
-              {products.length > 0 && (
-                <p className="text-xs font-semibold tracking-widest uppercase opacity-65 mt-1.5" style={{ color: tokens.metaText }}>
-                  {products.length} {totalCount !== undefined && totalCount > products.length ? `/ ${totalCount}` : ''} sản phẩm
-                </p>
-              )}
-              {showCategorySubtitle && activeCategoryDoc?.description && (
-                <p className="mt-2 text-sm md:text-base opacity-80" style={{ color: tokens.bodyText }}>
-                  {activeCategoryDoc.description}
-                </p>
-              )}
-            </div>
+            <PageHeaderWithCount
+              title={activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
+              count={products.length}
+              totalCount={totalCount}
+              unit="sản phẩm"
+              titleColor={tokens.headingColor}
+              subtitleColor={tokens.metaText}
+              description={showCategorySubtitle && activeCategoryDoc?.description ? activeCategoryDoc.description : undefined}
+              descriptionColor={tokens.bodyText}
+              centered={false}
+            />
 
             {/* Toolbar Filters Mobile Controls - Chỉ hiện dưới lg */}
             <div
@@ -1186,21 +1183,17 @@ export function ListLayout({
     <div className="py-8 md:py-12 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header Title */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold" style={{ color: tokens.headingColor }}>
-            {activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
-          </h1>
-          {products.length > 0 && (
-            <p className="text-xs font-semibold tracking-widest uppercase opacity-65 mt-2" style={{ color: tokens.metaText }}>
-              {products.length} {totalCount !== undefined && totalCount > products.length ? `/ ${totalCount}` : ''} sản phẩm
-            </p>
-          )}
-          {showCategorySubtitle && activeCategoryDoc?.description && (
-            <p className="mt-3 text-base max-w-2xl mx-auto opacity-80" style={{ color: tokens.bodyText }}>
-              {activeCategoryDoc.description}
-            </p>
-          )}
-        </div>
+        <PageHeaderWithCount
+          title={activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
+          count={products.length}
+          totalCount={totalCount}
+          unit="sản phẩm"
+          titleColor={tokens.headingColor}
+          subtitleColor={tokens.metaText}
+          description={showCategorySubtitle && activeCategoryDoc?.description ? activeCategoryDoc.description : undefined}
+          descriptionColor={tokens.bodyText}
+          centered={true}
+        />
 
         {/* Mobile Filters Controls */}
         <MobileProductsFilters

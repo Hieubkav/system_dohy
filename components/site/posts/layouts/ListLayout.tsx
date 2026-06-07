@@ -52,7 +52,7 @@ export function ListLayout({ posts, brandColor: _brandColor, tokens, categoryMap
   }
 
   return (
-    <div className="space-y-3.5 max-w-4xl mx-auto">
+    <div className="space-y-3.5 w-full">
       {posts.map((post) => {
         const showImage = Boolean(post.thumbnail) && !brokenThumbnails.has(String(post._id));
 

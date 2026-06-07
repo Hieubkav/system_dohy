@@ -18,6 +18,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { getProductImageAspectRatioCssValue } from '@/lib/products/image-aspect-ratio';
 import { RichContent } from '@/components/common/RichContent';
 import { toRichTextContent } from '@/lib/products/product-supplemental-content';
+import { PageHeaderWithCount } from '@/components/shared/PageHeaderWithCount';
 
 // Import các modules con được phân tách để tối ưu hóa kích thước file
 import { 
@@ -1214,21 +1215,17 @@ function ProductsContent(props: ProductsPageProps) {
     <>
       <div className="py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold" style={{ color: tokens.headingColor }}>
-              {activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
-            </h1>
-            {products.length > 0 && (
-              <p className="text-xs font-semibold tracking-widest uppercase opacity-65 mt-2" style={{ color: tokens.metaText }}>
-                {products.length} {totalCount !== undefined && totalCount > products.length ? `/ ${totalCount}` : ''} sản phẩm
-              </p>
-            )}
-            {showCategorySubtitle && activeCategoryDoc?.description && (
-              <p className="mt-3 text-base max-w-2xl mx-auto opacity-80" style={{ color: tokens.bodyText }}>
-                {activeCategoryDoc.description}
-              </p>
-            )}
-          </div>
+          <PageHeaderWithCount
+            title={activeCategoryDoc?.name ?? (enableProductTypes ? productType?.name : null) ?? 'Sản phẩm'}
+            count={products.length}
+            totalCount={totalCount}
+            unit="sản phẩm"
+            titleColor={tokens.headingColor}
+            subtitleColor={tokens.metaText}
+            description={showCategorySubtitle && activeCategoryDoc?.description ? activeCategoryDoc.description : undefined}
+            descriptionColor={tokens.bodyText}
+            centered={true}
+          />
 
           <MobileProductsFilters
             categories={categoryOptions}

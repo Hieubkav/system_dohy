@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '@/convex/_generated/api';
 import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { getPostsListColors } from '@/components/site/posts/colors';
+import { PageHeaderWithCount } from '@/components/shared/PageHeaderWithCount';
 import { usePostsListConfig } from '@/lib/experiences';
 import type { Id } from '@/convex/_generated/dataModel';
 import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
@@ -400,11 +401,15 @@ function PostsContent() {
     <div className="py-6 md:py-10 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-3">
-          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: tokens.headingColor }}>
-            {activeCategory && categoryMap ? categoryMap.get(activeCategory as any) ?? 'Tin tức & Bài viết' : 'Tin tức & Bài viết'}
-          </h1>
-        </div>
+        <PageHeaderWithCount
+          title={activeCategory && categoryMap ? categoryMap.get(activeCategory as any) ?? 'Tin tức & Bài viết' : 'Tin tức & Bài viết'}
+          count={posts.length}
+          totalCount={totalCount}
+          unit="bài viết"
+          titleColor={tokens.headingColor}
+          subtitleColor={tokens.metaText}
+          centered={true}
+        />
 
         {/* Layout based rendering */}
         {layout === 'grid' && (
