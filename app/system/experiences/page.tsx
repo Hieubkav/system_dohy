@@ -817,105 +817,59 @@ export default function ExperiencesPage() {
                         </div>
 
                         {/* Bo góc (Corner Radius) */}
-                        <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50 shadow-inner mr-1" title="Độ bo góc viền">
-                          {[
-                            { id: 'none', label: 'Bỏ bo' },
-                            { id: 'sm', label: 'Bo ít' },
-                            { id: 'lg', label: 'Bo nhiều' }
-                          ].map((opt) => {
-                            const isSelected = (localCornerRadius[item.id] || 'lg') === opt.id;
-                            return (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => setLocalCornerRadius(prev => ({ ...prev, [item.id]: opt.id as any }))}
-                                className={`px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
-                                  isSelected
-                                    ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                                }`}
-                              >
-                                {opt.label}
-                              </button>
-                            );
-                          })}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Bo góc</span>
+                          <select
+                            value={localCornerRadius[item.id] || 'lg'}
+                            onChange={(e) => setLocalCornerRadius(prev => ({ ...prev, [item.id]: e.target.value as any }))}
+                            className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 outline-none transition-all cursor-pointer h-9 w-28 shadow-sm"
+                          >
+                            <option value="none">Bỏ bo</option>
+                            <option value="sm">Bo ít</option>
+                            <option value="lg">Bo nhiều</option>
+                          </select>
                         </div>
 
                         {/* Bố cục nút (chỉ render cho products) */}
                         {item.id === 'products' && (
-                          <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50 shadow-inner mr-1 animate-in fade-in duration-200" title="Bố cục nút mua hàng">
-                            {[
-                              { id: 'stack', label: 'Nút dọc' },
-                              { id: 'grid-2', label: 'Nút ngang' }
-                            ].map((opt) => {
-                              const isSelected = localCartButtonsLayout === opt.id;
-                              return (
-                                <button
-                                  key={opt.id}
-                                  type="button"
-                                  onClick={() => setLocalCartButtonsLayout(opt.id as any)}
-                                  className={`px-2 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
-                                    isSelected
-                                      ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-sm'
-                                      : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                                  }`}
-                                >
-                                  {opt.label}
-                                </button>
-                              );
-                            })}
+                          <div className="flex flex-col gap-1 animate-in fade-in duration-200">
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Bố cục nút</span>
+                            <select
+                              value={localCartButtonsLayout}
+                              onChange={(e) => setLocalCartButtonsLayout(e.target.value as any)}
+                              className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 outline-none transition-all cursor-pointer h-9 w-28 shadow-sm"
+                            >
+                              <option value="stack">Nút dọc</option>
+                              <option value="grid-2">Nút ngang</option>
+                            </select>
                           </div>
                         )}
 
                         {/* Column Selector */}
-                        <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50 shadow-inner mr-1">
-                          {[
-                            { id: 3, label: '3 Cột' },
-                            { id: 4, label: '4 Cột' }
-                          ].map((opt) => {
-                            const isSelected = currentGridColumns === opt.id;
-                            return (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => setLocalGridColumns(prev => ({ ...prev, [item.id]: opt.id }))}
-                                className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all duration-200 ${
-                                  isSelected
-                                    ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                                }`}
-                              >
-                                {opt.label}
-                              </button>
-                            );
-                          })}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Số cột</span>
+                          <select
+                            value={currentGridColumns}
+                            onChange={(e) => setLocalGridColumns(prev => ({ ...prev, [item.id]: Number(e.target.value) }))}
+                            className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 outline-none transition-all cursor-pointer h-9 w-24 shadow-sm"
+                          >
+                            <option value={3}>3 Cột</option>
+                            <option value={4}>4 Cột</option>
+                          </select>
                         </div>
 
-                        {/* Segmented Control */}
-                        <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50 shadow-inner">
-                          {[
-                            { id: 'grid', label: 'Grid', icon: LayoutGrid },
-                            { id: 'sidebar', label: 'Sidebar', icon: Columns },
-                            { id: 'list', label: 'List', icon: List }
-                          ].map((opt) => {
-                            const isSelected = currentLayout === opt.id;
-                            const OptIcon = opt.icon;
-                            return (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => setLocalLayouts(prev => ({ ...prev, [item.id]: opt.id as any }))}
-                                className={`px-3 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all duration-200 flex items-center gap-1 ${
-                                  isSelected
-                                    ? 'bg-white dark:bg-slate-900 text-cyan-600 dark:text-cyan-400 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                                }`}
-                              >
-                                <OptIcon size={10} />
-                                {opt.label}
-                              </button>
-                            );
-                          })}
+                        {/* Layout Selector */}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Layout</span>
+                          <select
+                            value={currentLayout}
+                            onChange={(e) => setLocalLayouts(prev => ({ ...prev, [item.id]: e.target.value as any }))}
+                            className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-350 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 outline-none transition-all cursor-pointer h-9 w-24 shadow-sm"
+                          >
+                            <option value="grid">Grid</option>
+                            <option value="sidebar">Sidebar</option>
+                            <option value="list">List</option>
+                          </select>
                         </div>
                       </div>
                     </div>
