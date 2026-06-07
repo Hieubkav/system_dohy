@@ -1447,15 +1447,17 @@ function ProductsContent(props: ProductsPageProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-sm" style={{ color: tokens.metaText }}>
-              Hiển thị <span className="font-medium" style={{ color: tokens.bodyText }}>{products.length}</span>
-              {totalCount !== undefined && products.length > 0 && totalCount > products.length && <> / {totalCount}</>} sản phẩm
-            </p>
-            {hasActiveProductFilters && (
-              <ClearFiltersButton tokens={tokens} onClear={handleClearAllFilters} />
-            )}
-          </div>
+          {products.length > 0 && (
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-sm" style={{ color: tokens.metaText }}>
+                Hiển thị <span className="font-medium" style={{ color: tokens.bodyText }}>{products.length}</span>
+                {totalCount !== undefined && products.length > 0 && totalCount > products.length && <> / {totalCount}</>} sản phẩm
+              </p>
+              {hasActiveProductFilters && (
+                <ClearFiltersButton tokens={tokens} onClear={handleClearAllFilters} />
+              )}
+            </div>
+          )}
 
           {isLoadingProducts ? (
             <ProductsGridSkeleton count={postsPerPage} tokens={tokens} />

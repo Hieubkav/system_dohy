@@ -761,45 +761,47 @@ export function CatalogLayout({
             </div>
 
             {/* Results Count & Desktop Sort Controls */}
-            <div className="flex items-center justify-between mb-5 gap-4">
-              <p className="text-xs sm:text-sm" style={{ color: tokens.metaText }}>
-                Hiển thị <span className="font-medium" style={{ color: tokens.bodyText }}>{products.length}</span>
-                {totalCount !== undefined && products.length > 0 && totalCount > products.length && <> / {totalCount}</>} sản phẩm
-              </p>
-              
-              <div className="flex items-center gap-4">
-                {/* Desktop Sort Control */}
-                <div className="hidden lg:flex items-center gap-2">
-                  <span className="text-sm font-medium" style={{ color: tokens.metaText }}>Sắp xếp:</span>
-                  <div className="relative">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => onSortChange(e.target.value as ProductSortOption)}
-                      className="h-9 pl-3 pr-8 rounded-lg border text-sm outline-none font-medium appearance-none min-w-[130px]"
-                      style={{ 
-                        borderColor: tokens.inputBorder, 
-                        backgroundColor: tokens.inputBackground, 
-                        color: tokens.inputText,
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`,
-                        backgroundPosition: 'right 8px center',
-                        backgroundSize: '12px',
-                        backgroundRepeat: 'no-repeat'
-                      }}
-                    >
-                      <option value="newest">Mới nhất</option>
-                      <option value="popular">Bán chạy</option>
-                      <option value="price_asc">Giá thấp → cao</option>
-                      <option value="price_desc">Giá cao → thấp</option>
-                      <option value="name">Tên A-Z</option>
-                    </select>
+            {products.length > 0 && (
+              <div className="flex items-center justify-between mb-5 gap-4">
+                <p className="text-xs sm:text-sm" style={{ color: tokens.metaText }}>
+                  Hiển thị <span className="font-medium" style={{ color: tokens.bodyText }}>{products.length}</span>
+                  {totalCount !== undefined && products.length > 0 && totalCount > products.length && <> / {totalCount}</>} sản phẩm
+                </p>
+                
+                <div className="flex items-center gap-4">
+                  {/* Desktop Sort Control */}
+                  <div className="hidden lg:flex items-center gap-2">
+                    <span className="text-sm font-medium" style={{ color: tokens.metaText }}>Sắp xếp:</span>
+                    <div className="relative">
+                      <select
+                        value={sortBy}
+                        onChange={(e) => onSortChange(e.target.value as ProductSortOption)}
+                        className="h-9 pl-3 pr-8 rounded-lg border text-sm outline-none font-medium appearance-none min-w-[130px]"
+                        style={{ 
+                          borderColor: tokens.inputBorder, 
+                          backgroundColor: tokens.inputBackground, 
+                          color: tokens.inputText,
+                          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`,
+                          backgroundPosition: 'right 8px center',
+                          backgroundSize: '12px',
+                          backgroundRepeat: 'no-repeat'
+                        }}
+                      >
+                        <option value="newest">Mới nhất</option>
+                        <option value="popular">Bán chạy</option>
+                        <option value="price_asc">Giá thấp → cao</option>
+                        <option value="price_desc">Giá cao → thấp</option>
+                        <option value="name">Tên A-Z</option>
+                      </select>
+                    </div>
                   </div>
-                </div>
 
-                {hasActiveFilters && onClearFilters && (
-                  <ClearFiltersButton tokens={tokens} onClear={onClearFilters} />
-                )}
+                  {hasActiveFilters && onClearFilters && (
+                    <ClearFiltersButton tokens={tokens} onClear={onClearFilters} />
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Products Grid list */}
             {isLoadingProducts ? (
@@ -1427,15 +1429,17 @@ export function ListLayout({
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-sm" style={{ color: tokens.metaText }}>
-            Hiển thị <span className="font-medium" style={{ color: tokens.bodyText }}>{products.length}</span>
-            {totalCount !== undefined && products.length > 0 && totalCount > products.length && <> / {totalCount}</>} sản phẩm
-          </p>
-          {hasActiveFilters && onClearFilters && (
-            <ClearFiltersButton tokens={tokens} onClear={onClearFilters} />
-          )}
-        </div>
+        {products.length > 0 && (
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-sm" style={{ color: tokens.metaText }}>
+              Hiển thị <span className="font-medium" style={{ color: tokens.bodyText }}>{products.length}</span>
+              {totalCount !== undefined && products.length > 0 && totalCount > products.length && <> / {totalCount}</>} sản phẩm
+            </p>
+            {hasActiveFilters && onClearFilters && (
+              <ClearFiltersButton tokens={tokens} onClear={onClearFilters} />
+            )}
+          </div>
+        )}
 
         {/* Products List View */}
         {isLoadingProducts ? (
