@@ -1488,6 +1488,7 @@ function ProductsContent(props: ProductsPageProps) {
               onAttributeChange={handleAttributeChange}
               selectedAttributes={selectedAttributes}
               cartButtonsLayout={listConfig.cartButtonsLayout}
+              gridColumns={listConfig.gridColumns}
             />
           )}
 
