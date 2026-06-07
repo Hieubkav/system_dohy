@@ -1387,8 +1387,8 @@ export function ListLayout({
                             }}
                             className="w-full px-2.5 py-1.5 rounded-md text-left text-xs transition-colors hover:opacity-80"
                             style={{
-                              backgroundColor: !selectedCategory ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                              color: !selectedCategory ? '#3b82f6' : tokens.inputText,
+                              backgroundColor: !selectedCategory ? `${tokens.primary}18` : 'transparent',
+                              color: !selectedCategory ? tokens.primary : tokens.inputText,
                               fontWeight: !selectedCategory ? 'bold' : 'normal',
                             }}
                           >
@@ -1411,8 +1411,8 @@ export function ListLayout({
                                   }}
                                   className="w-full px-2.5 py-1.5 rounded-md text-left text-xs transition-colors hover:opacity-80"
                                   style={{
-                                    backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                                    color: isSelected ? '#3b82f6' : tokens.inputText,
+                                    backgroundColor: isSelected ? `${tokens.primary}18` : 'transparent',
+                                    color: isSelected ? tokens.primary : tokens.inputText,
                                     fontWeight: isSelected ? 'bold' : 'normal',
                                   }}
                                 >

@@ -1364,8 +1364,8 @@ function ProductsContent(props: ProductsPageProps) {
                           }}
                           className="w-full px-2.5 py-1.5 rounded-md text-left text-xs transition-colors hover:opacity-80"
                           style={{
-                            backgroundColor: !activeCategory ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                            color: !activeCategory ? '#3b82f6' : tokens.inputText,
+                            backgroundColor: !activeCategory ? `${tokens.primary}18` : 'transparent',
+                            color: !activeCategory ? tokens.primary : tokens.inputText,
                             fontWeight: !activeCategory ? 'bold' : 'normal',
                           }}
                         >
@@ -1388,8 +1388,8 @@ function ProductsContent(props: ProductsPageProps) {
                                 }}
                                 className="w-full px-2.5 py-1.5 rounded-md text-left text-xs transition-colors hover:opacity-80"
                                 style={{
-                                  backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                                  color: isSelected ? '#3b82f6' : tokens.inputText,
+                                  backgroundColor: isSelected ? `${tokens.primary}18` : 'transparent',
+                                  color: isSelected ? tokens.primary : tokens.inputText,
                                   fontWeight: isSelected ? 'bold' : 'normal',
                                 }}
                               >

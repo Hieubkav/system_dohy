@@ -135,7 +135,7 @@ export function SharedListLayout<T>({
             count={items.length}
             totalCount={totalCount}
             unit={unit}
-            titleColor={isDark ? '#f5f5f7' : '#1d1d1f'}
+            titleColor={brandColor}
             subtitleColor={isDark ? '#86868b' : '#6e6e73'}
             description={headerDescription}
             descriptionColor={isDark ? '#86868b' : '#6e6e73'}

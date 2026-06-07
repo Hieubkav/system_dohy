@@ -305,6 +305,7 @@ function ResourceListItem({
   showResourceFilters,
   cornerRadius,
   brandColors,
+  isDark,
 }: {
   resource: any;
   category: any;
@@ -314,6 +315,7 @@ function ResourceListItem({
   showResourceFilters: boolean;
   cornerRadius?: 'none' | 'sm' | 'lg';
   brandColors: { primary: string; secondary?: string; mode?: string };
+  isDark: boolean;
 }) {
   const brandColor = brandColors.primary;
   const { openLoginModal, token } = useCustomerAuth();
@@ -444,6 +446,7 @@ function ResourceListItem({
       ctaLabel={undefined}
       brandColor={brandColor}
       radiusClass={getRadiusClass(cornerRadius)}
+      isDark={isDark}
     />
   );
 }
@@ -749,6 +752,7 @@ function ResourcesContent() {
         showResourceFilters={config.showResourceFilters}
         cornerRadius={config.cornerRadius}
         brandColors={brandColors}
+        isDark={isDark}
       />
     );
   };
