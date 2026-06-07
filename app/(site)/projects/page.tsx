@@ -9,7 +9,7 @@ import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { PageHeaderWithCount } from '@/components/shared/PageHeaderWithCount';
 import { useProjectsListConfig } from '@/lib/experiences';
 import { buildDetailPath, normalizeRouteMode, buildCategoryPath, buildModuleListPath } from '@/lib/ia/route-mode';
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, X, SlidersHorizontal } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
 import type { Id } from '@/convex/_generated/dataModel';
 
@@ -107,6 +107,7 @@ function ProjectsContent() {
   const [pageSizeOverride, setPageSizeOverride] = useState<number | null>(null);
   const postsPerPage = pageSizeOverride ?? (listConfig.postsPerPage ?? 12);
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'title' | 'title_desc'>('newest');
+  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
   // Debounce search query
   useEffect(() => {
@@ -245,6 +246,17 @@ function ProjectsContent() {
     setSortBy(value);
   };
 
+  const hasActiveFilters = useMemo(() => {
+    return Boolean(activeCategory || searchQuery.trim() || sortBy !== 'newest');
+  }, [activeCategory, searchQuery, sortBy]);
+
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery('');
+    setDebouncedSearchQuery('');
+    setSortBy('newest');
+    handleCategoryChange('');
+  }, [handleCategoryChange]);
+
   const filterKey = `${activeCategory?._id ?? ''}|${debouncedSearchQuery}|${sortBy}|${postsPerPage}`;
   const prevFilterKeyRef = useRef(filterKey);
 
@@ -270,68 +282,151 @@ function ProjectsContent() {
 
   const layoutStyle = listConfig.layoutStyle ?? 'grid';
 
-  const topFilterBar = (listConfig.showSearch || listConfig.showCategories) && (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-[#161617]">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        {listConfig.showSearch && (
-          <div className="relative max-w-sm flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={searchQuery}
-              onChange={(event) => handleSearchChange(event.target.value)}
-              placeholder="Tìm kiếm dự án..."
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] pl-9 pr-3 text-sm outline-none transition focus:border-slate-450 dark:border-zinc-700 dark:text-[#f5f5f7]"
-            />
-          </div>
-        )}
-        <div className="flex flex-wrap gap-2">
-          {listConfig.showCategories && (
-            <select
-              value={activeCategory?.slug ?? ''}
-              onChange={(event) => handleCategoryChange(event.target.value)}
-              className="h-10 rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] px-3 text-sm dark:border-zinc-700 dark:text-[#f5f5f7]"
+  const renderDesktopToolbar = (showCategorySelect: boolean) => (
+    <div className="hidden lg:flex items-center gap-4 border-b dark:border-zinc-800 pb-4 mb-5">
+      {listConfig.showSearch && (
+        <div className="relative max-w-xs flex-1">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={searchQuery}
+            onChange={(event) => handleSearchChange(event.target.value)}
+            placeholder="Tìm kiếm dự án..."
+            className="h-9 w-full pl-8 pr-8 py-2 border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] rounded-xl text-xs outline-none transition focus:border-slate-450"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => handleSearchChange('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 opacity-65 hover:opacity-100 text-slate-400 hover:text-slate-600 dark:text-zinc-400 dark:hover:text-[#f5f5f7] transition"
+              aria-label="Xóa tìm kiếm"
             >
-              <option value="">Tất cả danh mục</option>
-              {categories.map((category) => (
-                <option key={category._id} value={category.slug}>{category.name}</option>
-              ))}
-            </select>
+              <X size={12} />
+            </button>
           )}
+        </div>
+      )}
+      
+      {showCategorySelect && listConfig.showCategories && (
+        <div className="relative">
           <select
-            value={sortBy}
-            onChange={(event) => handleSortChange(event.target.value as 'newest' | 'oldest' | 'popular' | 'title' | 'title_desc')}
-            className="h-10 rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] px-3 text-sm dark:border-zinc-700 dark:text-[#f5f5f7]"
+            value={activeCategory?.slug ?? ''}
+            onChange={(event) => handleCategoryChange(event.target.value)}
+            className="h-9 pl-3 pr-8 rounded-lg border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] text-xs outline-none font-medium appearance-none min-w-[140px]"
+            style={{ 
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`,
+              backgroundPosition: 'right 8px center',
+              backgroundSize: '12px',
+              backgroundRepeat: 'no-repeat'
+            }}
           >
-            <option value="newest">Mới nhất</option>
-            <option value="oldest">Cũ nhất</option>
-            <option value="popular">Xem nhiều</option>
-            <option value="title">Theo tên A-Z</option>
-            <option value="title_desc">Theo tên Z-A</option>
+            <option value="">Tất cả danh mục</option>
+            {categories.map((category) => (
+              <option key={category._id} value={category.slug}>
+                {category.name}
+              </option>
+            ))}
           </select>
         </div>
+      )}
+
+      <div className="flex items-center gap-3 ml-auto">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold tracking-widest uppercase opacity-65 text-slate-500 dark:text-zinc-400">Sắp xếp:</span>
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={(event) => handleSortChange(event.target.value as any)}
+              className="h-9 pl-3 pr-8 rounded-lg border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] text-xs outline-none font-medium appearance-none min-w-[120px]"
+              style={{ 
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E")`,
+                backgroundPosition: 'right 8px center',
+                backgroundSize: '12px',
+                backgroundRepeat: 'no-repeat'
+              }}
+            >
+              <option value="newest">Mới nhất</option>
+              <option value="oldest">Cũ nhất</option>
+              <option value="popular">Xem nhiều</option>
+              <option value="title">Theo tên A-Z</option>
+              <option value="title_desc">Theo tên Z-A</option>
+            </select>
+          </div>
+        </div>
+
+        {hasActiveFilters && (
+          <button
+            type="button"
+            onClick={handleClearFilters}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition hover:opacity-85 shrink-0"
+            style={{
+              backgroundColor: isDark ? '#2c2c2e' : `${brandColor}0d`,
+              borderColor: isDark ? '#3a3a3c' : `${brandColor}30`,
+              color: brandColor,
+            }}
+            title="Xóa toàn bộ bộ lọc"
+          >
+            <X size={12} />
+            <span>Xóa lọc</span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const mobileToolbar = (
+    <div className="flex lg:hidden flex-col sm:flex-row gap-3 p-3 mb-5 border rounded-2xl border-slate-200 bg-white dark:border-zinc-800 dark:bg-[#161617]">
+      {listConfig.showSearch && (
+        <div className="relative flex-1">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={searchQuery}
+            onChange={(event) => handleSearchChange(event.target.value)}
+            placeholder="Tìm kiếm dự án..."
+            className="w-full h-10 pl-10 pr-10 rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 dark:text-[#f5f5f7] outline-none text-sm"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => handleSearchChange('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-zinc-400 dark:hover:text-[#f5f5f7] transition"
+              aria-label="Xóa tìm kiếm"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center gap-3">
+        {listConfig.showCategories && (
+          <button
+            type="button"
+            onClick={() => setMobileFilterOpen(true)}
+            className="h-10 px-4 rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 flex items-center justify-center gap-2 text-sm font-semibold transition-colors flex-1 sm:flex-initial dark:text-[#f5f5f7]"
+          >
+            <SlidersHorizontal size={16} />
+            <span>Bộ lọc</span>
+          </button>
+        )}
+
+        <select
+          value={sortBy}
+          onChange={(event) => handleSortChange(event.target.value as any)}
+          className="h-10 px-3 rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] dark:border-zinc-700 text-sm outline-none font-medium appearance-none min-w-[140px] text-center flex-1 sm:flex-initial dark:text-[#f5f5f7]"
+        >
+          <option value="newest">Mới nhất</option>
+          <option value="oldest">Cũ nhất</option>
+          <option value="popular">Xem nhiều</option>
+          <option value="title">Theo tên A-Z</option>
+          <option value="title_desc">Theo tên Z-A</option>
+        </select>
       </div>
     </div>
   );
 
   const sidebarFilter = (
-    <aside className="w-full space-y-4 lg:w-64 lg:flex-shrink-0">
-      {listConfig.showSearch && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-[#161617]">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">Tìm kiếm</p>
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              value={searchQuery}
-              onChange={(event) => handleSearchChange(event.target.value)}
-              placeholder="Tìm dự án..."
-              className="h-9 w-full rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] pl-8 pr-3 text-sm outline-none transition focus:border-slate-450 dark:border-zinc-700 dark:text-[#f5f5f7]"
-            />
-          </div>
-        </div>
-      )}
+    <aside className="hidden lg:block w-64 flex-shrink-0 space-y-4">
       {listConfig.showCategories && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-[#161617]">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">Danh mục</p>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-[#161617] space-y-3">
+          <h3 className="font-semibold text-sm flex items-center gap-2 dark:text-[#f5f5f7]">Danh mục</h3>
           <ul className="space-y-0.5">
             <li>
               <button
@@ -358,20 +453,6 @@ function ProjectsContent() {
           </ul>
         </div>
       )}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-[#161617]">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">Sắp xếp</p>
-        <select
-          value={sortBy}
-          onChange={(event) => handleSortChange(event.target.value as 'newest' | 'oldest' | 'popular' | 'title' | 'title_desc')}
-          className="h-9 w-full rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] px-3 text-sm dark:border-zinc-700 dark:text-[#f5f5f7]"
-        >
-          <option value="newest">Mới nhất</option>
-          <option value="oldest">Cũ nhất</option>
-          <option value="popular">Xem nhiều</option>
-          <option value="title">Theo tên A-Z</option>
-          <option value="title_desc">Theo tên Z-A</option>
-        </select>
-      </div>
     </aside>
   );
 
@@ -592,6 +673,7 @@ function ProjectsContent() {
       titleColor={brandColor}
       subtitleColor={isDark ? '#86868b' : '#64748b'}
       description={activeCategory?.description}
+      centered={true}
     />
   );
 
@@ -603,7 +685,8 @@ function ProjectsContent() {
     if (layoutStyle === 'grid') {
       return (
         <div className="space-y-6">
-          {topFilterBar}
+          {renderDesktopToolbar(true)}
+          {mobileToolbar}
           {isLoadingProjects ? (
             <div className={`grid gap-6 ${gridClass}`}>
               {Array.from({ length: postsPerPage }).map((_, i) => (
@@ -621,10 +704,11 @@ function ProjectsContent() {
       );
     }
 
-    return (
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-        {sidebarFilter}
-        <div className="min-w-0 flex-1 space-y-6">
+    if (layoutStyle === 'list') {
+      return (
+        <div className="space-y-6">
+          {renderDesktopToolbar(true)}
+          {mobileToolbar}
           {isLoadingProjects ? (
             <div className="space-y-4">
               {Array.from({ length: postsPerPage }).map((_, i) => (
@@ -632,15 +716,33 @@ function ProjectsContent() {
               ))}
             </div>
           ) : projects.length === 0 ? emptyState : (
-            layoutStyle === 'sidebar' ? (
-              <div className={`grid gap-6 ${sidebarGridClass}`}>
-                {projects.map((project) => <GridCard key={project._id} project={project} />)}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {projects.map((project) => <ListCard key={project._id} project={project} />)}
-              </div>
-            )
+            <div className="flex flex-col gap-4">
+              {projects.map((project) => <ListCard key={project._id} project={project} />)}
+            </div>
+          )}
+          {paginationBar}
+          {infiniteScrollTrigger}
+        </div>
+      );
+    }
+
+    // layoutStyle === 'sidebar'
+    return (
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-start mt-6 md:mt-8">
+        {sidebarFilter}
+        <div className="min-w-0 flex-1 space-y-6">
+          {renderDesktopToolbar(false)}
+          {mobileToolbar}
+          {isLoadingProjects ? (
+            <div className={`grid gap-6 ${sidebarGridClass}`}>
+              {Array.from({ length: postsPerPage }).map((_, i) => (
+                <div key={i} className="animate-pulse h-64 bg-slate-200 dark:bg-[#1c1c1e] rounded-2xl" />
+              ))}
+            </div>
+          ) : projects.length === 0 ? emptyState : (
+            <div className={`grid gap-6 ${sidebarGridClass}`}>
+              {projects.map((project) => <GridCard key={project._id} project={project} />)}
+            </div>
           )}
           {paginationBar}
           {infiniteScrollTrigger}
@@ -655,6 +757,82 @@ function ProjectsContent() {
         {pageHeader}
         {renderContent()}
       </div>
+
+      {/* Bottom Sheet Filters Panel on Mobile */}
+      {mobileFilterOpen && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-300" 
+            onClick={() => setMobileFilterOpen(false)} 
+          />
+          {/* Sheet */}
+          <div 
+            className="fixed bottom-0 left-0 right-0 w-full max-h-[82vh] bg-white dark:bg-[#161617] z-50 flex flex-col rounded-t-[28px] shadow-2xl p-5 overflow-hidden transition-transform duration-300 ease-out transform translate-y-0 border-t dark:border-zinc-800"
+          >
+            {/* Drag Handle */}
+            <div 
+              className="w-12 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-full mx-auto mb-4 cursor-pointer hover:bg-slate-300 dark:hover:bg-zinc-700 transition-colors" 
+              onClick={() => setMobileFilterOpen(false)} 
+            />
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4 pb-2 border-b dark:border-zinc-800">
+              <h3 className="font-bold text-base dark:text-[#f5f5f7]">Bộ lọc tìm kiếm</h3>
+              <button onClick={() => setMobileFilterOpen(false)} className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-[#2c2c2e] dark:text-[#f5f5f7]">
+                <X size={18} />
+              </button>
+            </div>
+            {/* Scrollable Content */}
+            <div className="flex-1 space-y-6 overflow-y-auto pr-1 pb-4">
+              {listConfig.showCategories && (
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm dark:text-[#f5f5f7]">Danh mục</h4>
+                  <div className="space-y-1">
+                    <button
+                      type="button"
+                      onClick={() => { handleCategoryChange(''); setMobileFilterOpen(false); }}
+                      className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${!activeCategory ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                      style={!activeCategory ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColor}18`, color: brandColor, borderColor: isDark ? '#3a3a3c' : 'transparent', borderWidth: isDark ? '1px' : '0' } : undefined}
+                    >
+                      Tất cả
+                    </button>
+                    {categories.map((category) => (
+                      <button
+                        key={category._id}
+                        type="button"
+                        onClick={() => { handleCategoryChange(category.slug); setMobileFilterOpen(false); }}
+                        className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${activeCategory?._id === category._id ? 'font-semibold' : 'text-slate-500 dark:text-zinc-400 hover:bg-slate-100/55 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-[#f5f5f7]'}`}
+                        style={activeCategory?._id === category._id ? { backgroundColor: isDark ? '#2c2c2e' : `${brandColor}18`, color: brandColor, borderColor: isDark ? '#3a3a3c' : 'transparent', borderWidth: isDark ? '1px' : '0' } : undefined}
+                      >
+                        {category.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Sticky Footer */}
+            <div className="pt-4 border-t dark:border-zinc-800 mt-auto flex gap-3 pb-2 bg-white dark:bg-[#161617]">
+              <button
+                type="button"
+                onClick={() => { handleCategoryChange(''); setMobileFilterOpen(false); }}
+                disabled={!activeCategory}
+                className="flex-1 h-11 rounded-xl border dark:border-zinc-800 font-semibold text-sm transition-all flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed dark:text-[#f5f5f7] dark:bg-[#1c1c1e]"
+              >
+                <span>Thiết lập lại</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileFilterOpen(false)}
+                className="flex-1 h-11 rounded-xl font-bold text-sm transition-all flex items-center justify-center active:scale-95 text-[#000000]"
+                style={{ backgroundColor: brandColor }}
+              >
+                <span>Áp dụng</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
