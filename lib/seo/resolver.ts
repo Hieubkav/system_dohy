@@ -92,7 +92,7 @@ export const resolveSeoImage = (params: {
   site: SiteSettings;
   seo: SEOSettings;
 }): string => {
-  // Priority: metaImage/image/thumbnail/heroImage/images[0] -> seo_og_image -> site_logo
+  // Priority: metaImage/image/thumbnail/heroImage/images[0] -> seo_og_image
   if (params.entity?.image) {
     return params.entity.image;
   }
@@ -108,7 +108,7 @@ export const resolveSeoImage = (params: {
   if (params.seo.seo_og_image) {
     return params.seo.seo_og_image;
   }
-  return params.site.site_logo || '';
+  return '';
 };
 
 export const resolveSeoKeywords = (params: {

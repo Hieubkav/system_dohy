@@ -104,7 +104,7 @@ export const buildSeoContext = (site: SiteSettings, seo: SEOSettings): SeoContex
   return {
     baseUrl,
     description,
-    image: seo.seo_og_image || site.site_logo || '',
+    image: seo.seo_og_image || '',
     keywords,
     locale: resolveLocale(site.site_language || 'vi'),
     siteName,
