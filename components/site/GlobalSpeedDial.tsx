@@ -11,8 +11,29 @@ const normalizeBoolean = (value: unknown, fallback: boolean) => (
   typeof value === 'boolean' ? value : fallback
 );
 
+const CHATBOT_ACTION = {
+  bgColor: '#2563eb',
+  icon: 'message-circle',
+  label: 'Chat AI',
+  uiKey: 'ai-chatbot',
+  url: '#ai-chatbot',
+};
+
+const withChatbotAction = (config: Record<string, unknown>, enabled: boolean) => {
+  if (!enabled) {return config;}
+  const actions = Array.isArray(config.actions) ? config.actions : [];
+  const hasChatbot = actions.some((action) => (
+    typeof action === 'object'
+    && action !== null
+    && (action as Record<string, unknown>).url === CHATBOT_ACTION.url
+  ));
+  if (hasChatbot) {return config;}
+  return { ...config, actions: [...actions, CHATBOT_ACTION] };
+};
+
 export function GlobalSpeedDial() {
   const components = useQuery(api.homeComponents.listActive);
+  const chatbotConfig = useQuery(api.systemIntegrations.getPublicAiConfig);
   const systemColors = useBrandColors();
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
 
@@ -35,17 +56,30 @@ export function GlobalSpeedDial() {
     }) ?? null;
   }, [components]);
 
-  if (!speedDialComponent) {
+  const chatbotEnabled = chatbotConfig?.enabled === true;
+
+  if (!speedDialComponent && !chatbotEnabled) {
     return null;
   }
 
+  const speedDialConfig = speedDialComponent
+    ? withChatbotAction(speedDialComponent.config as Record<string, unknown>, chatbotEnabled)
+    : {
+      actions: [CHATBOT_ACTION],
+      defaultOpen: true,
+      enableShadow: true,
+      position: 'bottom-right',
+      showOnAllPages: true,
+      style: 'fab',
+    };
+
   return (
     <SpeedDialSection
-      config={speedDialComponent.config as Record<string, unknown>}
+      config={speedDialConfig}
       brandColor={resolvedColors.primary}
       secondary={resolvedColors.secondary}
       mode={resolvedColors.mode}
-      title={speedDialComponent.title}
+      title={speedDialComponent?.title ?? chatbotConfig?.widgetTitle ?? 'Trợ lý AI'}
     />
   );
 }

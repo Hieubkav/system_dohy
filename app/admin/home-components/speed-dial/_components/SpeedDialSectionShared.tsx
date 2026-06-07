@@ -131,12 +131,22 @@ export const getIconNode = (name: string, size = 18) => {
   return <Phone size={size} />;
 };
 
+const AI_CHATBOT_URL = '#ai-chatbot';
+const AI_CHATBOT_OPEN_EVENT = 'vietadmin:open-ai-chatbot';
+
 const getLinkProps = (url: string) => {
   const href = url.trim().length > 0 ? url : '#';
   const isExternal = /^https?:\/\//i.test(href);
+  const isAiChatbot = href === AI_CHATBOT_URL;
 
   return {
     href,
+    onClick: isAiChatbot
+      ? ((event: React.MouseEvent<HTMLAnchorElement>) => {
+        event.preventDefault();
+        window.dispatchEvent(new CustomEvent(AI_CHATBOT_OPEN_EVENT));
+      })
+      : undefined,
     rel: isExternal ? 'noopener noreferrer' : undefined,
     target: isExternal ? '_blank' as const : undefined,
   };

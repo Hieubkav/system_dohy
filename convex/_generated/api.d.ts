@@ -11,6 +11,7 @@
 import type * as activityLogs from "../activityLogs.js";
 import type * as admin_modules from "../admin/modules.js";
 import type * as admin_presets from "../admin/presets.js";
+import type * as aiChat from "../aiChat.js";
 import type * as analytics from "../analytics.js";
 import type * as attributeGroups from "../attributeGroups.js";
 import type * as attributeTerms from "../attributeTerms.js";
@@ -102,6 +103,7 @@ import type * as settings from "../settings.js";
 import type * as snapshotCategories from "../snapshotCategories.js";
 import type * as storage from "../storage.js";
 import type * as subscriptions from "../subscriptions.js";
+import type * as systemIntegrations from "../systemIntegrations.js";
 import type * as trustPages from "../trustPages.js";
 import type * as usageStats from "../usageStats.js";
 import type * as users from "../users.js";
@@ -117,6 +119,7 @@ declare const fullApi: ApiFromModules<{
   activityLogs: typeof activityLogs;
   "admin/modules": typeof admin_modules;
   "admin/presets": typeof admin_presets;
+  aiChat: typeof aiChat;
   analytics: typeof analytics;
   attributeGroups: typeof attributeGroups;
   attributeTerms: typeof attributeTerms;
@@ -208,6 +211,7 @@ declare const fullApi: ApiFromModules<{
   snapshotCategories: typeof snapshotCategories;
   storage: typeof storage;
   subscriptions: typeof subscriptions;
+  systemIntegrations: typeof systemIntegrations;
   trustPages: typeof trustPages;
   usageStats: typeof usageStats;
   users: typeof users;

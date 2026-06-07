@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Eye, EyeOff, Loader2, Save, Send, Trash2 } from 'lucide-react';
+import { AlertTriangle, Bot, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, Mail, Save, Send, Sparkles, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { getEmailConfigurationStatus } from '@/lib/email-config-status';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SYSTEM_TOKEN_KEY = 'system_auth_token';
 
 const SETTINGS_KEYS = [
   'mail_driver',
@@ -23,6 +24,7 @@ const SETTINGS_KEYS = [
 ] as const;
 
 type SettingsKey = (typeof SETTINGS_KEYS)[number];
+type IntegrationTab = 'email' | 'ai';
 
 const toSafeString = (value: unknown) => (typeof value === 'string' ? value : '');
 
@@ -48,6 +50,26 @@ const DEFAULT_FORM: Record<SettingsKey, string> = {
   order_notification_emails: '',
 };
 
+interface AiForm {
+  apiKey: string;
+  enabled: boolean;
+  model: string;
+  systemPrompt: string;
+  temperature: string;
+  widgetGreeting: string;
+  widgetTitle: string;
+}
+
+const DEFAULT_AI_FORM: AiForm = {
+  apiKey: '',
+  enabled: false,
+  model: 'gemini-2.5-flash-lite',
+  systemPrompt: 'Bạn là trợ lý AI của website. Trả lời bằng tiếng Việt, ngắn gọn, lịch sự, ưu tiên dựa trên dữ liệu site được cung cấp và gợi ý link phù hợp khi có.',
+  temperature: '0.4',
+  widgetGreeting: 'Xin chào, tôi có thể hỗ trợ gì cho bạn?',
+  widgetTitle: 'Trợ lý AI',
+};
+
 interface ResendAccount {
   id: string;
   label: string;
@@ -63,9 +85,13 @@ interface ResendAccount {
 export default function IntegrationsPage() {
   const settings = useQuery(api.settings.getMultiple, { keys: [...SETTINGS_KEYS, 'site_name'] });
   const setMultiple = useMutation(api.settings.setMultiple);
+  const [systemToken, setSystemToken] = useState('');
+  const aiConfig = useQuery(api.systemIntegrations.getAiConfig, systemToken ? { token: systemToken } : 'skip');
+  const saveAiConfig = useMutation(api.systemIntegrations.saveAiConfig);
 
   const brandName = typeof settings?.site_name === 'string' ? settings.site_name.trim() : 'YourBrand';
 
+  const [activeTab, setActiveTab] = useState<IntegrationTab>('email');
   const [form, setForm] = useState<Record<SettingsKey, string>>(DEFAULT_FORM);
 
   const [initialForm, setInitialForm] = useState<Record<SettingsKey, string>>(form);
@@ -84,6 +110,18 @@ export default function IntegrationsPage() {
   const [newAccDailyLimit, setNewAccDailyLimit] = useState(100);
   const [newAccMonthlyLimit, setNewAccMonthlyLimit] = useState(3000);
   const [newAccTestMode, setNewAccTestMode] = useState(false);
+  const [aiForm, setAiForm] = useState<AiForm>(DEFAULT_AI_FORM);
+  const [initialAiForm, setInitialAiForm] = useState<AiForm>(DEFAULT_AI_FORM);
+  const [showAiKey, setShowAiKey] = useState(false);
+  const [clearAiKey, setClearAiKey] = useState(false);
+  const [isSavingAi, setIsSavingAi] = useState(false);
+  const [isTestingAi, setIsTestingAi] = useState(false);
+  const [aiTestMessage, setAiTestMessage] = useState('Tư vấn giúp tôi nội dung nổi bật trên website.');
+  const [aiTestResponse, setAiTestResponse] = useState('');
+
+  React.useEffect(() => {
+    setSystemToken(window.localStorage.getItem(SYSTEM_TOKEN_KEY) ?? '');
+  }, []);
 
   React.useEffect(() => {
     if (!settings) return;
@@ -116,6 +154,22 @@ export default function IntegrationsPage() {
     }
   }, [settings]);
 
+  React.useEffect(() => {
+    if (!aiConfig) return;
+    const nextForm: AiForm = {
+      apiKey: '',
+      enabled: aiConfig.enabled,
+      model: aiConfig.model,
+      systemPrompt: aiConfig.systemPrompt,
+      temperature: String(aiConfig.temperature),
+      widgetGreeting: aiConfig.widgetGreeting,
+      widgetTitle: aiConfig.widgetTitle,
+    };
+    setAiForm(nextForm);
+    setInitialAiForm(nextForm);
+    setClearAiKey(false);
+  }, [aiConfig]);
+
   // Sync accounts state to form value
   const updateAccountsInForm = (updatedAccounts: ResendAccount[]) => {
     setAccounts(updatedAccounts);
@@ -129,11 +183,19 @@ export default function IntegrationsPage() {
     return SETTINGS_KEYS.some((key) => form[key] !== initialForm[key]);
   }, [form, initialForm]);
 
+  const hasAiChanges = useMemo(() => {
+    return clearAiKey || (Object.keys(aiForm) as Array<keyof AiForm>).some((key) => aiForm[key] !== initialAiForm[key]);
+  }, [aiForm, clearAiKey, initialAiForm]);
+
   const emailStatus = useMemo(() => getEmailConfigurationStatus(form), [form]);
   const savedEmailStatus = useMemo(() => getEmailConfigurationStatus(initialForm), [initialForm]);
 
   const updateField = (key: SettingsKey, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const updateAiField = <K extends keyof AiForm>(key: K, value: AiForm[K]) => {
+    setAiForm((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSelectSmtpPreset = (presetId: SmtpPresetId) => {
@@ -175,6 +237,83 @@ export default function IntegrationsPage() {
       toast.error('Lỗi khi lưu cấu hình.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSaveAi = async () => {
+    if (!systemToken) {
+      toast.error('Phiên system chưa sẵn sàng. Vui lòng đăng nhập lại.');
+      return;
+    }
+    const willHaveApiKey = !clearAiKey && (aiConfig?.hasApiKey || Boolean(aiForm.apiKey.trim()));
+    if (aiForm.enabled && !willHaveApiKey) {
+      toast.error('Vui lòng nhập Gemini API key trước khi bật chatbot.');
+      return;
+    }
+
+    setIsSavingAi(true);
+    try {
+      const temperature = Number(aiForm.temperature);
+      await saveAiConfig({
+        apiKey: aiForm.apiKey.trim() || undefined,
+        clearApiKey: clearAiKey,
+        enabled: aiForm.enabled,
+        model: aiForm.model.trim(),
+        provider: 'gemini',
+        systemPrompt: aiForm.systemPrompt.trim(),
+        temperature: Number.isFinite(temperature) ? temperature : 0.4,
+        token: systemToken,
+        widgetGreeting: aiForm.widgetGreeting.trim(),
+        widgetTitle: aiForm.widgetTitle.trim(),
+      });
+      const nextForm = { ...aiForm, apiKey: '' };
+      setAiForm(nextForm);
+      setInitialAiForm(nextForm);
+      setClearAiKey(false);
+      toast.success('Đã lưu cấu hình AI.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Lỗi khi lưu cấu hình AI.');
+    } finally {
+      setIsSavingAi(false);
+    }
+  };
+
+  const handleTestAi = async () => {
+    if (hasAiChanges) {
+      toast.error('Vui lòng lưu cấu hình AI trước khi gửi thử.');
+      return;
+    }
+    if (!aiForm.enabled || !aiConfig?.hasApiKey) {
+      toast.error('Chatbot cần được bật và có API key trước khi gửi thử.');
+      return;
+    }
+    if (!aiTestMessage.trim()) {
+      toast.error('Vui lòng nhập câu hỏi test.');
+      return;
+    }
+
+    setIsTestingAi(true);
+    setAiTestResponse('');
+    try {
+      const response = await fetch('/api/ai-chat', {
+        body: JSON.stringify({
+          message: aiTestMessage.trim(),
+          sessionId: 'system-integrations-test',
+          sourcePath: '/system/integrations',
+        }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(typeof data?.message === 'string' ? data.message : 'Gửi thử AI thất bại.');
+      }
+      setAiTestResponse(String(data.message ?? 'AI đã phản hồi nhưng không có nội dung.'));
+      toast.success('AI phản hồi thành công.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Gửi thử AI thất bại.');
+    } finally {
+      setIsTestingAi(false);
     }
   };
 
@@ -281,12 +420,41 @@ export default function IntegrationsPage() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-16">
       <div className="space-y-2">
-        <h2 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">Tích hợp Email</h2>
+        <h2 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">Tích hợp hệ thống</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Chọn cách gửi email, nhập thông tin người gửi rồi lưu. Sau đó gửi thử để kiểm tra cấu hình.
+          Quản lý các key và kênh tích hợp server-side cho email và AI.
         </p>
       </div>
 
+      <div className="flex gap-2 rounded-2xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
+        <button
+          type="button"
+          onClick={() => setActiveTab('email')}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+            activeTab === 'email'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Mail size={16} />
+          Email
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('ai')}
+          className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition ${
+            activeTab === 'ai'
+              ? 'bg-cyan-600 text-white shadow-sm'
+              : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Bot size={16} />
+          AI Chatbot
+        </button>
+      </div>
+
+      {activeTab === 'email' && (
+        <>
       <div className={`rounded-3xl border p-4 shadow-sm ${
         emailStatus.configured
           ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100'
@@ -681,6 +849,201 @@ export default function IntegrationsPage() {
           </p>
         )}
       </div>
+        </>
+      )}
+
+      {activeTab === 'ai' && (
+        aiConfig === undefined ? (
+          <div className="flex items-center justify-center rounded-3xl border border-slate-200 bg-white py-16 dark:border-slate-800 dark:bg-slate-900">
+            <Loader2 className="h-8 w-8 animate-spin text-cyan-500" />
+          </div>
+        ) : (
+          <>
+            <div className={`rounded-3xl border p-4 shadow-sm ${
+              aiForm.enabled && aiConfig.hasApiKey
+                ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100'
+                : 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100'
+            }`}>
+              <div className="flex items-start gap-3">
+                {aiForm.enabled && aiConfig.hasApiKey ? (
+                  <CheckCircle2 size={20} className="mt-0.5 shrink-0" />
+                ) : (
+                  <AlertTriangle size={20} className="mt-0.5 shrink-0" />
+                )}
+                <div className="space-y-1">
+                  <p className="text-sm font-bold">
+                    {aiForm.enabled && aiConfig.hasApiKey ? 'Chatbot AI đã sẵn sàng' : 'Chatbot AI chưa sẵn sàng'}
+                  </p>
+                  <p className="text-xs opacity-80">
+                    Cần bật chatbot và lưu Gemini API key. Key được lưu trong bảng secret riêng, không render ra site public.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm space-y-6">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 dark:border-slate-800">
+                <div>
+                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">1. Cấu hình Gemini AI</h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Dùng free key từ Google AI Studio. Chatbot sẽ gọi AI qua server, không gọi trực tiếp từ client.
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 rounded-full border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600 dark:border-slate-700 dark:text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={aiForm.enabled}
+                    onChange={(e) => updateAiField('enabled', e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500"
+                  />
+                  Bật chatbot
+                </label>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-500">Provider</label>
+                  <div className="flex min-h-12 items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                    <Sparkles size={16} className="text-cyan-500" />
+                    Gemini Free
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-500">Model</label>
+                  <select
+                    value={aiForm.model}
+                    onChange={(e) => updateAiField('model', e.target.value)}
+                    className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-800 dark:bg-slate-950"
+                  >
+                    <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+                    <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                    <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                  </select>
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-semibold text-slate-500">Gemini API key</label>
+                  <div className="relative">
+                    <input
+                      value={aiForm.apiKey}
+                      onChange={(e) => {
+                        updateAiField('apiKey', e.target.value);
+                        setClearAiKey(false);
+                      }}
+                      type={showAiKey ? 'text' : 'password'}
+                      className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 pr-12 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-800 dark:bg-slate-950"
+                      placeholder={aiConfig.hasApiKey ? `Đã lưu ${'maskedApiKey' in aiConfig ? aiConfig.maskedApiKey : 'API key'} - nhập key mới nếu muốn thay` : 'AIza...'}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAiKey((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      title={showAiKey ? 'Hide' : 'Show'}
+                    >
+                      {showAiKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-400">
+                    <span>Key lấy tại aistudio.google.com/apikey, chỉ lưu phía server.</span>
+                    {aiConfig.hasApiKey && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setClearAiKey(true);
+                          updateAiField('apiKey', '');
+                        }}
+                        className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 font-bold ${
+                          clearAiKey
+                            ? 'border-rose-300 bg-rose-50 text-rose-600'
+                            : 'border-slate-200 text-slate-500 hover:text-rose-600'
+                        }`}
+                      >
+                        <KeyRound size={11} />
+                        {clearAiKey ? 'Sẽ xóa key khi lưu' : 'Xóa key đã lưu'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-500">Tên widget</label>
+                  <input
+                    value={aiForm.widgetTitle}
+                    onChange={(e) => updateAiField('widgetTitle', e.target.value)}
+                    className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-800 dark:bg-slate-950"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-500">Nhiệt độ trả lời</label>
+                  <input
+                    value={aiForm.temperature}
+                    onChange={(e) => updateAiField('temperature', e.target.value)}
+                    inputMode="decimal"
+                    className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-800 dark:bg-slate-950"
+                  />
+                  <p className="text-[10px] text-slate-400">Khuyến nghị 0.2–0.6 để tư vấn ổn định.</p>
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-semibold text-slate-500">Lời chào widget</label>
+                  <input
+                    value={aiForm.widgetGreeting}
+                    onChange={(e) => updateAiField('widgetGreeting', e.target.value)}
+                    className="min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-800 dark:bg-slate-950"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <label className="text-xs font-semibold text-slate-500">System prompt</label>
+                  <textarea
+                    value={aiForm.systemPrompt}
+                    onChange={(e) => updateAiField('systemPrompt', e.target.value)}
+                    rows={5}
+                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-800 dark:bg-slate-950"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                {hasAiChanges && (
+                  <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">Có thay đổi chưa lưu</span>
+                )}
+                <button
+                  onClick={handleSaveAi}
+                  disabled={isSavingAi || !hasAiChanges}
+                  className="flex items-center gap-2 rounded-2xl border border-cyan-600 bg-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md transition-all hover:border-cyan-700 hover:bg-cyan-700 disabled:cursor-not-allowed disabled:border-transparent disabled:bg-slate-200 disabled:text-slate-400 disabled:opacity-50 dark:disabled:bg-slate-800"
+                >
+                  {isSavingAi ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                  {isSavingAi ? 'Đang lưu...' : 'Lưu cấu hình AI'}
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 space-y-4 shadow-sm">
+              <div>
+                <h3 className="text-base font-bold text-slate-800 dark:text-slate-100">2. Gửi thử chatbot</h3>
+                <p className="text-xs text-slate-500 mt-1">Test phản hồi qua cùng API mà widget SpeedDial sử dụng trên site.</p>
+              </div>
+              <textarea
+                value={aiTestMessage}
+                onChange={(e) => setAiTestMessage(e.target.value)}
+                rows={3}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/20 dark:border-slate-800 dark:bg-slate-950"
+              />
+              <button
+                onClick={handleTestAi}
+                disabled={isTestingAi || hasAiChanges || !aiForm.enabled || !aiConfig.hasApiKey}
+                className="min-h-12 inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-600 px-6 py-3 text-sm font-semibold text-white shadow-md transition-colors hover:bg-cyan-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isTestingAi ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                {isTestingAi ? 'Đang hỏi...' : 'Gửi thử AI'}
+              </button>
+              {aiTestResponse && (
+                <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-4 text-sm leading-relaxed text-slate-700 dark:border-cyan-900/40 dark:bg-cyan-950/20 dark:text-slate-200">
+                  <p className="mb-1 text-xs font-bold uppercase tracking-wider text-cyan-600">Phản hồi</p>
+                  <p className="whitespace-pre-wrap">{aiTestResponse}</p>
+                </div>
+              )}
+            </div>
+          </>
+        )
+      )}
     </div>
   );
 }

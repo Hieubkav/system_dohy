@@ -88,7 +88,7 @@ const ICON_DEFS: IconDef[] = [
   { value: 'phone', label: 'Điện thoại', brandColor: '#ef4444', suggestedLabel: 'Gọi ngay', suggestedUrl: 'tel:0123456789' },
   { value: 'mail', label: 'Email', brandColor: '#ea580c', suggestedLabel: 'Email', suggestedUrl: 'mailto:contact@example.com' },
   { value: 'messenger', label: 'Messenger', brandColor: '#0084ff', suggestedLabel: 'Messenger', suggestedUrl: 'https://m.me/yourpage' },
-  { value: 'message-circle', label: 'Chat', brandColor: '#3b82f6', suggestedLabel: 'Chat ngay', suggestedUrl: '' },
+  { value: 'message-circle', label: 'Chat AI', brandColor: '#3b82f6', suggestedLabel: 'Chat AI', suggestedUrl: '#ai-chatbot' },
   { value: 'map-pin', label: 'Địa chỉ', brandColor: '#f97316', suggestedLabel: 'Chỉ đường', suggestedUrl: 'https://maps.google.com/?q=your+address' },
   { value: 'zalo', label: 'Zalo', brandColor: '#0084ff', suggestedLabel: 'Chat Zalo', suggestedUrl: 'https://zalo.me/yourpage' },
   { value: 'facebook', label: 'Facebook', brandColor: '#1877f2', suggestedLabel: 'Facebook', suggestedUrl: 'https://facebook.com/yourpage' },
@@ -198,10 +198,11 @@ function ClearInput({
 const validateUrl = (url: string): { valid: boolean; message?: string } => {
   if (!url.trim()) return { valid: true };
   const t = url.trim();
+  if (t === '#ai-chatbot') return { valid: true };
   if (/^tel:[0-9+\-() ]+$/.test(t)) return { valid: true };
   if (/^mailto:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(t)) return { valid: true };
   if (/^https?:\/\/.+/.test(t)) return { valid: true };
-  return { valid: false, message: 'Dùng tel:, mailto:, hoặc https://' };
+  return { valid: false, message: 'Dùng tel:, mailto:, https:// hoặc #ai-chatbot' };
 };
 
 /* ------------------------------------------------------------------ */

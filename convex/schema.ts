@@ -818,6 +818,16 @@ export default defineSchema({
     .index("by_key", ["key"])
     .index("by_group", ["group"]),
 
+  // 18a. integrationSecrets - Secret cấu hình provider, không đọc qua settings public
+  integrationSecrets: defineTable({
+    group: v.string(),
+    key: v.string(),
+    updatedAt: v.number(),
+    value: v.string(),
+  })
+    .index("by_key", ["key"])
+    .index("by_group_key", ["group", "key"]),
+
   // 19. activityLogs - Audit Trail
   activityLogs: defineTable({
     action: v.string(),

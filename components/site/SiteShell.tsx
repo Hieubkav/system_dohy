@@ -7,6 +7,7 @@ import { CartDrawer } from '@/components/site/CartDrawer';
 import { SiteProviders } from '@/components/site/SiteProviders';
 import { GlobalSpeedDial } from '@/components/site/GlobalSpeedDial';
 import { OfflineDinoOverlay } from '@/components/site/OfflineDinoOverlay';
+import { AiChatbotWidget } from '@/components/site/AiChatbotWidget';
 
 export function SiteShell({
   children,
@@ -25,6 +26,7 @@ export function SiteShell({
         </main>
         <DynamicFooter />
         <GlobalSpeedDial />
+        <AiChatbotWidget />
         <OfflineDinoOverlay initialSite={initialHeaderData?.site} />
       </div>
     </SiteProviders>
