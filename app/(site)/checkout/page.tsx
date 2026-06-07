@@ -8,7 +8,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { Check, ChevronDown, CreditCard, MapPin, Package, Search, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { getCheckoutColors } from '@/components/site/checkout/colors';
 import { useCheckoutConfig } from '@/lib/experiences';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
@@ -331,9 +331,11 @@ const buildVariantLabel = (
 
 function CheckoutSkeleton() {
   const brandColors = useBrandColors();
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const tokens = useMemo(
-    () => getCheckoutColors(brandColors.primary, brandColors.secondary, brandColors.mode),
-    [brandColors.primary, brandColors.secondary, brandColors.mode]
+    () => getCheckoutColors(brandColors.primary, brandColors.secondary, brandColors.mode, isDark),
+    [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]
   );
   return (
     <div className="max-w-5xl mx-auto px-4 py-16 text-center">
@@ -345,9 +347,11 @@ function CheckoutSkeleton() {
 
 function CheckoutContent() {
   const brandColors = useBrandColors();
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const tokens = useMemo(
-    () => getCheckoutColors(brandColors.primary, brandColors.secondary, brandColors.mode),
-    [brandColors.primary, brandColors.secondary, brandColors.mode]
+    () => getCheckoutColors(brandColors.primary, brandColors.secondary, brandColors.mode, isDark),
+    [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]
   );
   const router = useRouter();
   const searchParams = useSearchParams();

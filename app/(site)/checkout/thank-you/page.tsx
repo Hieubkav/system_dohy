@@ -8,7 +8,7 @@ import { useQuery } from 'convex/react';
 import { CheckCircle2, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { getCheckoutColors } from '@/components/site/checkout/colors';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
@@ -25,9 +25,11 @@ const getStringSetting = (map: Record<string, unknown>, key: string, fallback: s
 
 function ThankYouContent() {
   const brandColors = useBrandColors();
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const tokens = useMemo(
-    () => getCheckoutColors(brandColors.primary, brandColors.secondary, brandColors.mode),
-    [brandColors.primary, brandColors.secondary, brandColors.mode]
+    () => getCheckoutColors(brandColors.primary, brandColors.secondary, brandColors.mode, isDark),
+    [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]
   );
 
   const searchParams = useSearchParams();

@@ -1,11 +1,12 @@
 'use client';
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
+import { getCheckoutColors, type CheckoutColors } from '@/components/site/checkout/colors';
 import type { Id } from '@/convex/_generated/dataModel';
 import { buildAbsoluteWebUrl, buildPublicOrderLookupPath } from '@/lib/orders/links';
 
@@ -111,13 +112,13 @@ function CancelDialog({
   onClose,
   onSuccess,
   requirePhoneInput,
-  primaryColor,
+  tokens,
 }: {
   order: OrderDoc;
   onClose: () => void;
   onSuccess: () => void;
   requirePhoneInput: boolean;
-  primaryColor: string;
+  tokens: CheckoutColors;
 }) {
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -154,19 +155,19 @@ function CancelDialog({
       style={{ background: 'rgba(0,0,0,0.5)' }}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6"
-        style={{ border: '1px solid #e5e7eb' }}
+        className="rounded-2xl shadow-2xl max-w-sm w-full p-6 border"
+        style={{ backgroundColor: tokens.surface, borderColor: tokens.border }}
       >
-        <h3 className="text-lg font-bold text-gray-900 mb-2">Xác nhận hủy đơn</h3>
-        <p className="text-sm text-gray-600 mb-1">
+        <h3 className="text-lg font-bold mb-2" style={{ color: tokens.heading }}>Xác nhận hủy đơn</h3>
+        <p className="text-sm mb-1" style={{ color: tokens.bodyText }}>
           Bạn có chắc muốn hủy đơn hàng{' '}
-          <span className="font-semibold text-gray-800">#{order.orderNumber}</span>?
+          <span className="font-semibold text-gray-800" style={{ color: tokens.heading }}>#{order.orderNumber}</span>?
         </p>
-        <p className="text-xs text-gray-500 mb-4">Thao tác này không thể hoàn tác.</p>
+        <p className="text-xs mb-4" style={{ color: tokens.metaText }}>Thao tác này không thể hoàn tác.</p>
 
         {requirePhoneInput && (
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium mb-1" style={{ color: tokens.bodyText }}>
               Số điện thoại để xác minh
             </label>
             <input
@@ -174,8 +175,8 @@ function CancelDialog({
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Nhập SĐT đã đặt hàng"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2"
-              style={{ '--tw-ring-color': primaryColor } as React.CSSProperties}
+              className="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+              style={{ backgroundColor: tokens.inputBg, borderColor: tokens.inputBorder, color: tokens.inputText, '--tw-ring-color': tokens.primary } as React.CSSProperties}
             />
           </div>
         )}
@@ -184,7 +185,8 @@ function CancelDialog({
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex-1 rounded-lg border border-gray-300 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex-1 rounded-lg border py-2 text-sm font-medium transition-colors"
+            style={{ backgroundColor: tokens.surface, borderColor: tokens.border, color: tokens.bodyText }}
           >
             Không hủy
           </button>
@@ -193,7 +195,7 @@ function CancelDialog({
             disabled={isSubmitting}
             className="flex-1 rounded-lg py-2 text-sm font-medium text-white transition-colors"
             style={{
-              background: isSubmitting ? '#9ca3af' : '#ef4444',
+              background: isSubmitting ? tokens.mutedText : '#ef4444',
               cursor: isSubmitting ? 'not-allowed' : 'pointer',
             }}
           >
@@ -210,13 +212,13 @@ function CancelDialog({
 function OrderCard({
   order,
   searchedByPhone,
-  primaryColor,
   onCancelled,
+  tokens,
 }: {
   order: OrderDoc;
   searchedByPhone: boolean;
-  primaryColor: string;
   onCancelled: () => void;
+  tokens: CheckoutColors;
 }) {
   const [showCancel, setShowCancel] = useState(false);
   const showCancelBtn = canCancelOrder(order.status);
@@ -228,19 +230,19 @@ function OrderCard({
   return (
     <>
       <div
-        className="rounded-2xl border bg-white shadow-sm overflow-hidden"
-        style={{ borderColor: '#e5e7eb' }}
+        className="rounded-2xl border shadow-sm overflow-hidden"
+        style={{ backgroundColor: tokens.surface, borderColor: tokens.border }}
       >
         {/* Header */}
         <div
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-5 py-4 border-b"
-          style={{ borderColor: '#f3f4f6', background: '#f9fafb' }}
+          style={{ borderColor: tokens.border, backgroundColor: tokens.surfaceMuted }}
         >
           <div className="flex items-center gap-3">
-            <span className="font-bold text-gray-900 text-sm">#{order.orderNumber}</span>
+            <span className="font-bold text-sm" style={{ color: tokens.bodyText }}>#{order.orderNumber}</span>
             <StatusBadge status={order.status} />
           </div>
-          <span className="text-xs text-gray-500">{formatDate(order._creationTime)}</span>
+          <span className="text-xs" style={{ color: tokens.metaText }}>{formatDate(order._creationTime)}</span>
         </div>
 
         <div className="p-5 space-y-4">
@@ -252,19 +254,20 @@ function OrderCard({
                   <img
                     src={item.productImage}
                     alt={item.productName}
-                    className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-gray-100"
+                    className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border"
+                    style={{ borderColor: tokens.border }}
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{item.productName}</p>
+                  <p className="text-sm font-medium truncate" style={{ color: tokens.bodyText }}>{item.productName}</p>
                   {item.variantTitle && (
-                    <p className="text-xs text-gray-500">{item.variantTitle}</p>
+                    <p className="text-xs" style={{ color: tokens.metaText }}>{item.variantTitle}</p>
                   )}
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs" style={{ color: tokens.metaText }}>
                     {formatPrice(item.price)} × {item.quantity}
                   </p>
                 </div>
-                <span className="text-sm font-semibold text-gray-800 flex-shrink-0">
+                <span className="text-sm font-semibold flex-shrink-0" style={{ color: tokens.bodyText }}>
                   {formatPrice(item.price * item.quantity)}
                 </span>
               </div>
@@ -272,29 +275,29 @@ function OrderCard({
           </div>
 
           {/* Totals */}
-          <div className="border-t pt-3 space-y-1" style={{ borderColor: '#f3f4f6' }}>
+          <div className="border-t pt-3 space-y-1" style={{ borderColor: tokens.border }}>
             {(order.discountAmount ?? 0) > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Giảm giá</span>
+                <span style={{ color: tokens.metaText }}>Giảm giá</span>
                 <span className="text-green-600">-{formatPrice(order.discountAmount ?? 0)}</span>
               </div>
             )}
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Phí vận chuyển</span>
-              <span className="text-gray-700">
+              <span style={{ color: tokens.metaText }}>Phí vận chuyển</span>
+              <span style={{ color: tokens.bodyText }}>
                 {order.shippingFee === 0 ? 'Miễn phí' : formatPrice(order.shippingFee)}
               </span>
             </div>
             <div className="flex justify-between text-sm font-bold">
-              <span className="text-gray-900">Tổng thanh toán</span>
-              <span style={{ color: primaryColor }}>{formatPrice(order.totalAmount)}</span>
+              <span style={{ color: tokens.bodyText }}>Tổng thanh toán</span>
+              <span style={{ color: tokens.priceText }}>{formatPrice(order.totalAmount)}</span>
             </div>
           </div>
 
           {/* Shipping address */}
           {order.shippingAddress && (
-            <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600">
-              <span className="font-medium text-gray-700">Địa chỉ giao: </span>
+            <div className="rounded-lg p-3 text-xs" style={{ backgroundColor: tokens.surfaceMuted, color: tokens.metaText }}>
+              <span className="font-medium" style={{ color: tokens.bodyText }}>Địa chỉ giao: </span>
               {order.shippingAddress}
             </div>
           )}
@@ -304,8 +307,8 @@ function OrderCard({
             <div
               className="rounded-xl p-4 border"
               style={{
-                background: '#f0fdf4',
-                borderColor: '#86efac',
+                background: tokens.selectionBg,
+                borderColor: tokens.selectionBorder,
               }}
             >
               <div className="flex items-start gap-2">
@@ -313,7 +316,7 @@ function OrderCard({
                   className="w-5 h-5 mt-0.5 flex-shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
-                  stroke="#16a34a"
+                  stroke={tokens.primary}
                   strokeWidth={2}
                 >
                   <path
@@ -323,9 +326,9 @@ function OrderCard({
                   />
                 </svg>
                 <div className="flex-1">
-                  <p className="text-xs font-semibold text-green-800 mb-1">Mã vận đơn</p>
+                  <p className="text-xs font-semibold mb-1" style={{ color: tokens.bodyText }}>Mã vận đơn</p>
                   <div className="flex items-center gap-2">
-                    <code className="text-sm font-mono font-bold text-green-900 bg-white px-2 py-0.5 rounded border border-green-200">
+                    <code className="text-sm font-mono font-bold bg-white dark:bg-slate-800 px-2 py-0.5 rounded border" style={{ color: tokens.bodyText, borderColor: tokens.border }}>
                       {order.trackingNumber}
                     </code>
                     <button
@@ -335,12 +338,13 @@ function OrderCard({
                           .then(() => toast.success('Đã copy mã vận đơn!'))
                           .catch(() => toast.error('Không thể copy. Vui lòng copy thủ công.'));
                       }}
-                      className="text-xs text-green-700 hover:text-green-900 underline font-medium"
+                      className="text-xs hover:underline font-medium"
+                      style={{ color: tokens.primary }}
                     >
                       Copy
                     </button>
                   </div>
-                  <p className="text-xs text-green-700 mt-1">
+                  <p className="text-xs mt-1" style={{ color: tokens.metaText }}>
                     Copy mã này để tra cứu trên trang của đơn vị vận chuyển.
                   </p>
                 </div>
@@ -348,11 +352,11 @@ function OrderCard({
             </div>
           )}
 
-          <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600">
+          <div className="rounded-xl border p-3 text-xs" style={{ borderColor: tokens.border, backgroundColor: tokens.surfaceMuted, color: tokens.metaText }}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <p className="font-semibold text-gray-800">Link tra cứu nhanh</p>
-                <p className="truncate font-mono text-[11px] text-gray-500">{orderLookupUrl}</p>
+                <p className="font-semibold" style={{ color: tokens.bodyText }}>Link tra cứu nhanh</p>
+                <p className="truncate font-mono text-[11px]" style={{ color: tokens.metaText }}>{orderLookupUrl}</p>
               </div>
               <button
                 type="button"
@@ -362,7 +366,8 @@ function OrderCard({
                     .then(() => toast.success('Đã copy link tra cứu!'))
                     .catch(() => toast.error('Không thể copy. Vui lòng copy thủ công.'));
                 }}
-                className="shrink-0 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-white"
+                className="shrink-0 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
+                style={{ borderColor: tokens.border, color: tokens.bodyText, backgroundColor: tokens.surface }}
               >
                 Copy link
               </button>
@@ -374,7 +379,8 @@ function OrderCard({
             <div className="pt-1">
               <button
                 onClick={() => setShowCancel(true)}
-                className="w-full sm:w-auto rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
+                className="w-full sm:w-auto rounded-lg border px-4 py-2 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                style={{ borderColor: '#fca5a5', color: '#ef4444' }}
               >
                 Hủy đơn hàng
               </button>
@@ -387,7 +393,7 @@ function OrderCard({
         <CancelDialog
           order={order}
           requirePhoneInput={!searchedByPhone}
-          primaryColor={primaryColor}
+          tokens={tokens}
           onClose={() => setShowCancel(false)}
           onSuccess={() => {
             setShowCancel(false);
@@ -407,12 +413,12 @@ type SearchMode = 'orderNumber' | 'phone';
 
 function OrderByNumberView({
   orderNumber,
-  primaryColor,
   onReset,
+  tokens,
 }: {
   orderNumber: string;
-  primaryColor: string;
   onReset: () => void;
+  tokens: CheckoutColors;
 }) {
   const order = useQuery(api.orders.getByOrderNumber, { orderNumber });
   const [version, setVersion] = useState(0);
@@ -422,7 +428,7 @@ function OrderByNumberView({
       <div className="flex justify-center py-12">
         <div
           className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-          style={{ borderColor: `${primaryColor} transparent ${primaryColor} ${primaryColor}` }}
+          style={{ borderColor: `${tokens.primary} transparent ${tokens.primary} ${tokens.primary}` }}
         />
       </div>
     );
@@ -431,17 +437,17 @@ function OrderByNumberView({
   if (!order) {
     return (
       <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: tokens.surfaceSoft }}>
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke={tokens.iconMuted} strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <p className="text-gray-700 font-medium">Không tìm thấy đơn hàng</p>
-        <p className="text-gray-500 text-sm mt-1">Mã đơn <span className="font-semibold">{orderNumber}</span> không tồn tại.</p>
+        <p className="font-medium" style={{ color: tokens.bodyText }}>Không tìm thấy đơn hàng</p>
+        <p className="text-sm mt-1" style={{ color: tokens.metaText }}>Mã đơn <span className="font-semibold" style={{ color: tokens.bodyText }}>{orderNumber}</span> không tồn tại.</p>
         <button
           onClick={onReset}
-          className="mt-4 text-sm underline"
-          style={{ color: primaryColor }}
+          className="mt-4 text-sm underline font-medium"
+          style={{ color: tokens.primary }}
         >
           Thử lại
         </button>
@@ -451,11 +457,11 @@ function OrderByNumberView({
 
   return (
     <div key={version}>
-      <p className="text-sm text-gray-500 mb-4">Tìm thấy đơn hàng:</p>
+      <p className="text-sm mb-4" style={{ color: tokens.metaText }}>Tìm thấy đơn hàng:</p>
       <OrderCard
         order={order as OrderDoc}
         searchedByPhone={false}
-        primaryColor={primaryColor}
+        tokens={tokens}
         onCancelled={() => setVersion((v) => v + 1)}
       />
     </div>
@@ -466,12 +472,12 @@ function OrderByNumberView({
 
 function OrdersByPhoneView({
   phone,
-  primaryColor,
   onReset,
+  tokens,
 }: {
   phone: string;
-  primaryColor: string;
   onReset: () => void;
+  tokens: CheckoutColors;
 }) {
   const customer = useQuery(api.customers.getByPhone, { phone });
   const orders = useQuery(
@@ -485,7 +491,7 @@ function OrdersByPhoneView({
       <div className="flex justify-center py-12">
         <div
           className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-          style={{ borderColor: `${primaryColor} transparent ${primaryColor} ${primaryColor}` }}
+          style={{ borderColor: `${tokens.primary} transparent ${tokens.primary} ${tokens.primary}` }}
         />
       </div>
     );
@@ -494,17 +500,17 @@ function OrdersByPhoneView({
   if (!customer) {
     return (
       <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-          <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: tokens.surfaceSoft }}>
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke={tokens.iconMuted} strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
-        <p className="text-gray-700 font-medium">Không tìm thấy thông tin</p>
-        <p className="text-gray-500 text-sm mt-1">Số điện thoại <span className="font-semibold">{phone}</span> chưa có đơn hàng nào.</p>
+        <p className="font-medium" style={{ color: tokens.bodyText }}>Không tìm thấy thông tin</p>
+        <p className="text-sm mt-1" style={{ color: tokens.metaText }}>Số điện thoại <span className="font-semibold" style={{ color: tokens.bodyText }}>{phone}</span> chưa có đơn hàng nào.</p>
         <button
           onClick={onReset}
-          className="mt-4 text-sm underline"
-          style={{ color: primaryColor }}
+          className="mt-4 text-sm underline font-medium"
+          style={{ color: tokens.primary }}
         >
           Thử lại
         </button>
@@ -515,12 +521,12 @@ function OrdersByPhoneView({
   if (!orders || orders.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-700 font-medium">Không có đơn hàng nào</p>
-        <p className="text-gray-500 text-sm mt-1">Số điện thoại này chưa có đơn hàng.</p>
+        <p className="font-medium" style={{ color: tokens.bodyText }}>Không có đơn hàng nào</p>
+        <p className="text-sm mt-1" style={{ color: tokens.metaText }}>Số điện thoại này chưa có đơn hàng.</p>
         <button
           onClick={onReset}
-          className="mt-4 text-sm underline"
-          style={{ color: primaryColor }}
+          className="mt-4 text-sm underline font-medium"
+          style={{ color: tokens.primary }}
         >
           Thử lại
         </button>
@@ -530,9 +536,9 @@ function OrdersByPhoneView({
 
   return (
     <div key={version}>
-      <p className="text-sm text-gray-500 mb-4">
-        Tìm thấy <span className="font-semibold text-gray-800">{orders.length}</span> đơn hàng cho SĐT{' '}
-        <span className="font-semibold text-gray-800">{phone}</span>:
+      <p className="text-sm mb-4" style={{ color: tokens.metaText }}>
+        Tìm thấy <span className="font-semibold" style={{ color: tokens.bodyText }}>{orders.length}</span> đơn hàng cho SĐT{' '}
+        <span className="font-semibold" style={{ color: tokens.bodyText }}>{phone}</span>:
       </p>
       <div className="space-y-4">
         {(orders as OrderDoc[]).map((order) => (
@@ -540,7 +546,7 @@ function OrdersByPhoneView({
             key={order._id + version}
             order={order}
             searchedByPhone={true}
-            primaryColor={primaryColor}
+            tokens={tokens}
             onCancelled={() => setVersion((v) => v + 1)}
           />
         ))}
@@ -553,7 +559,14 @@ function OrdersByPhoneView({
 
 function TraCuuContent() {
   const brandColors = useBrandColors();
-  const primary = brandColors.primary;
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const tokens = useMemo(
+    () => getCheckoutColors(brandColors.primary, brandColors.secondary, brandColors.mode, isDark),
+    [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]
+  );
+  
+  const primary = tokens.primary;
 
   const searchParams = useSearchParams();
   const [inputValue, setInputValue] = useState('');
@@ -580,12 +593,12 @@ function TraCuuContent() {
     setSubmitted({ mode: searchMode, value });
   };
 
-  const handleReset = () => {
+  const handleSearchReset = () => {
     setSubmitted(null);
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#f8fafc' }}>
+    <div className="min-h-screen" style={{ backgroundColor: tokens.pageBg }}>
       {/* Hero header */}
       <div
         className="py-10 px-4"
@@ -603,8 +616,8 @@ function TraCuuContent() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Tra cứu đơn hàng</h1>
-          <p className="text-gray-500 text-sm">Nhập mã đơn hàng hoặc số điện thoại để xem trạng thái đơn</p>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: tokens.heading }}>Tra cứu đơn hàng</h1>
+          <p className="text-sm" style={{ color: tokens.metaText }}>Nhập mã đơn hàng hoặc số điện thoại để xem trạng thái đơn</p>
         </div>
       </div>
 
@@ -612,11 +625,11 @@ function TraCuuContent() {
         {/* Search form */}
         <form
           onSubmit={handleSearch}
-          className="bg-white rounded-2xl border shadow-sm p-6 mb-6"
-          style={{ borderColor: '#e5e7eb' }}
+          className="rounded-2xl border shadow-sm p-6 mb-6"
+          style={{ backgroundColor: tokens.surface, borderColor: tokens.border }}
         >
           {/* Mode selector */}
-          <div className="flex gap-1 p-1 rounded-xl mb-5" style={{ background: '#f3f4f6' }}>
+          <div className="flex gap-1 p-1 rounded-xl mb-5" style={{ backgroundColor: tokens.surfaceMuted }}>
             {([
               { value: 'orderNumber', label: 'Mã đơn hàng' },
               { value: 'phone', label: 'Số điện thoại' },
@@ -632,8 +645,8 @@ function TraCuuContent() {
                 className="flex-1 py-2 px-3 text-sm font-medium rounded-lg transition-all"
                 style={
                   searchMode === tab.value
-                    ? { background: '#fff', color: primary, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', fontWeight: 600 }
-                    : { color: '#6b7280', background: 'transparent' }
+                    ? { backgroundColor: tokens.surface, color: primary, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', fontWeight: 600 }
+                    : { color: tokens.metaText, backgroundColor: 'transparent' }
                 }
               >
                 {tab.label}
@@ -648,14 +661,14 @@ function TraCuuContent() {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={searchMode === 'orderNumber' ? 'VD: ORD-001' : 'VD: 0901234567'}
-              className="flex-1 rounded-xl border border-gray-300 px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow"
-              style={{ '--tw-ring-color': `${primary}60` } as React.CSSProperties}
+              className="flex-1 rounded-xl border px-4 py-3 text-sm focus:outline-none focus:ring-2 transition-shadow"
+              style={{ backgroundColor: tokens.inputBg, borderColor: tokens.inputBorder, color: tokens.inputText, '--tw-ring-color': `${primary}60` } as React.CSSProperties}
               autoFocus
             />
             <button
               type="submit"
               className="rounded-xl px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              style={{ background: primary }}
+              style={{ backgroundColor: tokens.primaryButtonBg, color: tokens.primaryButtonText }}
             >
               Tra cứu
             </button>
@@ -668,14 +681,14 @@ function TraCuuContent() {
             {submitted.mode === 'orderNumber' ? (
               <OrderByNumberView
                 orderNumber={submitted.value}
-                primaryColor={primary}
-                onReset={handleReset}
+                tokens={tokens}
+                onReset={handleSearchReset}
               />
             ) : (
               <OrdersByPhoneView
                 phone={submitted.value}
-                primaryColor={primary}
-                onReset={handleReset}
+                tokens={tokens}
+                onReset={handleSearchReset}
               />
             )}
           </div>
@@ -706,18 +719,18 @@ function TraCuuContent() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="flex gap-3 p-4 rounded-xl border bg-white"
-                style={{ borderColor: '#e5e7eb' }}
+                className="flex gap-3 p-4 rounded-xl border"
+                style={{ backgroundColor: tokens.surface, borderColor: tokens.border }}
               >
                 <div
                   className="w-10 h-10 flex-shrink-0 rounded-lg flex items-center justify-center"
-                  style={{ background: `${primary}12`, color: primary }}
+                  style={{ backgroundColor: tokens.surfaceSoft, color: tokens.primary }}
                 >
                   {item.icon}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">{item.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
+                  <p className="text-sm font-semibold" style={{ color: tokens.bodyText }}>{item.title}</p>
+                  <p className="text-xs mt-0.5" style={{ color: tokens.metaText }}>{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -731,9 +744,13 @@ function TraCuuContent() {
 // ─── Loading fallback ─────────────────────────────────────────────────────────
 
 function LoadingFallback() {
+  const brandColors = useBrandColors();
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const tokens = getCheckoutColors(brandColors.primary, brandColors.secondary, brandColors.mode, isDark);
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#f8fafc' }}>
-      <div className="w-8 h-8 rounded-full border-2 border-gray-300 border-t-gray-600 animate-spin" />
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: tokens.pageBg }}>
+      <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: `${tokens.primary} transparent ${tokens.primary} ${tokens.primary}` }} />
     </div>
   );
 }

@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { StatusFilterDropdown } from '@/components/orders/StatusFilterDropdown';
 import { OrderDetailDrawer } from '@/components/orders/OrderDetailDrawer';
 import { DigitalCredentialsDisplay } from '@/components/orders/DigitalCredentialsDisplay';
@@ -332,9 +332,11 @@ function StatCard({
 export default function AccountOrdersPage() {
   const brandColors = useBrandColors();
   const brandColor = brandColors.primary;
+  const { siteDarkMode } = useSiteSettings();
+  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const tokens = useMemo(
-    () => getAccountOrdersColors(brandColors.primary, brandColors.secondary, brandColors.mode),
-    [brandColors.primary, brandColors.secondary, brandColors.mode]
+    () => getAccountOrdersColors(brandColors.primary, brandColors.secondary, brandColors.mode, isDark),
+    [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]
   );
   const config = useAccountOrdersConfig();
   const { statuses: orderStatuses } = useOrderStatuses();
@@ -427,7 +429,7 @@ export default function AccountOrdersPage() {
   const getStatusStyle = (status: string) => {
     const statusConfig = statusMap.get(status);
     const color = statusConfig?.color ?? tokens.primary;
-    const badgeTokens = getAccountOrdersStatusBadgeTokens(color, tokens.primary);
+    const badgeTokens = getAccountOrdersStatusBadgeTokens(color, tokens.primary, isDark);
     return {
       backgroundColor: badgeTokens.bg,
       color: badgeTokens.text,
