@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { PublicImage as Image } from '@/components/shared/PublicImage';
-import { ShoppingCart, Package, Heart, X } from 'lucide-react';
+import { Package, Heart, X } from 'lucide-react';
 import type { Id } from '@/convex/_generated/dataModel';
 import type { ProductsListColors } from '@/components/site/products/colors';
 import { getPublicPriceLabel } from '@/lib/products/public-price';
@@ -496,7 +496,7 @@ export function ProductList({
             <Link
               key={product._id}
               href={getDetailHref(product)}
-              className={`group flex gap-4 ${radiusClass} overflow-hidden border transition-all duration-300 p-4 hover:border-[var(--card-hover-border)] hover:shadow-lg hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-0.5`}
+              className={`group flex flex-col sm:flex-row gap-4 ${radiusClass} overflow-hidden border transition-all duration-300 p-4 hover:border-[var(--card-hover-border)] hover:shadow-lg hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-0.5`}
               style={{
                 backgroundColor: tokens.cardBackground,
                 borderColor: tokens.cardBorder,
@@ -507,13 +507,21 @@ export function ProductList({
               <ProductImageWithOverlay
                 frameConfig={frameConfig}
                 watermarkConfig={watermarkConfig}
-                className="w-32 md:w-40 shrink-0 overflow-hidden rounded-lg relative"
+                className="w-full sm:w-32 md:w-40 shrink-0 overflow-hidden rounded-lg relative"
                 style={{ ...imageAspectRatioStyle, backgroundColor: tokens.filterChipBg }}
               >
                 {product.image || productImagePlaceholder ? (
-                  <Image mode="thumb" src={product.image || productImagePlaceholder} alt={product.name} fill sizes="160px" className="object-cover group-hover:scale-110 transition-transform duration-500" />
+                  <Image mode="thumb" src={product.image || productImagePlaceholder} alt={product.name} fill sizes="(max-width: 640px) 100vw, 160px" className="object-cover group-hover:scale-110 transition-transform duration-500" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center"><Package size={32} style={{ color: tokens.neutralTextLight }} /></div>
+                )}
+                {_showPromotionBadge && showSalePrice && priceDisplay.comparePrice && !priceDisplay.isContactPrice && (
+                  <span
+                    className="absolute top-2 left-2 px-2 py-1 text-xs font-semibold rounded z-30"
+                    style={{ backgroundColor: tokens.promotionBadgeBg, color: tokens.promotionBadgeText }}
+                  >
+                    -{Math.round((1 - product.price / priceDisplay.comparePrice) * 100)}%
+                  </span>
                 )}
                 {showWishlistButton && canUseWishlist && (
                   <button
@@ -573,31 +581,22 @@ export function ProductList({
                   {showStock && !product.hasVariants && product.stock <= 5 && product.stock > 0 && <span className="text-xs" style={{ color: tokens.stockLowText }}>Chỉ còn {product.stock}</span>}
                   {showStock && !product.hasVariants && product.stock === 0 && <span className="text-xs" style={{ color: tokens.stockOutText }}>Hết hàng</span>}
                 </div>
+                {(showAddToCartButton || showBuyNowButton) && (
+                  <div className="mt-4 max-w-xs">
+                    <ProductCardActions
+                      product={product}
+                      tokens={tokens}
+                      showStock={showStock}
+                      showAddToCartButton={showAddToCartButton}
+                      showBuyNowButton={showBuyNowButton}
+                      buyNowLabel={buyNowLabel}
+                      onAddToCart={onAddToCart}
+                      onBuyNow={onBuyNow}
+                      cartButtonsLayout={_cartButtonsLayout}
+                    />
+                  </div>
+                )}
               </div>
-              {(showAddToCartButton || showBuyNowButton) && (
-                <div className="hidden md:flex items-center gap-2">
-                  {showAddToCartButton && (
-                    <button
-                      className="p-3 rounded-full border transition-colors disabled:opacity-55 disabled:cursor-not-allowed"
-                      style={{ borderColor: tokens.secondaryActionBorder, color: tokens.secondaryActionText, backgroundColor: tokens.cardBackground }}
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onAddToCart(product); }}
-                      disabled={showStock && !product.hasVariants && product.stock <= 0}
-                    >
-                      <ShoppingCart size={20} />
-                    </button>
-                  )}
-                  {showBuyNowButton && (
-                    <button
-                      className="px-3 py-2 rounded-full border text-xs font-medium transition-colors disabled:opacity-55 disabled:cursor-not-allowed"
-                      style={{ borderColor: tokens.secondaryActionBorder, color: tokens.secondaryActionText }}
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onBuyNow(product); }}
-                      disabled={showStock && !product.hasVariants && product.stock <= 0}
-                    >
-                      {showStock && !product.hasVariants && product.stock <= 0 ? 'Hết hàng' : buyNowLabel}
-                    </button>
-                  )}
-                </div>
-              )}
             </Link>
           );
         })()

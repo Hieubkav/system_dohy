@@ -1201,15 +1201,32 @@ export function ProductsListPreview({
                       )}
                     </div>
                   </div>
-                  {showAddToCartButton && (
-                    <button
-                      className="mt-2.5 w-full sm:w-auto px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
-                      style={{ backgroundColor: tokens.primaryActionBg, color: tokens.primaryActionText }}
-                      disabled={!product.inStock}
-                    >
-                      <ShoppingCart size={14} />
-                      {product.inStock ? 'Thêm vào giỏ' : 'Hết hàng'}
-                    </button>
+                  {(showAddToCartButton || showBuyNowButton) && (
+                    <div className={
+                      cartButtonsLayout === 'grid-2' && showAddToCartButton && showBuyNowButton
+                        ? "mt-2.5 grid grid-cols-2 gap-2 max-w-xs"
+                        : "mt-2.5 space-y-2 max-w-xs"
+                    }>
+                      {showAddToCartButton && (
+                        <button
+                          className="w-full py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                          style={{ backgroundColor: tokens.primaryActionBg, color: tokens.primaryActionText }}
+                          disabled={!product.inStock}
+                        >
+                          <ShoppingCart size={14} />
+                          {product.inStock ? 'Thêm vào giỏ' : 'Hết hàng'}
+                        </button>
+                      )}
+                      {showBuyNowButton && (
+                        <button
+                          className="w-full py-2 rounded-lg text-sm font-medium border transition-colors disabled:opacity-55 flex items-center justify-center"
+                          style={{ borderColor: tokens.secondaryActionBorder, color: tokens.secondaryActionText }}
+                          disabled={!product.inStock}
+                        >
+                          {product.inStock ? 'Mua ngay' : 'Hết hàng'}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>

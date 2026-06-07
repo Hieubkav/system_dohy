@@ -30,10 +30,10 @@ type ProjectDetailPreviewProps = {
 };
 
 const sampleProjects = [
-  { client: 'Dohy Co.', title: 'Website thương hiệu', category: 'Website', featured: true },
-  { client: 'VietAdmin', title: 'Hệ thống quản trị', category: 'Ứng dụng', featured: false },
-  { client: 'Factory Studio', title: 'Landing campaign', category: 'Marketing', featured: false },
-  { client: 'SaaS Lab', title: 'Branding kit', category: 'Branding', featured: false },
+  { client: 'Dohy Co.', title: 'dịch vụ làm website', category: 'Website', excerpt: 'Thiết kế giao diện độc quyền, tối ưu tốc độ tải trang và SEO chuyên sâu.', featured: true },
+  { client: 'Dohy Studio', title: 'CÂU CHUYỆN TÌNH YÊU', category: '2D Animation', excerpt: 'Dự án hoạt hình ngắn mang thông điệp ý nghĩa về tình yêu và cuộc sống.', featured: false },
+  { client: 'VietAdmin', title: 'Hệ thống quản trị doanh nghiệp', category: 'Ứng dụng', excerpt: 'Nền tảng quản lý tập trung, tự động hóa quy trình vận hành nội bộ.', featured: false },
+  { client: 'Factory Studio', title: 'Landing campaign', category: 'Marketing', excerpt: 'Chiến dịch tiếp thị sản phẩm mới tối ưu tỷ lệ chuyển đổi.', featured: false },
 ];
 
 function getAccent(brandColor = '#7c3aed', secondaryColor = '', colorMode: ColorMode = 'single') {
@@ -42,7 +42,7 @@ function getAccent(brandColor = '#7c3aed', secondaryColor = '', colorMode: Color
 
 function ProjectCard({
   project,
-  accent,
+  accent: _accent,
   showClientName,
   showIntroVideo,
   isList = false,
@@ -55,52 +55,48 @@ function ProjectCard({
 }) {
   if (isList) {
     return (
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950 flex flex-col sm:flex-row w-full">
-        <div className="relative aspect-video sm:aspect-auto sm:w-48 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 shrink-0">
+      <div className="group flex overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg dark:border-zinc-800 dark:bg-[#161617]">
+        <div className="w-32 sm:w-40 shrink-0 relative overflow-hidden bg-slate-100 dark:bg-[#1c1c1e] aspect-video sm:aspect-auto">
           <div className="absolute inset-0 flex items-center justify-center">
-            <Briefcase className="h-8 w-8 text-slate-400" />
+            <Briefcase className="h-6 w-6 text-slate-400" />
           </div>
-          {project.featured && (
-            <span className="absolute left-3 top-3 rounded-full px-2 py-1 text-[10px] font-semibold text-white" style={{ backgroundColor: accent }}>
-              Nổi bật
-            </span>
-          )}
           {showIntroVideo && (
-            <span className="absolute right-3 top-3 rounded-full bg-white/90 p-1.5 text-slate-700">
-              <PlayCircle size={14} />
+            <span className="absolute right-2 top-2 rounded-full bg-white/90 p-1 text-slate-700">
+              <PlayCircle size={12} />
             </span>
           )}
         </div>
-        <div className="space-y-2 p-4 flex-1 flex flex-col justify-center">
-          <span className="text-xs font-medium" style={{ color: accent }}>{project.category}</span>
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white">{project.title}</h3>
-          {showClientName && <p className="text-xs text-slate-500">Khách hàng: {project.client}</p>}
+        <div className="flex flex-1 flex-col justify-center space-y-2 p-4">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600 dark:bg-[#1c1c1e] dark:text-[#f5f5f7]">{project.category}</span>
+            {showClientName && project.client && <span className="text-xs text-slate-400 truncate max-w-[120px]">{project.client}</span>}
+          </div>
+          <h3 className="line-clamp-2 text-base font-semibold text-slate-950 transition group-hover:opacity-90 dark:text-[#f5f5f7]">{project.title}</h3>
+          <p className="line-clamp-2 text-sm leading-5 text-slate-600 dark:text-[#86868b]">{project.excerpt}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-      <div className="relative aspect-video bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
+    <div className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-zinc-800 dark:bg-[#161617]">
+      <div className="aspect-video relative overflow-hidden bg-slate-100 dark:bg-[#1c1c1e]">
         <div className="absolute inset-0 flex items-center justify-center">
           <Briefcase className="h-8 w-8 text-slate-400" />
         </div>
-        {project.featured && (
-          <span className="absolute left-3 top-3 rounded-full px-2 py-1 text-[10px] font-semibold text-white" style={{ backgroundColor: accent }}>
-            Nổi bật
-          </span>
-        )}
         {showIntroVideo && (
           <span className="absolute right-3 top-3 rounded-full bg-white/90 p-1.5 text-slate-700">
             <PlayCircle size={14} />
           </span>
         )}
       </div>
-      <div className="space-y-2 p-4">
-        <span className="text-xs font-medium" style={{ color: accent }}>{project.category}</span>
-        <h3 className="text-sm font-bold text-slate-900 dark:text-white">{project.title}</h3>
-        {showClientName && <p className="text-xs text-slate-500">Khách hàng: {project.client}</p>}
+      <div className="space-y-3 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 dark:bg-[#1c1c1e] dark:text-zinc-350">{project.category}</span>
+          {showClientName && project.client && <span className="truncate text-xs text-slate-400">{project.client}</span>}
+        </div>
+        <h3 className="line-clamp-2 text-xl font-semibold text-slate-950 transition group-hover:opacity-90 dark:text-[#f5f5f7]">{project.title}</h3>
+        <p className="line-clamp-2 text-sm leading-6 text-slate-650 dark:text-[#86868b]">{project.excerpt}</p>
       </div>
     </div>
   );
@@ -108,7 +104,7 @@ function ProjectCard({
 
 export function ProjectsListPreview({
   layoutStyle,
-  filterPosition = 'top',
+  filterPosition: _filterPosition = 'top',
   showSearch = true,
   showCategories = true,
   showClientName = true,
@@ -120,46 +116,152 @@ export function ProjectsListPreview({
 }: ProjectsListPreviewProps) {
   const accent = getAccent(brandColor, secondaryColor, colorMode);
   const isMobile = device === 'mobile';
-  const columns = isMobile || layoutStyle === 'list' ? 'grid-cols-1' : layoutStyle === 'sidebar' ? 'grid-cols-2' : 'grid-cols-3';
-  const showSidebar = layoutStyle === 'sidebar' && filterPosition !== 'top' && !isMobile;
+  const _columns = isMobile || layoutStyle === 'list' ? 'grid-cols-1' : layoutStyle === 'sidebar' ? 'grid-cols-2' : 'grid-cols-3';
+  const showSidebar = (layoutStyle === 'sidebar' || layoutStyle === 'list') && !isMobile;
 
-  return (
-    <div className="min-h-[520px] bg-slate-50 p-4 dark:bg-slate-950">
-      <div className="mx-auto max-w-5xl space-y-5">
-        <div className="rounded-3xl bg-white p-6 shadow-sm dark:bg-slate-900">
-          <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: accent }}>Projects</span>
-          <h1 className="mt-2 text-2xl font-bold text-slate-950 dark:text-white">Dự án đã thực hiện</h1>
-          <p className="mt-2 max-w-xl text-sm text-slate-500">Một số dự án tiêu biểu theo ngành, mục tiêu và kết quả triển khai.</p>
-        </div>
+  const pageHeader = (
+    <div className="mx-auto max-w-3xl text-center pb-2">
+      <h1 className="text-3xl font-bold text-slate-950 dark:text-[#f5f5f7] md:text-5xl">Dự án đã thực hiện</h1>
+    </div>
+  );
 
-        {(showSearch || showCategories) && !showSidebar && (
-          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-            {showSearch && <div className="h-9 min-w-48 flex-1 rounded-full bg-slate-100 dark:bg-slate-800" />}
-            {showCategories && ['Tất cả', 'Website', 'Branding', 'Ứng dụng'].map((item, index) => (
-              <span key={item} className="rounded-full px-3 py-2 text-xs" style={index === 0 ? { backgroundColor: accent, color: 'white' } : undefined}>
-                {item}
-              </span>
-            ))}
+  const topFilterBar = (showSearch || showCategories) && (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-[#161617] w-full">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        {showSearch && (
+          <div className="relative max-w-sm flex-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+            <input
+              disabled
+              placeholder="Tìm kiếm dự án..."
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] pl-9 pr-3 text-sm outline-none transition dark:border-zinc-700 dark:text-[#f5f5f7]"
+            />
           </div>
         )}
-
-        <div className={showSidebar ? 'grid grid-cols-[220px_1fr] gap-5' : ''}>
-          {showSidebar && (
-            <aside className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-              {showSearch && <div className="h-9 rounded-full bg-slate-100 dark:bg-slate-800" />}
-              {showCategories && ['Tất cả', 'Website', 'Branding', 'Ứng dụng'].map((item, index) => (
-                <div key={item} className="rounded-xl px-3 py-2 text-sm" style={index === 0 ? { backgroundColor: accent, color: 'white' } : undefined}>
-                  {item}
-                </div>
-              ))}
-            </aside>
+        <div className="flex flex-wrap gap-2">
+          {showCategories && (
+            <select disabled className="h-10 rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] px-3 text-sm dark:border-zinc-700 dark:text-[#f5f5f7]">
+              <option>Tất cả danh mục</option>
+              <option>Website</option>
+              <option>2D Animation</option>
+              <option>Ứng dụng</option>
+            </select>
           )}
-          <div className={`grid gap-4 ${columns}`}>
-            {sampleProjects.map((project) => (
-              <ProjectCard key={project.title} project={project} accent={accent} showClientName={showClientName} showIntroVideo={showIntroVideo} isList={layoutStyle === 'list'} />
-            ))}
+          <select disabled className="h-10 rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] px-3 text-sm dark:border-zinc-700 dark:text-[#f5f5f7]">
+            <option>Mới nhất</option>
+            <option>Cũ nhất</option>
+            <option>Xem nhiều</option>
+            <option>Theo tên</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  );
+
+  const sidebarFilter = (
+    <aside className="w-full space-y-4 lg:w-60 lg:flex-shrink-0">
+      {showSearch && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-[#161617]">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">Tìm kiếm</p>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+            <input
+              disabled
+              placeholder="Tìm dự án..."
+              className="h-9 w-full rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] pl-8 pr-3 text-sm outline-none dark:border-zinc-700 dark:text-[#f5f5f7]"
+            />
           </div>
         </div>
+      )}
+      {showCategories && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-[#161617]">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">Danh mục</p>
+          <ul className="space-y-0.5">
+            <li>
+              <button
+                disabled
+                type="button"
+                className="w-full rounded-xl px-3 py-2 text-left text-sm font-semibold"
+                style={{ backgroundColor: `${accent}18`, color: accent }}
+              >
+                Tất cả
+              </button>
+            </li>
+            {['Website', '2D Animation', 'Ứng dụng'].map((category) => (
+              <li key={category}>
+                <button
+                  disabled
+                  type="button"
+                  className="w-full rounded-xl px-3 py-2 text-left text-sm text-slate-500 dark:text-zinc-400"
+                >
+                  {category}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-[#161617]">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">Sắp xếp</p>
+        <select disabled className="h-9 w-full rounded-xl border border-slate-200 bg-white dark:bg-[#1c1c1e] px-3 text-sm dark:border-zinc-700 dark:text-[#f5f5f7]">
+          <option>Mới nhất</option>
+          <option>Cũ nhất</option>
+          <option>Xem nhiều</option>
+          <option>Theo tên</option>
+        </select>
+      </div>
+    </aside>
+  );
+
+  const paginationBar = (
+    <div className="flex items-center justify-between pt-4 w-full">
+      <span className="text-sm text-slate-500">{sampleProjects.length} dự án</span>
+      <div className="flex gap-2">
+        <button disabled className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-400 dark:border-zinc-800 dark:bg-[#161617]">
+          Trước
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-[520px] bg-slate-50 p-4 dark:bg-black font-active text-slate-700 dark:text-[#f5f5f7] transition-colors duration-200">
+      <div className="mx-auto max-w-5xl space-y-6">
+        {pageHeader}
+        
+        {!showSidebar ? (
+          // Grid Layout
+          <div className="space-y-6">
+            {topFilterBar}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {sampleProjects.map((project) => (
+                <ProjectCard key={project.title} project={project} accent={accent} showClientName={showClientName} showIntroVideo={showIntroVideo} isList={false} />
+              ))}
+            </div>
+            {paginationBar}
+          </div>
+        ) : (
+          // Sidebar or List Layout
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+            {sidebarFilter}
+            <div className="min-w-0 flex-1 space-y-6">
+              {layoutStyle === 'sidebar' ? (
+                <div className="grid gap-6 md:grid-cols-2">
+                  {sampleProjects.map((project) => (
+                    <ProjectCard key={project.title} project={project} accent={accent} showClientName={showClientName} showIntroVideo={showIntroVideo} isList={false} />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {sampleProjects.map((project) => (
+                    <ProjectCard key={project.title} project={project} accent={accent} showClientName={showClientName} showIntroVideo={showIntroVideo} isList={true} />
+                  ))}
+                </div>
+              )}
+              {paginationBar}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
