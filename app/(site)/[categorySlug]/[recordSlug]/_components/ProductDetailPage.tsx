@@ -114,6 +114,8 @@ type ProductDetailExperienceConfig = {
   showSocialButtons?: boolean;
   socialButtons?: Array<{ id: string; icon: string; label: string; url: string; active: boolean }>;
   cartButtonsLayout?: 'stack' | 'grid-2';
+  highlightsPosition?: 'info_column' | 'image_column';
+  highlightsSpacing?: 'low' | 'high' | 'none';
 };
 
 type ProductVariantOptionValue = {
@@ -260,6 +262,8 @@ function useProductDetailExperienceConfig(): ProductDetailExperienceConfig {
       showSocialButtons?: boolean;
       socialButtons?: Array<{ id: string; icon: string; label: string; url: string; active: boolean }>;
       cartButtonsLayout?: 'stack' | 'grid-2';
+      highlightsPosition?: 'info_column' | 'image_column';
+      highlightsSpacing?: 'low' | 'high' | 'none';
     }> | undefined;
     const layoutStyle = raw?.layoutStyle ?? legacyStyle;
     const layoutConfig = raw?.layouts?.[layoutStyle];
@@ -345,6 +349,8 @@ function useProductDetailExperienceConfig(): ProductDetailExperienceConfig {
       showSocialButtons: raw?.showSocialButtons ?? false,
       socialButtons: raw?.socialButtons ?? [],
       cartButtonsLayout: raw?.cartButtonsLayout ?? 'stack',
+      highlightsPosition: raw?.highlightsPosition ?? 'image_column',
+      highlightsSpacing: raw?.highlightsSpacing ?? 'high',
     };
   }, [experienceSetting?.value, legacyHighlightsEnabled, legacyStyle, cartAvailable, canUseComments, canUseCommentLikes, canUseCommentReplies, canUseWishlist, ordersEnabled, moduleDefaultAspectRatio]);
 }
@@ -974,6 +980,8 @@ export default function ProductDetailPage({ params }: PageProps) {
           variantOptions={variantOptions}
           highlights={classicHighlights}
           highlightsEnabled={classicHighlightsEnabled}
+          highlightsPosition={experienceConfig.highlightsPosition}
+          highlightsSpacing={experienceConfig.highlightsSpacing}
           ratingSummary={ratingSummary}
           saleMode={saleMode}
           showAddToCart={canUseCartActions ? experienceConfig.showAddToCart : false}
@@ -1029,6 +1037,8 @@ export default function ProductDetailPage({ params }: PageProps) {
           variantOptions={variantOptions}
           highlights={classicHighlights}
           showHighlights={experienceConfig.showHighlights}
+          highlightsPosition={experienceConfig.highlightsPosition}
+          highlightsSpacing={experienceConfig.highlightsSpacing}
           ratingSummary={ratingSummary}
           saleMode={saleMode}
           showAddToCart={canUseCartActions ? experienceConfig.showAddToCart : false}
@@ -1085,6 +1095,8 @@ export default function ProductDetailPage({ params }: PageProps) {
           variantOptions={variantOptions}
           highlights={classicHighlights}
           showHighlights={experienceConfig.showHighlights}
+          highlightsPosition={experienceConfig.highlightsPosition}
+          highlightsSpacing={experienceConfig.highlightsSpacing}
           ratingSummary={ratingSummary}
           saleMode={saleMode}
           showAddToCart={canUseCartActions ? experienceConfig.showAddToCart : false}
@@ -1247,11 +1259,15 @@ interface ExperienceBlocksProps {
 interface HighlightBlockProps {
   highlights: ClassicHighlightItem[];
   showHighlights: boolean;
+  highlightsPosition?: 'info_column' | 'image_column';
+  highlightsSpacing?: 'low' | 'high' | 'none';
 }
 
 interface ClassicStyleProps extends StyleProps, ExperienceBlocksProps {
   highlights: ClassicHighlightItem[];
   highlightsEnabled: boolean;
+  highlightsPosition?: 'info_column' | 'image_column';
+  highlightsSpacing?: 'low' | 'high' | 'none';
 }
 
 function formatPrice(price: number): string {
@@ -1456,12 +1472,22 @@ function BlurredProductImage({ src, alt, sizes, fallbackSrc }: { src?: string | 
   );
 }
 
-function HighlightsGrid({ highlights, tokens }: { highlights: ClassicHighlightItem[]; tokens: ProductDetailColors }) {
+function HighlightsGrid({
+  highlights,
+  tokens,
+  className = 'rounded-xl',
+  style,
+}: {
+  highlights: ClassicHighlightItem[];
+  tokens: ProductDetailColors;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   if (highlights.length === 0) {
     return null;
   }
   return (
-    <div className="grid grid-cols-3 gap-4 p-4 rounded-xl" style={{ backgroundColor: tokens.highlightBg }}>
+    <div className={`grid grid-cols-3 gap-4 p-4 ${className}`} style={{ backgroundColor: tokens.highlightBg, ...style }}>
       {highlights.map((item, index) => {
         const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon];
         return (
@@ -1474,6 +1500,12 @@ function HighlightsGrid({ highlights, tokens }: { highlights: ClassicHighlightIt
     </div>
   );
 }
+
+const getHighlightsSpacingClass = (spacing?: 'low' | 'high' | 'none') => {
+  if (spacing === 'none') return '!mt-0';
+  if (spacing === 'low') return '!mt-4 md:!mt-5';
+  return '!mt-8 md:!mt-10';
+};
 
 function ExpandableProductDescriptionBlock({
   children,
@@ -1870,6 +1902,8 @@ function ClassicStyle({
   variantOptions,
   highlights,
   highlightsEnabled,
+  highlightsPosition,
+  highlightsSpacing,
   ratingSummary,
   saleMode,
   showAddToCart,
@@ -2040,6 +2074,7 @@ function ClassicStyle({
   const discountBadgeColors = resolveProductDetailElementColor(accentColors?.discountBadge ?? 'primary', tokens);
   const primaryButtonColors = resolveProductDetailElementColor(accentColors?.primaryButton ?? 'primary', tokens);
   const comboBadgeColors = resolveProductDetailElementColor(accentColors?.comboBadge ?? 'black', tokens);
+  const attachImageHighlights = highlightsEnabled && highlights.length > 0 && highlightsPosition === 'image_column' && highlightsSpacing === 'none';
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: tokens.surface }}>
@@ -2082,7 +2117,7 @@ function ClassicStyle({
           <div className="mb-6 lg:mb-0">
             <div className={`${imageFrame.frameWidthClassName} mb-3 md:mb-4 group/carousel relative`}>
               <div
-                className={`relative rounded-2xl overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                className={`relative ${attachImageHighlights ? 'rounded-t-2xl rounded-b-none' : 'rounded-2xl'} overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                 style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                 role={canOpenLightbox ? 'button' : undefined}
                 tabIndex={canOpenLightbox ? 0 : -1}
@@ -2132,6 +2167,16 @@ function ClassicStyle({
                   <span className="absolute top-3 left-3 px-3 py-1.5 text-sm font-bold rounded-lg z-30" style={{ backgroundColor: discountBadgeColors.bg, color: discountBadgeColors.text }}>-{discountPercent}%</span>
                 )}
               </div>
+              {highlightsEnabled && highlights.length > 0 && highlightsPosition === 'image_column' && (
+                <div className={attachImageHighlights ? '' : getHighlightsSpacingClass(highlightsSpacing)}>
+                  <HighlightsGrid
+                    highlights={highlights}
+                    tokens={tokens}
+                    className={attachImageHighlights ? 'rounded-t-none rounded-b-2xl border-t' : 'rounded-xl'}
+                    style={attachImageHighlights ? { borderColor: tokens.divider } : undefined}
+                  />
+                </div>
+              )}
             </div>
             {images.length > 1 && (
               <>
@@ -2290,17 +2335,9 @@ function ClassicStyle({
               />
             )}
 
-            {highlightsEnabled && highlights.length > 0 && (
-              <div className="grid grid-cols-3 gap-4 p-4 rounded-xl mb-8" style={{ backgroundColor: tokens.highlightBg }}>
-                {highlights.map((item, index) => {
-                  const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon];
-                  return (
-                    <div key={`${item.icon}-${index}`} className="text-center">
-                      <Icon size={24} className="mx-auto mb-2" style={{ color: tokens.highlightIcon }} />
-                      <p className="text-xs" style={{ color: tokens.highlightText }}>{item.text}</p>
-                    </div>
-                  );
-                })}
+            {highlightsEnabled && highlights.length > 0 && highlightsPosition !== 'image_column' && (
+              <div className="mb-8">
+                <HighlightsGrid highlights={highlights} tokens={tokens} />
               </div>
             )}
 

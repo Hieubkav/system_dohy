@@ -733,6 +733,7 @@ export function ProductDetailPreview({
   ];
   const highlightItems = classicHighlights.length > 0 ? classicHighlights : fallbackHighlights;
   const showHighlightBlock = showHighlights && highlightItems.length > 0;
+  const attachImageHighlights = showHighlightBlock && highlightsPosition === 'image_column' && highlightsSpacing === 'none';
   const relatedCount = relatedProductsMode === 'fixed' ? 4 : relatedProductsPerPage;
   const relatedItems = Array.from({ length: relatedCount }).map((_, index) => ({
     name: `Sản phẩm ${index + 1}`,
@@ -812,8 +813,8 @@ export function ProductDetailPreview({
     return () => observer.disconnect();
   }, [layoutStyle]);
 
-  const renderHighlights = () => (
-    <div className="grid grid-cols-3 gap-4 p-4 rounded-xl" style={{ backgroundColor: tokens.highlightBg }}>
+  const renderHighlights = (className = 'rounded-xl', style?: React.CSSProperties) => (
+    <div className={`grid grid-cols-3 gap-4 p-4 ${className}`} style={{ backgroundColor: tokens.highlightBg, ...style }}>
       {highlightItems.map((item, index) => {
         const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon] ?? Star;
         return (
@@ -859,7 +860,7 @@ export function ProductDetailPreview({
             <div className="space-y-3">
               <div className={imageFrame.frameWidthClassName}>
                 <div
-                  className={`relative rounded-xl overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                  className={`relative ${attachImageHighlights ? 'rounded-t-xl rounded-b-none' : 'rounded-xl'} overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                   style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                   role={canOpenLightbox ? 'button' : undefined}
                   tabIndex={canOpenLightbox ? 0 : -1}
@@ -890,6 +891,14 @@ export function ProductDetailPreview({
                     </div>
                   )}
                 </div>
+                {showHighlightBlock && highlightsPosition === 'image_column' && (
+                  <div className={attachImageHighlights ? '' : getHighlightsSpacingClass(highlightsSpacing)}>
+                    {renderHighlights(
+                      attachImageHighlights ? 'rounded-t-none rounded-b-xl border-t' : 'rounded-xl',
+                      attachImageHighlights ? { borderColor: tokens.divider } : undefined
+                    )}
+                  </div>
+                )}
               </div>
               {PREVIEW_IMAGES.length > 1 && (
                 <>
@@ -923,11 +932,6 @@ export function ProductDetailPreview({
                     />
                   )}
                 </>
-              )}
-              {showHighlightBlock && highlightsPosition === 'image_column' && (
-                <div className="mt-4 animate-fadeIn">
-                  {renderHighlights()}
-                </div>
               )}
             </div>
             <div className="space-y-3 md:space-y-4">
@@ -1111,7 +1115,7 @@ export function ProductDetailPreview({
                     <div className="grid md:grid-cols-2 gap-3 items-center p-3 md:p-5">
                       <div className={imageFrame.frameWidthClassName}>
                     <div
-                      className={`relative rounded-xl overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                      className={`relative ${attachImageHighlights ? 'rounded-t-xl rounded-b-none' : 'rounded-xl'} overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                       style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                       role={canOpenLightbox ? 'button' : undefined}
                       tabIndex={canOpenLightbox ? 0 : -1}
@@ -1149,6 +1153,14 @@ export function ProductDetailPreview({
                         </div>
                       )}
                     </div>
+                    {showHighlightBlock && highlightsPosition === 'image_column' && (
+                      <div className={attachImageHighlights ? '' : getHighlightsSpacingClass(highlightsSpacing)}>
+                        {renderHighlights(
+                          attachImageHighlights ? 'rounded-t-none rounded-b-xl border-t' : 'rounded-xl',
+                          attachImageHighlights ? { borderColor: tokens.divider } : undefined
+                        )}
+                      </div>
+                    )}
                   </div>
                     </div>
                   </div>
@@ -1157,7 +1169,7 @@ export function ProductDetailPreview({
                     <div className={heroImageWrapperClass}>
                   <div className={`${imageFrame.frameWidthClassName} overflow-hidden`}>
                     <div
-                      className={`relative overflow-hidden rounded-xl ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                      className={`relative overflow-hidden ${attachImageHighlights ? 'rounded-t-xl rounded-b-none' : 'rounded-xl'} ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                       style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                       role={canOpenLightbox ? 'button' : undefined}
                       tabIndex={canOpenLightbox ? 0 : -1}
@@ -1193,6 +1205,14 @@ export function ProductDetailPreview({
                         <div className="w-40 h-40 rounded-xl" style={{ backgroundColor: tokens.surfaceSoft }} />
                       )}
                     </div>
+                    {showHighlightBlock && highlightsPosition === 'image_column' && (
+                      <div className={attachImageHighlights ? '' : getHighlightsSpacingClass(highlightsSpacing)}>
+                        {renderHighlights(
+                          attachImageHighlights ? 'rounded-t-none rounded-b-xl border-t' : 'rounded-xl',
+                          attachImageHighlights ? { borderColor: tokens.divider } : undefined
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                   </div>
@@ -1213,11 +1233,6 @@ export function ProductDetailPreview({
                       />
                     )}
                   </>
-                )}
-                {showHighlightBlock && highlightsPosition === 'image_column' && (
-                  <div className="mt-4 animate-fadeIn">
-                    {renderHighlights()}
-                  </div>
                 )}
               </div>
 
@@ -1430,7 +1445,7 @@ export function ProductDetailPreview({
                   <div className={`flex-1 ${imageFrame.frameWidthClassName}`}>
                     <div
                       ref={mainImageRef}
-                      className={`relative w-full rounded-sm overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                      className={`relative w-full ${attachImageHighlights ? 'rounded-t-sm rounded-b-none' : 'rounded-sm'} overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                       style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                       role={canOpenLightbox ? 'button' : undefined}
                       tabIndex={canOpenLightbox ? 0 : -1}
@@ -1468,13 +1483,16 @@ export function ProductDetailPreview({
                         </div>
                       )}
                     </div>
+                    {showHighlightBlock && highlightsPosition === 'image_column' && (
+                      <div className={attachImageHighlights ? '' : `${getHighlightsSpacingClass(highlightsSpacing)} w-full`}>
+                        {renderHighlights(
+                          attachImageHighlights ? 'rounded-t-none rounded-b-sm border-t' : 'rounded-xl',
+                          attachImageHighlights ? { borderColor: tokens.divider } : undefined
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
-                {showHighlightBlock && highlightsPosition === 'image_column' && (
-                  <div className="mt-4 animate-fadeIn w-full">
-                    {renderHighlights()}
-                  </div>
-                )}
               </div>
 
               <div className="lg:col-span-5 px-0 md:px-2 py-2 lg:py-0 flex flex-col justify-center">
@@ -1694,7 +1712,7 @@ export function ProductDetailPreview({
                   {/* Ảnh chính */}
                   <div className="flex-1">
                     <div
-                      className={`relative rounded-2xl overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                      className={`relative ${attachImageHighlights ? 'rounded-t-2xl rounded-b-none' : 'rounded-2xl'} overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                       style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                       onClick={canOpenLightbox ? () => openLightboxAt(activeImageIndex) : undefined}
                       onKeyDown={handleLightboxKeyDown}
@@ -1733,6 +1751,19 @@ export function ProductDetailPreview({
                         </div>
                       )}
                     </div>
+                    {showHighlightBlock && highlightsPosition !== 'info_column' && (
+                      <div className={`grid grid-cols-3 gap-2 ${attachImageHighlights ? 'rounded-t-none rounded-b-2xl border-t p-4' : `rounded-xl border-t pt-4 ${getHighlightsSpacingClass(highlightsSpacing)}`} animate-fadeIn`} style={{ borderColor: tokens.divider }}>
+                        {highlightItems.map((item, index) => {
+                          const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon] || Star;
+                          return (
+                            <div key={`${item.icon}-${index}`} className="flex flex-col items-center text-center p-2 rounded-xl" style={{ backgroundColor: tokens.surfaceMuted }}>
+                              <Icon size={18} style={{ color: tokens.primary }} />
+                              <span className="text-[10px] md:text-xs font-medium mt-1 line-clamp-1" style={{ color: tokens.bodyText }}>{item.text}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1756,20 +1787,6 @@ export function ProductDetailPreview({
                   </div>
                 )}
 
-                {/* Highlights cài đặt dưới ảnh */}
-                {showHighlightBlock && highlightsPosition !== 'info_column' && (
-                  <div className="grid grid-cols-3 gap-2 border-t pt-4" style={{ borderColor: tokens.divider }}>
-                    {highlightItems.map((item, index) => {
-                      const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon] || Star;
-                      return (
-                        <div key={`${item.icon}-${index}`} className="flex flex-col items-center text-center p-2 rounded-xl" style={{ backgroundColor: tokens.surfaceMuted }}>
-                          <Icon size={18} style={{ color: tokens.primary }} />
-                          <span className="text-[10px] md:text-xs font-medium mt-1 line-clamp-1" style={{ color: tokens.bodyText }}>{item.text}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
 
               {/* Cột phải: Thông tin & Giá */}

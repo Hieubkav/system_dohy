@@ -992,9 +992,9 @@ export default function ProductDetailExperiencePage() {
           onChange={(v) => setConfig(prev => ({ ...prev, highlightsPosition: v as 'info_column' | 'image_column' }))}
         />
       )}
-      {config.layouts.classic.showClassicHighlights && config.highlightsPosition === 'info_column' && (
+      {config.layouts.classic.showClassicHighlights && (
         <SelectRow
-          label="Khoảng cách cột phải (Highlights)"
+          label={config.highlightsPosition === 'image_column' ? 'Khoảng cách dưới ảnh (Highlights)' : 'Khoảng cách cột phải (Highlights)'}
           value={config.highlightsSpacing || 'high'}
           options={[
             { label: 'Nhiều (Mặc định)', value: 'high' },

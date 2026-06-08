@@ -1595,12 +1595,22 @@ function BlurredProductImage({ src, alt, sizes, fallbackSrc }: { src?: string | 
   );
 }
 
-function HighlightsGrid({ highlights, tokens }: { highlights: ClassicHighlightItem[]; tokens: ProductDetailColors }) {
+function HighlightsGrid({
+  highlights,
+  tokens,
+  className = 'rounded-xl',
+  style,
+}: {
+  highlights: ClassicHighlightItem[];
+  tokens: ProductDetailColors;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   if (highlights.length === 0) {
     return null;
   }
   return (
-    <div className="grid grid-cols-3 gap-4 p-4 rounded-xl" style={{ backgroundColor: tokens.highlightBg }}>
+    <div className={`grid grid-cols-3 gap-4 p-4 ${className}`} style={{ backgroundColor: tokens.highlightBg, ...style }}>
       {highlights.map((item, index) => {
         const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon];
         return (
@@ -2182,6 +2192,7 @@ function ClassicStyle({
   const discountBadgeColors = resolveProductDetailElementColor(accentColors?.discountBadge ?? 'primary', tokens);
   const primaryButtonColors = resolveProductDetailElementColor(accentColors?.primaryButton ?? 'primary', tokens);
   const comboBadgeColors = resolveProductDetailElementColor(accentColors?.comboBadge ?? 'black', tokens);
+  const attachImageHighlights = highlightsEnabled && highlights.length > 0 && highlightsPosition === 'image_column' && highlightsSpacing === 'none';
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: tokens.surface }}>
@@ -2224,7 +2235,7 @@ function ClassicStyle({
           <div className="mb-6 lg:mb-0">
             <div className={`${imageFrame.frameWidthClassName} mb-3 md:mb-4 group/carousel relative`}>
               <div
-                className={`relative rounded-2xl overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                className={`relative ${attachImageHighlights ? 'rounded-t-2xl rounded-b-none' : 'rounded-2xl'} overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                 style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                 role={canOpenLightbox ? 'button' : undefined}
                 tabIndex={canOpenLightbox ? 0 : -1}
@@ -2274,6 +2285,22 @@ function ClassicStyle({
                   <span className="absolute top-3 left-3 px-3 py-1.5 text-sm font-bold rounded-lg z-30" style={{ backgroundColor: discountBadgeColors.bg, color: discountBadgeColors.text }}>-{discountPercent}%</span>
                 )}
               </div>
+              {highlightsEnabled && highlights.length > 0 && highlightsPosition === 'image_column' && (
+                <div
+                  className={`grid grid-cols-3 gap-4 p-4 ${attachImageHighlights ? 'rounded-t-none rounded-b-2xl border-t' : `rounded-xl ${getHighlightsSpacingClass(highlightsSpacing)}`} animate-fadeIn`}
+                  style={{ backgroundColor: tokens.highlightBg, borderColor: tokens.divider }}
+                >
+                  {highlights.map((item, index) => {
+                    const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon];
+                    return (
+                      <div key={`${item.icon}-${index}`} className="text-center">
+                        <Icon size={24} className="mx-auto mb-2 animate-bounce-slow" style={{ color: tokens.highlightIcon }} />
+                        <p className="text-xs" style={{ color: tokens.highlightText }}>{item.text}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             {images.length > 1 && (
               <>
@@ -2291,19 +2318,6 @@ function ClassicStyle({
                   />
                 </div>
               </>
-            )}
-            {highlightsEnabled && highlights.length > 0 && highlightsPosition === 'image_column' && (
-              <div className="grid grid-cols-3 gap-4 p-4 rounded-xl mt-4 animate-fadeIn" style={{ backgroundColor: tokens.highlightBg }}>
-                {highlights.map((item, index) => {
-                  const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon];
-                  return (
-                    <div key={`${item.icon}-${index}`} className="text-center">
-                      <Icon size={24} className="mx-auto mb-2 animate-bounce-slow" style={{ color: tokens.highlightIcon }} />
-                      <p className="text-xs" style={{ color: tokens.highlightText }}>{item.text}</p>
-                    </div>
-                  );
-                })}
-              </div>
             )}
           </div>
 
@@ -2876,6 +2890,7 @@ function PremiumStyle({
   const categoryBadgeColors = resolveProductDetailElementColor(accentColors?.categoryBadge ?? 'secondary', tokens);
   const discountBadgeColors = resolveProductDetailElementColor(accentColors?.discountBadge ?? 'primary', tokens);
   const primaryButtonColors = resolveProductDetailElementColor(accentColors?.primaryButton ?? 'primary', tokens);
+  const attachImageHighlights = highlightsEnabled && highlights.length > 0 && highlightsPosition !== 'info_column' && highlightsSpacing === 'none';
 
   // Lấy các attributes thật của sản phẩm để render
   const rawAttributes = productAttributesMap && productAttributesMap.has(product._id)
@@ -2943,7 +2958,7 @@ function PremiumStyle({
               <div className="flex-1">
                 <div className={`${imageFrame.frameWidthClassName} group/carousel relative`}>
                   <div
-                    className={`relative rounded-2xl overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                    className={`relative ${attachImageHighlights ? 'rounded-t-2xl rounded-b-none' : 'rounded-2xl'} overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                     style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                     role={canOpenLightbox ? 'button' : undefined}
                     tabIndex={canOpenLightbox ? 0 : -1}
@@ -2993,6 +3008,19 @@ function PremiumStyle({
                       <span className="absolute top-3 left-3 px-3 py-1.5 text-sm font-bold rounded-lg z-30" style={{ backgroundColor: discountBadgeColors.bg, color: discountBadgeColors.text }}>-{discountPercent}%</span>
                     )}
                   </div>
+                  {highlightsEnabled && highlights && highlights.length > 0 && highlightsPosition !== 'info_column' && (
+                    <div className={`grid grid-cols-3 gap-2 ${attachImageHighlights ? 'rounded-t-none rounded-b-2xl border-t p-4' : `rounded-xl border-t pt-4 ${getHighlightsSpacingClass(highlightsSpacing)}`} animate-fadeIn`} style={{ borderColor: tokens.divider }}>
+                      {highlights.map((item, index) => {
+                        const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon] || BadgeCheck;
+                        return (
+                          <div key={`${item.icon}-${index}`} className="flex flex-col items-center text-center p-2.5 rounded-2xl" style={{ backgroundColor: tokens.surfaceMuted }}>
+                            <Icon size={20} style={{ color: tokens.primary }} />
+                            <span className="text-[10px] md:text-xs font-semibold mt-1 line-clamp-1" style={{ color: tokens.bodyText }}>{item.text}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -3014,20 +3042,6 @@ function PremiumStyle({
               </div>
             )}
 
-            {/* Highlights động từ cài đặt dưới ảnh sản phẩm */}
-            {highlightsEnabled && highlights && highlights.length > 0 && highlightsPosition !== 'info_column' && (
-              <div className="grid grid-cols-3 gap-2 border-t pt-4" style={{ borderColor: tokens.divider }}>
-                {highlights.map((item, index) => {
-                  const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon] || BadgeCheck;
-                  return (
-                    <div key={`${item.icon}-${index}`} className="flex flex-col items-center text-center p-2.5 rounded-2xl" style={{ backgroundColor: tokens.surfaceMuted }}>
-                      <Icon size={20} style={{ color: tokens.primary }} />
-                      <span className="text-[10px] md:text-xs font-semibold mt-1 line-clamp-1" style={{ color: tokens.bodyText }}>{item.text}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
 
           {/* Cột phải: Thông tin sản phẩm */}
@@ -4191,6 +4205,7 @@ function ModernStyle({
   const discountBadgeColors = resolveProductDetailElementColor(accentColors?.discountBadge ?? 'primary', tokens);
   const primaryButtonColors = resolveProductDetailElementColor(accentColors?.primaryButton ?? 'primary', tokens);
   const comboBadgeColors = resolveProductDetailElementColor(accentColors?.comboBadge ?? 'black', tokens);
+  const attachImageHighlights = showHighlights && highlightsPosition === 'image_column' && highlightsSpacing === 'none';
 
   const heroContainerClass = heroStyle === 'full'
     ? 'border rounded-2xl'
@@ -4256,7 +4271,7 @@ function ModernStyle({
                 <div className="grid md:grid-cols-2 gap-3 items-center p-3 md:p-5">
                   <div className={imageFrame.frameWidthClassName}>
                     <div
-                      className={`relative rounded-xl overflow-hidden group/carousel ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                      className={`relative ${attachImageHighlights ? 'rounded-t-xl rounded-b-none' : 'rounded-xl'} overflow-hidden group/carousel ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                       style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                       role={canOpenLightbox ? 'button' : undefined}
                       tabIndex={canOpenLightbox ? 0 : -1}
@@ -4315,6 +4330,16 @@ function ModernStyle({
                         </span>
                       )}
                     </div>
+                    {showHighlights && highlightsPosition === 'image_column' && (
+                      <div className={attachImageHighlights ? '' : getHighlightsSpacingClass(highlightsSpacing)}>
+                        <HighlightsGrid
+                          highlights={highlights}
+                          tokens={tokens}
+                          className={attachImageHighlights ? 'rounded-t-none rounded-b-xl border-t' : 'rounded-xl'}
+                          style={attachImageHighlights ? { borderColor: tokens.divider } : undefined}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -4323,7 +4348,7 @@ function ModernStyle({
                 <div className={heroImageWrapperClass}>
                   <div className={imageFrame.frameWidthClassName}>
                     <div
-                      className={`relative overflow-hidden rounded-xl group/carousel ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                      className={`relative overflow-hidden ${attachImageHighlights ? 'rounded-t-xl rounded-b-none' : 'rounded-xl'} group/carousel ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                       style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                       role={canOpenLightbox ? 'button' : undefined}
                       tabIndex={canOpenLightbox ? 0 : -1}
@@ -4382,6 +4407,16 @@ function ModernStyle({
                         </span>
                       )}
                     </div>
+                    {showHighlights && highlightsPosition === 'image_column' && (
+                      <div className={attachImageHighlights ? '' : getHighlightsSpacingClass(highlightsSpacing)}>
+                        <HighlightsGrid
+                          highlights={highlights}
+                          tokens={tokens}
+                          className={attachImageHighlights ? 'rounded-t-none rounded-b-xl border-t' : 'rounded-xl'}
+                          style={attachImageHighlights ? { borderColor: tokens.divider } : undefined}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -4403,11 +4438,6 @@ function ModernStyle({
                   />
                 </div>
               </>
-            )}
-            {showHighlights && highlightsPosition === 'image_column' && (
-              <div className="mt-4 animate-fadeIn">
-                <HighlightsGrid highlights={highlights} tokens={tokens} />
-              </div>
             )}
           </div>
 
@@ -4874,6 +4904,7 @@ function MinimalStyle({
   const primaryButtonColors = resolveProductDetailElementColor(accentColors?.primaryButton ?? 'primary', tokens);
   const comboBadgeColors = resolveProductDetailElementColor(accentColors?.comboBadge ?? 'black', tokens);
   const canOpenLightbox = enableImageLightbox && images.length > 0;
+  const attachImageHighlights = showHighlights && highlightsPosition === 'image_column' && highlightsSpacing === 'none';
 
   const handleOpenLightbox = () => {
     if (!canOpenLightbox) {
@@ -4962,7 +4993,7 @@ function MinimalStyle({
                 <div className={`flex-1 ${imageFrame.frameWidthClassName}`}>
                   <div
                     ref={mainImageRef}
-                    className={`relative w-full rounded-sm overflow-hidden group/carousel ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                    className={`relative w-full ${attachImageHighlights ? 'rounded-t-sm rounded-b-none' : 'rounded-sm'} overflow-hidden group/carousel ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                     style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                     role={canOpenLightbox ? 'button' : undefined}
                     tabIndex={canOpenLightbox ? 0 : -1}
@@ -5021,13 +5052,18 @@ function MinimalStyle({
                       </span>
                     )}
                   </div>
+                  {showHighlights && highlightsPosition === 'image_column' && (
+                    <div className={attachImageHighlights ? '' : `${getHighlightsSpacingClass(highlightsSpacing)} w-full`}>
+                      <HighlightsGrid
+                        highlights={highlights}
+                        tokens={tokens}
+                        className={attachImageHighlights ? 'rounded-t-none rounded-b-sm border-t' : 'rounded-xl'}
+                        style={attachImageHighlights ? { borderColor: tokens.divider } : undefined}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
-              {showHighlights && highlightsPosition === 'image_column' && (
-                <div className="mt-4 animate-fadeIn w-full">
-                  <HighlightsGrid highlights={highlights} tokens={tokens} />
-                </div>
-              )}
             </div>
           </div>
 
