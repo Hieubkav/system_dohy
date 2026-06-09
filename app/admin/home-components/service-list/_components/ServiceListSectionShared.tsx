@@ -866,7 +866,7 @@ export function ServiceListSectionShared({
             children: (
               <article
                 className={cn(
-                  'relative h-full border p-3 transition-all duration-200 rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)] hover:border-zinc-400 dark:hover:border-zinc-600',
+                  'relative h-full flex flex-col border p-3 transition-all duration-200 rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.05)] hover:border-zinc-400 dark:hover:border-zinc-600',
                 )}
                 style={{
                   backgroundColor: isDarkBg ? 'rgba(24, 24, 27, 0.65)' : '#ffffff',
@@ -920,7 +920,7 @@ export function ServiceListSectionShared({
                   ) : null}
                 </div>
 
-                <div className="flex flex-col h-[calc(100%-165px)]">
+                <div className="flex flex-col flex-1">
                   <h3 
                     className="text-xs font-semibold leading-snug break-words" 
                     style={{ color: isDarkBg ? '#f4f4f5' : '#09090b' }}
