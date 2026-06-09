@@ -13,12 +13,12 @@ import { CTASectionShared } from './CTASectionShared';
 import type { CTAConfig, CTAStyle } from '../_types';
 
 const CTA_STYLES: { id: CTAStyle; label: string }[] = [
-  { id: 'banner', label: 'Banner' },
-  { id: 'centered', label: 'Centered' },
-  { id: 'split', label: 'Split' },
-  { id: 'floating', label: 'Floating' },
-  { id: 'gradient', label: 'Gradient' },
-  { id: 'minimal', label: 'Minimal' },
+  { id: 'banner', label: '(1) Thanh ngang' },
+  { id: 'centered', label: '(2) Căn giữa' },
+  { id: 'split', label: '(3) Chia đôi' },
+  { id: 'floating', label: '(4) Khối nổi' },
+  { id: 'gradient', label: '(5) Chuyển màu' },
+  { id: 'minimal', label: '(6) Tối giản' },
 ];
 
 export const CTAPreview = ({

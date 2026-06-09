@@ -16,16 +16,16 @@ import type {
 } from '../_types';
 
 const TESTIMONIAL_STYLES: Array<{ id: TestimonialsStyle; label: string }> = [
-  { id: 'cards', label: 'Cards' },
-  { id: 'slider', label: 'Slider' },
-  { id: 'marquee', label: 'Marquee' },
-  { id: 'showcase', label: 'Showcase' },
-  { id: 'quote', label: 'Quote' },
-  { id: 'minimal', label: 'Minimal' },
-  { id: 'split-carousel', label: 'Split' },
-  { id: 'overlap-carousel', label: 'Overlap' },
-  { id: 'builder-cards', label: 'Builder' },
-  { id: 'builder-carousel', label: 'Builder Slide' },
+  { id: 'cards', label: '(1) Dạng thẻ' },
+  { id: 'slider', label: '(2) Trượt ngang' },
+  { id: 'marquee', label: '(3) Chạy ngang' },
+  { id: 'showcase', label: '(4) Trưng bày' },
+  { id: 'quote', label: '(5) Trích dẫn' },
+  { id: 'minimal', label: '(6) Tối giản' },
+  { id: 'split-carousel', label: '(7) Chia đôi' },
+  { id: 'overlap-carousel', label: '(8) Đè chồng' },
+  { id: 'builder-cards', label: '(9) Thẻ khối' },
+  { id: 'builder-carousel', label: '(10) Trượt khối' },
 ];
 
 export const TestimonialsPreview = ({

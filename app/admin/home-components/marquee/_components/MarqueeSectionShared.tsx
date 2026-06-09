@@ -257,7 +257,13 @@ function DarkLayout({ items, tokens, duration, direction, pauseOnHover, scale, c
   const segments = buildSegments(items);
   const cfg = scaleConfig[scale];
   return (
-    <div className={cn(cfg.py, 'overflow-hidden', cornerRadiusClassName)} style={{ backgroundColor: tokens.darkBg }}>
+    <div 
+      className={cn(cfg.py, 'overflow-hidden border-y', cornerRadiusClassName)} 
+      style={{ 
+        backgroundColor: tokens.darkBg,
+        borderColor: 'rgba(255, 255, 255, 0.1)'
+      }}
+    >
       <MarqueeTrack direction={direction} duration={duration} pauseOnHover={pauseOnHover}>
         <SegmentList segments={segments} textColor={tokens.darkText} separatorColor={tokens.darkAccent} strokeColor={tokens.darkText} scale={scale} />
       </MarqueeTrack>

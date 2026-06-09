@@ -6,14 +6,14 @@ import { DEFAULT_SECTION_SPACING } from '../../_shared/types/sectionSpacing';
 import { DEFAULT_PRODUCT_LIST_CARD_RADIUS } from '../../product-list/_types';
 
 export const PRODUCT_GRID_STYLES: { id: ProductGridStyle; label: string }[] = [
-  { id: 'commerce', label: 'Commerce' },
-  { id: 'minimal', label: 'E-commerce' },
-  { id: 'compact', label: 'Compact' },
-  { id: 'magazine', label: 'Magazine' },
-  { id: 'catalog', label: 'Catalog' },
-  { id: 'mosaic', label: 'Mosaic' },
-  { id: 'tabbed', label: 'Tabbed' },
-  { id: 'storefront', label: 'Storefront' },
+  { id: 'commerce', label: '(1) Thương mại' },
+  { id: 'minimal', label: '(2) Tối giản' },
+  { id: 'compact', label: '(3) Thu gọn' },
+  { id: 'magazine', label: '(4) Tạp chí' },
+  { id: 'catalog', label: '(5) Danh mục' },
+  { id: 'mosaic', label: '(6) So le' },
+  { id: 'tabbed', label: '(7) Phân tab' },
+  { id: 'storefront', label: '(8) Cửa hiệu' },
 ];
 
 export const DEFAULT_PRODUCT_GRID_CONFIG: ProductGridConfig = {

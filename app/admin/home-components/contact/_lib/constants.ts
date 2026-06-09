@@ -9,13 +9,13 @@ import type {
 import { DEFAULT_SECTION_SPACING, normalizeSectionSpacing } from '../../_shared/types/sectionSpacing';
 
 export const CONTACT_STYLES: Array<{ id: ContactStyle; label: string }> = [
-  { id: 'modern', label: 'Modern Split' },
-  { id: 'floating', label: 'Executive Panel' },
-  { id: 'grid', label: 'Grid Cards' },
-  { id: 'elegant', label: 'Elegant Clean' },
-  { id: 'minimal', label: 'Minimal Form' },
-  { id: 'centered', label: 'Balanced Split' },
-  { id: 'kanban', label: 'Kanban Board' },
+  { id: 'modern', label: '(1) Chia đôi' },
+  { id: 'floating', label: '(2) Khối nổi' },
+  { id: 'grid', label: '(3) Lưới thẻ' },
+  { id: 'elegant', label: '(4) Thanh lịch' },
+  { id: 'minimal', label: '(5) Tối giản' },
+  { id: 'centered', label: '(6) Cân bằng' },
+  { id: 'kanban', label: '(7) Ba cột' },
 ];
 
 export const DEFAULT_CONTACT_CONFIG: ContactConfigState = {

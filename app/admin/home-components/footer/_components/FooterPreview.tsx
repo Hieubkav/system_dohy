@@ -39,12 +39,12 @@ const SOCIAL_ORIGINAL_COLORS: Record<string, { bg: string; icon: string }> = {
 };
 
 const styles: { id: FooterStyle; label: string }[] = [
-  { id: 'classic', label: '1. Classic Grid' },
-  { id: 'modern', label: '2. Info-Rich' },
-  { id: 'corporate', label: '3. Split Zones' },
-  { id: 'minimal', label: '4. Compact Bar' },
-  { id: 'centered', label: '5. Magazine' },
-  { id: 'stacked', label: '6. Wave' },
+  { id: 'classic', label: '(1) Bốn cột' },
+  { id: 'modern', label: '(2) Đầy đủ' },
+  { id: 'corporate', label: '(3) Phân vùng' },
+  { id: 'minimal', label: '(4) Thu gọn' },
+  { id: 'centered', label: '(5) Tạp chí' },
+  { id: 'stacked', label: '(6) Dạng sóng' },
 ];
 
 export const FooterPreview = ({

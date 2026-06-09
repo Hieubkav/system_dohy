@@ -18,12 +18,12 @@ import type {
 } from '../_types';
 
 const MARQUEE_STYLES: Array<{ id: MarqueeStyle; label: string }> = [
-  { id: 'ribbon', label: 'Ribbon' },
-  { id: 'gradient', label: 'Gradient' },
-  { id: 'minimal', label: 'Minimal' },
-  { id: 'dark', label: 'Dark' },
-  { id: 'split', label: 'Split' },
-  { id: 'stripe', label: 'Stripe' },
+  { id: 'ribbon', label: '(1) Chạy ngang' },
+  { id: 'gradient', label: '(2) Chuyển màu' },
+  { id: 'minimal', label: '(3) Tối giản' },
+  { id: 'dark', label: '(4) Nền tối' },
+  { id: 'split', label: '(5) Chia đôi' },
+  { id: 'stripe', label: '(6) Sọc kẻ' },
 ];
 
 export const MarqueePreview = ({
