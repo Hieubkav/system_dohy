@@ -201,7 +201,7 @@ function SegmentList({ segments, textColor, separatorColor, strokeColor, scale }
             strokeColor={strokeColor}
             strokeWidth={cfg.strokeWidth}
           />
-          <span className="shrink-0 opacity-50" style={{ color: separatorColor }}>
+          <span className="shrink-0 opacity-50 whitespace-pre" style={{ color: separatorColor }}>
             {seg.separator}
           </span>
         </React.Fragment>
@@ -306,7 +306,7 @@ function StripeLayout({ items, tokens, duration, direction, pauseOnHover, scale,
                 strokeColor={i % 2 === 0 ? '#1e293b' : tokens.primary}
                 strokeWidth={cfg.strokeWidth}
               />
-              <span className="shrink-0 opacity-40" style={{ color: tokens.primary }}>
+              <span className="shrink-0 opacity-40 whitespace-pre" style={{ color: tokens.primary }}>
                 {seg.separator}
               </span>
             </React.Fragment>
