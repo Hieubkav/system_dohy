@@ -13,70 +13,17 @@ import {
 import { ModuleGuard } from '../components/ModuleGuard';
 import { BulkActionBar, SelectCheckbox } from '../components/TableUtilities';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
-import { buildCategoryPath, buildDetailPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
+import { QuickRoutePickerModal } from '@/app/admin/components/QuickRoutePickerModal';
+import { buildCategoryPath, buildModuleListPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { 
   ArrowDown, ArrowUp, Bot, ChevronLeft, ChevronRight, Copy, ExternalLink, Eye, EyeOff, 
-  GripVertical, Loader2, Menu, Plus, Sparkles, Trash2
+  GripVertical, Link2, Loader2, Menu, Plus, Sparkles, Trash2
 } from 'lucide-react';
 import { SimpleMenuPreview } from './SimpleMenuPreview';
 import { MENU_MAX_LEVEL, resolveMenuMaxDepthLevel } from '@/lib/utils/menu-tree';
 
 const MODULE_KEY = 'menus';
 const MENU_ITEMS_LIMIT = 500;
-
-type QuickRouteGroup = 'Trang cơ bản' | 'Module' | 'Danh mục' | 'Trang tin cậy';
-
-type QuickRouteOption = {
-  group: QuickRouteGroup;
-  label: string;
-  source: string;
-  url: string;
-};
-
-const CORE_ROUTE_OPTIONS: QuickRouteOption[] = [
-  { label: 'Trang chủ', url: '/', source: 'Core', group: 'Trang cơ bản' },
-  { label: 'Liên hệ', url: '/contact', source: 'Core', group: 'Trang cơ bản' },
-];
-
-const MODULE_SITE_ROUTE_CATALOG: Record<string, { label: string; url: string }[]> = {
-  cart: [
-    { label: 'Giỏ hàng', url: '/cart' },
-  ],
-  customers: [
-    { label: 'Đăng nhập', url: '/account/login' },
-    { label: 'Đăng ký', url: '/account/register' },
-    { label: 'Tài khoản', url: '/account/profile' },
-    { label: 'Đơn hàng', url: '/account/orders' },
-  ],
-  orders: [
-    { label: 'Đơn hàng', url: '/account/orders' },
-    { label: 'Checkout', url: '/checkout' },
-  ],
-  posts: [
-    { label: 'Tất cả bài viết', url: buildModuleListPath('posts') },
-  ],
-  products: [
-    { label: 'Tất cả sản phẩm', url: buildModuleListPath('products') },
-  ],
-  promotions: [
-    { label: 'Khuyến mãi', url: '/promotions' },
-  ],
-  services: [
-    { label: 'Tất cả dịch vụ', url: buildModuleListPath('services') },
-  ],
-  projects: [
-    { label: 'Tất cả dự án', url: buildModuleListPath('projects') },
-  ],
-  courses: [
-    { label: 'Tất cả khóa học', url: buildModuleListPath('courses') },
-  ],
-  resources: [
-    { label: 'Tất cả tài nguyên', url: buildModuleListPath('resources') },
-  ],
-  wishlist: [
-    { label: 'Wishlist', url: '/wishlist' },
-  ],
-};
 
 
 interface MenuItem {
@@ -203,11 +150,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isQuickPickerOpen, setIsQuickPickerOpen] = useState(false);
   const [quickPickerTargetId, setQuickPickerTargetId] = useState<string | null>(null);
-  const [quickRouteSearch, setQuickRouteSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [pickerStep, setPickerStep] = useState<1 | 2 | 3>(1);
-  const [selectedType, setSelectedType] = useState<'core' | 'module' | 'category' | 'trust' | 'detail' | null>(null);
-  const [selectedModule, setSelectedModule] = useState<'posts' | 'products' | 'services' | 'courses' | 'projects' | 'resources' | null>(null);
 
   // AI Import state
   const [isAiImportOpen, setIsAiImportOpen] = useState(false);
@@ -219,42 +162,6 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
   const enableProductTypes = enableProductTypesSetting?.value === true;
   const smartMenuBuilderData = useQuery(api.menus.getSmartMenuBuilderData, isUseProductTypeLogic ? {} : 'skip');
 
-  const detailPosts = useQuery(
-    api.menus.listPostsForPicker,
-    selectedModule === 'posts' && pickerStep === 3
-      ? { search: quickRouteSearch, limit: 20 }
-      : 'skip'
-  );
-  const detailProducts = useQuery(
-    api.menus.listProductsForPicker,
-    selectedModule === 'products' && pickerStep === 3
-      ? { search: quickRouteSearch, limit: 20 }
-      : 'skip'
-  );
-  const detailServices = useQuery(
-    api.menus.listServicesForPicker,
-    selectedModule === 'services' && pickerStep === 3
-      ? { search: quickRouteSearch, limit: 20 }
-      : 'skip'
-  );
-  const detailProjects = useQuery(
-    api.menus.listProjectsForPicker,
-    selectedModule === 'projects' && pickerStep === 3
-      ? { search: quickRouteSearch, limit: 20 }
-      : 'skip'
-  );
-  const detailCourses = useQuery(
-    api.menus.listCoursesForPicker,
-    selectedModule === 'courses' && pickerStep === 3
-      ? { search: quickRouteSearch, limit: 20 }
-      : 'skip'
-  );
-  const detailResources = useQuery(
-    api.menus.listResourcesForPicker,
-    selectedModule === 'resources' && pickerStep === 3
-      ? { search: quickRouteSearch, limit: 20 }
-      : 'skip'
-  );
 
   const maxDepthLevel = useMemo(() => {
     const setting = settingsData?.find(s => s.settingKey === 'maxDepth');
@@ -273,111 +180,6 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
   const showNested = enabledFeatures.enableNested ?? true;
   const showNewTab = enabledFeatures.enableNewTab ?? true;
 
-  const quickRouteOptions = useMemo(() => {
-    const enabledKeys = new Set((enabledModules ?? []).map(moduleItem => moduleItem.key));
-    const options: QuickRouteOption[] = [...CORE_ROUTE_OPTIONS];
-
-    Object.entries(MODULE_SITE_ROUTE_CATALOG).forEach(([moduleKey, routes]) => {
-      if (!enabledKeys.has(moduleKey)) {return;}
-      routes.forEach(route => {
-        options.push({ ...route, source: moduleKey, group: 'Module' });
-      });
-    });
-
-    if (enabledKeys.has('products')) {
-      (productCategories ?? []).forEach(category => {
-        options.push({
-          group: 'Danh mục',
-          label: category.name,
-          source: 'products',
-          url: buildCategoryPath({ categorySlug: category.slug, mode: routeMode, moduleKey: 'products' }),
-        });
-      });
-    }
-
-    if (enabledKeys.has('posts')) {
-      (postCategories ?? []).forEach(category => {
-        options.push({
-          group: 'Danh mục',
-          label: category.name,
-          source: 'posts',
-          url: buildCategoryPath({ categorySlug: category.slug, mode: routeMode, moduleKey: 'posts' }),
-        });
-      });
-    }
-
-    if (enabledKeys.has('services')) {
-      (serviceCategories ?? []).forEach(category => {
-        options.push({
-          group: 'Danh mục',
-          label: category.name,
-          source: 'services',
-          url: buildCategoryPath({ categorySlug: category.slug, mode: routeMode, moduleKey: 'services' }),
-        });
-      });
-    }
-
-    if (enabledKeys.has('projects')) {
-      (projectCategories ?? []).forEach(category => {
-        options.push({
-          group: 'Danh mục',
-          label: category.name,
-          source: 'projects',
-          url: buildCategoryPath({ categorySlug: category.slug, mode: routeMode, moduleKey: 'projects' }),
-        });
-      });
-    }
-
-    if (enabledKeys.has('courses')) {
-      (courseCategories ?? []).forEach(category => {
-        options.push({
-          group: 'Danh mục',
-          label: category.name,
-          source: 'courses',
-          url: buildCategoryPath({ categorySlug: category.slug, mode: routeMode, moduleKey: 'courses' }),
-        });
-      });
-    }
-
-    if (enabledKeys.has('resources')) {
-      (resourceCategories ?? []).forEach(category => {
-        options.push({
-          group: 'Danh mục',
-          label: category.name,
-          source: 'resources',
-          url: buildCategoryPath({ categorySlug: category.slug, mode: routeMode, moduleKey: 'resources' }),
-        });
-      });
-    }
-
-    (trustPageRoutes ?? []).forEach(route => {
-      options.push({
-        group: 'Trang tin cậy',
-        label: route.label,
-        source: 'trust-pages',
-        url: route.url,
-      });
-    });
-
-    const deduped = new Map<string, QuickRouteOption>();
-    options.forEach(option => {
-      if (!deduped.has(option.url)) {
-        deduped.set(option.url, option);
-      }
-    });
-
-    return Array.from(deduped.values());
-  }, [courseCategories, enabledModules, postCategories, productCategories, projectCategories, resourceCategories, routeMode, serviceCategories, trustPageRoutes]);
-
-  const filteredQuickRoutes = useMemo(() => {
-    const keyword = quickRouteSearch.trim().toLowerCase();
-    if (!keyword) {return quickRouteOptions;}
-    return quickRouteOptions.filter(option =>
-      option.label.toLowerCase().includes(keyword)
-      || option.url.toLowerCase().includes(keyword)
-      || option.source.toLowerCase().includes(keyword)
-    );
-  }, [quickRouteOptions, quickRouteSearch]);
 
   const buildDraftItems = (items: MenuItem[]) => items
     .slice()
@@ -793,11 +595,6 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
     }
   }, [menuItemsData, pendingSync, originalItems.length, draftItems.length, hasChanges]);
 
-  useEffect(() => {
-    if (isQuickPickerOpen) {return;}
-    if (!quickRouteSearch) {return;}
-    setQuickRouteSearch('');
-  }, [isQuickPickerOpen, quickRouteSearch]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(draftItems.length / MENU_ITEMS_LIMIT));
@@ -987,26 +784,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
     setDraftItems(prev => prev.map(item => item.localId === itemId ? { ...item, [field]: value } : item));
   };
 
-  const handleOpenQuickPicker = (itemId: string) => {
-    setQuickPickerTargetId(itemId);
-    setIsQuickPickerOpen(true);
-  };
 
-  const handleCloseQuickPicker = () => {
-    setIsQuickPickerOpen(false);
-    setQuickPickerTargetId(null);
-    setQuickRouteSearch('');
-    setPickerStep(1);
-    setSelectedType(null);
-    setSelectedModule(null);
-  };
-
-  const handleSelectQuickRoute = (option: QuickRouteOption) => {
-    if (!quickPickerTargetId) {return;}
-    handleUpdateField(quickPickerTargetId, 'url', option.url);
-    handleUpdateField(quickPickerTargetId, 'label', option.label);
-    handleCloseQuickPicker();
-  };
 
   // AI Import handler
   const handleAiImportApply = (lines: AiMenuLine[]) => {
@@ -1112,82 +890,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
   // Get actual index in full items array for move operations
   const getActualIndex = (item: DraftMenuItem) => draftItems.findIndex(i => i.localId === item.localId);
 
-  const quickRouteKeyword = quickRouteSearch.trim().toLowerCase();
 
-  const pickerTypeOptions = [
-    { type: 'core' as const, label: 'Trang cơ bản', description: 'Trang chủ, Liên hệ...' },
-    { type: 'module' as const, label: 'Module', description: 'Bài viết, Sản phẩm, Dịch vụ, Dự án, Khóa học, Tài nguyên...' },
-    { type: 'category' as const, label: 'Danh mục', description: 'Category filters' },
-    { type: 'trust' as const, label: 'Chính sách', description: 'Trust pages đã có dữ liệu' },
-    { type: 'detail' as const, label: 'Chi tiết', description: 'Bài viết, Sản phẩm, Dịch vụ, Dự án, Khóa học, Tài nguyên' },
-  ];
-
-  const detailModuleOptions = [
-    {
-      key: 'posts' as const,
-      label: 'Bài viết chi tiết',
-      description: 'Chọn 1 bài viết cụ thể',
-      enabled: enabledModules?.some(moduleItem => moduleItem.key === 'posts'),
-    },
-    {
-      key: 'products' as const,
-      label: 'Sản phẩm chi tiết',
-      description: 'Chọn 1 sản phẩm cụ thể',
-      enabled: enabledModules?.some(moduleItem => moduleItem.key === 'products'),
-    },
-    {
-      key: 'services' as const,
-      label: 'Dịch vụ chi tiết',
-      description: 'Chọn 1 dịch vụ cụ thể',
-      enabled: enabledModules?.some(moduleItem => moduleItem.key === 'services'),
-    },
-    {
-      key: 'projects' as const,
-      label: 'Dự án chi tiết',
-      description: 'Chọn 1 dự án cụ thể',
-      enabled: enabledModules?.some(moduleItem => moduleItem.key === 'projects'),
-    },
-    {
-      key: 'courses' as const,
-      label: 'Khóa học chi tiết',
-      description: 'Chọn 1 khóa học cụ thể',
-      enabled: coursesEnabled,
-    },
-    {
-      key: 'resources' as const,
-      label: 'Tài nguyên chi tiết',
-      description: 'Chọn 1 tài nguyên cụ thể',
-      enabled: enabledModules?.some(moduleItem => moduleItem.key === 'resources'),
-    },
-  ];
-
-  const availableDetailModules = detailModuleOptions.filter(option => option.enabled);
-  const filteredDetailModules = quickRouteKeyword
-    ? availableDetailModules.filter(option =>
-      option.label.toLowerCase().includes(quickRouteKeyword)
-      || option.description.toLowerCase().includes(quickRouteKeyword)
-    )
-    : availableDetailModules;
-  const resolvedDetailModules = filteredDetailModules.length > 0
-    ? filteredDetailModules
-    : availableDetailModules;
-
-  const filteredPickerRoutes = filteredQuickRoutes.filter(option => {
-    if (selectedType === 'core') {return option.group === 'Trang cơ bản';}
-    if (selectedType === 'module') {return option.group === 'Module';}
-    if (selectedType === 'category') {return option.group === 'Danh mục';}
-    if (selectedType === 'trust') {return option.group === 'Trang tin cậy';}
-    return false;
-  });
-
-  const isDetailLoading = pickerStep === 3 && (
-    (selectedModule === 'posts' && detailPosts === undefined)
-    || (selectedModule === 'products' && detailProducts === undefined)
-    || (selectedModule === 'services' && detailServices === undefined)
-    || (selectedModule === 'projects' && detailProjects === undefined)
-    || (selectedModule === 'courses' && detailCourses === undefined)
-    || (selectedModule === 'resources' && detailResources === undefined)
-  );
 
   const stats = [
     { label: 'Tổng', value: draftItems.length },
@@ -1335,11 +1038,15 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
-                        className="h-8 whitespace-nowrap"
-                        onClick={() => handleOpenQuickPicker(item.localId)}
+                        size="icon"
+                        className="h-8 w-8 shrink-0 text-slate-400 hover:text-blue-600 hover:border-blue-400 transition-colors"
+                        onClick={() => {
+                          setQuickPickerTargetId(item.localId);
+                          setIsQuickPickerOpen(true);
+                        }}
+                        title="Chọn link gợi ý"
                       >
-                        Gợi ý
+                        <Link2 size={14} />
                       </Button>
                     </div>
                   </div>
@@ -1448,403 +1155,21 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
         />
       </div>
 
-      <Dialog
+      <QuickRoutePickerModal
         open={isQuickPickerOpen}
-        onOpenChange={(open) =>{ if (open) { setIsQuickPickerOpen(true); } else { handleCloseQuickPicker(); } }}
-      >
-        <DialogContent className="max-w-2xl w-[80vw]">
-          <DialogHeader>
-            <DialogTitle>Chọn URL - Bước {pickerStep}/3</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              value={quickRouteSearch}
-              onChange={(e) => setQuickRouteSearch(e.target.value)}
-              placeholder={
-                pickerStep === 1
-                  ? 'Tìm theo loại...'
-                  : pickerStep === 2
-                    ? (selectedType === 'detail' ? 'Tìm module...' : 'Tìm theo tên hoặc URL...')
-                    : 'Tìm theo tên...'
-              }
-              className="h-9 text-sm"
-            />
-
-            <div className="space-y-3">
-              {pickerStep === 1 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {pickerTypeOptions.map(option => (
-                    <Button
-                      key={option.type}
-                      type="button"
-                      variant="outline"
-                      className="h-20 flex-col items-start gap-1.5 text-left"
-                      onClick={() => {
-                        setSelectedType(option.type);
-                        setPickerStep(2);
-                      }}
-                    >
-                      <span className="font-semibold">{option.label}</span>
-                      <span className="text-xs text-slate-500">{option.description}</span>
-                    </Button>
-                  ))}
-                </div>
-              )}
-
-              {pickerStep === 2 && selectedType === 'detail' && (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setPickerStep(1);
-                      setSelectedType(null);
-                    }}
-                  >
-                    ← Quay lại
-                  </Button>
-
-                  {resolvedDetailModules.length === 0 ? (
-                    <div className="rounded-md border border-slate-200 px-4 py-6 text-sm text-slate-500">
-                      Không có module phù hợp.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-2">
-                      {resolvedDetailModules.map(option => (
-                        <Button
-                          key={option.key}
-                          type="button"
-                          variant="outline"
-                          className="justify-start h-16"
-                          onClick={() => {
-                            setSelectedModule(option.key);
-                            setPickerStep(3);
-                          }}
-                        >
-                          <div className="text-left">
-                            <div className="font-semibold">{option.label}</div>
-                            <div className="text-xs text-slate-500">{option.description}</div>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {pickerStep === 2 && selectedType && selectedType !== 'detail' && (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setPickerStep(1);
-                      setSelectedType(null);
-                    }}
-                  >
-                    ← Quay lại
-                  </Button>
-
-                  <div className="max-h-[50vh] overflow-auto rounded-md border border-slate-200 dark:border-slate-800">
-                    {filteredPickerRoutes.length === 0 ? (
-                      <div className="px-4 py-6 text-sm text-slate-500">Không có gợi ý phù hợp.</div>
-                    ) : (
-                      <div className="space-y-1 p-2">
-                        {filteredPickerRoutes.map(option => (
-                          <button
-                            key={`${option.url}-${option.source}`}
-                            type="button"
-                            onClick={() => handleSelectQuickRoute(option)}
-                            className="flex w-full items-center justify-between gap-3 rounded px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
-                          >
-                            <div className="min-w-0">
-                              <div className="font-semibold text-slate-700 dark:text-slate-200 truncate">
-                                {option.label}
-                              </div>
-                              <div className="text-xs text-slate-500 font-mono truncate">{option.url}</div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {pickerStep === 3 && selectedModule && (
-                <>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setPickerStep(2);
-                      setSelectedModule(null);
-                    }}
-                  >
-                    ← Quay lại
-                  </Button>
-
-                  <div className="max-h-[50vh] overflow-auto rounded-md border border-slate-200 dark:border-slate-800">
-                    {isDetailLoading && (
-                      <div className="px-4 py-6 text-sm text-slate-500">Đang tải dữ liệu...</div>
-                    )}
-
-                    {!isDetailLoading && selectedModule === 'posts' && (detailPosts?.length ?? 0) === 0 && (
-                      <div className="px-4 py-6 text-sm text-slate-500">Không tìm thấy bài viết.</div>
-                    )}
-
-                    {!isDetailLoading && selectedModule === 'products' && (detailProducts?.length ?? 0) === 0 && (
-                      <div className="px-4 py-6 text-sm text-slate-500">Không tìm thấy sản phẩm.</div>
-                    )}
-
-                    {!isDetailLoading && selectedModule === 'services' && (detailServices?.length ?? 0) === 0 && (
-                      <div className="px-4 py-6 text-sm text-slate-500">Không tìm thấy dịch vụ.</div>
-                    )}
-
-                    {!isDetailLoading && selectedModule === 'projects' && (detailProjects?.length ?? 0) === 0 && (
-                      <div className="px-4 py-6 text-sm text-slate-500">Không tìm thấy dự án.</div>
-                    )}
-
-                    {!isDetailLoading && selectedModule === 'courses' && (detailCourses?.length ?? 0) === 0 && (
-                      <div className="px-4 py-6 text-sm text-slate-500">Không tìm thấy khóa học.</div>
-                    )}
-
-                    {!isDetailLoading && selectedModule === 'resources' && (detailResources?.length ?? 0) === 0 && (
-                      <div className="px-4 py-6 text-sm text-slate-500">Không tìm thấy tài nguyên.</div>
-                    )}
-
-                    {!isDetailLoading && selectedModule === 'posts' && (detailPosts?.length ?? 0) > 0 && (
-                      <div className="space-y-1 p-2">
-                        {detailPosts?.map(post => (
-                          <button
-                            key={post._id}
-                            type="button"
-                            onClick={() => {
-                              handleSelectQuickRoute({
-                                label: post.title,
-                                url: buildDetailPath({
-                                  categorySlug: post.categorySlug,
-                                  mode: routeMode,
-                                  moduleKey: 'posts',
-                                  recordSlug: post.slug,
-                                }),
-                                source: 'posts',
-                                group: 'Module',
-                              });
-                            }}
-                            className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="font-semibold text-slate-700 truncate">{post.title}</div>
-                              <div className="text-xs text-slate-500 font-mono truncate">
-                                {buildDetailPath({
-                                  categorySlug: post.categorySlug,
-                                  mode: routeMode,
-                                  moduleKey: 'posts',
-                                  recordSlug: post.slug,
-                                })}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {!isDetailLoading && selectedModule === 'products' && (detailProducts?.length ?? 0) > 0 && (
-                      <div className="space-y-1 p-2">
-                        {detailProducts?.map(product => (
-                          <button
-                            key={product._id}
-                            type="button"
-                            onClick={() => {
-                              handleSelectQuickRoute({
-                                label: product.name,
-                                url: buildDetailPath({
-                                  categorySlug: product.categorySlug,
-                                  mode: routeMode,
-                                  moduleKey: 'products',
-                                  recordSlug: product.slug,
-                                }),
-                                source: 'products',
-                                group: 'Module',
-                              });
-                            }}
-                            className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="font-semibold text-slate-700 truncate">{product.name}</div>
-                              <div className="text-xs text-slate-500 font-mono truncate">
-                                {buildDetailPath({
-                                  categorySlug: product.categorySlug,
-                                  mode: routeMode,
-                                  moduleKey: 'products',
-                                  recordSlug: product.slug,
-                                })}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {!isDetailLoading && selectedModule === 'services' && (detailServices?.length ?? 0) > 0 && (
-                      <div className="space-y-1 p-2">
-                        {detailServices?.map(service => (
-                          <button
-                            key={service._id}
-                            type="button"
-                            onClick={() => {
-                              handleSelectQuickRoute({
-                                label: service.title,
-                                url: buildDetailPath({
-                                  categorySlug: service.categorySlug,
-                                  mode: routeMode,
-                                  moduleKey: 'services',
-                                  recordSlug: service.slug,
-                                }),
-                                source: 'services',
-                                group: 'Module',
-                              });
-                            }}
-                            className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="font-semibold text-slate-700 truncate">{service.title}</div>
-                              <div className="text-xs text-slate-500 font-mono truncate">
-                                {buildDetailPath({
-                                  categorySlug: service.categorySlug,
-                                  mode: routeMode,
-                                  moduleKey: 'services',
-                                  recordSlug: service.slug,
-                                })}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {!isDetailLoading && selectedModule === 'projects' && (detailProjects?.length ?? 0) > 0 && (
-                      <div className="space-y-1 p-2">
-                        {detailProjects?.map(project => (
-                          <button
-                            key={project._id}
-                            type="button"
-                            onClick={() => {
-                              handleSelectQuickRoute({
-                                label: project.title,
-                                url: buildDetailPath({
-                                  categorySlug: project.categorySlug,
-                                  mode: routeMode,
-                                  moduleKey: 'projects',
-                                  recordSlug: project.slug,
-                                }),
-                                source: 'projects',
-                                group: 'Module',
-                              });
-                            }}
-                            className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="font-semibold text-slate-700 truncate">{project.title}</div>
-                              <div className="text-xs text-slate-500 font-mono truncate">
-                                {buildDetailPath({
-                                  categorySlug: project.categorySlug,
-                                  mode: routeMode,
-                                  moduleKey: 'projects',
-                                  recordSlug: project.slug,
-                                })}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {!isDetailLoading && selectedModule === 'courses' && (detailCourses?.length ?? 0) > 0 && (
-                      <div className="space-y-1 p-2">
-                        {detailCourses?.map(course => (
-                          <button
-                            key={course._id}
-                            type="button"
-                            onClick={() => {
-                              handleSelectQuickRoute({
-                                label: course.title,
-                                url: buildDetailPath({
-                                  categorySlug: course.categorySlug,
-                                  mode: routeMode,
-                                  moduleKey: 'courses',
-                                  recordSlug: course.slug,
-                                  // categorySlug is optional but buildDetailPath signature handles it
-                                }),
-                                source: 'courses',
-                                group: 'Module',
-                              });
-                            }}
-                            className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="font-semibold text-slate-700 truncate">{course.title}</div>
-                              <div className="text-xs text-slate-500 font-mono truncate">
-                                {buildDetailPath({
-                                  categorySlug: course.categorySlug,
-                                  mode: routeMode,
-                                  moduleKey: 'courses',
-                                  recordSlug: course.slug,
-                                })}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {!isDetailLoading && selectedModule === 'resources' && (detailResources?.length ?? 0) > 0 && (
-                      <div className="space-y-1 p-2">
-                        {detailResources?.map(resource => (
-                          <button
-                            key={resource._id}
-                            type="button"
-                            onClick={() => {
-                              handleSelectQuickRoute({
-                                label: resource.title,
-                                url: buildDetailPath({
-                                  categorySlug: resource.categorySlug,
-                                  mode: routeMode,
-                                  moduleKey: 'resources',
-                                  recordSlug: resource.slug,
-                                }),
-                                source: 'resources',
-                                group: 'Module',
-                              });
-                            }}
-                            className="flex w-full items-center gap-3 rounded px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="font-semibold text-slate-700 truncate">{resource.title}</div>
-                              <div className="text-xs text-slate-500 font-mono truncate">
-                                {buildDetailPath({
-                                  categorySlug: resource.categorySlug,
-                                  mode: routeMode,
-                                  moduleKey: 'resources',
-                                  recordSlug: resource.slug,
-                                })}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        onOpenChange={(open) => {
+          setIsQuickPickerOpen(open);
+          if (!open) setQuickPickerTargetId(null);
+        }}
+        onSelect={(option) => {
+          if (quickPickerTargetId) {
+            handleUpdateField(quickPickerTargetId, 'url', option.url);
+            handleUpdateField(quickPickerTargetId, 'label', option.label);
+          }
+          setIsQuickPickerOpen(false);
+          setQuickPickerTargetId(null);
+        }}
+      />
 
       {/* AI Import Dialog */}
       <AiMenuImportDialog
