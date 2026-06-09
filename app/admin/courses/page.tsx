@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { AdminEntityImage } from '../components/AdminEntityImage';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
 import { ModuleGuard } from '../components/ModuleGuard';
-import { AdminDragHandle, buildOrderUpdates, getReorderedItems, SortableTableRow, useAdminDndSensors } from '../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, BulkActionBar, generatePaginationItems, getReorderedItems, SelectCheckbox, SortableTableRow, useAdminDndSensors } from '../components/TableUtilities';
 import { usePersistedPageSize } from '../components/usePersistedPageSize';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -19,19 +19,6 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 type CourseStatus = '' | 'Published' | 'Draft' | 'Archived';
-
-function generatePaginationItems(currentPage: number, totalPages: number): (number | 'ellipsis')[] {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }
-  if (currentPage <= 3) {
-    return [1, 2, 3, 4, 'ellipsis', totalPages];
-  }
-  if (currentPage >= totalPages - 2) {
-    return [1, 'ellipsis', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
-  }
-  return [1, 'ellipsis', currentPage - 1, currentPage, currentPage + 1, 'ellipsis', totalPages];
-}
 
 export default function CoursesListPage() {
   return (
@@ -52,13 +39,17 @@ function CoursesContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<CourseStatus>('');
+  const [manualSelectedIds, setManualSelectedIds] = useState<Id<'courses'>[]>([]);
+  const [selectionMode, setSelectionMode] = useState<'manual' | 'all'>('manual');
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteTargetId, setDeleteTargetId] = useState<Id<'courses'> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [cloningCourseId, setCloningCourseId] = useState<Id<'courses'> | null>(null);
   const [isClearingMedia, setIsClearingMedia] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const dndSensors = useAdminDndSensors();
+  const isSelectAllActive = selectionMode === 'all';
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearchTerm(searchTerm); }, 300);
@@ -84,6 +75,16 @@ function CoursesContent() {
   });
   const deleteInfo = useQuery(api.courses.getDeleteInfo, deleteTargetId ? { id: deleteTargetId } : 'skip');
 
+  const selectAllData = useQuery(
+    api.courses.listAdminIds,
+    isSelectAllActive
+      ? {
+          search: debouncedSearchTerm.trim() || undefined,
+          status: filterStatus || undefined,
+        }
+      : 'skip'
+  );
+
   const categoryMap = useMemo(() => {
     const map: Record<string, { name: string; slug: string }> = {};
     categoriesData?.forEach((category) => {
@@ -97,6 +98,41 @@ function CoursesContent() {
   const isReorderEnabled = !debouncedSearchTerm.trim() && !filterStatus;
   const totalCount = totalCountData?.count ?? 0;
   const totalPages = totalCount ? Math.ceil(totalCount / pageSize) : 1;
+  const isSelectingAll = isSelectAllActive && selectAllData === undefined;
+  const selectedIds = isSelectAllActive && selectAllData ? selectAllData.ids : manualSelectedIds;
+
+  const selectedOnPage = courses.filter(course => selectedIds.includes(course._id));
+  const isPageSelected = courses.length > 0 && selectedOnPage.length === courses.length;
+  const isPageIndeterminate = selectedOnPage.length > 0 && selectedOnPage.length < courses.length;
+
+  const applyManualSelection = (nextIds: Id<'courses'>[]) => {
+    setSelectionMode('manual');
+    setManualSelectedIds(nextIds);
+  };
+
+  useEffect(() => {
+    if (selectAllData?.hasMore) {
+      toast.info('Đã chọn tối đa 5.000 khóa học phù hợp.');
+    }
+  }, [selectAllData?.hasMore]);
+
+  const toggleSelectAll = () => {
+    if (isPageSelected) {
+      const remaining = selectedIds.filter(id => !courses.some(course => course._id === id));
+      applyManualSelection(remaining);
+      return;
+    }
+    const next = new Set(selectedIds);
+    courses.forEach(course => next.add(course._id));
+    applyManualSelection(Array.from(next));
+  };
+
+  const toggleSelectItem = (id: Id<'courses'>) => {
+    const next = selectedIds.includes(id)
+      ? selectedIds.filter(i => i !== id)
+      : [...selectedIds, id];
+    applyManualSelection(next);
+  };
 
   const formatPrice = (pricingType: string, price?: number) => {
     if (pricingType === 'free') {return 'Miễn phí';}
@@ -142,6 +178,23 @@ function CoursesContent() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (confirm(`Xóa ${selectedIds.length} khóa học đã chọn? Tất cả dữ liệu liên quan sẽ bị xóa.`)) {
+      setIsDeleting(true);
+      try {
+        for (const id of selectedIds) {
+          await deleteCourse({ cascade: true, id });
+        }
+        applyManualSelection([]);
+        toast.success(`Đã xóa ${selectedIds.length} khóa học`);
+      } catch {
+        toast.error('Có lỗi khi xóa khóa học');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
   const handleClearBrokenMedia = async () => {
     if (courses.length === 0) {return;}
     setIsClearingMedia(true);
@@ -159,12 +212,30 @@ function CoursesContent() {
     }
   };
 
+  const handleBulkClearBrokenMedia = async () => {
+    setIsClearingMedia(true);
+    try {
+      const result = await bulkClearBrokenMedia({ ids: selectedIds });
+      applyManualSelection([]);
+      if (result.cleared > 0) {
+        toast.success(`Đã xóa ${result.cleared} ảnh lỗi trong ${result.updated} khóa học`);
+      } else {
+        toast.info('Không tìm thấy ảnh lỗi trong khóa học đã chọn');
+      }
+    } catch {
+      toast.error('Có lỗi khi xóa ảnh lỗi');
+    } finally {
+      setIsClearingMedia(false);
+    }
+  };
+
   const handleResetFilters = () => {
     setSearchTerm('');
     setDebouncedSearchTerm('');
     setFilterStatus('');
     setCurrentPage(1);
     setPageSizeOverride(null);
+    applyManualSelection([]);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -209,6 +280,22 @@ function CoursesContent() {
         </div>
       </div>
 
+      <BulkActionBar
+        selectedCount={selectedIds.length}
+        entityLabel="khóa học"
+        selectionScope={isSelectAllActive ? 'all_results' : isPageSelected ? 'page' : 'partial'}
+        pageItemCount={courses.length}
+        totalMatchingCount={totalCount}
+        onSelectPage={() => { applyManualSelection(courses.map(course => course._id)); }}
+        onSelectAllResults={() => { setSelectionMode('all'); }}
+        isSelectingAllResults={isSelectingAll}
+        onClearBrokenMedia={() => { void handleBulkClearBrokenMedia(); }}
+        isClearBrokenMediaLoading={isClearingMedia}
+        onDelete={handleBulkDelete}
+        onClearSelection={() => { applyManualSelection([]); }}
+        isLoading={isDeleting}
+      />
+
       <Card>
         <div className="flex flex-col gap-4 border-b border-slate-100 p-4 dark:border-slate-800 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative max-w-sm flex-1">
@@ -217,14 +304,14 @@ function CoursesContent() {
               placeholder="Tìm kiếm khóa học..."
               className="pl-9"
               value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); applyManualSelection([]); }}
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
               className="h-10 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
               value={filterStatus}
-              onChange={(e) => { setFilterStatus(e.target.value as CourseStatus); setCurrentPage(1); }}
+              onChange={(e) => { setFilterStatus(e.target.value as CourseStatus); setCurrentPage(1); applyManualSelection([]); }}
             >
               <option value="">Tất cả trạng thái</option>
               <option value="Published">Hiện</option>
@@ -242,8 +329,9 @@ function CoursesContent() {
         )}
         <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <Table>
-          <TableHeader>
+          <TableHeader className="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-white dark:[&_th]:bg-slate-900">
             <TableRow>
+              <TableHead className="w-[40px]"><SelectCheckbox checked={isPageSelected} onChange={toggleSelectAll} indeterminate={isPageIndeterminate} /></TableHead>
               <TableHead className="w-[40px]" />
               <TableHead className="w-[80px]">Ảnh</TableHead>
               <TableHead>Khóa học</TableHead>
@@ -259,6 +347,8 @@ function CoursesContent() {
             {isLoading ? (
               Array.from({ length: pageSize }).map((_, index) => (
                 <TableRow key={`loading-${index}`}>
+                  <TableCell><div className="h-4 w-4 animate-pulse rounded bg-slate-200 dark:bg-slate-700" /></TableCell>
+                  <TableCell><div className="h-4 w-4 animate-pulse rounded bg-slate-200 dark:bg-slate-700" /></TableCell>
                   <TableCell><div className="h-10 w-16 animate-pulse rounded bg-slate-200 dark:bg-slate-700" /></TableCell>
                   <TableCell><div className="h-4 w-56 animate-pulse rounded bg-slate-200 dark:bg-slate-700" /></TableCell>
                   <TableCell><div className="h-4 w-24 animate-pulse rounded bg-slate-200 dark:bg-slate-700" /></TableCell>
@@ -269,9 +359,10 @@ function CoursesContent() {
                 </TableRow>
               ))
             ) : courses.map((course) => (
-              <SortableTableRow key={course._id} id={course._id} disabled={!isReorderEnabled}>
+              <SortableTableRow key={course._id} id={course._id} disabled={!isReorderEnabled} selected={selectedIds.includes(course._id)} selectedClassName="bg-indigo-500/5">
                 {({ attributes, disabled, listeners }) => (
                   <>
+                <TableCell><SelectCheckbox checked={selectedIds.includes(course._id)} onChange={() => { toggleSelectItem(course._id); }} /></TableCell>
                 <TableCell className="w-[40px]">
                   <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
                 </TableCell>
@@ -325,7 +416,7 @@ function CoursesContent() {
             ))}
             {!isLoading && courses.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-slate-500">
+                <TableCell colSpan={9} className="py-8 text-center text-slate-500">
                   {searchTerm || filterStatus ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có khóa học nào'}
                 </TableCell>
               </TableRow>
@@ -341,7 +432,7 @@ function CoursesContent() {
               <span>Hiển thị</span>
               <select
                 value={pageSize}
-                onChange={(event) => { setPageSizeOverride(Number(event.target.value)); setCurrentPage(1); }}
+                onChange={(event) => { setPageSizeOverride(Number(event.target.value)); setCurrentPage(1); applyManualSelection([]); }}
                 className="h-8 w-[72px] rounded-md border border-slate-200 bg-white px-2 text-sm font-medium text-slate-900"
               >
                 {[10, 20, 30, 50, 100].map((size) => <option key={size} value={size}>{size}</option>)}
