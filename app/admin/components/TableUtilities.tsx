@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowUpDown, ChevronDown, ImageOff, Loader2, SlidersHorizontal, Trash2 } from 'lucide-react';
-import { Button, TableHead, cn } from './ui';
+import type { UniqueIdentifier } from '@dnd-kit/core';
+import { KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { ArrowUpDown, ChevronDown, GripVertical, ImageOff, Loader2, SearchCheck, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { Button, TableHead, TableRow, cn } from './ui';
 
 export const ColumnToggle = ({ columns, visibleColumns, onToggle }: {
   columns: { key: string; label: string; required?: boolean }[];
@@ -64,6 +68,36 @@ export const SortableHeader = ({ label, sortKey, sortConfig, onSort, className }
   </TableHead>
 );
 
+export const ExactSearchToggle = ({
+  checked,
+  onCheckedChange,
+  title = 'Tìm chính xác: khớp từng ký tự',
+}: {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  title?: string;
+}) => (
+  <label
+    className={cn(
+      "inline-flex h-10 w-10 cursor-pointer select-none items-center justify-center rounded-md border transition-colors",
+      checked
+        ? "border-orange-500 bg-orange-500/5 text-orange-600 dark:text-orange-400"
+        : "border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+    )}
+    title={title}
+  >
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={(event) => { onCheckedChange(event.target.checked); }}
+      className="sr-only"
+      aria-label="Tìm chính xác"
+    />
+    <SearchCheck size={16} aria-hidden="true" />
+    <span className="sr-only">Tìm chính xác</span>
+  </label>
+);
+
 export function generatePaginationItems(currentPage: number, totalPages: number): (number | 'ellipsis')[] {
   if (totalPages <= 7) {
     return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -111,14 +145,14 @@ export const BulkActionBar = ({
   onPublish,
   onUnpublish,
   isStatusLoading,
-  publishLabel = 'Đăng bán',
-  publishLoadingLabel = 'Đang đăng bán...',
-  unpublishLabel = 'Chuyển nháp',
-  unpublishLoadingLabel = 'Đang chuyển nháp...',
+  publishLabel = 'Hiện',
+  publishLoadingLabel = 'Đang hiện...',
+  unpublishLabel = 'Ẩn',
+  unpublishLoadingLabel = 'Đang ẩn...',
   onShow,
   onHide,
-  showLabel = 'Hiển thị',
-  showLoadingLabel = 'Đang hiển thị...',
+  showLabel = 'Hiện',
+  showLoadingLabel = 'Đang hiện...',
   hideLabel = 'Ẩn',
   hideLoadingLabel = 'Đang ẩn...',
   onClearBrokenMedia,
@@ -302,3 +336,119 @@ export const SelectCheckbox = ({ checked, onChange, indeterminate, disabled, tit
     />
   );
 };
+
+type SortableHookResult = ReturnType<typeof useSortable>;
+
+type SortableTableRowRenderProps = {
+  attributes: SortableHookResult['attributes'];
+  disabled: boolean;
+  isDragging: boolean;
+  listeners: SortableHookResult['listeners'];
+};
+
+export function useAdminDndSensors() {
+  return useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+}
+
+export function getReorderedItems<T>(
+  items: T[],
+  activeId: UniqueIdentifier,
+  overId: UniqueIdentifier | null | undefined,
+  getId: (item: T) => UniqueIdentifier
+): T[] | null {
+  if (!overId || activeId === overId) {
+    return null;
+  }
+
+  const oldIndex = items.findIndex(item => getId(item) === activeId);
+  const newIndex = items.findIndex(item => getId(item) === overId);
+  if (oldIndex < 0 || newIndex < 0) {
+    return null;
+  }
+
+  return arrayMove(items, oldIndex, newIndex);
+}
+
+export function buildOrderUpdates<T, TId extends UniqueIdentifier>(
+  items: T[],
+  previousOrderValues: number[],
+  getId: (item: T) => TId,
+  getFallbackOrder: (item: T, index: number) => number
+): { id: TId; order: number }[] {
+  return items.map((item, index) => ({
+    id: getId(item),
+    order: previousOrderValues[index] ?? getFallbackOrder(item, index),
+  }));
+}
+
+export const AdminDragHandle = ({
+  attributes,
+  className,
+  disabled = false,
+  disabledTitle = 'Tắt tìm kiếm/lọc/sắp xếp khác để kéo thả.',
+  listeners,
+  title = 'Kéo để đổi thứ tự',
+}: {
+  attributes?: SortableHookResult['attributes'];
+  className?: string;
+  disabled?: boolean;
+  disabledTitle?: string;
+  listeners?: SortableHookResult['listeners'];
+  title?: string;
+}) => (
+  <button
+    type="button"
+    {...attributes}
+    {...listeners}
+    aria-label={title}
+    disabled={disabled}
+    title={disabled ? disabledTitle : title}
+    className={cn(
+      'inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition-colors',
+      disabled
+        ? 'cursor-not-allowed opacity-40'
+        : 'cursor-grab hover:bg-slate-100 hover:text-slate-600 active:cursor-grabbing dark:hover:bg-slate-800 dark:hover:text-slate-300',
+      className
+    )}
+    onClick={(event) => { event.stopPropagation(); }}
+  >
+    <GripVertical size={16} />
+  </button>
+);
+
+export function SortableTableRow({
+  children,
+  className,
+  disabled = false,
+  draggingClassName = 'bg-slate-100 opacity-80 dark:bg-slate-800',
+  id,
+  selected = false,
+  selectedClassName = 'bg-orange-500/5',
+}: {
+  children: React.ReactNode | ((props: SortableTableRowRenderProps) => React.ReactNode);
+  className?: string;
+  disabled?: boolean;
+  draggingClassName?: string;
+  id: UniqueIdentifier;
+  selected?: boolean;
+  selectedClassName?: string;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ disabled, id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  const renderedChildren = typeof children === 'function'
+    ? children({ attributes, disabled, isDragging, listeners })
+    : children;
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      className={cn(className, selected && selectedClassName, isDragging && draggingClassName)}
+    >
+      {renderedChildren}
+    </TableRow>
+  );
+}

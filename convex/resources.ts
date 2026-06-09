@@ -238,7 +238,8 @@ export const listAdminWithOffset = query({
         .order("desc")
         .take(fetchLimit);
     } else {
-      resources = await ctx.db.query("resources").order("desc").take(fetchLimit);
+      resources = await ctx.db.query("resources").take(500);
+      resources.sort((a, b) => a.order - b.order);
     }
 
     return resources.slice(offset, offset + limit);
@@ -773,6 +774,15 @@ export const getDeleteInfo = query({
       preview: v.array(v.object({ id: v.string(), name: v.string() })),
     })),
   }),
+});
+
+export const reorder = mutation({
+  args: { items: v.array(v.object({ id: v.id("resources"), order: v.number() })) },
+  handler: async (ctx, args) => {
+    await Promise.all(args.items.map(async (item) => ctx.db.patch(item.id, { order: item.order })));
+    return null;
+  },
+  returns: v.null(),
 });
 
 export const bulkClearBrokenMedia = mutation({

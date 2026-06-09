@@ -437,7 +437,7 @@ function OrdersContent() {
                 {visibleColumns.includes('createdAt') && <TableCell className="text-slate-500 text-sm">{formatDate(order._creationTime)}</TableCell>}
                 {visibleColumns.includes('actions') && (
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1">
                       <Link href={`/admin/orders/${order._id}/edit`}><Button variant="ghost" size="icon" title="Xem chi tiết"><Eye size={16}/></Button></Link>
                       <Link href={`/admin/orders/${order._id}/edit`}><Button variant="ghost" size="icon"><Edit size={16}/></Button></Link>
                       <Button variant="ghost" size="icon" title="Copy link tra cứu" onClick={async () => handleCopyOrderLookupUrl(order.orderNumber)}><Copy size={16}/></Button>

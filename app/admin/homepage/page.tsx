@@ -7,13 +7,16 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { 
   ChevronLeft, ChevronRight, Edit, Eye, EyeOff, FileText, 
-  GripVertical, Home, ImageIcon, LayoutGrid, Loader2,
+  Home, ImageIcon, LayoutGrid, Loader2,
   Phone, Plus, Search, Trash2, Users
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
-import { BulkActionBar, SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, BulkActionBar, getReorderedItems, SelectCheckbox, SortableHeader, SortableTableRow, useAdminDndSensors, useSortableData } from '../components/TableUtilities';
 import { ModuleGuard } from '../components/ModuleGuard';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 const MODULE_KEY = 'homepage';
 
@@ -58,7 +61,7 @@ function HomepageContent() {
   
   const deleteComponent = useMutation(api.homeComponents.remove);
   const toggleComponent = useMutation(api.homeComponents.toggle);
-  // Const reorderComponents = useMutation(api.homeComponents.reorder); // TODO: implement drag-drop reorder
+  const reorderComponents = useMutation(api.homeComponents.reorder);
   
   const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: 'order' });
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,6 +69,7 @@ function HomepageContent() {
   const [filterActive, setFilterActive] = useState('');
   const [selectedIds, setSelectedIds] = useState<Id<"homeComponents">[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const dndSensors = useAdminDndSensors();
 
   const isLoading = componentsData === undefined;
 
@@ -95,6 +99,7 @@ function HomepageContent() {
   }, [components, searchTerm, filterType, filterActive]);
 
   const sortedComponents = useSortableData(filteredComponents, sortConfig);
+  const isReorderEnabled = !searchTerm.trim() && !filterType && !filterActive && (sortConfig.key === null || sortConfig.key === 'order');
 
   const totalPages = Math.ceil(sortedComponents.length / itemsPerPage);
   const paginatedComponents = useMemo(() => {
@@ -148,6 +153,27 @@ function HomepageContent() {
       toast.success('Đã cập nhật trạng thái');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Có lỗi khi cập nhật trạng thái');
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(paginatedComponents, event.active.id, event.over?.id, component => component._id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderComponents({
+        items: buildOrderUpdates(
+          reordered,
+          paginatedComponents.map(component => component.order),
+          component => component._id,
+          (_component, index) => ((currentPage - 1) * itemsPerPage) + index
+        ),
+      });
+      setSortConfig({ direction: 'asc', key: 'order' });
+      toast.success('Đã cập nhật thứ tự section');
+    } catch {
+      toast.error('Không thể cập nhật thứ tự section');
     }
   };
 
@@ -206,10 +232,16 @@ function HomepageContent() {
             onChange={(e) =>{  handleFilterChange(e.target.value, 'active'); }}
           >
             <option value="">Tất cả trạng thái</option>
-            <option value="true">Đang hiển thị</option>
-            <option value="false">Đang ẩn</option>
+            <option value="true">Hiện</option>
+            <option value="false">Ẩn</option>
           </select>
         </div>
+        {!isReorderEnabled && (
+          <div className="border-b border-slate-100 px-4 py-3 text-xs text-slate-500 dark:border-slate-800">
+            Tắt tìm kiếm/lọc và sắp xếp theo thứ tự để kéo thả đổi vị trí.
+          </div>
+        )}
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <Table>
           <TableHeader>
             <TableRow>
@@ -227,18 +259,21 @@ function HomepageContent() {
               <TableHead className="text-right">Hành động</TableHead>
             </TableRow>
           </TableHeader>
+          <SortableContext items={paginatedComponents.map(component => component._id)} strategy={verticalListSortingStrategy}>
           <TableBody>
             {paginatedComponents.map((component) => {
               const Icon = TYPE_ICONS[component.type] || LayoutGrid;
               const colorClass = TYPE_COLORS[component.type] || 'bg-slate-500/10 text-slate-600';
               return (
-                <TableRow key={component._id} className={selectedIds.includes(component._id) ? 'bg-orange-500/5' : ''}>
+                <SortableTableRow key={component._id} id={component._id} disabled={!isReorderEnabled} selected={selectedIds.includes(component._id)}>
+                  {({ attributes, disabled, listeners }) => (
+                    <>
                   <TableCell>
                     <SelectCheckbox checked={selectedIds.includes(component._id)} onChange={() =>{  toggleSelectItem(component._id); }} />
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 text-slate-400">
-                      <GripVertical size={14} className="cursor-move" />
+                      <AdminDragHandle attributes={attributes} className="h-7 w-7" disabled={disabled} listeners={listeners} />
                       <span className="font-mono text-xs">{component.order + 1}</span>
                     </div>
                   </TableCell>
@@ -254,7 +289,7 @@ function HomepageContent() {
                       variant={component.active ? 'default' : 'secondary'}
                       className={component.active ? 'bg-emerald-500' : ''}
                     >
-                      {component.active ? 'Hiển thị' : 'Ẩn'}
+                      {component.active ? 'Hiện' : 'Ẩn'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -284,7 +319,9 @@ function HomepageContent() {
                       </Button>
                     </div>
                   </TableCell>
-                </TableRow>
+                    </>
+                  )}
+                </SortableTableRow>
               );
             })}
             {paginatedComponents.length === 0 && (
@@ -295,7 +332,9 @@ function HomepageContent() {
               </TableRow>
             )}
           </TableBody>
+          </SortableContext>
         </Table>
+        </DndContext>
         {sortedComponents.length > 0 && (
           <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <span className="text-sm text-slate-500">

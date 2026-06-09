@@ -85,7 +85,7 @@ function SortableRow({ comp, index, isSelected, onToggleSelect, onToggleActive, 
         </div>
       </TableCell>
       <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-1">
           <Link href={getEditRoute(comp.type, comp._id)}>
             <Button variant="ghost" size="icon" title="Chỉnh sửa"><Edit size={16} /></Button>
           </Link>
@@ -331,8 +331,8 @@ function HomeComponentsPage() {
           className="h-8 rounded-md border border-input bg-background px-2 text-sm text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-ring"
         >
           <option value="all">Tất cả</option>
-          <option value="active">Đang hiển thị</option>
-          <option value="inactive">Đang ẩn</option>
+          <option value="active">Hiện</option>
+          <option value="inactive">Ẩn</option>
         </select>
         {hasActiveFilter && (
           <Button variant="ghost" size="icon" className="h-8 w-8" title="Xóa filter" onClick={resetFilters}>

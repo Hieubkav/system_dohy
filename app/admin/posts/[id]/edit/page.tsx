@@ -8,6 +8,7 @@ import { ExternalLink, Loader2, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { Button, Card, CardContent, CardHeader, CardTitle, Checkbox, Input, Label } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 import { LexicalEditor } from '../../../components/LexicalEditor';
 import { ImageUploader } from '../../../components/ImageUploader';
 import { QuickCreateCategoryModal } from '../../../components/QuickCreateCategoryModal';
@@ -348,7 +349,7 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
               {/* Title - always shown (system field) */}
               <div className="space-y-2">
                 <Label>Tiêu đề <span className="text-red-500">*</span></Label>
-                <Input value={title} onChange={handleTitleChange} required />
+                <CopyableInput value={title} onChange={handleTitleChange} required copyLabel="tiêu đề" />
               </div>
               {/* Slug - always shown (system field) */}
               <div className="space-y-2">

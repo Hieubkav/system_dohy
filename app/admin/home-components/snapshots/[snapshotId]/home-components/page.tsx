@@ -255,7 +255,7 @@ function SortableRow({
         </div>
       </TableCell>
       <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-1">
           <Link href={`/admin/home-components/snapshots/${snapshotId}/home-components/${encodeURIComponent(comp.componentKey)}/edit`}>
             <Button variant="ghost" size="icon"><Edit size={16} /></Button>
           </Link>

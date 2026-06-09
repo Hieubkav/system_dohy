@@ -10,6 +10,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { ArrowLeft, Check, Copy, ExternalLink, FileText, FileVideo, Image as ImageIcon, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 
 const MODULE_KEY = 'media';
 
@@ -312,9 +313,10 @@ export default function MediaEditPage({ params }: { params: Promise<{ id: string
                 {/* Filename */}
                 <div className="space-y-2">
                   <Label>Tên file <span className="text-red-500">*</span></Label>
-                  <Input 
+                  <CopyableInput
                     value={filename} 
                     onChange={(e) =>{  setFilename(e.target.value); }} 
+                    copyLabel="tên file"
                     required
                     placeholder="image.jpg"
                   />

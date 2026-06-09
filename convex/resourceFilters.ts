@@ -46,6 +46,7 @@ export const listAll = query({
     const filters = await ctx.db
       .query("resourceFilters")
       .take(limit);
+    filters.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     return Promise.all(
       filters.map(async (filter) => {
         const values = await ctx.db
@@ -91,9 +92,14 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const { copyToPartner, copyValuesFromPartnerSlug, ...filterData } = args;
-    const filterId = await ctx.db.insert("resourceFilters", filterData);
+    let nextOrder = filterData.order;
+    if (nextOrder === undefined) {
+      const filters = await ctx.db.query("resourceFilters").take(1000);
+      nextOrder = filters.reduce((max, filter) => Math.max(max, filter.order ?? -1), -1) + 1;
+    }
+    const filterId = await ctx.db.insert("resourceFilters", { ...filterData, order: nextOrder });
     if (copyToPartner) {
-      await ctx.db.insert("courseFilters", filterData);
+      await ctx.db.insert("courseFilters", { ...filterData, order: nextOrder });
     }
     if (copyValuesFromPartnerSlug) {
       const partnerFilter = await ctx.db
@@ -395,6 +401,15 @@ export const updateValue = mutation({
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
     await ctx.db.patch(id, updates);
+    return null;
+  },
+  returns: v.null(),
+});
+
+export const reorder = mutation({
+  args: { items: v.array(v.object({ id: v.id("resourceFilters"), order: v.number() })) },
+  handler: async (ctx, args) => {
+    await Promise.all(args.items.map(async (item) => ctx.db.patch(item.id, { order: item.order })));
     return null;
   },
   returns: v.null(),

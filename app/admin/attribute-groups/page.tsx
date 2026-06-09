@@ -9,10 +9,13 @@ import { ChevronDown, Edit, ExternalLink, Plus, Search, Trash2 } from 'lucide-re
 import { toast } from 'sonner';
 import { getAttributeIconComponent } from './_lib/iconRegistry';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
-import { BulkActionBar, ColumnToggle, generatePaginationItems, SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, BulkActionBar, ColumnToggle, generatePaginationItems, getReorderedItems, SelectCheckbox, SortableHeader, SortableTableRow, useAdminDndSensors, useSortableData } from '../components/TableUtilities';
 import { ModuleGuard } from '../components/ModuleGuard';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
 import { usePersistedPageSize } from '../components/usePersistedPageSize';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 const ATTRIBUTE_GROUP_COLUMNS_STORAGE_KEY = 'admin_attribute_groups_visible_columns_v2';
 
@@ -39,6 +42,7 @@ export default function AttributeGroupsListPage() {
 function AttributeGroupsContent() {
   const productsData = useQuery(api.products.listAll, { limit: 1000 });
   const deleteGroup = useMutation(api.attributeGroups.remove);
+  const reorderGroups = useMutation(api.attributeGroups.reorder);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -65,6 +69,7 @@ function AttributeGroupsContent() {
   const [deleteTargetId, setDeleteTargetId] = useState<Id<"attributeGroups"> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const dndSensors = useAdminDndSensors();
 
   const isSelectAllActive = selectionMode === 'all';
 
@@ -160,11 +165,12 @@ function AttributeGroupsContent() {
   };
 
   const sortedData = useSortableData(categories, sortConfig);
+  const isReorderEnabled = !debouncedSearchTerm.trim() && (sortConfig.key === null || sortConfig.key === 'order');
 
   const totalCount = totalCountData?.count ?? 0;
   const totalPages = totalCount ? Math.ceil(totalCount / resolvedPageSize) : 1;
   const paginatedData = sortedData;
-  const tableColumnCount = resolvedVisibleColumns.length;
+  const tableColumnCount = resolvedVisibleColumns.length + 1;
   const selectedIds = isSelectAllActive && selectAllData ? selectAllData.ids : manualSelectedIds;
   const isSelectingAll = isSelectAllActive && selectAllData === undefined;
 
@@ -236,6 +242,27 @@ function AttributeGroupsContent() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(paginatedData, event.active.id, event.over?.id, group => group.id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderGroups({
+        items: buildOrderUpdates(
+          reordered,
+          paginatedData.map(group => group.order),
+          group => group.id as Id<"attributeGroups">,
+          (_group, index) => offset + index
+        ),
+      });
+      setSortConfig({ direction: 'asc', key: null });
+      toast.success('Đã cập nhật thứ tự nhóm thuộc tính');
+    } catch {
+      toast.error('Không thể cập nhật thứ tự nhóm thuộc tính');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -277,9 +304,16 @@ function AttributeGroupsContent() {
             });
           }} />
         </div>
+        {!isReorderEnabled && (
+          <div className="px-4 py-3 text-xs text-slate-500 border-b border-slate-100 dark:border-slate-800">
+            Tắt tìm kiếm và quay về thứ tự mặc định để kéo thả đổi vị trí.
+          </div>
+        )}
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <Table>
           <TableHeader className="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-white dark:[&_th]:bg-slate-900">
             <TableRow>
+              <TableHead className="w-[40px]" />
               {resolvedVisibleColumns.includes('select') && (
                 <TableHead className="w-[40px]">
                   <SelectCheckbox checked={isPageSelected} onChange={toggleSelectAll} indeterminate={isPageIndeterminate} />
@@ -294,6 +328,7 @@ function AttributeGroupsContent() {
               {resolvedVisibleColumns.includes('actions') && <TableHead className="text-right">Hành động</TableHead>}
             </TableRow>
           </TableHeader>
+          <SortableContext items={paginatedData.map(cat => cat.id)} strategy={verticalListSortingStrategy}>
           <TableBody>
             {isTableLoading ? (
               Array.from({ length: resolvedPageSize }).map((_, index) => (
@@ -306,7 +341,12 @@ function AttributeGroupsContent() {
             ) : (
               <>
                 {paginatedData.map(cat => (
-                  <TableRow key={cat.id} className={selectedIds.includes(cat.id) ? 'bg-orange-500/5' : ''}>
+                  <SortableTableRow key={cat.id} id={cat.id} disabled={!isReorderEnabled} selected={selectedIds.includes(cat.id)}>
+                    {({ attributes, disabled, listeners }) => (
+                      <>
+                <TableCell className="w-[40px]">
+                  <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
+                </TableCell>
                 {resolvedVisibleColumns.includes('select') && (
                   <TableCell><SelectCheckbox checked={selectedIds.includes(cat.id)} onChange={() =>{  toggleSelectItem(cat.id); }} /></TableCell>
                 )}
@@ -376,7 +416,7 @@ function AttributeGroupsContent() {
                 )}
                 {resolvedVisibleColumns.includes('actions') && (
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1">
                       {(() => {
                         const firstType = assignedTypesByGroup.get(cat.id)?.find(type => type.active) ?? assignedTypesByGroup.get(cat.id)?.[0];
                         const href = firstType ? `/${firstType.slug}/${cat.slug}` : `/products/${cat.slug}`;
@@ -396,7 +436,9 @@ function AttributeGroupsContent() {
                     </div>
                   </TableCell>
                 )}
-                  </TableRow>
+                      </>
+                    )}
+                  </SortableTableRow>
                 ))}
               </>
             )}
@@ -408,7 +450,9 @@ function AttributeGroupsContent() {
               </TableRow>
             )}
           </TableBody>
+          </SortableContext>
         </Table>
+        </DndContext>
         {totalCount > 0 && !isTableLoading && (
           <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="order-2 flex w-full items-center justify-between text-sm text-slate-500 sm:order-1 sm:w-auto sm:justify-start sm:gap-6">

@@ -8,6 +8,7 @@ import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
 import { Loader2, ShieldOff } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../components/ui';
+import { CopyableInput } from '../../components/CopyTextButton';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 import { useAdminAuth } from '../../auth/context';
 import {
@@ -174,9 +175,10 @@ function RoleCreateForm({ token }: { token: string | null }) {
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
               <Label>Tên vai trò <span className="text-red-500">*</span></Label>
-              <Input 
+              <CopyableInput
                 value={name}
                 onChange={(e) =>{  setName(e.target.value); }}
+                copyLabel="tên vai trò"
                 placeholder="Ví dụ: Biên tập viên..." 
                 className={errors.name ? 'border-red-500' : ''}
               />

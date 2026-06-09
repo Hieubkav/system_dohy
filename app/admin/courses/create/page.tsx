@@ -16,6 +16,7 @@ import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/co
 import { COURSE_LEVEL_OPTIONS, parseCourseLevel, type CourseLevel } from '@/lib/courses/labels';
 import { stripHtml, truncateText } from '@/lib/seo';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../components/ui';
+import { CopyableInput } from '../../components/CopyTextButton';
 import { ImageUploader } from '../../components/ImageUploader';
 import { LexicalEditor } from '../../components/LexicalEditor';
 
@@ -234,7 +235,7 @@ export default function CourseCreatePage() {
               <CardContent className="space-y-4 p-6">
                 <div className="space-y-2">
                   <Label>Tiêu đề <span className="text-red-500">*</span></Label>
-                  <Input value={title} onChange={handleTitleChange} required placeholder="Nhập tiêu đề khóa học..." />
+                  <CopyableInput value={title} onChange={handleTitleChange} required placeholder="Nhập tiêu đề khóa học..." copyLabel="tiêu đề" />
                 </div>
                 <div className="space-y-2">
                   <Label>Slug</Label>

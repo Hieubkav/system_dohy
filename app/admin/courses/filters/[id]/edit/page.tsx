@@ -14,6 +14,7 @@ import { ModuleGuard } from '@/app/admin/components/ModuleGuard';
 import { AdminImage as Image } from '@/app/admin/components/AdminImage';
 import type { Id } from '@/convex/_generated/dataModel';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
+import { CopyableInput } from '@/app/admin/components/CopyTextButton';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -77,7 +78,7 @@ function SortableValueRow({ valueItem, onEdit, onDelete }: SortableValueRowProps
       <TableCell className="font-mono text-xs text-slate-500">{valueItem.slug}</TableCell>
       <TableCell>
         <Badge variant={valueItem.active ? 'success' : 'secondary'}>
-          {valueItem.active ? 'Hoạt động' : 'Ẩn'}
+          {valueItem.active ? 'Hiện' : 'Ẩn'}
         </Badge>
       </TableCell>
       <TableCell className="text-right">
@@ -343,10 +344,11 @@ function CourseFilterEditContent({ id }: { id: Id<'courseFilters'> }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="filter-name">Tên bộ lọc <span className="text-red-500">*</span></Label>
-                  <Input
+                  <CopyableInput
                     id="filter-name"
                     value={name}
                     onChange={handleNameChange}
+                    copyLabel="tên bộ lọc"
                     placeholder="Ví dụ: Phần mềm, Cấp độ..."
                     required
                   />
@@ -505,7 +507,7 @@ function CourseFilterEditContent({ id }: { id: Id<'courseFilters'> }) {
                   onChange={(e) => setValActive(e.target.value === 'active')}
                   className="w-full h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
                 >
-                  <option value="active">Hoạt động</option>
+                  <option value="active">Hiện</option>
                   <option value="inactive">Ẩn</option>
                 </select>
               </div>

@@ -9,6 +9,10 @@ import { Edit, FolderTree, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
 import { ModuleGuard } from '../components/ModuleGuard';
+import { AdminDragHandle, buildOrderUpdates, getReorderedItems, SortableTableRow, useAdminDndSensors } from '../components/TableUtilities';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 export default function ProjectCategoriesListPage() {
   return (
@@ -22,7 +26,9 @@ function ProjectCategoriesContent() {
   const categoriesData = useQuery(api.projectCategories.listAll, {});
   const projectsData = useQuery(api.projects.listAll, {});
   const deleteCategory = useMutation(api.projectCategories.remove);
+  const reorderCategories = useMutation(api.projectCategories.reorder);
   const [searchTerm, setSearchTerm] = useState('');
+  const dndSensors = useAdminDndSensors();
 
   const projectCountMap = useMemo(() => {
     const map: Record<string, number> = {};
@@ -39,6 +45,7 @@ function ProjectCategoriesContent() {
       .map((category) => ({ ...category, count: projectCountMap[category._id] || 0 }))
       .sort((a, b) => a.order - b.order);
   }, [categoriesData, projectCountMap, searchTerm]);
+  const isReorderEnabled = !searchTerm.trim();
 
   const handleDelete = async (id: Id<'projectCategories'>) => {
     if (!confirm('Xóa danh mục dự án này và dữ liệu liên quan?')) {return;}
@@ -47,6 +54,26 @@ function ProjectCategoriesContent() {
       toast.success('Đã xóa danh mục dự án');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Không thể xóa danh mục');
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(categories, event.active.id, event.over?.id, item => item._id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderCategories({
+        items: buildOrderUpdates(
+          reordered,
+          categories.map(item => item.order),
+          item => item._id,
+          (_item, index) => index
+        ),
+      });
+      toast.success('Đã cập nhật thứ tự danh mục');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật thứ tự danh mục');
     }
   };
 
@@ -87,9 +114,16 @@ function ProjectCategoriesContent() {
             />
           </div>
         </div>
+        {!isReorderEnabled && (
+          <div className="border-b border-slate-100 px-4 py-3 text-xs text-slate-500 dark:border-slate-800">
+            Tắt tìm kiếm để kéo thả đổi vị trí.
+          </div>
+        )}
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[40px]" />
               <TableHead>Tên danh mục</TableHead>
               <TableHead>Slug</TableHead>
               <TableHead className="text-center">Số dự án</TableHead>
@@ -97,17 +131,23 @@ function ProjectCategoriesContent() {
               <TableHead className="text-right">Hành động</TableHead>
             </TableRow>
           </TableHeader>
+          <SortableContext items={categories.map(category => category._id)} strategy={verticalListSortingStrategy}>
           <TableBody>
             {categories.map((category) => (
-              <TableRow key={category._id}>
+              <SortableTableRow key={category._id} id={category._id} disabled={!isReorderEnabled}>
+                {({ attributes, disabled, listeners }) => (
+                  <>
+                <TableCell className="w-[40px]">
+                  <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
+                </TableCell>
                 <TableCell className="font-medium">{category.name}</TableCell>
                 <TableCell className="font-mono text-sm text-slate-500">{category.slug}</TableCell>
                 <TableCell className="text-center"><Badge variant="secondary">{category.count}</Badge></TableCell>
                 <TableCell>
-                  <Badge variant={category.active ? 'default' : 'secondary'}>{category.active ? 'Hoạt động' : 'Ẩn'}</Badge>
+                  <Badge variant={category.active ? 'default' : 'secondary'}>{category.active ? 'Hiện' : 'Ẩn'}</Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-1">
                     <Link href={`/admin/project-categories/${category._id}/edit`}>
                       <Button variant="ghost" size="icon"><Edit size={16} /></Button>
                     </Link>
@@ -121,17 +161,21 @@ function ProjectCategoriesContent() {
                     </Button>
                   </div>
                 </TableCell>
-              </TableRow>
+                  </>
+                )}
+              </SortableTableRow>
             ))}
             {categories.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-slate-500">
+                <TableCell colSpan={6} className="py-8 text-center text-slate-500">
                   {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có danh mục dự án nào'}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
+          </SortableContext>
         </Table>
+        </DndContext>
       </Card>
     </div>
   );

@@ -9,6 +9,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { Loader2, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Card, CardContent, Input, Label } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 import { ImageUploader } from '../../../components/ImageUploader';
 import { useAdminAuth } from '../../../auth/context';
@@ -201,10 +202,11 @@ function UserEditForm({ params, token }: { params: Promise<{ id: string }>; toke
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Họ tên <span className="text-red-500">*</span></Label>
-                <Input 
+                <CopyableInput
                   required 
                   placeholder="Nhập họ tên..." 
                   value={name}
+                  copyLabel="họ tên"
                   onChange={(e) =>{  setName(e.target.value); }}
                 />
               </div>

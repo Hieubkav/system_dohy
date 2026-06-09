@@ -9,6 +9,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Card, CardContent, Input, Label } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 
 const MODULE_KEY = 'notifications';
 
@@ -105,10 +106,11 @@ export default function NotificationEditPage({ params }: { params: Promise<{ id:
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
               <Label>Tiêu đề <span className="text-red-500">*</span></Label>
-              <Input 
+              <CopyableInput
                 required 
                 placeholder="Nhập tiêu đề thông báo..." 
                 value={title}
+                copyLabel="tiêu đề"
                 onChange={(e) =>{  setTitle(e.target.value); }}
                 disabled={isReadOnly}
               />

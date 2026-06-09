@@ -114,8 +114,8 @@ export const listAdminWithOffset = query({
     } else {
       projects = await ctx.db
         .query("projects")
-        .order("desc")
-        .take(fetchLimit);
+        .take(500);
+      projects.sort((a, b) => a.order - b.order);
     }
 
     if (args.search?.trim() && projects.length > 0) {
@@ -707,6 +707,15 @@ export const getDeleteInfo = query({
       preview: v.array(v.object({ id: v.string(), name: v.string() })),
     })),
   }),
+});
+
+export const reorder = mutation({
+  args: { items: v.array(v.object({ id: v.id("projects"), order: v.number() })) },
+  handler: async (ctx, args) => {
+    await Promise.all(args.items.map(async (item) => ctx.db.patch(item.id, { order: item.order })));
+    return null;
+  },
+  returns: v.null(),
 });
 
 export const duplicate = mutation({

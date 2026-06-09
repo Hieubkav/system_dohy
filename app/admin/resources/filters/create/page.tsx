@@ -8,6 +8,7 @@ import { api } from '@/convex/_generated/api';
 import { Filter, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Card, CardContent, Input, Label, cn } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 import { ModuleGuard } from '../../../components/ModuleGuard';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 
@@ -173,10 +174,11 @@ function ResourceFilterCreateContent() {
 
             <div className="space-y-2">
               <Label htmlFor="filter-name">Tên bộ lọc <span className="text-red-500">*</span></Label>
-              <Input
+              <CopyableInput
                 id="filter-name"
                 value={name}
                 onChange={handleNameChange}
+                copyLabel="tên bộ lọc"
                 placeholder="Ví dụ: Phần mềm, Cấp độ..."
                 required
                 disabled={creationMode === 'copy'}

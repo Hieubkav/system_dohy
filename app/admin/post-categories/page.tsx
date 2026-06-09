@@ -9,9 +9,12 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { Edit, ExternalLink, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
-import { BulkActionBar, ColumnToggle, SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, BulkActionBar, ColumnToggle, getReorderedItems, SelectCheckbox, SortableHeader, SortableTableRow, useAdminDndSensors, useSortableData } from '../components/TableUtilities';
 import { ModuleGuard } from '../components/ModuleGuard';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 export default function PostCategoriesListPage() {
   return (
@@ -26,14 +29,16 @@ function PostCategoriesContent() {
   const postsData = useQuery(api.posts.listAll, {});
   const fieldsData = useQuery(api.admin.modules.listEnabledModuleFields, { moduleKey: 'postCategories' });
   const deleteCategory = useMutation(api.postCategories.remove);
+  const reorderCategories = useMutation(api.postCategories.reorder);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: null });
-  const [visibleColumns, setVisibleColumns] = useState(['select', 'thumbnail', 'name', 'slug', 'count', 'status', 'actions']);
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: 'order' });
+  const [visibleColumns, setVisibleColumns] = useState(['select', 'drag', 'thumbnail', 'name', 'slug', 'count', 'status', 'actions']);
   const [selectedIds, setSelectedIds] = useState<Id<"postCategories">[]>([]);
   const [deleteTargetId, setDeleteTargetId] = useState<Id<"postCategories"> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const dndSensors = useAdminDndSensors();
 
   const deleteInfo = useQuery(
     api.postCategories.getDeleteInfo,
@@ -62,6 +67,7 @@ function PostCategoriesContent() {
 
   const columns = [
     { key: 'select', label: 'Chọn' },
+    { key: 'drag', label: 'Kéo', required: true },
     ...(showThumbnail ? [{ key: 'thumbnail', label: 'Ảnh' }] : []),
     { key: 'name', label: 'Tên danh mục', required: true },
     { key: 'slug', label: 'Slug' },
@@ -70,7 +76,10 @@ function PostCategoriesContent() {
     { key: 'actions', label: 'Hành động', required: true }
   ];
 
-  const resolvedVisibleColumns = visibleColumns.filter(key => columns.some(col => col.key === key));
+  const resolvedVisibleColumns = Array.from(new Set([
+    ...columns.filter(c => c.required).map(c => c.key),
+    ...visibleColumns.filter(key => columns.some(col => col.key === key)),
+  ]));
 
   const handleSort = (key: string) => {
     setSortConfig(prev => ({ direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc', key }));
@@ -89,6 +98,7 @@ function PostCategoriesContent() {
   }, [categories, searchTerm]);
 
   const sortedData = useSortableData(filteredData, sortConfig);
+  const isReorderEnabled = !searchTerm.trim() && (sortConfig.key === null || sortConfig.key === 'order');
 
   const toggleSelectAll = () =>{  setSelectedIds(selectedIds.length === sortedData.length ? [] : sortedData.map(item => item.id as Id<"postCategories">)); };
   const toggleSelectItem = (id: Id<"postCategories">) =>{  setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); };
@@ -124,6 +134,27 @@ function PostCategoriesContent() {
       } catch {
         toast.error('Không thể xóa danh mục');
       }
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(sortedData, event.active.id, event.over?.id, item => item.id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderCategories({
+        items: buildOrderUpdates(
+          reordered,
+          sortedData.map(item => item.order),
+          item => item.id as Id<"postCategories">,
+          (_item, index) => index
+        ),
+      });
+      setSortConfig({ direction: 'asc', key: 'order' });
+      toast.success('Đã cập nhật thứ tự danh mục');
+    } catch {
+      toast.error('Không thể cập nhật thứ tự danh mục');
     }
   };
 
@@ -169,6 +200,12 @@ function PostCategoriesContent() {
             </div>
             <ColumnToggle columns={columns} visibleColumns={resolvedVisibleColumns} onToggle={toggleColumn} />
           </div>
+          {!isReorderEnabled && (
+            <div className="px-4 py-3 text-xs text-slate-500 border-b border-slate-100 dark:border-slate-800">
+              Tắt tìm kiếm và quay về thứ tự mặc định để kéo thả đổi vị trí.
+            </div>
+          )}
+          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <Table>
             <TableHeader>
               <TableRow>
@@ -177,6 +214,7 @@ function PostCategoriesContent() {
                     <SelectCheckbox checked={selectedIds.length === sortedData.length && sortedData.length > 0} onChange={toggleSelectAll} indeterminate={selectedIds.length > 0 && selectedIds.length < sortedData.length} />
                   </TableHead>
                 )}
+                {resolvedVisibleColumns.includes('drag') && <TableHead className="w-[40px]" />}
                 {resolvedVisibleColumns.includes('thumbnail') && <TableHead className="w-[60px]">Ảnh</TableHead>}
                 {resolvedVisibleColumns.includes('name') && <SortableHeader label="Tên danh mục" sortKey="name" sortConfig={sortConfig} onSort={handleSort} />}
                 {resolvedVisibleColumns.includes('slug') && <SortableHeader label="Slug" sortKey="slug" sortConfig={sortConfig} onSort={handleSort} />}
@@ -185,11 +223,19 @@ function PostCategoriesContent() {
                 {resolvedVisibleColumns.includes('actions') && <TableHead className="text-right">Hành động</TableHead>}
               </TableRow>
             </TableHeader>
+            <SortableContext items={sortedData.map(item => item.id)} strategy={verticalListSortingStrategy}>
             <TableBody>
               {sortedData.map(cat => (
-                <TableRow key={cat.id} className={selectedIds.includes(cat.id) ? 'bg-blue-500/5' : ''}>
+                <SortableTableRow key={cat.id} id={cat.id} disabled={!isReorderEnabled} selected={selectedIds.includes(cat.id)} selectedClassName="bg-blue-500/5">
+                  {({ attributes, disabled, listeners }) => (
+                    <>
                   {resolvedVisibleColumns.includes('select') && (
                     <TableCell><SelectCheckbox checked={selectedIds.includes(cat.id)} onChange={() =>{  toggleSelectItem(cat.id); }} /></TableCell>
+                  )}
+                  {resolvedVisibleColumns.includes('drag') && (
+                    <TableCell className="w-[40px]">
+                      <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
+                    </TableCell>
                   )}
                   {resolvedVisibleColumns.includes('thumbnail') && (
                     <TableCell>
@@ -205,19 +251,21 @@ function PostCategoriesContent() {
                   {resolvedVisibleColumns.includes('count') && <TableCell className="text-center"><Badge variant="secondary">{cat.count}</Badge></TableCell>}
                   {resolvedVisibleColumns.includes('status') && (
                     <TableCell>
-                      <Badge variant={cat.active ? 'default' : 'secondary'}>{cat.active ? 'Hoạt động' : 'Ẩn'}</Badge>
+                      <Badge variant={cat.active ? 'default' : 'secondary'}>{cat.active ? 'Hiện' : 'Ẩn'}</Badge>
                     </TableCell>
                   )}
                   {resolvedVisibleColumns.includes('actions') && (
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon" className="text-blue-600 hover:text-blue-700" title="Xem trên web" onClick={() =>{  openFrontend(cat.slug); }}><ExternalLink size={16}/></Button>
                         <Link href={`/admin/post-categories/${cat.id}/edit`}><Button variant="ghost" size="icon"><Edit size={16}/></Button></Link>
                         <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={ async () => handleDelete(cat.id as Id<"postCategories">)}><Trash2 size={16}/></Button>
                       </div>
                     </TableCell>
                   )}
-                </TableRow>
+                    </>
+                  )}
+                </SortableTableRow>
               ))}
               {sortedData.length === 0 && (
                 <TableRow>
@@ -227,7 +275,9 @@ function PostCategoriesContent() {
                 </TableRow>
               )}
             </TableBody>
+            </SortableContext>
           </Table>
+          </DndContext>
           {sortedData.length > 0 && (
             <div className="p-4 border-t border-slate-100 dark:border-slate-800 text-sm text-slate-500">
               Hiển thị {sortedData.length} / {categories.length} danh mục

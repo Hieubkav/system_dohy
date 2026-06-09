@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button, Card, CardContent, Input, Label } from '../../components/ui';
+import { CopyableInput } from '../../components/CopyTextButton';
 
 export type ProductOptionFormValues = {
   active: boolean;
@@ -138,9 +139,10 @@ export function OptionForm({
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
               <Label>Tên option <span className="text-red-500">*</span></Label>
-              <Input
+              <CopyableInput
                 value={form.name}
                 onChange={(e) =>{  handleNameChange(e.target.value); }}
+                copyLabel="tên option"
                 required
                 placeholder="VD: Màu sắc, Kích thước..."
                 autoFocus

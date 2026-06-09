@@ -17,6 +17,7 @@ import { ResourceFilterTagsInput } from '@/app/admin/components/ResourceFilterTa
 import { stripHtml, truncateText } from '@/lib/seo';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label, cn, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/app/admin/components/ui';
+import { CopyableInput } from '@/app/admin/components/CopyTextButton';
 
 const MODULE_KEY = 'resources';
 
@@ -408,7 +409,7 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
                 <CardContent className="space-y-4 p-6">
                   <div className="space-y-2">
                     <Label>Tiêu đề <span className="text-red-500">*</span></Label>
-                    <Input value={title} onChange={handleTitleChange} required placeholder="Nhập tiêu đề tài nguyên..." />
+                    <CopyableInput value={title} onChange={handleTitleChange} required placeholder="Nhập tiêu đề tài nguyên..." copyLabel="tiêu đề" />
                   </div>
                   <div className="space-y-2">
                     <Label>Slug</Label>
@@ -717,7 +718,7 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1">
                           {item.status === 'active' ? (
                             <Button
                               type="button"

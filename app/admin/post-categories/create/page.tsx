@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { Button, Card, CardContent, Input, Label } from '../../components/ui';
+import { CopyableInput } from '../../components/CopyTextButton';
 import { ImageUploader } from '../../components/ImageUploader';
 
 const MODULE_KEY = 'postCategories';
@@ -79,7 +80,7 @@ export default function PostCategoryCreatePage() {
             {/* Name - always shown (system field) */}
             <div className="space-y-2">
               <Label>Tên danh mục <span className="text-red-500">*</span></Label>
-              <Input value={name} onChange={handleNameChange} required placeholder="Ví dụ: Công nghệ, Đời sống..." autoFocus />
+              <CopyableInput value={name} onChange={handleNameChange} required placeholder="Ví dụ: Công nghệ, Đời sống..." autoFocus copyLabel="tên danh mục" />
             </div>
             {/* Slug - always shown (system field) */}
             <div className="space-y-2">

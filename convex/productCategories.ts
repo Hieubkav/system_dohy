@@ -78,9 +78,8 @@ export const listAdminWithOffset = query({
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
     const offset = args.offset ?? 0;
-    const fetchLimit = Math.min(offset + limit + 50, 1000);
 
-    let categories = await ctx.db.query("productCategories").order("desc").take(fetchLimit);
+    let categories = await ctx.db.query("productCategories").take(1000);
 
     if (args.search?.trim()) {
       const searchLower = args.search.toLowerCase().trim();
@@ -89,6 +88,8 @@ export const listAdminWithOffset = query({
         category.slug.toLowerCase().includes(searchLower)
       );
     }
+
+    categories.sort((a, b) => a.order - b.order);
 
     return categories.slice(offset, offset + limit);
   },

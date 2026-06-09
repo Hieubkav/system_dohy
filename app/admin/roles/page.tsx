@@ -426,7 +426,7 @@ function RolesTable({
                 )}
                 {resolvedVisibleColumns.includes('actions') && (
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1">
                       {canCreate && (
                         <Button
                           variant="ghost"

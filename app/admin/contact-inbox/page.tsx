@@ -414,7 +414,7 @@ function ContactInboxContent() {
                 )}
                 {visibleColumns.includes('actions') && (
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1">
                       <Link href={`/admin/contact-inbox/${inquiry._id}`}>
                         <Button variant="ghost" size="icon" title="Xem chi tiết"><Eye size={16} /></Button>
                       </Link>

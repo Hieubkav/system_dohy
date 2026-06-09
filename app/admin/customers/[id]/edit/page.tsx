@@ -10,6 +10,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { ChevronLeft, ChevronRight, Loader2, User as UserIcon, Search, ChevronDown, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, cn } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 
 const MODULE_KEY = 'customers';
 const ORDERS_PER_PAGE = 10;
@@ -560,8 +561,9 @@ export default function CustomerEditPage({ params }: { params: Promise<{ id: str
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Họ và tên <span className="text-red-500">*</span></Label>
-                      <Input
+                      <CopyableInput
                         value={formData.name}
+                        copyLabel="họ và tên"
                         onChange={(e) => { handleChange('name', e.target.value); }}
                         required
                       />

@@ -10,7 +10,10 @@ import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
 import { ModuleGuard } from '../components/ModuleGuard';
-import { SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, getReorderedItems, SelectCheckbox, SortableHeader, SortableTableRow, useAdminDndSensors, useSortableData } from '../components/TableUtilities';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 export default function CourseCategoriesListPage() {
   return (
@@ -24,9 +27,10 @@ function CourseCategoriesContent() {
   const categoriesData = useQuery(api.courseCategories.listAll, {});
   const coursesData = useQuery(api.courses.listAll, {});
   const deleteCategory = useMutation(api.courseCategories.remove);
+  const reorderCategories = useMutation(api.courseCategories.reorder);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: null });
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: 'order' });
   const [selectedIds, setSelectedIds] = useState<Id<'courseCategories'>[]>([]);
   const [deleteTargetId, setDeleteTargetId] = useState<Id<'courseCategories'> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -34,6 +38,7 @@ function CourseCategoriesContent() {
 
   const deleteInfo = useQuery(api.courseCategories.getDeleteInfo, deleteTargetId ? { id: deleteTargetId } : 'skip');
   const isLoading = categoriesData === undefined || coursesData === undefined;
+  const dndSensors = useAdminDndSensors();
 
   const courseCountMap = useMemo(() => {
     const map: Record<string, number> = {};
@@ -59,6 +64,7 @@ function CourseCategoriesContent() {
   }, [categories, searchTerm]);
 
   const sortedData = useSortableData(filteredData, sortConfig);
+  const isReorderEnabled = !searchTerm.trim() && (sortConfig.key === null || sortConfig.key === 'order');
   const isAllSelected = selectedIds.length === sortedData.length && sortedData.length > 0;
   const isIndeterminate = selectedIds.length > 0 && selectedIds.length < sortedData.length;
 
@@ -107,6 +113,27 @@ function CourseCategoriesContent() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(sortedData, event.active.id, event.over?.id, item => item.id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderCategories({
+        items: buildOrderUpdates(
+          reordered,
+          sortedData.map(item => item.order),
+          item => item.id,
+          (_item, index) => index
+        ),
+      });
+      setSortConfig({ direction: 'asc', key: 'order' });
+      toast.success('Đã cập nhật thứ tự danh mục');
+    } catch {
+      toast.error('Không thể cập nhật thứ tự danh mục');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -150,9 +177,16 @@ function CourseCategoriesContent() {
               <Input placeholder="Tìm kiếm danh mục..." className="pl-9" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); }} />
             </div>
           </div>
+          {!isReorderEnabled && (
+            <div className="border-b border-slate-100 px-4 py-3 text-xs text-slate-500 dark:border-slate-800">
+              Tắt tìm kiếm và quay về thứ tự mặc định để kéo thả đổi vị trí.
+            </div>
+          )}
+          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[40px]" />
                 <TableHead className="w-[40px]">
                   <SelectCheckbox checked={isAllSelected} onChange={toggleSelectAll} indeterminate={isIndeterminate} />
                 </TableHead>
@@ -163,16 +197,22 @@ function CourseCategoriesContent() {
                 <TableHead className="text-right">Hành động</TableHead>
               </TableRow>
             </TableHeader>
+            <SortableContext items={sortedData.map(item => item.id)} strategy={verticalListSortingStrategy}>
             <TableBody>
               {sortedData.map((category) => (
-                <TableRow key={category.id} className={selectedIds.includes(category.id) ? 'bg-indigo-500/5' : ''}>
+                <SortableTableRow key={category.id} id={category.id} disabled={!isReorderEnabled} selected={selectedIds.includes(category.id)} selectedClassName="bg-indigo-500/5">
+                  {({ attributes, disabled, listeners }) => (
+                    <>
+                  <TableCell className="w-[40px]">
+                    <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
+                  </TableCell>
                   <TableCell><SelectCheckbox checked={selectedIds.includes(category.id)} onChange={() => { toggleSelectItem(category.id); }} /></TableCell>
                   <TableCell className="font-medium">{category.name}</TableCell>
                   <TableCell className="font-mono text-sm text-slate-500">{category.slug}</TableCell>
                   <TableCell className="text-center"><Badge variant="secondary">{category.count}</Badge></TableCell>
-                  <TableCell><Badge variant={category.active ? 'default' : 'secondary'}>{category.active ? 'Hoạt động' : 'Ẩn'}</Badge></TableCell>
+                  <TableCell><Badge variant={category.active ? 'default' : 'secondary'}>{category.active ? 'Hiện' : 'Ẩn'}</Badge></TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" className="text-blue-600 hover:text-blue-700" title="Xem trên web" onClick={() => { openFrontend(category.slug); }}>
                         <ExternalLink size={16} />
                       </Button>
@@ -180,17 +220,21 @@ function CourseCategoriesContent() {
                       <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => { handleDelete(category.id); }}><Trash2 size={16} /></Button>
                     </div>
                   </TableCell>
-                </TableRow>
+                    </>
+                  )}
+                </SortableTableRow>
               ))}
               {sortedData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-slate-500">
+                  <TableCell colSpan={7} className="py-8 text-center text-slate-500">
                     {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có danh mục nào'}
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
+            </SortableContext>
           </Table>
+          </DndContext>
           {sortedData.length > 0 && (
             <div className="border-t border-slate-100 p-4 text-sm text-slate-500 dark:border-slate-800">
               Hiển thị {sortedData.length} / {categories.length} danh mục

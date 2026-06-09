@@ -282,6 +282,7 @@ type PremiumLayoutConfig = BaseImageLayoutConfig & {
   priceRightIcon?: string;
   showPriceLeftIcon?: boolean;
   showPriceRightIcon?: boolean;
+  cornerRadius?: 'none' | 'sm' | 'lg';
 };
 
 type ClassicHighlightIcon =
@@ -346,6 +347,7 @@ const DEFAULT_CONFIG: ProductDetailExperienceConfig = {
     priceRightIcon: 'Gift',
     showPriceLeftIcon: true,
     showPriceRightIcon: true,
+    cornerRadius: 'lg',
     },
   },
   showBuyNow: true,
@@ -734,6 +736,7 @@ export default function ProductDetailExperiencePage() {
            priceRightIcon: (raw?.layouts?.premium as Partial<PremiumLayoutConfig>)?.priceRightIcon ?? DEFAULT_CONFIG.layouts.premium.priceRightIcon,
            showPriceLeftIcon: (raw?.layouts?.premium as Partial<PremiumLayoutConfig>)?.showPriceLeftIcon ?? DEFAULT_CONFIG.layouts.premium.showPriceLeftIcon,
            showPriceRightIcon: (raw?.layouts?.premium as Partial<PremiumLayoutConfig>)?.showPriceRightIcon ?? DEFAULT_CONFIG.layouts.premium.showPriceRightIcon,
+           cornerRadius: (raw?.layouts?.premium as Partial<PremiumLayoutConfig>)?.cornerRadius ?? DEFAULT_CONFIG.layouts.premium.cornerRadius,
          },
        },
       showBuyNow: raw?.showBuyNow ?? true,
@@ -939,6 +942,7 @@ export default function ProductDetailExperiencePage() {
       cartButtonsLayout: config.cartButtonsLayout,
       highlightsPosition: config.highlightsPosition,
       highlightsSpacing: config.highlightsSpacing,
+      cornerRadius: premiumLayoutConfig.cornerRadius,
     };
 
     return base;
@@ -996,11 +1000,16 @@ export default function ProductDetailExperiencePage() {
         <SelectRow
           label={config.highlightsPosition === 'image_column' ? 'Khoảng cách dưới ảnh (Highlights)' : 'Khoảng cách cột phải (Highlights)'}
           value={config.highlightsSpacing || 'high'}
-          options={[
-            { label: 'Nhiều (Mặc định)', value: 'high' },
-            { label: 'Ít (Bằng một nửa)', value: 'low' },
-            { label: 'Bỏ (Không khoảng cách)', value: 'none' },
-          ]}
+          options={config.highlightsPosition === 'image_column'
+            ? [
+                { label: 'Dính sát (Không khoảng cách)', value: 'none' },
+                { label: 'Nhiều (Mặc định)', value: 'high' },
+              ]
+            : [
+                { label: 'Nhiều (Mặc định)', value: 'high' },
+                { label: 'Bỏ (Không khoảng cách)', value: 'none' },
+              ]
+          }
           onChange={(v) => setConfig(prev => ({ ...prev, highlightsSpacing: v as 'low' | 'high' | 'none' }))}
         />
       )}
@@ -1628,27 +1637,6 @@ export default function ProductDetailExperiencePage() {
 
                       <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
                         <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider">Cấu hình Icon nền giá</p>
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                          <ToggleRow
-                            label="Hiện Icon Trái"
-                            checked={premiumLayoutConfig.showPriceLeftIcon ?? true}
-                            onChange={(v) => updateLayoutConfig('showPriceLeftIcon' as keyof typeof currentLayoutConfig, v as never)}
-                            accentColor={brandColor}
-                          />
-                          {premiumLayoutConfig.showPriceLeftIcon !== false && (
-                            <div>
-                              <label className="text-[10px] text-slate-400 block mb-1">Icon Trái (Mặc định Ribbon)</label>
-                              <IconPopoverPicker
-                                value={premiumLayoutConfig.priceLeftIcon ?? 'Award'}
-                                onChange={(v) => updateLayoutConfig('priceLeftIcon' as keyof typeof currentLayoutConfig, v as never)}
-                                options={PREMIUM_ICON_OPTIONS}
-                                brandColor={brandColor}
-                                compact
-                              />
-                            </div>
-                          )}
-                        </div>
 
                         <div className="grid grid-cols-2 gap-2">
                           <ToggleRow
@@ -1670,6 +1658,19 @@ export default function ProductDetailExperiencePage() {
                             </div>
                           )}
                         </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2">
+                        <SelectRow
+                          label="Độ bo góc"
+                          value={premiumLayoutConfig.cornerRadius ?? 'lg'}
+                          options={[
+                            { value: 'lg', label: 'Nhiều (Mặc định)' },
+                            { value: 'sm', label: 'Ít (1/2)' },
+                            { value: 'none', label: 'Không bo' },
+                          ]}
+                          onChange={(v) => updateLayoutConfig('cornerRadius' as keyof typeof currentLayoutConfig, v as never)}
+                        />
                       </div>
                     </div>
                   </div>

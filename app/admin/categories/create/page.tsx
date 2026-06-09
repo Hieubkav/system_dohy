@@ -10,6 +10,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { Button, Card, CardContent, Input, Label, cn } from '../../components/ui';
+import { CopyableInput } from '../../components/CopyTextButton';
 import { LexicalEditor } from '../../components/LexicalEditor';
 import { FaqForm } from '@/app/admin/home-components/faq/_components/FaqForm';
 import type { FaqItem, FaqStyle, FaqConfig } from '@/app/admin/home-components/faq/_types';
@@ -149,7 +150,7 @@ export default function CategoryCreatePage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Tên danh mục <span className="text-red-500">*</span></Label>
-                  <Input value={name} onChange={handleNameChange} required placeholder="Ví dụ: Điện thoại, Áo sơ mi..." autoFocus />
+                  <CopyableInput value={name} onChange={handleNameChange} required placeholder="Ví dụ: Điện thoại, Áo sơ mi..." autoFocus copyLabel="tên danh mục" />
                 </div>
 
                 <div className="space-y-2">

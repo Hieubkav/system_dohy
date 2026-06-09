@@ -11,6 +11,7 @@ import { ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { Badge, Button, Card, CardContent, Input, Label, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, cn } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 import { ImageUploader } from '../../../components/ImageUploader';
 
 const MODULE_KEY = 'postCategories';
@@ -125,7 +126,7 @@ export default function PostCategoryEditPage({ params }: { params: Promise<{ id:
               {/* Name - always shown (system field) */}
               <div className="space-y-2">
                 <Label>Tên danh mục <span className="text-red-500">*</span></Label>
-                <Input value={name} onChange={(e) =>{  setName(e.target.value); }} required placeholder="Ví dụ: Công nghệ, Đời sống..." autoFocus />
+                <CopyableInput value={name} onChange={(e) =>{  setName(e.target.value); }} required placeholder="Ví dụ: Công nghệ, Đời sống..." autoFocus copyLabel="tên danh mục" />
               </div>
               {/* Slug - always shown (system field) */}
               <div className="space-y-2">

@@ -11,10 +11,14 @@ import { AdminEntityImage } from '../components/AdminEntityImage';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
 import { ModuleGuard } from '../components/ModuleGuard';
 import { usePersistedPageSize } from '../components/usePersistedPageSize';
+import { AdminDragHandle, buildOrderUpdates, getReorderedItems, SortableTableRow, useAdminDndSensors } from '../components/TableUtilities';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 const STATUS_LABEL: Record<string, string> = {
-  Published: 'Đã xuất bản',
-  Draft: 'Bản nháp',
+  Published: 'Hiện',
+  Draft: 'Ẩn',
   Archived: 'Lưu trữ',
 };
 
@@ -31,11 +35,13 @@ function ProjectsContent() {
   const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'projects' });
   const deleteProject = useMutation(api.projects.remove);
   const duplicateProject = useMutation(api.projects.duplicate);
+  const reorderProjects = useMutation(api.projects.reorder);
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'' | 'Published' | 'Draft' | 'Archived'>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [cloningProjectId, setCloningProjectId] = useState<Id<'projects'> | null>(null);
+  const dndSensors = useAdminDndSensors();
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 300);
@@ -67,6 +73,8 @@ function ProjectsContent() {
   }, [categoriesData]);
 
   const isLoading = projectsData === undefined || totalCountData === undefined || categoriesData === undefined;
+  const projects = projectsData ?? [];
+  const isReorderEnabled = !debouncedSearchTerm.trim() && !filterStatus;
   const totalCount = totalCountData?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / resolvedProjectsPerPage));
 
@@ -98,6 +106,26 @@ function ProjectsContent() {
     setFilterStatus('');
     setCurrentPage(1);
     setPageSizeOverride(null);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(projects, event.active.id, event.over?.id, project => project._id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderProjects({
+        items: buildOrderUpdates(
+          reordered,
+          projects.map(project => project.order),
+          project => project._id,
+          (_project, index) => offset + index
+        ),
+      });
+      toast.success('Đã cập nhật thứ tự dự án');
+    } catch {
+      toast.error('Không thể cập nhật thứ tự dự án');
+    }
   };
 
   return (
@@ -141,17 +169,24 @@ function ProjectsContent() {
               }}
             >
               <option value="">Tất cả trạng thái</option>
-              <option value="Published">Đã xuất bản</option>
-              <option value="Draft">Bản nháp</option>
+              <option value="Published">Hiện</option>
+              <option value="Draft">Ẩn</option>
               <option value="Archived">Lưu trữ</option>
             </select>
             <Button variant="outline" size="sm" onClick={handleResetFilters}>Xóa lọc</Button>
           </div>
         </div>
 
+        {!isReorderEnabled && (
+          <div className="border-b border-slate-100 px-4 py-3 text-xs text-slate-500 dark:border-slate-800">
+            Tắt tìm kiếm/lọc để kéo thả đổi vị trí.
+          </div>
+        )}
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[40px]" />
               <TableHead className="w-[80px]">Ảnh</TableHead>
               <TableHead>Tiêu đề</TableHead>
               <TableHead>Danh mục</TableHead>
@@ -162,19 +197,25 @@ function ProjectsContent() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-slate-500">
+                <TableCell colSpan={6} className="py-8 text-center text-slate-500">
                   <Loader2 className="mx-auto h-6 w-6 animate-spin text-teal-500" />
                 </TableCell>
               </TableRow>
-            ) : projectsData.length === 0 ? (
+            ) : projects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-slate-500">
+                <TableCell colSpan={6} className="py-8 text-center text-slate-500">
                   {searchTerm || filterStatus ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có dự án nào'}
                 </TableCell>
               </TableRow>
             ) : (
-              projectsData.map((project) => (
-                <TableRow key={project._id}>
+              <SortableContext items={projects.map(project => project._id)} strategy={verticalListSortingStrategy}>
+              {projects.map((project) => (
+                <SortableTableRow key={project._id} id={project._id} disabled={!isReorderEnabled}>
+                  {({ attributes, disabled, listeners }) => (
+                    <>
+                  <TableCell className="w-[40px]">
+                    <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
+                  </TableCell>
                   <TableCell>
                     <AdminEntityImage
                       src={project.thumbnail}
@@ -196,7 +237,7 @@ function ProjectsContent() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" className="text-teal-600 hover:text-teal-700" onClick={() => window.open(`/projects/${project.slug}`, '_blank')}>
                         <ExternalLink size={16} />
                       </Button>
@@ -222,11 +263,16 @@ function ProjectsContent() {
                       </Button>
                     </div>
                   </TableCell>
-                </TableRow>
+                    </>
+                  )}
+                </SortableTableRow>
               ))
+              }
+              </SortableContext>
             )}
           </TableBody>
         </Table>
+        </DndContext>
 
         {totalCount > 0 && !isLoading && (
           <div className="flex flex-col gap-4 border-t border-slate-100 p-4 text-sm text-slate-500 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">

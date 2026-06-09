@@ -28,10 +28,10 @@ type PreviewSlot = {
 
 const mapStatusBadge = (status?: string | null) => {
   if (status === 'Published') {
-    return { label: 'Đã xuất bản', variant: 'success' as const };
+    return { label: 'Hiện', variant: 'success' as const };
   }
   if (status === 'Draft') {
-    return { label: 'Bản nháp', variant: 'warning' as const };
+    return { label: 'Ẩn', variant: 'warning' as const };
   }
   return { label: status ?? 'Không áp dụng', variant: 'outline' as const };
 };
@@ -436,8 +436,8 @@ export default function TrustPagesAdminPage() {
                 className="mt-0.5"
               />
               <div>
-                <div className="font-medium text-slate-900 dark:text-slate-100">Đã xuất bản</div>
-                <div className="text-xs text-slate-500">Public toàn bộ bài mới tạo ngay sau khi chạy.</div>
+                <div className="font-medium text-slate-900 dark:text-slate-100">Hiện</div>
+                <div className="text-xs text-slate-500">Hiển thị toàn bộ bài mới tạo ngay sau khi chạy.</div>
               </div>
             </label>
             <label className="flex items-start gap-3 rounded-md border border-slate-200 p-3 text-sm dark:border-slate-700">
@@ -450,7 +450,7 @@ export default function TrustPagesAdminPage() {
                 className="mt-0.5"
               />
               <div>
-                <div className="font-medium text-slate-900 dark:text-slate-100">Bản nháp</div>
+                <div className="font-medium text-slate-900 dark:text-slate-100">Ẩn</div>
                 <div className="text-xs text-slate-500">Tạo bài trước rồi kiểm tra nội dung sau.</div>
               </div>
             </label>

@@ -11,7 +11,8 @@ import {
   Grid, HelpCircle, Image as ImageIcon, LayoutTemplate, MessageSquare, MousePointerClick,
   Package, Phone, ShoppingBag, Star, Tag, UserCircle, User as UserIcon, Users, Zap
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Label } from '../../components/ui';
+import { CopyableInput } from '../../components/CopyTextButton';
 import { HOME_COMPONENT_BASE_TYPES, HOME_COMPONENT_TYPE_VALUES as BASE_COMPONENT_TYPE_VALUES } from '@/lib/home-components/componentTypes';
 import { HomeComponentStickyFooter } from '../_shared/components/HomeComponentStickyFooter';
 import { TypeColorOverrideCard } from '../_shared/components/TypeColorOverrideCard';
@@ -201,9 +202,10 @@ export function ComponentFormWrapper({
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Tên hiển thị <span className="text-red-500">*</span></Label>
-                <Input 
+                <CopyableInput
                   value={title} 
                   onChange={(e) =>{ setTitle(e.target.value); }} 
+                  copyLabel="tên hiển thị"
                   required 
                   placeholder="Nhập tiêu đề component..." 
                 />

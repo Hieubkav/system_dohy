@@ -10,6 +10,7 @@ import { FolderTree, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { Button, Card, CardContent, Input, Label } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 import { ModuleGuard } from '../../../components/ModuleGuard';
 
 const generateSlug = (value: string) => value.toLowerCase()
@@ -106,12 +107,13 @@ function ProjectCategoryEditContent({ params }: { params: Promise<{ id: string }
         <CardContent className="space-y-4 p-6">
           <div className="space-y-2">
             <Label>Tên danh mục <span className="text-red-500">*</span></Label>
-            <Input
+            <CopyableInput
               value={name}
               onChange={(event) => {
                 setName(event.target.value);
                 setSlug(generateSlug(event.target.value));
               }}
+              copyLabel="tên danh mục"
               required
             />
           </div>

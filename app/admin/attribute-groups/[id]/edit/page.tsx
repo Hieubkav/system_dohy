@@ -10,6 +10,7 @@ import { Loader2, GripVertical, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { Badge, Button, Card, CardContent, Input, Label, cn } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 import { IconPopoverPicker } from '../../../home-components/_shared/components/IconPopoverPicker';
 import { ATTRIBUTE_ICON_OPTIONS } from '../../_lib/iconRegistry';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -190,9 +191,10 @@ export default function AttributeGroupEditPage({ params }: { params: Promise<{ i
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-2">
                   <Label>Tên nhóm thuộc tính <span className="text-red-500">*</span></Label>
-                  <Input 
+                  <CopyableInput
                     value={name} 
                     onChange={(e) =>{  setName(e.target.value); }} 
+                    copyLabel="tên nhóm thuộc tính"
                     required 
                     placeholder="Nhập tên nhóm thuộc tính..." 
                     autoFocus 

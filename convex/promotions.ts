@@ -165,7 +165,8 @@ export const listAdminWithOffset = query({
         .order("desc")
         .take(fetchLimit);
     } else {
-      promotions = await ctx.db.query("promotions").order("desc").take(fetchLimit);
+      promotions = await ctx.db.query("promotions").take(1000);
+      promotions.sort((a, b) => a.order - b.order);
     }
 
     if (args.discountType && !discountTypeFiltered) {
@@ -425,9 +426,8 @@ export const create = mutation({
       }
     }
     
-    // Get order from last item
-    const lastItem = await ctx.db.query("promotions").order("desc").first();
-    const newOrder = lastItem ? lastItem.order + 1 : 0;
+    const promotions = await ctx.db.query("promotions").take(1000);
+    const newOrder = promotions.reduce((max, promo) => Math.max(max, promo.order), -1) + 1;
     const status = args.status ?? "Active";
     const displayOnPage = args.displayOnPage ?? args.promotionType === "coupon";
     
@@ -670,6 +670,15 @@ export const getDeleteInfo = query({
       preview: v.array(v.object({ id: v.string(), name: v.string() })),
     })),
   }),
+});
+
+export const reorder = mutation({
+  args: { items: v.array(v.object({ id: v.id("promotions"), order: v.number() })) },
+  handler: async (ctx, args) => {
+    await Promise.all(args.items.map(async (item) => ctx.db.patch(item.id, { order: item.order })));
+    return null;
+  },
+  returns: v.null(),
 });
 
 // HIGH-004 FIX: Dùng counter table thay vì fetch ALL

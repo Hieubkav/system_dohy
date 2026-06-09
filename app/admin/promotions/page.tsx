@@ -8,10 +8,13 @@ import type { Doc, Id } from '@/convex/_generated/dataModel';
 import { Check, ChevronDown, Copy, Edit, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
-import { BulkActionBar, ColumnToggle, generatePaginationItems, SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, BulkActionBar, ColumnToggle, generatePaginationItems, getReorderedItems, SelectCheckbox, SortableHeader, SortableTableRow, useAdminDndSensors, useSortableData } from '../components/TableUtilities';
 import { ModuleGuard } from '../components/ModuleGuard';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
 import { usePersistedPageSize } from '../components/usePersistedPageSize';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 const MODULE_KEY = 'promotions';
 
@@ -27,6 +30,7 @@ function PromotionsContent() {
   const settingsData = useQuery(api.admin.modules.listModuleSettings, { moduleKey: MODULE_KEY });
   const featuresData = useQuery(api.admin.modules.listModuleFeatures, { moduleKey: MODULE_KEY });
   const deletePromotion = useMutation(api.promotions.remove);
+  const reorderPromotions = useMutation(api.promotions.reorder);
   
   const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: null });
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,6 +60,7 @@ function PromotionsContent() {
   const [deleteTargetId, setDeleteTargetId] = useState<Id<"promotions"> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const dndSensors = useAdminDndSensors();
 
   const isSelectAllActive = selectionMode === 'all';
 
@@ -149,11 +154,12 @@ function PromotionsContent() {
   const resolvedVisibleColumns = visibleColumns.length > 0 ? visibleColumns : columns.map(c => c.key);
 
   const sortedPromotions = useSortableData(promotions, sortConfig);
+  const isReorderEnabled = !debouncedSearchTerm.trim() && !filterStatus && !filterType && !filterPromotionType && (sortConfig.key === null || sortConfig.key === 'order');
 
   const totalCount = totalCountData?.count ?? 0;
   const totalPages = totalCount ? Math.ceil(totalCount / resolvedPromotionsPerPage) : 1;
   const paginatedPromotions = sortedPromotions;
-  const tableColumnCount = resolvedVisibleColumns.length;
+  const tableColumnCount = resolvedVisibleColumns.length + 1;
   const selectedIds = isSelectAllActive && selectAllData ? selectAllData.ids : manualSelectedIds;
   const isSelectingAll = isSelectAllActive && selectAllData === undefined;
 
@@ -252,6 +258,27 @@ function PromotionsContent() {
       setTimeout(() =>{  setCopiedCode(null); }, 2000);
     } catch {
       toast.error('Không thể copy, vui lòng copy thủ công');
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(paginatedPromotions, event.active.id, event.over?.id, promo => promo._id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderPromotions({
+        items: buildOrderUpdates(
+          reordered,
+          paginatedPromotions.map(promo => promo.order),
+          promo => promo._id,
+          (_promo, index) => offset + index
+        ),
+      });
+      setSortConfig({ direction: 'asc', key: null });
+      toast.success('Đã cập nhật thứ tự khuyến mãi');
+    } catch {
+      toast.error('Không thể cập nhật thứ tự khuyến mãi');
     }
   };
 
@@ -370,9 +397,16 @@ function PromotionsContent() {
             });
           }} />
         </div>
+        {!isReorderEnabled && (
+          <div className="px-4 py-3 text-xs text-slate-500 border-b border-slate-100 dark:border-slate-800">
+            Tắt tìm kiếm/lọc và quay về thứ tự mặc định để kéo thả đổi vị trí.
+          </div>
+        )}
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <Table>
           <TableHeader className="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-white dark:[&_th]:bg-slate-900">
             <TableRow>
+              <TableHead className="w-[40px]" />
               {resolvedVisibleColumns.includes('select') && (
                 <TableHead className="w-[40px]"><SelectCheckbox checked={isPageSelected} onChange={toggleSelectAll} indeterminate={isPageIndeterminate} /></TableHead>
               )}
@@ -385,6 +419,7 @@ function PromotionsContent() {
               {resolvedVisibleColumns.includes('actions') && <TableHead className="text-right">Hành động</TableHead>}
             </TableRow>
           </TableHeader>
+          <SortableContext items={paginatedPromotions.map(promo => promo._id)} strategy={verticalListSortingStrategy}>
           <TableBody>
             {isTableLoading ? (
               Array.from({ length: resolvedPromotionsPerPage }).map((_, index) => (
@@ -397,7 +432,12 @@ function PromotionsContent() {
             ) : (
               <>
                 {paginatedPromotions.map(promo => (
-                  <TableRow key={promo._id} className={selectedIds.includes(promo._id) ? 'bg-pink-500/5' : ''}>
+                  <SortableTableRow key={promo._id} id={promo._id} disabled={!isReorderEnabled} selected={selectedIds.includes(promo._id)} selectedClassName="bg-pink-500/5">
+                    {({ attributes, disabled, listeners }) => (
+                      <>
+                <TableCell className="w-[40px]">
+                  <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
+                </TableCell>
                 {resolvedVisibleColumns.includes('select') && (
                   <TableCell><SelectCheckbox checked={selectedIds.includes(promo._id)} onChange={() =>{  toggleSelectItem(promo._id); }} /></TableCell>
                 )}
@@ -475,13 +515,15 @@ function PromotionsContent() {
                 {resolvedVisibleColumns.includes('status') && <TableCell>{getStatusBadge(promo.status)}</TableCell>}
                 {resolvedVisibleColumns.includes('actions') && (
                   <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-1">
                     <Link href={`/admin/promotions/${promo._id}/edit`}><Button variant="ghost" size="icon"><Edit size={16}/></Button></Link>
                     <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={ async () => handleDelete(promo._id)}><Trash2 size={16}/></Button>
                   </div>
                   </TableCell>
                 )}
-                  </TableRow>
+                      </>
+                    )}
+                  </SortableTableRow>
                 ))}
               </>
             )}
@@ -493,7 +535,9 @@ function PromotionsContent() {
               </TableRow>
             )}
           </TableBody>
+          </SortableContext>
         </Table>
+        </DndContext>
         {totalCount > 0 && !isTableLoading && (
           <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="order-2 flex w-full items-center justify-between text-sm text-slate-500 sm:order-1 sm:w-auto sm:justify-start sm:gap-6">

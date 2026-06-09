@@ -8,11 +8,14 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { ChevronDown, Edit, ExternalLink, FolderTree, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
-import { BulkActionBar, ColumnToggle, generatePaginationItems, SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, BulkActionBar, ColumnToggle, generatePaginationItems, getReorderedItems, SelectCheckbox, SortableHeader, SortableTableRow, useAdminDndSensors, useSortableData } from '../components/TableUtilities';
 import { ModuleGuard } from '../components/ModuleGuard';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
 import { usePersistedPageSize } from '../components/usePersistedPageSize';
 import { buildCategoryPath, normalizeRouteMode } from '@/lib/ia/route-mode';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 export default function CategoriesListPage() {
   return (
@@ -28,6 +31,7 @@ function CategoriesContent() {
   const featuresData = useQuery(api.admin.modules.listModuleFeatures, { moduleKey: 'products' });
   const enableProductTypesSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'enableProductTypes' });
   const deleteCategory = useMutation(api.productCategories.remove);
+  const reorderCategories = useMutation(api.productCategories.reorder);
   const routeModeSetting = useQuery(api.settings.getValue, { key: 'ia_route_mode', defaultValue: 'unified' });
   const routeMode = useMemo(() => normalizeRouteMode(routeModeSetting), [routeModeSetting]);
 
@@ -56,6 +60,7 @@ function CategoriesContent() {
   const [deleteTargetId, setDeleteTargetId] = useState<Id<"productCategories"> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const dndSensors = useAdminDndSensors();
 
   const isSelectAllActive = selectionMode === 'all';
 
@@ -225,11 +230,12 @@ function CategoriesContent() {
   };
 
   const sortedData = useSortableData(treeSortedCategories, sortConfig);
+  const isReorderEnabled = !debouncedSearchTerm.trim() && (sortConfig.key === null || sortConfig.key === 'order');
 
   const totalCount = totalCountData?.count ?? 0;
   const totalPages = totalCount ? Math.ceil(totalCount / resolvedPageSize) : 1;
   const paginatedData = sortedData;
-  const tableColumnCount = resolvedVisibleColumns.length;
+  const tableColumnCount = resolvedVisibleColumns.length + 1;
   const selectedIds = isSelectAllActive && selectAllData ? selectAllData.ids : manualSelectedIds;
   const isSelectingAll = isSelectAllActive && selectAllData === undefined;
 
@@ -302,6 +308,27 @@ function CategoriesContent() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(paginatedData, event.active.id, event.over?.id, category => category.id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderCategories({
+        items: buildOrderUpdates(
+          reordered,
+          paginatedData.map(category => category.order),
+          category => category.id,
+          (_category, index) => offset + index
+        ),
+      });
+      setSortConfig({ direction: 'asc', key: null });
+      toast.success('Đã cập nhật thứ tự danh mục');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật thứ tự danh mục');
+    }
+  };
+
   const openFrontend = (slug: string) => {
     window.open(buildCategoryPath({ categorySlug: slug, mode: routeMode, moduleKey: 'products' }), '_blank');
   };
@@ -345,9 +372,16 @@ function CategoriesContent() {
             });
           }} />
         </div>
+        {!isReorderEnabled && (
+          <div className="px-4 py-3 text-xs text-slate-500 border-b border-slate-100 dark:border-slate-800">
+            Tắt tìm kiếm và quay về thứ tự mặc định để kéo thả đổi vị trí.
+          </div>
+        )}
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <Table>
           <TableHeader className="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-white dark:[&_th]:bg-slate-900">
             <TableRow>
+              <TableHead className="w-[40px]" />
               {resolvedVisibleColumns.includes('select') && <TableHead className="w-[40px]"><SelectCheckbox checked={isPageSelected} onChange={toggleSelectAll} indeterminate={isPageIndeterminate} /></TableHead>}
               {resolvedVisibleColumns.includes('name') && <SortableHeader label="Tên danh mục" sortKey="name" sortConfig={sortConfig} onSort={handleSort} />}
               {resolvedVisibleColumns.includes('slug') && <SortableHeader label="Slug" sortKey="slug" sortConfig={sortConfig} onSort={handleSort} />}
@@ -357,6 +391,7 @@ function CategoriesContent() {
               {resolvedVisibleColumns.includes('actions') && <TableHead className="text-right">Hành động</TableHead>}
             </TableRow>
           </TableHeader>
+          <SortableContext items={paginatedData.map(cat => cat.id)} strategy={verticalListSortingStrategy}>
           <TableBody>
             {isTableLoading ? (
               Array.from({ length: resolvedPageSize }).map((_, index) => (
@@ -369,7 +404,12 @@ function CategoriesContent() {
             ) : (
               <>
                 {paginatedData.map(cat => (
-                  <TableRow key={cat.id} className={selectedIds.includes(cat.id) ? 'bg-orange-500/5' : ''}>
+                  <SortableTableRow key={cat.id} id={cat.id} disabled={!isReorderEnabled} selected={selectedIds.includes(cat.id)}>
+                    {({ attributes, disabled, listeners }) => (
+                      <>
+                <TableCell className="w-[40px]">
+                  <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
+                </TableCell>
                 {resolvedVisibleColumns.includes('select') && <TableCell><SelectCheckbox checked={selectedIds.includes(cat.id)} onChange={() =>{  toggleSelectItem(cat.id); }} /></TableCell>}
                 {resolvedVisibleColumns.includes('name') && (
                   <TableCell className="font-medium">
@@ -408,19 +448,21 @@ function CategoriesContent() {
                 {resolvedVisibleColumns.includes('count') && <TableCell className="text-center"><Badge variant="secondary">{cat.count}</Badge></TableCell>}
                 {resolvedVisibleColumns.includes('status') && (
                   <TableCell>
-                    <Badge variant={cat.active ? 'success' : 'secondary'}>{cat.active ? 'Hoạt động' : 'Ẩn'}</Badge>
+                    <Badge variant={cat.active ? 'success' : 'secondary'}>{cat.active ? 'Hiện' : 'Ẩn'}</Badge>
                   </TableCell>
                 )}
                 {resolvedVisibleColumns.includes('actions') && (
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" className="text-blue-600 hover:text-blue-700" title="Xem trên web" onClick={() =>{  openFrontend(cat.slug); }}><ExternalLink size={16}/></Button>
                       <Link href={`/admin/categories/${cat.id}/edit`}><Button variant="ghost" size="icon"><Edit size={16}/></Button></Link>
                       <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={ async () => handleDelete(cat.id)}><Trash2 size={16}/></Button>
                     </div>
                   </TableCell>
                 )}
-                  </TableRow>
+                      </>
+                    )}
+                  </SortableTableRow>
                 ))}
               </>
             )}
@@ -432,7 +474,9 @@ function CategoriesContent() {
               </TableRow>
             )}
           </TableBody>
+          </SortableContext>
         </Table>
+        </DndContext>
         {totalCount > 0 && !isTableLoading && (
           <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="order-2 flex w-full items-center justify-between text-sm text-slate-500 sm:order-1 sm:w-auto sm:justify-start sm:gap-6">

@@ -9,11 +9,14 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { ChevronDown, Copy, Edit, ExternalLink, Layers, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Popover, PopoverTrigger, PopoverContent, ScrollArea, cn } from '../components/ui';
-import { BulkActionBar, ColumnToggle, generatePaginationItems, SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, BulkActionBar, ColumnToggle, ExactSearchToggle, generatePaginationItems, getReorderedItems, SelectCheckbox, SortableHeader, SortableTableRow, useAdminDndSensors, useSortableData } from '../components/TableUtilities';
 import { ModuleGuard } from '../components/ModuleGuard';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
 import { usePersistedPageSize } from '../components/usePersistedPageSize';
 import { ImportExportModal } from './components/import-modal';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 const MODULE_KEY = 'products';
 const PAGE_SIZE_OPTIONS = [12, 20, 30, 50, 100];
@@ -36,6 +39,7 @@ function ProductsContent() {
   const bulkRemove = useMutation(api.products.bulkRemove);
   const bulkUpdateStatus = useMutation(api.products.bulkUpdateStatus);
   const bulkClearBrokenMedia = useMutation(api.products.bulkClearBrokenMedia);
+  const reorderProducts = useMutation(api.products.reorder);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -90,6 +94,7 @@ function ProductsContent() {
   const [deleteTargetId, setDeleteTargetId] = useState<Id<"products"> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const dndSensors = useAdminDndSensors();
 
   const isSelectAllActive = selectionMode === 'all';
 
@@ -194,6 +199,7 @@ function ProductsContent() {
   const columns = useMemo(() => {
     const cols = [
       { key: 'select', label: 'Chọn' },
+      { key: 'drag', label: 'Kéo', required: true },
       { key: 'name', label: 'Tên sản phẩm', required: true },
     ];
 
@@ -220,7 +226,8 @@ function ProductsContent() {
     if (fieldsData !== undefined) {
       setVisibleColumns(prev => {
         const validKeys = new Set(columns.map(c => c.key));
-        return prev.filter(key => validKeys.has(key));
+        const requiredKeys = columns.filter(c => c.required).map(c => c.key);
+        return Array.from(new Set([...requiredKeys, ...prev.filter(key => validKeys.has(key))]));
       });
     }
   }, [fieldsData, columns]);
@@ -253,6 +260,7 @@ function ProductsContent() {
   };
 
   const sortedData = useSortableData(products, sortConfig);
+  const isReorderEnabled = !resolvedSearch && !filterCategory && !filterStatus && !exactMode && (sortConfig.key === null || sortConfig.key === 'order');
 
   const totalCount = totalCountData?.count ?? 0;
   const totalPages = totalCount ? Math.ceil(totalCount / resolvedProductsPerPage) : 1;
@@ -396,6 +404,26 @@ function ProductsContent() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(paginatedData, event.active.id, event.over?.id, product => product._id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderProducts({
+        items: buildOrderUpdates(
+          reordered,
+          paginatedData.map(product => product.order),
+          product => product._id,
+          (product) => product.order
+        ),
+      });
+      toast.success('Đã cập nhật thứ tự sản phẩm');
+    } catch {
+      toast.error('Không thể cập nhật thứ tự sản phẩm');
+    }
+  };
+
   const formatPrice = (price: number) => new Intl.NumberFormat('vi-VN', { currency: 'VND', style: 'currency' }).format(price);
   const renderContactPrice = (resolvedPrice: number) => (
     isContactLikeMode && resolvedPrice <= 0
@@ -469,26 +497,15 @@ function ProductsContent() {
                   title="Gợi ý: Dùng dấu - ở trước từ để loại trừ (ví dụ: -[B])."
                 />
               </div>
-              <label 
-                className={`flex items-center gap-1.5 cursor-pointer select-none text-xs border rounded-md px-2.5 h-10 transition-colors ${
-                  exactMode 
-                    ? 'border-orange-500 bg-orange-500/5 text-orange-600 dark:text-orange-400' 
-                    : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400'
-                }`}
+              <ExactSearchToggle
+                checked={exactMode}
+                onCheckedChange={(checked) => {
+                  setExactMode(checked);
+                  setCurrentPage(1);
+                  applyManualSelection([]);
+                }}
                 title="Khớp chính xác từng ký tự (không dùng fuzzy)"
-              >
-                <input 
-                  type="checkbox" 
-                  checked={exactMode} 
-                  onChange={(e) => { 
-                    setExactMode(e.target.checked); 
-                    setCurrentPage(1); 
-                    applyManualSelection([]); 
-                  }} 
-                  className="rounded border-slate-300 text-orange-600 focus:ring-orange-500 h-3.5 w-3.5 cursor-pointer"
-                />
-                <span className="font-medium">Tìm chính xác</span>
-              </label>
+              />
             </div>
             <div className="relative" ref={categoryDropdownRef}>
               <Popover open={isCategoryDropdownOpen} onOpenChange={setIsCategoryDropdownOpen}>
@@ -564,8 +581,8 @@ function ProductsContent() {
             </div>
             <select className="h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm" value={filterStatus} onChange={(e) =>{  handleFilterChange('status', e.target.value); }}>
               <option value="">Tất cả trạng thái</option>
-              <option value="Active">Đang bán</option>
-              <option value="Draft">Bản nháp</option>
+              <option value="Active">Hiện</option>
+              <option value="Draft">Ẩn</option>
               <option value="Archived">Lưu trữ</option>
             </select>
             <Button variant="outline" size="sm" onClick={handleResetFilters}>Xóa lọc</Button>
@@ -579,10 +596,17 @@ function ProductsContent() {
             <ColumnToggle columns={columns} visibleColumns={visibleColumns} onToggle={toggleColumn} />
           </div>
         </div>
+        {!isReorderEnabled && (
+          <div className="px-4 py-3 text-xs text-slate-500 border-b border-slate-100 dark:border-slate-800">
+            Tắt tìm kiếm/lọc và quay về thứ tự mặc định để kéo thả đổi vị trí.
+          </div>
+        )}
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <Table>
           <TableHeader className="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-white dark:[&_th]:bg-slate-900">
             <TableRow>
               {visibleColumns.includes('select') && <TableHead className="w-[40px]"><SelectCheckbox checked={isPageSelected} onChange={toggleSelectAll} indeterminate={isPageIndeterminate} /></TableHead>}
+              {visibleColumns.includes('drag') && <TableHead className="w-[40px]" />}
               {visibleColumns.includes('image') && <TableHead className="w-[60px]">Ảnh</TableHead>}
               {visibleColumns.includes('name') && <SortableHeader label="Tên sản phẩm" sortKey="name" sortConfig={sortConfig} onSort={handleSort} />}
               {visibleColumns.includes('sku') && enabledFields.has('sku') && <SortableHeader label="SKU" sortKey="sku" sortConfig={sortConfig} onSort={handleSort} />}
@@ -593,6 +617,7 @@ function ProductsContent() {
               {visibleColumns.includes('actions') && <TableHead className="text-right">Hành động</TableHead>}
             </TableRow>
           </TableHeader>
+          <SortableContext items={paginatedData.map(product => product._id)} strategy={verticalListSortingStrategy}>
           <TableBody>
             {isTableLoading ? (
               Array.from({ length: resolvedProductsPerPage }).map((_, index) => (
@@ -605,8 +630,15 @@ function ProductsContent() {
             ) : (
               <>
                 {paginatedData.map(product => (
-                  <TableRow key={product._id} className={selectedIds.includes(product._id) ? 'bg-orange-500/5' : ''}>
+                  <SortableTableRow key={product._id} id={product._id} disabled={!isReorderEnabled} selected={selectedIds.includes(product._id)}>
+                    {({ attributes, disabled, listeners }) => (
+                      <>
                 {visibleColumns.includes('select') && <TableCell><SelectCheckbox checked={selectedIds.includes(product._id)} onChange={() =>{  toggleSelectItem(product._id); }} /></TableCell>}
+                {visibleColumns.includes('drag') && (
+                  <TableCell className="w-[40px]">
+                    <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
+                  </TableCell>
+                )}
                 {visibleColumns.includes('image') && (
                   <TableCell>
                     <AdminEntityImage
@@ -660,13 +692,13 @@ function ProductsContent() {
                 {visibleColumns.includes('status') && (
                   <TableCell>
                     <Badge variant={product.status === 'Active' ? 'success' : (product.status === 'Draft' ? 'secondary' : 'warning')}>
-                      {product.status === 'Active' ? 'Đang bán' : (product.status === 'Draft' ? 'Bản nháp' : 'Lưu trữ')}
+                      {product.status === 'Active' ? 'Hiện' : (product.status === 'Draft' ? 'Ẩn' : 'Lưu trữ')}
                     </Badge>
                   </TableCell>
                 )}
                 {visibleColumns.includes('actions') && (
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" className="text-blue-600 hover:text-blue-700" title="Xem trên web" onClick={() =>{  openFrontend(product.slug, product.categoryId); }}><ExternalLink size={16}/></Button>
                       {variantEnabled && product.hasVariants && (
                         <Link href={`/admin/products/${product._id}/variants`}>
@@ -687,7 +719,9 @@ function ProductsContent() {
                     </div>
                   </TableCell>
                 )}
-                  </TableRow>
+                      </>
+                    )}
+                  </SortableTableRow>
                 ))}
               </>
             )}
@@ -699,7 +733,9 @@ function ProductsContent() {
               </TableRow>
             )}
           </TableBody>
+          </SortableContext>
         </Table>
+        </DndContext>
         {totalCount > 0 && !isTableLoading && (
           <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="order-2 flex w-full items-center justify-between text-sm text-slate-500 sm:order-1 sm:w-auto sm:justify-start sm:gap-6">

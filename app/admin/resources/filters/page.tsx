@@ -21,7 +21,10 @@ import {
 } from '../../components/ui';
 import { DeleteConfirmDialog } from '../../components/DeleteConfirmDialog';
 import { ModuleGuard } from '../../components/ModuleGuard';
-import { SelectCheckbox, SortableHeader, useSortableData } from '../../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, getReorderedItems, SelectCheckbox, SortableHeader, SortableTableRow, useAdminDndSensors, useSortableData } from '../../components/TableUtilities';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 export default function ResourceFiltersListPage() {
   return (
@@ -35,9 +38,10 @@ function ResourceFiltersContent() {
   const router = useRouter();
   const filtersData = useQuery(api.resourceFilters.listAll, {});
   const deleteFilter = useMutation(api.resourceFilters.remove);
+  const reorderFilters = useMutation(api.resourceFilters.reorder);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: null });
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: 'order' });
   const [selectedIds, setSelectedIds] = useState<Id<'resourceFilters'>[]>([]);
   const [deleteTargetId, setDeleteTargetId] = useState<Id<'resourceFilters'> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -45,6 +49,7 @@ function ResourceFiltersContent() {
 
   const deleteInfo = useQuery(api.resourceFilters.getDeleteInfo, deleteTargetId ? { id: deleteTargetId } : 'skip');
   const isLoading = filtersData === undefined;
+  const dndSensors = useAdminDndSensors();
 
   const filters = useMemo(() => {
     return filtersData?.map((f) => ({
@@ -63,6 +68,7 @@ function ResourceFiltersContent() {
   }, [filters, searchTerm]);
 
   const sortedData = useSortableData(filteredData, sortConfig);
+  const isReorderEnabled = !searchTerm.trim() && (sortConfig.key === null || sortConfig.key === 'order');
   const isAllSelected = selectedIds.length === sortedData.length && sortedData.length > 0;
   const isIndeterminate = selectedIds.length > 0 && selectedIds.length < sortedData.length;
 
@@ -104,6 +110,27 @@ function ResourceFiltersContent() {
       toast.success(`Đã xóa ${selectedIds.length} bộ lọc thành công`);
     } catch {
       toast.error('Có lỗi xảy ra khi xóa hàng loạt');
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(sortedData, event.active.id, event.over?.id, filter => filter.id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderFilters({
+        items: buildOrderUpdates(
+          reordered,
+          sortedData.map((filter, index) => filter.order ?? index),
+          filter => filter.id,
+          (_filter, index) => index
+        ),
+      });
+      setSortConfig({ direction: 'asc', key: 'order' });
+      toast.success('Đã cập nhật thứ tự bộ lọc');
+    } catch {
+      toast.error('Không thể cập nhật thứ tự bộ lọc');
     }
   };
 
@@ -150,9 +177,16 @@ function ResourceFiltersContent() {
               <Input placeholder="Tìm kiếm bộ lọc..." className="pl-9" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); }} />
             </div>
           </div>
+          {!isReorderEnabled && (
+            <div className="border-b border-slate-100 px-4 py-3 text-xs text-slate-500 dark:border-slate-800">
+              Tắt tìm kiếm và quay về thứ tự mặc định để kéo thả đổi vị trí.
+            </div>
+          )}
+          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[40px]" />
                 <TableHead className="w-[40px]">
                   <SelectCheckbox checked={isAllSelected} onChange={toggleSelectAll} indeterminate={isIndeterminate} />
                 </TableHead>
@@ -163,9 +197,15 @@ function ResourceFiltersContent() {
                 <TableHead className="text-right">Hành động</TableHead>
               </TableRow>
             </TableHeader>
+            <SortableContext items={sortedData.map(filter => filter.id)} strategy={verticalListSortingStrategy}>
             <TableBody>
               {sortedData.map((filter) => (
-                <TableRow key={filter.id} className={selectedIds.includes(filter.id) ? 'bg-indigo-500/5' : ''}>
+                <SortableTableRow key={filter.id} id={filter.id} disabled={!isReorderEnabled} selected={selectedIds.includes(filter.id)} selectedClassName="bg-indigo-500/5">
+                  {({ attributes, disabled, listeners }) => (
+                    <>
+                  <TableCell className="w-[40px]">
+                    <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
+                  </TableCell>
                   <TableCell><SelectCheckbox checked={selectedIds.includes(filter.id)} onChange={() => { toggleSelectItem(filter.id); }} /></TableCell>
                   <TableCell className="font-medium">{filter.name}</TableCell>
                   <TableCell className="font-mono text-sm text-slate-500">{filter.slug}</TableCell>
@@ -174,11 +214,11 @@ function ResourceFiltersContent() {
                   </TableCell>
                   <TableCell>
                     <Badge variant={filter.active ? 'success' : 'secondary'}>
-                      {filter.active ? 'Hoạt động' : 'Ẩn'}
+                      {filter.active ? 'Hiện' : 'Ẩn'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" onClick={() => router.push(`/admin/resources/filters/${filter.id}/edit`)} title="Chỉnh sửa">
                         <Edit size={16} />
                       </Button>
@@ -187,17 +227,21 @@ function ResourceFiltersContent() {
                       </Button>
                     </div>
                   </TableCell>
-                </TableRow>
+                    </>
+                  )}
+                </SortableTableRow>
               ))}
               {sortedData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-slate-500">
+                  <TableCell colSpan={7} className="py-8 text-center text-slate-500">
                     {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có bộ lọc nào'}
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
+            </SortableContext>
           </Table>
+          </DndContext>
           {sortedData.length > 0 && (
             <div className="border-t border-slate-100 p-4 text-sm text-slate-500 dark:border-slate-800">
               Hiển thị {sortedData.length} / {filters.length} bộ lọc

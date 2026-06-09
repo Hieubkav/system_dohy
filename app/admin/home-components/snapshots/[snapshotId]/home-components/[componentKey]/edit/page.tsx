@@ -10,6 +10,7 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import type { HomepageSnapshotPayload, SnapshotComponentPayload } from '@/lib/homepage-snapshot/types';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../../../../../components/ui';
+import { CopyableInput } from '../../../../../../components/CopyTextButton';
 import { ModuleGuard } from '../../../../../../components/ModuleGuard';
 import { COMPONENT_TYPES } from '../../../../../create/shared';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
@@ -562,9 +563,10 @@ function SnapshotComponentEditPage({ snapshotId, componentKey }: { snapshotId: s
             <div className="grid gap-4 md:grid-cols-[1fr_160px]">
               <div className="space-y-2">
                 <Label>Tiêu đề hiển thị <span className="text-red-500">*</span></Label>
-                <Input
+                <CopyableInput
                   value={component.title}
                   onChange={(event) => setComponent({ ...component, title: event.target.value })}
+                  copyLabel="tiêu đề hiển thị"
                   required
                   placeholder="Nhập tiêu đề component..."
                 />
@@ -690,9 +692,10 @@ function SnapshotComponentEditPage({ snapshotId, componentKey }: { snapshotId: s
             <div className="grid gap-4 md:grid-cols-[1fr_160px]">
               <div className="space-y-2">
                 <Label>Tiêu đề hiển thị <span className="text-red-500">*</span></Label>
-                <Input
+                <CopyableInput
                   value={component.title}
                   onChange={(event) => setComponent({ ...component, title: event.target.value })}
+                  copyLabel="tiêu đề hiển thị"
                   required
                   placeholder="Nhập tiêu đề component..."
                 />
@@ -817,9 +820,10 @@ function SnapshotComponentEditPage({ snapshotId, componentKey }: { snapshotId: s
             <div className="grid gap-4 md:grid-cols-[1fr_160px]">
               <div className="space-y-2">
                 <Label>Tiêu đề hiển thị <span className="text-red-500">*</span></Label>
-                <Input
+                <CopyableInput
                   value={component.title}
                   onChange={(event) => setComponent({ ...component, title: event.target.value })}
+                  copyLabel="tiêu đề hiển thị"
                   required
                   placeholder="Nhập tiêu đề component..."
                 />
@@ -1054,9 +1058,10 @@ function SnapshotProductListEditor({
           <div className="grid gap-4 md:grid-cols-[1fr_160px]">
             <div className="space-y-2">
               <Label>Tiêu đề hiển thị <span className="text-red-500">*</span></Label>
-              <Input
+              <CopyableInput
                 value={component.title}
                 onChange={(event) => setComponent((prev) => prev ? { ...prev, title: event.target.value } : prev)}
+                copyLabel="tiêu đề hiển thị"
                 required
                 placeholder="Nhập tiêu đề component..."
               />

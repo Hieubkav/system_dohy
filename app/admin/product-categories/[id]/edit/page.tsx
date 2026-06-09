@@ -10,6 +10,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { Button, Card, CardContent, Input, Label } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 
 const MODULE_KEY = 'productCategories';
 
@@ -95,9 +96,10 @@ export default function ProductCategoryEditPage({ params }: { params: Promise<{ 
           <CardContent className="p-6 space-y-4">
             <div className="space-y-2">
               <Label>Tên danh mục <span className="text-red-500">*</span></Label>
-              <Input 
+              <CopyableInput
                 value={name} 
                 onChange={(e) =>{  setName(e.target.value); }} 
+                copyLabel="tên danh mục"
                 required 
                 placeholder="Nhập tên danh mục..." 
                 autoFocus 

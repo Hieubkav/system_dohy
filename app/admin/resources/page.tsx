@@ -10,8 +10,12 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { AdminEntityImage } from '../components/AdminEntityImage';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
 import { ModuleGuard } from '../components/ModuleGuard';
+import { AdminDragHandle, buildOrderUpdates, getReorderedItems, SortableTableRow, useAdminDndSensors } from '../components/TableUtilities';
 import { usePersistedPageSize } from '../components/usePersistedPageSize';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 type ResourceStatus = '' | 'Published' | 'Draft' | 'Archived';
 
@@ -50,6 +54,7 @@ function ResourcesContent() {
   const deleteResource = useMutation(api.resources.remove);
   const duplicateResource = useMutation(api.resources.duplicate);
   const bulkClearBrokenMedia = useMutation(api.resources.bulkClearBrokenMedia);
+  const reorderResources = useMutation(api.resources.reorder);
 
   const enabledFields = useMemo(() => new Set(fieldsData?.map((field) => field.fieldKey) ?? []), [fieldsData]);
 
@@ -62,6 +67,7 @@ function ResourcesContent() {
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
   const [cloningResourceId, setCloningResourceId] = useState<Id<'resources'> | null>(null);
   const [isClearingMedia, setIsClearingMedia] = useState(false);
+  const dndSensors = useAdminDndSensors();
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearchTerm(searchTerm); }, 300);
@@ -97,6 +103,7 @@ function ResourcesContent() {
 
   const resources = resourcesData ?? [];
   const isLoading = resourcesData === undefined || totalCountData === undefined || categoriesData === undefined;
+  const isReorderEnabled = !debouncedSearchTerm.trim() && !filterStatus;
   const totalCount = totalCountData?.count ?? 0;
   const totalPages = totalCount ? Math.ceil(totalCount / pageSize) : 1;
 
@@ -162,6 +169,26 @@ function ResourcesContent() {
     setPageSizeOverride(null);
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(resources, event.active.id, event.over?.id, resource => resource._id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderResources({
+        items: buildOrderUpdates(
+          reordered,
+          resources.map(resource => resource.order),
+          resource => resource._id,
+          (_resource, index) => offset + index
+        ),
+      });
+      toast.success('Đã cập nhật thứ tự tài nguyên');
+    } catch {
+      toast.error('Không thể cập nhật thứ tự tài nguyên');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -202,17 +229,24 @@ function ResourcesContent() {
               onChange={(e) => { setFilterStatus(e.target.value as ResourceStatus); setCurrentPage(1); }}
             >
               <option value="">Tất cả trạng thái</option>
-              <option value="Published">Đã xuất bản</option>
-              <option value="Draft">Bản nháp</option>
+              <option value="Published">Hiện</option>
+              <option value="Draft">Ẩn</option>
               <option value="Archived">Lưu trữ</option>
             </select>
             <Button variant="outline" size="sm" onClick={handleResetFilters}>Xóa lọc</Button>
           </div>
         </div>
 
+        {!isReorderEnabled && (
+          <div className="border-b border-slate-100 px-4 py-3 text-xs text-slate-500 dark:border-slate-800">
+            Tắt tìm kiếm/lọc để kéo thả đổi vị trí.
+          </div>
+        )}
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-[40px]" />
               <TableHead className="w-[80px]">Ảnh</TableHead>
               <TableHead>Tài nguyên</TableHead>
               <TableHead>Danh mục</TableHead>
@@ -222,6 +256,7 @@ function ResourcesContent() {
               <TableHead className="text-right">Hành động</TableHead>
             </TableRow>
           </TableHeader>
+          <SortableContext items={resources.map(resource => resource._id)} strategy={verticalListSortingStrategy}>
           <TableBody>
             {isLoading ? (
               Array.from({ length: pageSize }).map((_, index) => (
@@ -236,7 +271,12 @@ function ResourcesContent() {
                 </TableRow>
               ))
             ) : resources.map((resource) => (
-              <TableRow key={resource._id}>
+              <SortableTableRow key={resource._id} id={resource._id} disabled={!isReorderEnabled}>
+                {({ attributes, disabled, listeners }) => (
+                  <>
+                <TableCell className="w-[40px]">
+                  <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
+                </TableCell>
                 <TableCell>
                   <AdminEntityImage
                     src={resource.thumbnail}
@@ -258,11 +298,11 @@ function ResourcesContent() {
                 <TableCell>{resource.views.toLocaleString('vi-VN')}</TableCell>
                 <TableCell>
                   <Badge variant={resource.status === 'Published' ? 'success' : resource.status === 'Draft' ? 'secondary' : 'warning'}>
-                    {resource.status === 'Published' ? 'Đã xuất bản' : resource.status === 'Draft' ? 'Bản nháp' : 'Lưu trữ'}
+                    {resource.status === 'Published' ? 'Hiện' : resource.status === 'Draft' ? 'Ẩn' : 'Lưu trữ'}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-end gap-1">
                     <Button variant="ghost" size="icon" title="Xem tài nguyên" onClick={() => { openFrontend(resource.slug, resource.categoryId); }}>
                       <ExternalLink size={16} />
                     </Button>
@@ -281,17 +321,21 @@ function ResourcesContent() {
                     </Button>
                   </div>
                 </TableCell>
-              </TableRow>
+                  </>
+                )}
+              </SortableTableRow>
             ))}
             {!isLoading && resources.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-slate-500">
+                <TableCell colSpan={8} className="py-10 text-center text-slate-500">
                   {searchTerm || filterStatus ? 'Không có tài nguyên phù hợp bộ lọc.' : 'Chưa có tài nguyên nào.'}
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
+          </SortableContext>
         </Table>
+        </DndContext>
 
         <div className="flex flex-col gap-3 border-t border-slate-100 p-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-sm text-slate-500">

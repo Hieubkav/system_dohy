@@ -10,6 +10,7 @@ import { FolderTree, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { Button, Card, CardContent, Input, Label } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 
 const MODULE_KEY = 'resourceCategories';
 
@@ -108,7 +109,7 @@ export default function ResourceCategoryEditPage({ params }: { params: Promise<{
           <CardContent className="space-y-4 p-6">
             <div className="space-y-2">
               <Label>Tên danh mục <span className="text-red-500">*</span></Label>
-              <Input value={name} onChange={handleNameChange} required placeholder="Ví dụ: Cơ bản, Luyện thi..." autoFocus />
+              <CopyableInput value={name} onChange={handleNameChange} required placeholder="Ví dụ: Cơ bản, Luyện thi..." autoFocus copyLabel="tên danh mục" />
             </div>
             <div className="space-y-2">
               <Label>Slug</Label>

@@ -11,6 +11,7 @@ import { ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { Badge, Button, Card, CardContent, Input, Label, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, cn } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 import { buildCategoryPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { LexicalEditor } from '@/app/admin/components/LexicalEditor';
 import { FaqForm } from '@/app/admin/home-components/faq/_components/FaqForm';
@@ -347,7 +348,7 @@ export default function CategoryEditPage({ params }: { params: Promise<{ id: str
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Tên danh mục <span className="text-red-500">*</span></Label>
-                    <Input value={name} onChange={handleNameChange} required placeholder="Ví dụ: Điện thoại, Áo sơ mi..." autoFocus />
+                    <CopyableInput value={name} onChange={handleNameChange} required placeholder="Ví dụ: Điện thoại, Áo sơ mi..." autoFocus copyLabel="tên danh mục" />
                   </div>
 
                   <div className="space-y-2">

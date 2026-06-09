@@ -127,8 +127,8 @@ export const listAdminWithOffset = query({
     } else {
       posts = await ctx.db
         .query("posts")
-        .order("desc")
-        .take(fetchLimit);
+        .take(500);
+      posts.sort((a, b) => a.order - b.order);
     }
 
     if (args.search?.trim() && posts.length > 0) {
@@ -940,6 +940,15 @@ export const getDeleteInfo = query({
       preview: v.array(v.object({ id: v.string(), name: v.string() })),
     })),
   }),
+});
+
+export const reorder = mutation({
+  args: { items: v.array(v.object({ id: v.id("posts"), order: v.number() })) },
+  handler: async (ctx, args) => {
+    await Promise.all(args.items.map(async (item) => ctx.db.patch(item.id, { order: item.order })));
+    return null;
+  },
+  returns: v.null(),
 });
 
 // ============================================================

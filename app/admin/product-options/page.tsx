@@ -80,10 +80,10 @@ function SortableRow({ isDraggingDisabled, isSelected, onDelete, onToggleSelect,
         <Badge variant={option.isPreset ? 'default' : 'secondary'}>{option.isPreset ? 'Preset' : 'Custom'}</Badge>
       </TableCell>
       <TableCell>
-        <Badge variant={option.active ? 'default' : 'secondary'}>{option.active ? 'Hoạt động' : 'Ẩn'}</Badge>
+        <Badge variant={option.active ? 'default' : 'secondary'}>{option.active ? 'Hiện' : 'Ẩn'}</Badge>
       </TableCell>
       <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-1">
           <Link href={`/admin/product-options/${option._id}/values`}>
             <Button variant="ghost" size="sm">Giá trị</Button>
           </Link>
@@ -280,7 +280,7 @@ function ProductOptionsContent() {
               className="h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
             >
               <option value="all">Tất cả trạng thái</option>
-              <option value="active">Hoạt động</option>
+              <option value="active">Hiện</option>
               <option value="inactive">Ẩn</option>
             </select>
             <select

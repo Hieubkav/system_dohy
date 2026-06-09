@@ -10,6 +10,7 @@ import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { Button, Card, CardContent, Input, Label } from '../../components/ui';
+import { CopyableInput } from '../../components/CopyTextButton';
 import { getAttributeIconComponent } from '../../attribute-groups/_lib/iconRegistry';
 
 const MODULE_KEY = 'productTypes';
@@ -208,9 +209,10 @@ export default function ProductTypeCreatePage() {
             <CardContent className="p-6 space-y-4">
               <div className="space-y-2">
                 <Label>Tên kiểu <span className="text-red-500">*</span></Label>
-                <Input 
+                <CopyableInput
                   value={name} 
                   onChange={handleNameChange} 
+                  copyLabel="tên kiểu"
                   required 
                   placeholder="Nhập tên kiểu..." 
                   autoFocus 

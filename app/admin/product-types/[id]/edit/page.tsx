@@ -14,6 +14,7 @@ import { Loader2, Plus, Trash2, ExternalLink, GripVertical } from 'lucide-react'
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { Button, Card, CardContent, Input, Label, cn } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 import { getAttributeIconComponent } from '../../../attribute-groups/_lib/iconRegistry';
 import { useUnsavedGuard } from '@/app/admin/home-components/_shared/hooks/useUnsavedGuard';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
@@ -495,9 +496,10 @@ export default function ProductTypeEditPage({ params }: { params: Promise<{ id: 
             <CardContent className="p-6 space-y-4">
               <div className="space-y-2">
                 <Label>Tên kiểu <span className="text-red-500">*</span></Label>
-                <Input 
+                <CopyableInput
                   value={name} 
                   onChange={(e) =>{  setName(e.target.value); }} 
+                  copyLabel="tên kiểu"
                   required 
                   placeholder="Nhập tên kiểu..." 
                   autoFocus 

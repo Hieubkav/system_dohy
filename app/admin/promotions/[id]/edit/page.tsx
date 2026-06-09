@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 
 const MODULE_KEY = 'promotions';
@@ -248,9 +249,10 @@ export default function PromotionEditPage({ params }: { params: Promise<{ id: st
               </div>
               <div className="space-y-2">
                 <Label>Tên khuyến mãi <span className="text-red-500">*</span></Label>
-                <Input 
+                <CopyableInput
                   value={name} 
                   onChange={(e) =>{  setName(e.target.value); }} 
+                  copyLabel="tên khuyến mãi"
                   required 
                 />
               </div>

@@ -22,6 +22,7 @@ import {
   Label,
   cn,
 } from '../../components/ui';
+import { CopyableInput } from '../../components/CopyTextButton';
 import { IconPopoverPicker } from '../../home-components/_shared/components/IconPopoverPicker';
 import { HomeComponentStickyFooter } from '../../home-components/_shared/components/HomeComponentStickyFooter';
 import { useUnsavedGuard } from '../../home-components/_shared/hooks/useUnsavedGuard';
@@ -387,9 +388,10 @@ export default function AttributeGroupCreatePage() {
               <CardContent className="p-6 space-y-4">
                 <div className="space-y-2">
                   <Label>Tên nhóm thuộc tính <span className="text-red-500">*</span></Label>
-                  <Input 
+                  <CopyableInput
                     value={name} 
                     onChange={handleNameChange} 
+                    copyLabel="tên nhóm thuộc tính"
                     required 
                     placeholder="Nhập tên nhóm thuộc tính..." 
                     autoFocus 

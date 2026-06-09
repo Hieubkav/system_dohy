@@ -422,9 +422,10 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
     const seen = new Set<string>();
     const items: SmartMenuPlanItem[] = [];
     const add = (item: SmartMenuPlanItem) => {
-      if (seen.has(item.url)) {return;}
+      const uniqueKey = `${item.url}::${item.label}`;
+      if (seen.has(uniqueKey)) {return;}
       if (item.depth > maxChildDepth) {return;}
-      seen.add(item.url);
+      seen.add(uniqueKey);
       items.push(item);
     };
     const hasPublishedCourses = enabledKeys.has('courses') && (publishedCourseCount ?? 0) > 0;
@@ -474,7 +475,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
             label: pt.name,
             reasons: ['Loại sản phẩm'],
             score: 89 - ptIndex,
-            url: `/products?type=${pt.slug}`
+            url: `/${pt.slug}`
           });
 
           if (maxChildDepth >= 2) {
@@ -486,7 +487,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
                 label: cat.name,
                 reasons: [`Danh mục thuộc ${pt.name}`],
                 score: 80 - catIndex,
-                url: buildCategoryPath({ categorySlug: cat.slug, mode: routeMode, moduleKey: 'products' })
+                url: `/${pt.slug}/${cat.slug}`
               });
             });
 
@@ -499,7 +500,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
                 label: group.name,
                 reasons: [`Bộ lọc đặc biệt của ${pt.name}`],
                 score: 70 - groupIndex,
-                url: `/products?type=${pt.slug}&${group.code}=all`
+                url: `/${pt.slug}`
               });
 
               if (maxChildDepth >= 3) {
@@ -510,7 +511,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
                     label: term.name,
                     reasons: [`Giá trị của ${group.name}`],
                     score: 60 - termIndex,
-                    url: `/products?type=${pt.slug}&${group.code}=${term.slug}`
+                    url: `/${pt.slug}/${group.slug}/${term.slug}`
                   });
                 });
               }
@@ -522,7 +523,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
                 label: 'Mức giá',
                 reasons: [`Khoảng giá của ${pt.name}`],
                 score: 50,
-                url: `/products?type=${pt.slug}&price=all`
+                url: `/${pt.slug}`
               });
               if (maxChildDepth >= 3) {
                 pt.priceRanges.forEach((range, rangeIndex) => {
@@ -531,7 +532,7 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
                     label: range.label,
                     reasons: [`Mức giá`],
                     score: 40 - rangeIndex,
-                    url: `/products?type=${pt.slug}&price=${range.slug}`
+                    url: `/${pt.slug}/${range.slug}`
                   });
                 });
               }
@@ -539,17 +540,6 @@ function MenuItemsEditor({ menuId }: { menuId: Id<"menus"> }) {
           }
         });
       }
-
-      const globalSpecialGroups = attributeGroups.filter(g => g.isSpecialFilter);
-      globalSpecialGroups.forEach((group, idx) => {
-        add({
-          depth: 0,
-          label: group.name,
-          reasons: ['Bộ lọc đặc biệt'],
-          score: 85 - idx,
-          url: `/products?${group.code}=all`
-        });
-      });
 
       if (enabledKeys.has('services')) {
         add({ depth: 0, label: 'Dịch vụ', reasons: ['Khu vực dịch vụ'], score: 75, url: buildModuleListPath('services') });

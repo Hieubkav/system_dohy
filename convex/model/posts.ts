@@ -142,8 +142,9 @@ export async function countByCategory(
  * Get next order value
  */
 export async function getNextOrder(ctx: QueryCtx): Promise<number> {
-  const lastPost = await ctx.db.query("posts").order("desc").first();
-  return lastPost ? lastPost.order + 1 : 0;
+  const posts = await ctx.db.query("posts").take(1000);
+  const lastOrder = posts.reduce((max, post) => Math.max(max, post.order), -1);
+  return lastOrder + 1;
 }
 
 /**

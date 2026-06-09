@@ -9,6 +9,7 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
 import { ArrowDown, ArrowUp, GripVertical, Loader2, Plus, Trash2 } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../../components/ui';
+import { CopyableInput } from '../../../components/CopyTextButton';
 
 const MENU_ITEMS_LIMIT = 500;
 
@@ -179,9 +180,10 @@ export default function MenuEditPage({ params }: { params: Promise<{ id: string 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tên menu <span className="text-red-500">*</span></Label>
-                <Input 
+                <CopyableInput
                   value={formData.name} 
                   onChange={(e) =>{  setFormData(prev => ({ ...prev, name: e.target.value })); }}
+                  copyLabel="tên menu"
                   required 
                 />
               </div>

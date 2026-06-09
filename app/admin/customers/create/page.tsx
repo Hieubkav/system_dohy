@@ -8,6 +8,7 @@ import { api } from '@/convex/_generated/api';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Card, CardContent, Input, Label } from '../../components/ui';
+import { CopyableInput } from '../../components/CopyTextButton';
 
 const MODULE_KEY = 'customers';
 
@@ -118,10 +119,11 @@ export default function CustomerCreatePage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Họ tên <span className="text-red-500">*</span></Label>
-                <Input
+                <CopyableInput
                   required
                   placeholder="Nhập họ tên..."
                   value={formData.name}
+                  copyLabel="họ tên"
                   onChange={(e) =>{  handleChange('name', e.target.value); }}
                 />
               </div>

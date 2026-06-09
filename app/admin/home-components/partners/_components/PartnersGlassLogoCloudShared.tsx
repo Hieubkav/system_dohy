@@ -131,12 +131,12 @@ export const PartnersGlassLogoCloudShared = ({
                 {item.url ? (
                   <span className="inline-flex items-center justify-center opacity-70 transition-all duration-300 hover:scale-105 hover:opacity-100" style={filterStyle}>
                     {renderImage ? (
-                      renderImage(item, cn(logoClassName, 'w-auto max-w-full object-contain'))
+                      renderImage(item, cn(logoClassName, 'w-auto h-auto max-w-full object-contain'))
                     ) : (
                       <img
                         src={item.url}
                         alt={label}
-                        className={cn(logoClassName, 'w-auto max-w-full object-contain')}
+                        className={cn(logoClassName, 'w-auto h-auto max-w-full object-contain')}
                         draggable={false}
                       />
                     )}

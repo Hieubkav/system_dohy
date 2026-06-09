@@ -9,10 +9,13 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { Briefcase, ChevronDown, Copy, Edit, ExternalLink, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
-import { BulkActionBar, ColumnToggle, SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, BulkActionBar, ColumnToggle, getReorderedItems, SelectCheckbox, SortableHeader, SortableTableRow, useAdminDndSensors, useSortableData } from '../components/TableUtilities';
 import { ModuleGuard } from '../components/ModuleGuard';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
 import { usePersistedPageSize } from '../components/usePersistedPageSize';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 function generatePaginationItems(currentPage: number, totalPages: number): (number | 'ellipsis')[] {
   if (totalPages <= 7) {
@@ -45,6 +48,7 @@ function ServicesContent() {
   const deleteService = useMutation(api.services.remove);
   const duplicateService = useMutation(api.services.duplicate);
   const bulkClearBrokenMedia = useMutation(api.services.bulkClearBrokenMedia);
+  const reorderServices = useMutation(api.services.reorder);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
@@ -72,6 +76,7 @@ function ServicesContent() {
     }
     return ['category', 'price', 'status'];
   });
+  const dndSensors = useAdminDndSensors();
   const isSelectAllActive = selectionMode === 'all';
 
   const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: null });
@@ -163,11 +168,12 @@ function ServicesContent() {
   })) ?? [], [servicesData, categoryMap]);
 
   const sortedServices = useSortableData(services, sortConfig);
+  const isReorderEnabled = !debouncedSearchTerm.trim() && !filterStatus && (sortConfig.key === null || sortConfig.key === 'order');
 
   const totalCount = totalCountData?.count ?? 0;
   const totalPages = totalCount ? Math.ceil(totalCount / resolvedServicesPerPage) : 1;
   const paginatedServices = sortedServices;
-  const tableColumnCount = 3 + resolvedVisibleColumns.length;
+  const tableColumnCount = 4 + resolvedVisibleColumns.length;
   const selectedIds = isSelectAllActive && selectAllData ? selectAllData.ids : manualSelectedIds;
   const isSelectingAll = isSelectAllActive && selectAllData === undefined;
 
@@ -280,6 +286,27 @@ function ServicesContent() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(paginatedServices, event.active.id, event.over?.id, service => service._id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderServices({
+        items: buildOrderUpdates(
+          reordered,
+          paginatedServices.map(service => service.order),
+          service => service._id,
+          (_service, index) => offset + index
+        ),
+      });
+      setSortConfig({ direction: 'asc', key: null });
+      toast.success('Đã cập nhật thứ tự dịch vụ');
+    } catch {
+      toast.error('Không thể cập nhật thứ tự dịch vụ');
+    }
+  };
+
   const formatPrice = (price?: number) => {
     if (!price) {return '-';}
     return new Intl.NumberFormat('vi-VN', { currency: 'VND', style: 'currency' }).format(price);
@@ -328,8 +355,8 @@ function ServicesContent() {
           <div className="flex flex-wrap items-center gap-2">
             <select className="h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm" value={filterStatus} onChange={(e) =>{  handleFilterChange(e.target.value); }}>
               <option value="">Tất cả trạng thái</option>
-              <option value="Published">Đã xuất bản</option>
-              <option value="Draft">Bản nháp</option>
+              <option value="Published">Hiện</option>
+              <option value="Draft">Ẩn</option>
               <option value="Archived">Lưu trữ</option>
             </select>
             <Button variant="outline" size="sm" onClick={handleResetFilters}>
@@ -344,10 +371,17 @@ function ServicesContent() {
             />
           </div>
         </div>
+        {!isReorderEnabled && (
+          <div className="px-4 py-3 text-xs text-slate-500 border-b border-slate-100 dark:border-slate-800">
+            Tắt tìm kiếm/lọc và quay về thứ tự mặc định để kéo thả đổi vị trí.
+          </div>
+        )}
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <Table>
           <TableHeader className="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-white dark:[&_th]:bg-slate-900">
             <TableRow>
               <TableHead className="w-[40px]"><SelectCheckbox checked={isPageSelected} onChange={toggleSelectAll} indeterminate={isPageIndeterminate} /></TableHead>
+              <TableHead className="w-[40px]" />
               {resolvedVisibleColumns.includes('thumbnail') && <TableHead className="w-[80px]">Ảnh</TableHead>}
               <SortableHeader label="Tiêu đề" sortKey="title" sortConfig={sortConfig} onSort={handleSort} />
               {resolvedVisibleColumns.includes('category') && <SortableHeader label="Danh mục" sortKey="category" sortConfig={sortConfig} onSort={handleSort} />}
@@ -356,6 +390,7 @@ function ServicesContent() {
               <TableHead className="text-right">Hành động</TableHead>
             </TableRow>
           </TableHeader>
+          <SortableContext items={paginatedServices.map(service => service._id)} strategy={verticalListSortingStrategy}>
           <TableBody>
             {isTableLoading ? (
               Array.from({ length: resolvedServicesPerPage }).map((_, index) => (
@@ -394,8 +429,13 @@ function ServicesContent() {
             ) : (
               <>
                 {paginatedServices.map(service => (
-                  <TableRow key={service._id} className={selectedIds.includes(service._id) ? 'bg-teal-500/5' : ''}>
+                  <SortableTableRow key={service._id} id={service._id} disabled={!isReorderEnabled} selected={selectedIds.includes(service._id)} selectedClassName="bg-teal-500/5">
+                    {({ attributes, disabled, listeners }) => (
+                      <>
                     <TableCell><SelectCheckbox checked={selectedIds.includes(service._id)} onChange={() =>{  toggleSelectItem(service._id); }} /></TableCell>
+                    <TableCell className="w-[40px]">
+                      <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
+                    </TableCell>
                     {resolvedVisibleColumns.includes('thumbnail') && (
                       <TableCell>
                         <AdminEntityImage
@@ -414,12 +454,12 @@ function ServicesContent() {
                     {resolvedVisibleColumns.includes('status') && (
                       <TableCell>
                         <Badge variant={service.status === 'Published' ? 'success' : (service.status === 'Draft' ? 'secondary' : 'warning')}>
-                          {service.status === 'Published' ? 'Đã xuất bản' : (service.status === 'Draft' ? 'Bản nháp' : 'Lưu trữ')}
+                          {service.status === 'Published' ? 'Hiện' : (service.status === 'Draft' ? 'Ẩn' : 'Lưu trữ')}
                         </Badge>
                       </TableCell>
                     )}
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon" className="text-teal-600 hover:text-teal-700" title="Xem dịch vụ" onClick={() =>{  openFrontend(service.slug, service.categoryId); }}><ExternalLink size={16}/></Button>
                         <Button
                           variant="ghost"
@@ -434,7 +474,9 @@ function ServicesContent() {
                         <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={ async () => handleDelete(service._id)}><Trash2 size={16}/></Button>
                       </div>
                     </TableCell>
-                  </TableRow>
+                      </>
+                    )}
+                  </SortableTableRow>
                 ))}
               </>
             )}
@@ -446,7 +488,9 @@ function ServicesContent() {
               </TableRow>
             )}
           </TableBody>
+          </SortableContext>
         </Table>
+        </DndContext>
         {totalCount > 0 && !isTableLoading && (
           <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="order-2 flex w-full items-center justify-between text-sm text-slate-500 sm:order-1 sm:w-auto sm:justify-start sm:gap-6">

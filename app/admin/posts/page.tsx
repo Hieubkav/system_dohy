@@ -9,10 +9,13 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { ChevronDown, Copy, Edit, ExternalLink, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
-import { BulkActionBar, ColumnToggle, SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, BulkActionBar, ColumnToggle, getReorderedItems, SelectCheckbox, SortableHeader, SortableTableRow, useAdminDndSensors, useSortableData } from '../components/TableUtilities';
 import { ModuleGuard } from '../components/ModuleGuard';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
 import { usePersistedPageSize } from '../components/usePersistedPageSize';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 function generatePaginationItems(currentPage: number, totalPages: number): (number | 'ellipsis')[] {
   if (totalPages <= 7) {
@@ -75,8 +78,10 @@ function PostsContent() {
   const duplicatePost = useMutation(api.posts.duplicate);
   const updatePost = useMutation(api.posts.update);
   const bulkClearBrokenMedia = useMutation(api.posts.bulkClearBrokenMedia);
+  const reorderPosts = useMutation(api.posts.reorder);
   
   const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: null });
+  const dndSensors = useAdminDndSensors();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -167,11 +172,12 @@ function PostsContent() {
   })) ?? [], [postsData, categoryMap]);
 
   const sortedPosts = useSortableData(posts, sortConfig);
+  const isReorderEnabled = !debouncedSearchTerm.trim() && !filterStatus && (sortConfig.key === null || sortConfig.key === 'order');
 
   const totalCount = totalCountData?.count ?? 0;
   const totalPages = totalCount ? Math.ceil(totalCount / resolvedPostsPerPage) : 1;
   const paginatedPosts = sortedPosts;
-  const tableColumnCount = 3 + resolvedVisibleColumns.length;
+  const tableColumnCount = 4 + resolvedVisibleColumns.length;
   const selectedIds = isSelectAllActive && selectAllData ? selectAllData.ids : manualSelectedIds;
   const isSelectingAll = isSelectAllActive && selectAllData === undefined;
 
@@ -304,6 +310,27 @@ function PostsContent() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(paginatedPosts, event.active.id, event.over?.id, post => post._id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderPosts({
+        items: buildOrderUpdates(
+          reordered,
+          paginatedPosts.map(post => post.order),
+          post => post._id,
+          (_post, index) => offset + index
+        ),
+      });
+      setSortConfig({ direction: 'asc', key: null });
+      toast.success('Đã cập nhật thứ tự bài viết');
+    } catch {
+      toast.error('Không thể cập nhật thứ tự bài viết');
+    }
+  };
+
   const openFrontend = (slug: string, categoryId: string) => {
     const categorySlug = categorySlugMap[categoryId];
     window.open(categorySlug ? `/${categorySlug}/${slug}` : `/posts/${slug}`, '_blank');
@@ -328,10 +355,10 @@ function PostsContent() {
         onPublish={() =>{  void handleBulkStatusUpdate('publish'); }}
         onUnpublish={() =>{  void handleBulkStatusUpdate('unpublish'); }}
         isStatusLoading={bulkStatusLoading}
-        publishLabel="Xuất bản"
-        publishLoadingLabel="Đang xuất bản..."
-        unpublishLabel="Chuyển nháp"
-        unpublishLoadingLabel="Đang chuyển nháp..."
+        publishLabel="Hiện"
+        publishLoadingLabel="Đang hiện..."
+        unpublishLabel="Ẩn"
+        unpublishLoadingLabel="Đang ẩn..."
         onClearBrokenMedia={() =>{  void handleBulkClearBrokenMedia(); }}
         isClearBrokenMediaLoading={isClearingBrokenMedia}
         onDelete={handleBulkDelete}
@@ -347,8 +374,8 @@ function PostsContent() {
           <div className="flex flex-wrap items-center gap-2">
             <select className="h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm" value={filterStatus} onChange={(e) =>{  handleFilterChange(e.target.value); }}>
               <option value="">Tất cả trạng thái</option>
-              <option value="Published">Đã xuất bản</option>
-              <option value="Draft">Bản nháp</option>
+              <option value="Published">Hiện</option>
+              <option value="Draft">Ẩn</option>
               <option value="Archived">Lưu trữ</option>
             </select>
             <Button variant="outline" size="sm" onClick={handleResetFilters}>
@@ -363,10 +390,17 @@ function PostsContent() {
             />
           </div>
         </div>
+        {!isReorderEnabled && (
+          <div className="px-4 py-3 text-xs text-slate-500 border-b border-slate-100 dark:border-slate-800">
+            Tắt tìm kiếm/lọc và quay về thứ tự mặc định để kéo thả đổi vị trí.
+          </div>
+        )}
+        <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <Table>
           <TableHeader className="[&_th]:sticky [&_th]:top-0 [&_th]:z-10 [&_th]:bg-white dark:[&_th]:bg-slate-900">
             <TableRow>
               <TableHead className="w-[40px]"><SelectCheckbox checked={isPageSelected} onChange={toggleSelectAll} indeterminate={isPageIndeterminate} /></TableHead>
+              <TableHead className="w-[40px]" />
               {resolvedVisibleColumns.includes('thumbnail') && <TableHead className="w-[80px]">Thumbnail</TableHead>}
               <SortableHeader label="Tiêu đề" sortKey="title" sortConfig={sortConfig} onSort={handleSort} />
               {resolvedVisibleColumns.includes('category') && <SortableHeader label="Danh mục" sortKey="category" sortConfig={sortConfig} onSort={handleSort} />}
@@ -375,10 +409,14 @@ function PostsContent() {
               <TableHead className="text-right">Hành động</TableHead>
             </TableRow>
           </TableHeader>
+          <SortableContext items={paginatedPosts.map(post => post._id)} strategy={verticalListSortingStrategy}>
           <TableBody>
             {isTableLoading ? (
               Array.from({ length: resolvedPostsPerPage }).map((_, index) => (
                 <TableRow key={`loading-${index}`}>
+                  <TableCell>
+                    <div className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                  </TableCell>
                   <TableCell>
                     <div className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-700 animate-pulse" />
                   </TableCell>
@@ -413,8 +451,13 @@ function PostsContent() {
             ) : (
               <>
                 {paginatedPosts.map(post => (
-                  <TableRow key={post._id} className={selectedIds.includes(post._id) ? 'bg-blue-500/5' : ''}>
+                  <SortableTableRow key={post._id} id={post._id} disabled={!isReorderEnabled} selected={selectedIds.includes(post._id)} selectedClassName="bg-blue-500/5">
+                    {({ attributes, disabled, listeners }) => (
+                      <>
                     <TableCell><SelectCheckbox checked={selectedIds.includes(post._id)} onChange={() =>{  toggleSelectItem(post._id); }} /></TableCell>
+                    <TableCell className="w-[40px]">
+                      <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
+                    </TableCell>
                     {resolvedVisibleColumns.includes('thumbnail') && (
                       <TableCell>
                         <AdminEntityImage
@@ -433,12 +476,12 @@ function PostsContent() {
                     {resolvedVisibleColumns.includes('status') && (
                       <TableCell>
                         <Badge variant={post.status === 'Published' ? 'success' : (post.status === 'Draft' ? 'secondary' : 'warning')}>
-                          {post.status === 'Published' ? 'Đã xuất bản' : (post.status === 'Draft' ? 'Bản nháp' : 'Lưu trữ')}
+                          {post.status === 'Published' ? 'Hiện' : (post.status === 'Draft' ? 'Ẩn' : 'Lưu trữ')}
                         </Badge>
                       </TableCell>
                     )}
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1">
                         <Button variant="ghost" size="icon" className="text-blue-600 hover:text-blue-700" title="Xem bài viết" onClick={() =>{  openFrontend(post.slug, post.categoryId); }}><ExternalLink size={16}/></Button>
                         <Button
                           variant="ghost"
@@ -453,7 +496,9 @@ function PostsContent() {
                         <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={ async () => handleDelete(post._id)}><Trash2 size={16}/></Button>
                       </div>
                     </TableCell>
-                  </TableRow>
+                      </>
+                    )}
+                  </SortableTableRow>
                 ))}
               </>
             )}
@@ -465,7 +510,9 @@ function PostsContent() {
               </TableRow>
             )}
           </TableBody>
+          </SortableContext>
         </Table>
+        </DndContext>
         {totalCount > 0 && !isTableLoading && (
           <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="order-2 flex w-full items-center justify-between text-sm text-slate-500 sm:order-1 sm:w-auto sm:justify-start sm:gap-6">

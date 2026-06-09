@@ -43,7 +43,7 @@ import { getFaqColors } from '@/app/admin/home-components/faq/_lib/colors';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
 import { notifyAddToCart, useCart } from '@/lib/cart';
 import { useCartConfig, useCheckoutConfig } from '@/lib/experiences';
-import { ArrowLeft, Award, BadgeCheck, Bell, Bolt, Calendar, Camera, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, CreditCard, Gift, Globe, Heart, HeartHandshake, Leaf, Lock, MapPin, MessageSquare, Minus, Package, Phone, Plus, Reply, RotateCcw, Share2, Shield, ShoppingBag, ShoppingCart, Star, ThumbsUp, Truck, Facebook, Instagram, Youtube, Mail, Send } from 'lucide-react';
+import { ArrowLeft, Award, BadgeCheck, Bell, Bolt, Calendar, Camera, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, CreditCard, Gift, Globe, Heart, HeartHandshake, Leaf, Lock, MapPin, MessageSquare, Minus, Package, Phone, PiggyBank, Plus, Reply, RotateCcw, Share2, Shield, ShoppingBag, ShoppingCart, Star, ThumbsUp, Truck, Facebook, Instagram, Youtube, Mail, Send } from 'lucide-react';
 import { VariantSelector, type VariantSelectorOption } from '@/components/products/VariantSelector';
 import type { Id } from '@/convex/_generated/dataModel';
 import { getPublicPriceLabel } from '@/lib/products/public-price';
@@ -357,6 +357,7 @@ function useProductDetailExperienceConfig(): ProductDetailExperienceConfig {
       showPriceRightIcon: (raw?.layouts?.premium as any)?.showPriceRightIcon !== false,
       highlightsPosition: raw?.highlightsPosition ?? 'image_column',
       highlightsSpacing: raw?.highlightsSpacing ?? 'high',
+      cornerRadius: (raw?.layouts?.premium as any)?.cornerRadius,
     };
   }, [experienceSetting?.value, cartAvailable, canUseComments, canUseCommentLikes, canUseCommentReplies, canUseWishlist, ordersEnabled, moduleDefaultAspectRatio]);
 }
@@ -1072,6 +1073,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           priceRightIcon={(experienceConfig as any).priceRightIcon}
           showPriceLeftIcon={(experienceConfig as any).showPriceLeftIcon}
           showPriceRightIcon={(experienceConfig as any).showPriceRightIcon}
+          cornerRadius={(experienceConfig as any).cornerRadius}
         />
       )}
       {experienceConfig.layoutStyle === 'classic' && (
@@ -1598,25 +1600,78 @@ function BlurredProductImage({ src, alt, sizes, fallbackSrc }: { src?: string | 
 function HighlightsGrid({
   highlights,
   tokens,
-  className = 'rounded-xl',
-  style,
+  spacing,
+  layoutStyle = 'classic',
+  isSingleImage = false,
+  position = 'image_column'
 }: {
   highlights: ClassicHighlightItem[];
   tokens: ProductDetailColors;
-  className?: string;
-  style?: React.CSSProperties;
+  spacing?: 'low' | 'high' | 'none';
+  layoutStyle?: 'classic' | 'modern' | 'minimal' | 'premium';
+  isSingleImage?: boolean;
+  position?: 'image_column' | 'info_column';
 }) {
-  if (highlights.length === 0) {
+  if (!highlights || highlights.length === 0) {
     return null;
   }
+
+  const isNoneSpacing = spacing === 'none';
+  const isImageCol = position === 'image_column';
+  
+  // Cho phép ghép sát đối với layoutStyle === 'premium' bất kể isSingleImage thế nào (vì thumbnail nằm dọc bên trái)
+  const shouldAttach = isNoneSpacing && isImageCol && (isSingleImage || layoutStyle === 'premium');
+
+  // Xác định class bo góc cho container highlights
+  let borderRadiusClass = 'rounded-2xl';
+  if (layoutStyle === 'minimal') {
+    borderRadiusClass = shouldAttach ? 'rounded-b-sm rounded-t-none' : 'rounded-sm';
+  } else {
+    borderRadiusClass = shouldAttach ? 'rounded-b-2xl rounded-t-none' : 'rounded-2xl';
+  }
+
+  // Padding & gap
+  const paddingClass = shouldAttach ? 'p-3' : 'p-4';
+  const gapClass = isNoneSpacing ? 'gap-x-5 gap-y-2' : 'gap-x-6 gap-y-3';
+  
+  const isGridStyle = position === 'image_column';
+  const marginClass = isGridStyle ? (isNoneSpacing ? 'mt-0' : 'mt-4 md:mt-6') : '';
+
   return (
-    <div className={`grid grid-cols-3 gap-4 p-4 ${className}`} style={{ backgroundColor: tokens.highlightBg, ...style }}>
+    <div
+      className={`${
+        isGridStyle 
+          ? 'grid gap-2' 
+          : `flex flex-wrap items-center justify-center ${gapClass}`
+      } w-full ${borderRadiusClass} ${paddingClass} ${marginClass} animate-fadeIn transition-all duration-300`}
+      style={{
+        gridTemplateColumns: isGridStyle ? `repeat(${highlights.length}, minmax(0, 1fr))` : undefined,
+        backgroundColor: shouldAttach
+          ? (tokens.highlightBg || tokens.surfaceMuted || 'rgba(0,0,0,0.02)')
+          : (tokens.highlightBg || 'transparent'),
+        border: shouldAttach ? 'none' : `1px solid ${tokens.divider || 'rgba(0,0,0,0.08)'}`,
+      }}
+    >
       {highlights.map((item, index) => {
-        const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon];
+        const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon] || BadgeCheck;
         return (
-          <div key={`${item.icon}-${index}`} className="text-center">
-            <Icon size={24} className="mx-auto mb-2" style={{ color: tokens.highlightIcon }} />
-            <p className="text-xs" style={{ color: tokens.highlightText }}>{item.text}</p>
+          <div
+            key={`${item.icon}-${index}`}
+            className={`flex items-center gap-1.5 ${isGridStyle ? 'justify-center' : ''} min-w-0`}
+          >
+            <div className="shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-primary/5 dark:bg-primary/10">
+              <Icon
+                size={12}
+                className="stroke-[1.75]"
+                style={{ color: tokens.primary }}
+              />
+            </div>
+            <span
+              className="text-[10px] md:text-xs font-semibold leading-tight line-clamp-2"
+              style={{ color: tokens.bodyText }}
+            >
+              {item.text}
+            </span>
           </div>
         );
       })}
@@ -2192,7 +2247,6 @@ function ClassicStyle({
   const discountBadgeColors = resolveProductDetailElementColor(accentColors?.discountBadge ?? 'primary', tokens);
   const primaryButtonColors = resolveProductDetailElementColor(accentColors?.primaryButton ?? 'primary', tokens);
   const comboBadgeColors = resolveProductDetailElementColor(accentColors?.comboBadge ?? 'black', tokens);
-  const attachImageHighlights = highlightsEnabled && highlights.length > 0 && highlightsPosition === 'image_column' && highlightsSpacing === 'none';
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: tokens.surface }}>
@@ -2233,9 +2287,17 @@ function ClassicStyle({
         <div className="lg:grid lg:grid-cols-2 lg:gap-12">
           {/* Product Images */}
           <div className="mb-6 lg:mb-0">
-            <div className={`${imageFrame.frameWidthClassName} mb-3 md:mb-4 group/carousel relative`}>
+            <div className={`${imageFrame.frameWidthClassName} ${
+              highlightsEnabled && highlights.length > 0 && highlightsPosition === 'image_column' && highlightsSpacing === 'none'
+                ? 'mb-0'
+                : 'mb-3 md:mb-4'
+            } group/carousel relative`}>
               <div
-                className={`relative ${attachImageHighlights ? 'rounded-t-2xl rounded-b-none' : 'rounded-2xl'} overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                className={`relative overflow-hidden ${
+                  highlightsEnabled && highlights.length > 0 && highlightsPosition === 'image_column' && highlightsSpacing === 'none'
+                    ? 'rounded-t-2xl rounded-b-none'
+                    : 'rounded-2xl'
+                } ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                 style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                 role={canOpenLightbox ? 'button' : undefined}
                 tabIndex={canOpenLightbox ? 0 : -1}
@@ -2285,21 +2347,16 @@ function ClassicStyle({
                   <span className="absolute top-3 left-3 px-3 py-1.5 text-sm font-bold rounded-lg z-30" style={{ backgroundColor: discountBadgeColors.bg, color: discountBadgeColors.text }}>-{discountPercent}%</span>
                 )}
               </div>
-              {highlightsEnabled && highlights.length > 0 && highlightsPosition === 'image_column' && (
-                <div
-                  className={`grid grid-cols-3 gap-4 p-4 ${attachImageHighlights ? 'rounded-t-none rounded-b-2xl border-t' : `rounded-xl ${getHighlightsSpacingClass(highlightsSpacing)}`} animate-fadeIn`}
-                  style={{ backgroundColor: tokens.highlightBg, borderColor: tokens.divider }}
-                >
-                  {highlights.map((item, index) => {
-                    const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon];
-                    return (
-                      <div key={`${item.icon}-${index}`} className="text-center">
-                        <Icon size={24} className="mx-auto mb-2 animate-bounce-slow" style={{ color: tokens.highlightIcon }} />
-                        <p className="text-xs" style={{ color: tokens.highlightText }}>{item.text}</p>
-                      </div>
-                    );
-                  })}
-                </div>
+
+              {highlightsEnabled && highlights.length > 0 && highlightsPosition === 'image_column' && (images.length <= 1 || highlightsSpacing === 'none') && (
+                <HighlightsGrid
+                  highlights={highlights}
+                  tokens={tokens}
+                  spacing={highlightsSpacing}
+                  layoutStyle="classic"
+                  isSingleImage={images.length <= 1}
+                  position="image_column"
+                />
               )}
             </div>
             {images.length > 1 && (
@@ -2318,6 +2375,18 @@ function ClassicStyle({
                   />
                 </div>
               </>
+            )}
+            {highlightsEnabled && highlights.length > 0 && highlightsPosition === 'image_column' && !(images.length <= 1 || highlightsSpacing === 'none') && (
+              <div className={imageFrame.frameWidthClassName}>
+                <HighlightsGrid
+                  highlights={highlights}
+                  tokens={tokens}
+                  spacing={highlightsSpacing}
+                  layoutStyle="classic"
+                  isSingleImage={images.length <= 1}
+                  position="image_column"
+                />
+              </div>
             )}
           </div>
 
@@ -2472,16 +2541,15 @@ function ClassicStyle({
             )}
 
             {highlightsEnabled && highlights.length > 0 && highlightsPosition !== 'image_column' && (
-              <div className={`grid grid-cols-3 gap-4 p-4 rounded-xl ${getHighlightsSpacingClass(highlightsSpacing)} mb-8 animate-fadeIn`} style={{ backgroundColor: tokens.highlightBg }}>
-                {highlights.map((item, index) => {
-                  const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon];
-                  return (
-                    <div key={`${item.icon}-${index}`} className="text-center">
-                      <Icon size={24} className="mx-auto mb-2" style={{ color: tokens.highlightIcon }} />
-                      <p className="text-xs" style={{ color: tokens.highlightText }}>{item.text}</p>
-                    </div>
-                  );
-                })}
+              <div className={`${getHighlightsSpacingClass(highlightsSpacing)} mb-8`}>
+                <HighlightsGrid
+                  highlights={highlights}
+                  tokens={tokens}
+                  spacing={highlightsSpacing}
+                  layoutStyle="classic"
+                  isSingleImage={images.length <= 1}
+                  position="info_column"
+                />
               </div>
             )}
 
@@ -2589,6 +2657,13 @@ function ClassicStyle({
   );
 }
 
+const getRadiusClass = (radius?: 'none' | 'sm' | 'lg', type?: 'box' | 'button' | 'image') => {
+  if (radius === 'none') return 'rounded-none';
+  if (radius === 'sm') return 'rounded-lg';
+  if (type === 'button') return 'rounded-full';
+  return 'rounded-2xl';
+};
+
 // ====================================================================================
 // STYLE 4: PREMIUM - Elegant premium product page with dynamic layouts & colors
 // ====================================================================================
@@ -2614,6 +2689,7 @@ interface PremiumStyleProps extends StyleProps, ExperienceBlocksProps {
   priceRightIcon?: string;
   showPriceLeftIcon?: boolean;
   showPriceRightIcon?: boolean;
+  cornerRadius?: 'none' | 'sm' | 'lg';
 }
 
 function PremiumStyle({
@@ -2676,12 +2752,11 @@ function PremiumStyle({
   phoneIcon = 'Phone',
   phoneUrl = '',
   mobileFontSize = 'xs',
-  priceLeftIcon = 'Award',
   priceRightIcon = 'Gift',
-  showPriceLeftIcon = true,
   showPriceRightIcon = true,
   highlightsPosition,
   highlightsSpacing,
+  cornerRadius,
 }: PremiumStyleProps) {
   const router = useRouter();
   const [quantity, setQuantity] = useState(1);
@@ -2890,7 +2965,121 @@ function PremiumStyle({
   const categoryBadgeColors = resolveProductDetailElementColor(accentColors?.categoryBadge ?? 'secondary', tokens);
   const discountBadgeColors = resolveProductDetailElementColor(accentColors?.discountBadge ?? 'primary', tokens);
   const primaryButtonColors = resolveProductDetailElementColor(accentColors?.primaryButton ?? 'primary', tokens);
-  const attachImageHighlights = highlightsEnabled && highlights.length > 0 && highlightsPosition !== 'info_column' && highlightsSpacing === 'none';
+
+  // Hàm tính toán chi tiết combo dựa trên data cấu hình từ Convex DB
+  const getResolvedComboData = (cItem: any) => {
+    const mainPrice = basePrice || 0;
+    
+    let totalBottles = 1;
+    let payBottles = 1;
+    let giftProductPrice = 0;
+    let giftQty = 0;
+    let isGiftSelf = false;
+    let isGiftOther = false;
+    
+    if (cItem.type === 'standard') {
+      const cfg = cItem.standardConfig;
+      const minQty = cfg?.minQty || 1;
+      payBottles = minQty;
+      
+      if (cfg?.rewardType === 'gift_self') {
+        giftQty = cfg.giftQty || 1;
+        totalBottles = minQty + giftQty;
+        isGiftSelf = true;
+      } else if (cfg?.rewardType === 'gift_other' && cfg.giftProductId) {
+        giftQty = cfg.giftQty || 1;
+        totalBottles = minQty;
+        isGiftOther = true;
+        const gp = comboProductsMap?.get(cfg.giftProductId);
+        giftProductPrice = gp?.salePrice || gp?.price || 0;
+      } else {
+        totalBottles = minQty;
+      }
+    } else if (cItem.type === 'mix') {
+      const cfg = cItem.mixConfig;
+      const curQty = cfg?.currentProductQty || 1;
+      payBottles = curQty;
+      
+      const mixItemsQty = cfg?.items?.reduce((acc: number, item: any) => acc + (item.quantity || 0), 0) || 0;
+      totalBottles = curQty + mixItemsQty;
+      
+      if (cfg?.rewardType === 'gift_other' && cfg.giftProductId) {
+        giftQty = cfg.giftQty || 1;
+        isGiftOther = true;
+        const gp = comboProductsMap?.get(cfg.giftProductId);
+        giftProductPrice = gp?.salePrice || gp?.price || 0;
+      }
+    }
+    
+    let originalValue = mainPrice * payBottles;
+    if (cItem.type === 'standard') {
+      if (isGiftSelf) {
+        originalValue = mainPrice * (payBottles + giftQty);
+      } else if (isGiftOther) {
+        originalValue = (mainPrice * payBottles) + (giftProductPrice * giftQty);
+      }
+    } else if (cItem.type === 'mix') {
+      const cfg = cItem.mixConfig;
+      const itemsValue = cfg?.items?.reduce((acc: number, item: any) => {
+        const p = comboProductsMap?.get(item.productId);
+        const pPrice = p?.salePrice || p?.price || 0;
+        return acc + (pPrice * item.quantity);
+      }, 0) || 0;
+      
+      originalValue = (mainPrice * payBottles) + itemsValue;
+      if (isGiftOther) {
+        originalValue += (giftProductPrice * giftQty);
+      }
+    }
+    
+    let comboPrice = cItem.price || 0;
+    if (!comboPrice) {
+      if (cItem.type === 'standard') {
+        const cfg = cItem.standardConfig;
+        if (cfg?.rewardType === 'discount_percent') {
+          const pct = cfg.rewardValue || 0;
+          comboPrice = (mainPrice * payBottles) * (1 - pct / 100);
+        } else if (cfg?.rewardType === 'discount_amount') {
+          const amt = cfg.rewardValue || 0;
+          comboPrice = (mainPrice * payBottles) - amt;
+        } else if (cfg?.rewardType === 'gift_self') {
+          comboPrice = mainPrice * payBottles;
+        } else if (cfg?.rewardType === 'gift_other') {
+          comboPrice = mainPrice * payBottles;
+        }
+      } else if (cItem.type === 'mix') {
+        const cfg = cItem.mixConfig;
+        const itemsValue = cfg?.items?.reduce((acc: number, item: any) => {
+          const p = comboProductsMap?.get(item.productId);
+          const pPrice = p?.salePrice || p?.price || 0;
+          return acc + (pPrice * item.quantity);
+        }, 0) || 0;
+        const baseMixPrice = (mainPrice * payBottles) + itemsValue;
+        
+        if (cfg?.rewardType === 'discount_percent') {
+          const pct = cfg.rewardValue || 0;
+          comboPrice = baseMixPrice * (1 - pct / 100);
+        } else if (cfg?.rewardType === 'discount_amount') {
+          const amt = cfg.rewardValue || 0;
+          comboPrice = baseMixPrice - amt;
+        } else if (cfg?.rewardType === 'gift_other') {
+          comboPrice = baseMixPrice;
+        }
+      }
+    }
+    
+    let savingAmount = originalValue - comboPrice;
+    if (savingAmount < 0) savingAmount = 0;
+    
+    const avgPricePerBottle = totalBottles > 0 ? Math.round(comboPrice / totalBottles) : 0;
+    
+    return {
+      comboPrice,
+      savingAmount,
+      avgPricePerBottle,
+      totalBottles
+    };
+  };
 
   // Lấy các attributes thật của sản phẩm để render
   const rawAttributes = productAttributesMap && productAttributesMap.has(product._id)
@@ -2948,7 +3137,7 @@ function PremiumStyle({
                     visibleSlots={4}
                     tokens={tokens}
                     thumbnailAspectRatio={imageFrame.thumbnailAspectRatio}
-                    itemClassName="w-full rounded-lg"
+                    itemClassName="w-20 rounded-lg"
                     fallbackSrc={productImagePlaceholder}
                   />
                 </div>
@@ -2958,7 +3147,13 @@ function PremiumStyle({
               <div className="flex-1">
                 <div className={`${imageFrame.frameWidthClassName} group/carousel relative`}>
                   <div
-                    className={`relative ${attachImageHighlights ? 'rounded-t-2xl rounded-b-none' : 'rounded-2xl'} overflow-hidden ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                    className={cn(
+                      "relative overflow-hidden",
+                      highlightsEnabled && highlights && highlights.length > 0 && highlightsPosition !== 'info_column' && highlightsSpacing === 'none'
+                        ? (cornerRadius === 'none' ? 'rounded-none' : cornerRadius === 'sm' ? 'rounded-t-lg rounded-b-none' : 'rounded-t-2xl rounded-b-none')
+                        : getRadiusClass(cornerRadius, 'image'),
+                      canOpenLightbox ? 'cursor-zoom-in' : ''
+                    )}
                     style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                     role={canOpenLightbox ? 'button' : undefined}
                     tabIndex={canOpenLightbox ? 0 : -1}
@@ -3008,18 +3203,17 @@ function PremiumStyle({
                       <span className="absolute top-3 left-3 px-3 py-1.5 text-sm font-bold rounded-lg z-30" style={{ backgroundColor: discountBadgeColors.bg, color: discountBadgeColors.text }}>-{discountPercent}%</span>
                     )}
                   </div>
+
+                  {/* Highlights động từ cài đặt dưới ảnh sản phẩm */}
                   {highlightsEnabled && highlights && highlights.length > 0 && highlightsPosition !== 'info_column' && (
-                    <div className={`grid grid-cols-3 gap-2 ${attachImageHighlights ? 'rounded-t-none rounded-b-2xl border-t p-4' : `rounded-xl border-t pt-4 ${getHighlightsSpacingClass(highlightsSpacing)}`} animate-fadeIn`} style={{ borderColor: tokens.divider }}>
-                      {highlights.map((item, index) => {
-                        const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon] || BadgeCheck;
-                        return (
-                          <div key={`${item.icon}-${index}`} className="flex flex-col items-center text-center p-2.5 rounded-2xl" style={{ backgroundColor: tokens.surfaceMuted }}>
-                            <Icon size={20} style={{ color: tokens.primary }} />
-                            <span className="text-[10px] md:text-xs font-semibold mt-1 line-clamp-1" style={{ color: tokens.bodyText }}>{item.text}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <HighlightsGrid
+                      highlights={highlights}
+                      tokens={tokens}
+                      spacing={highlightsSpacing}
+                      layoutStyle="premium"
+                      isSingleImage={images.length <= 1}
+                      position="image_column"
+                    />
                   )}
                 </div>
               </div>
@@ -3041,7 +3235,6 @@ function PremiumStyle({
                 />
               </div>
             )}
-
           </div>
 
           {/* Cột phải: Thông tin sản phẩm */}
@@ -3060,7 +3253,7 @@ function PremiumStyle({
                   )}
                   {stockStatus && <InlineStockBadge label={stockStatus.label} color={stockStatus.color} tokens={tokens} />}
                 </div>
-                <h1 className="text-xl md:text-3xl font-bold" style={{ color: tokens.headingColor }}>{product.name}</h1>
+                <h1 className="text-sm md:text-lg font-bold" style={{ color: '#000000' }}>{product.name}</h1>
               </div>
               <div className="flex gap-2 shrink-0">
                 {showWishlist && (
@@ -3098,7 +3291,7 @@ function PremiumStyle({
             {/* Box Giá Premium sử dụng dynamic brand colors từ Tokens */}
             {showPrice && (
               <div
-                className="rounded-2xl border p-4 relative overflow-hidden"
+                className={cn("border p-4 relative overflow-hidden", getRadiusClass(cornerRadius, 'box'))}
                 style={{
                   backgroundColor: tokens.surfaceMuted,
                   borderColor: tokens.border,
@@ -3109,27 +3302,29 @@ function PremiumStyle({
                     {renderPremiumIcon(priceRightIcon, 120) || <Gift size={120} />}
                   </div>
                 )}
-                <div className="flex items-start gap-3">
-                  {showPriceLeftIcon !== false && (
-                    <div className="p-2 rounded-xl" style={{ backgroundColor: tokens.surface, color: tokens.primary }}>
-                      {renderPremiumIcon(priceLeftIcon, 20) || <Award size={20} />}
-                    </div>
-                  )}
-                  <div className="flex-1 space-y-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: tokens.metaText }}>GIÁ ƯU ĐÃI HÔM NAY</p>
-                    <div className="flex flex-col md:flex-row md:items-baseline gap-1 md:gap-3">
-                      <span className="text-2xl md:text-3xl font-extrabold" style={{ color: tokens.priceColor }}>{priceDisplay.label}</span>
+                <div className="flex items-start gap-3 relative z-10">
+                  <div className="flex-1 grid grid-cols-12 gap-3 items-center">
+                    {/* Cột trái: Giá bán ưu đãi và text Tiết kiệm */}
+                    <div className={cn(
+                      "space-y-1",
+                      showSalePrice && priceDisplay.comparePrice ? "col-span-8 pr-2" : "col-span-12"
+                    )}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: tokens.metaText }}>GIÁ ƯU ĐÃI HÔM NAY ✨</p>
+                      <span className="text-2xl md:text-3xl font-extrabold block leading-tight" style={{ color: tokens.primary }}>{priceDisplay.label}</span>
                       {showSalePrice && priceDisplay.comparePrice && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm line-through italic" style={{ color: tokens.priceOriginalText }}>{formatPrice(priceDisplay.comparePrice)}</span>
-                          <span className="px-1.5 py-0.5 text-[10px] font-bold rounded" style={{ backgroundColor: discountBadgeColors.bg, color: discountBadgeColors.text }}>-{discountPercent}%</span>
-                        </div>
+                        <p className="text-[10px] md:text-xs font-semibold" style={{ color: tokens.primary }}>
+                          Tiết kiệm {formatPrice(priceDisplay.comparePrice - basePrice)} so với giá gốc
+                        </p>
                       )}
                     </div>
+
+                    {/* Cột phải: Giá gốc và badge giảm giá */}
                     {showSalePrice && priceDisplay.comparePrice && (
-                      <p className="text-xs font-semibold" style={{ color: tokens.priceColor }}>
-                        Tiết kiệm {formatPrice(priceDisplay.comparePrice - basePrice)} so với giá gốc
-                      </p>
+                      <div className="col-span-4 pl-3 border-l space-y-1 text-left" style={{ borderColor: tokens.divider || tokens.border }}>
+                        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: tokens.metaText }}>GIÁ GỐC</p>
+                        <span className="text-xs md:text-sm line-through block" style={{ color: tokens.priceOriginalText }}>{formatPrice(priceDisplay.comparePrice)}</span>
+                        <span className="inline-block px-1.5 py-0.5 text-[10px] font-bold rounded text-white" style={{ backgroundColor: discountBadgeColors.bg }}>-{discountPercent}%</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -3150,51 +3345,59 @@ function PremiumStyle({
 
             {/* Box Combo dạng trượt Carousel chuyên nghiệp - DỮ LIỆU THỰC */}
             {enableCombos && product.combos && product.combos.length > 0 && (
-              <div className="space-y-3 relative">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] font-extrabold uppercase tracking-wider animate-pulse" style={{ color: tokens.metaText }}>
-                    ƯU ĐÃI COMBO – MUA NHIỀU, TIẾT KIỆM HƠN
-                  </p>
-                  {product.combos.length > 2 && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => comboApi?.scrollPrev()}
-                        disabled={!canScrollComboPrev}
-                        className="h-6 w-6 rounded-full flex items-center justify-center transition-all opacity-70 hover:opacity-100 disabled:opacity-10 hover:scale-105 active:scale-95 border"
-                        style={{ color: tokens.headingColor, backgroundColor: tokens.surface, borderColor: tokens.border }}
-                      >
-                        <ChevronLeft size={12} strokeWidth={3} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => comboApi?.scrollNext()}
-                        disabled={!canScrollComboNext}
-                        className="h-6 w-6 rounded-full flex items-center justify-center transition-all opacity-70 hover:opacity-100 disabled:opacity-10 hover:scale-105 active:scale-95 border"
-                        style={{ color: tokens.headingColor, backgroundColor: tokens.surface, borderColor: tokens.border }}
-                      >
-                        <ChevronRight size={12} strokeWidth={3} />
-                      </button>
-                    </div>
-                  )}
+              <div
+                className={cn(
+                  "border p-2.5 md:p-3 pt-8 relative mt-6 mb-6",
+                  getRadiusClass(cornerRadius, 'box')
+                )}
+                style={{
+                  borderColor: tokens.border,
+                }}
+              >
+                {/* Badge Header nổi ở góc trái trên */}
+                <div
+                  className="absolute -top-[16px] left-[-1px] px-5 py-2 text-[10px] md:text-xs font-bold text-white shadow-sm flex items-center gap-1.5 z-20"
+                  style={{ 
+                    backgroundColor: brandColor || '#8B0000',
+                    borderRadius: '12px 16px 24px 0px',
+                    lineHeight: '1.2'
+                  }}
+                >
+                  <Gift size={13} className="text-white shrink-0 animate-bounce" />
+                  <span className="tracking-wide font-extrabold uppercase">ƯU ĐÃI COMBO – MUA NHIỀU, TIẾT KIỆM HƠN</span>
                 </div>
 
-                <div className="overflow-hidden py-3 -my-3" ref={comboRef}>
-                  <div className="flex gap-3 pt-3">
+                {/* Các nút điều hướng Carousel ở góc trên bên phải */}
+                {product.combos.length > 2 && (
+                  <div className="absolute -top-3.5 right-4 flex items-center gap-1 z-20">
+                    <button
+                      type="button"
+                      onClick={() => comboApi?.scrollPrev()}
+                      disabled={!canScrollComboPrev}
+                      className="h-6 w-6 rounded-full flex items-center justify-center transition-all opacity-70 hover:opacity-100 disabled:opacity-10 hover:scale-105 active:scale-95 border"
+                      style={{ color: tokens.headingColor, backgroundColor: tokens.surface, borderColor: tokens.border }}
+                    >
+                      <ChevronLeft size={12} strokeWidth={3} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => comboApi?.scrollNext()}
+                      disabled={!canScrollComboNext}
+                      className="h-6 w-6 rounded-full flex items-center justify-center transition-all opacity-70 hover:opacity-100 disabled:opacity-10 hover:scale-105 active:scale-95 border"
+                      style={{ color: tokens.headingColor, backgroundColor: tokens.surface, borderColor: tokens.border }}
+                    >
+                      <ChevronRight size={12} strokeWidth={3} />
+                    </button>
+                  </div>
+                )}
+
+                <div className="overflow-hidden" ref={comboRef}>
+                  <div className="flex gap-2 pt-4 pb-2">
                     {product.combos.map((combo, index) => {
                       const isBestSeller = index === 0; // Combo đầu tiên là bán chạy
                       
-                      let totalBottles = 1;
-                      if (combo.type === 'standard') {
-                        totalBottles = combo.standardConfig?.minQty || 1;
-                      } else if (combo.type === 'mix') {
-                        const mixItemsQty = combo.mixConfig?.items?.reduce((acc: number, item: any) => acc + (item.quantity || 0), 0) || 0;
-                        totalBottles = (combo.mixConfig?.currentProductQty || 1) + mixItemsQty;
-                      } else if (Array.isArray((combo as any).products)) {
-                        totalBottles = (combo as any).products.reduce((acc: number, p: { quantity: number }) => acc + p.quantity, 0);
-                      }
-
-                      const avgPricePerBottle = combo.price ? Math.round(combo.price / totalBottles) : 0;
+                      // Tính toán giá trị combo bằng hàm helper getResolvedComboData
+                      const { comboPrice, savingAmount, avgPricePerBottle, totalBottles } = getResolvedComboData(combo);
                       
                       // Sửa lỗi gạch ngang thô
                       const rawComboName = typeof combo.name === 'string' ? combo.name.trim() : '';
@@ -3211,69 +3414,136 @@ function PremiumStyle({
                         }
                       };
 
+                      const isSelected = combo.type === 'mix' ? activeMixCombo?._id === combo._id : quantity === totalBottles;
+                      const comboColor = isBestSeller ? (brandColor || '#8B0000') : '#c98500';
+                      const normalizedComboName = cleanName.replace(/\s+/g, ' ').trim();
+                      const toSubtitleLabel = (value: string) => value.toLowerCase().replace(/^./u, (char) => char.toUpperCase());
+                      const buyGiftMatch = normalizedComboName.match(/^(MUA\s+\d+\s+TẶNG\s+\d+)(?:\s+(.+))?$/i);
+                      const buyBottleMatch = normalizedComboName.match(/^(MUA\s+\d+\s+CHAI)(?:\s+(.+))?$/i);
+                      const comboTitle = (buyGiftMatch?.[1] ?? buyBottleMatch?.[1] ?? normalizedComboName).toUpperCase();
+                      const subtitleFromName = buyGiftMatch?.[2] ?? buyBottleMatch?.[2];
+                      const comboSubtitle = typeof combo.description === 'string' && combo.description.trim()
+                        ? combo.description.trim()
+                        : subtitleFromName
+                          ? toSubtitleLabel(subtitleFromName)
+                          : combo.type === 'mix'
+                            ? 'Kết hợp đặc biệt'
+                            : 'Ưu đãi combo';
+
                       return (
                         <div
                           key={combo.id || index}
                           onClick={handleComboClick}
                           className={cn(
-                            "rounded-xl p-4 flex flex-col justify-between transition-all cursor-pointer relative border select-none shrink-0 flex-grow-0",
-                            isBestSeller ? "border-2" : "border",
-                            (product.combos?.length ?? 0) > 2 ? "w-[260px] md:w-[290px]" : "flex-1 min-w-[210px]"
+                            "flex flex-col justify-between transition-all cursor-pointer relative select-none shrink-0 flex-grow-0 border-2 hover:scale-[1.01] active:scale-[0.99]",
+                            cornerRadius === 'none' ? 'rounded-none' : cornerRadius === 'sm' ? 'rounded-lg' : 'rounded-xl',
+                            "w-[calc(50%-4px)] md:w-[calc(50%-6px)]"
                           )}
                           style={{
                             backgroundColor: tokens.surface,
-                            borderColor: isBestSeller ? brandColor : tokens.border,
+                            borderColor: comboColor,
+                            boxShadow: isSelected
+                              ? `0 12px 28px ${comboColor}18`
+                              : '0 10px 24px rgba(15, 23, 42, 0.06)'
                           }}
                         >
+                          {/* ★ BÁN CHẠY badge lệch lên trên bên phải */}
                           {isBestSeller && (
-                            <div className="absolute -top-2.5 right-2 px-1.5 py-0.5 rounded text-[8px] font-bold text-white flex items-center gap-0.5 z-10" style={{ backgroundColor: '#eab308' }}>
-                              ★ BÁN CHẠY
+                            <div 
+                              className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 text-[9px] md:text-[11px] font-black text-white flex items-center gap-1 z-10 shadow-sm uppercase tracking-wider whitespace-nowrap"
+                              style={{ 
+                                backgroundColor: comboColor,
+                                borderRadius: '999px',
+                                lineHeight: '1.2'
+                              }}
+                            >
+                              <Star className="h-2.5 w-2.5 md:h-3 md:w-3 fill-current" />
+                              BÁN CHẠY NHẤT
                             </div>
                           )}
-                          <div>
+
+                          {isSelected && (
                             <div
-                              className="inline-block px-2.5 py-0.5 text-[11px] font-bold rounded-md text-white leading-none uppercase"
-                              style={{ backgroundColor: isBestSeller ? '#eab308' : brandColor }}
+                              className="absolute top-2 right-2 z-20 h-5 w-5 md:h-6 md:w-6 rounded-full flex items-center justify-center text-white shadow-sm"
+                              style={{ backgroundColor: comboColor }}
+                              aria-hidden="true"
                             >
-                              {cleanName}
+                              <CheckCircle2 className="h-3.5 w-3.5 md:h-4 md:w-4" strokeWidth={3} />
                             </div>
-                            {combo.description && (
-                              <p className="text-[10px] mt-1.5 line-clamp-1" style={{ color: tokens.metaText }}>
-                                {combo.description}
-                              </p>
-                            )}
-                            <p className="text-sm font-bold mt-2" style={{ color: tokens.headingColor }}>
-                              {combo.price ? formatPrice(combo.price) : 'Liên hệ'}
+                          )}
+
+                          <div className="pt-6 pb-3 px-2 md:pt-6 md:pb-3 md:px-2.5 flex flex-col items-center justify-center relative flex-1 text-center min-w-0">
+                            <h3 className="text-[12px] xs:text-[13px] md:text-[15px] font-black uppercase tracking-wide leading-tight text-slate-900 dark:text-white">
+                              {comboTitle}
+                            </h3>
+                            <p className="mt-0.5 text-[9px] xs:text-[10px] md:text-[11px] leading-snug font-medium text-slate-500 line-clamp-1">
+                              {comboSubtitle}
                             </p>
-                            {avgPricePerBottle > 0 && (
-                              <p className="text-[10px] font-semibold" style={{ color: tokens.priceColor }}>
-                                Chi ~{formatPrice(avgPricePerBottle)} / chai
-                              </p>
-                            )}
-                          </div>
-                          {combo.price && (
-                            <div className="border-t pt-2 mt-3 flex items-center justify-between text-[9px] font-medium" style={{ borderColor: tokens.divider, color: tokens.priceColor }}>
-                              <span className="flex items-center gap-1">
-                                <Gift size={10} />
-                                <span>{combo.type === 'mix' ? 'Xem chi tiết bộ sản phẩm' : 'Tiết kiệm nhiều hơn'}</span>
+
+                            <div className="mt-3 w-full border-t pt-3" style={{ borderColor: tokens.divider }}>
+                              <span className="text-[18px] xs:text-[20px] md:text-[23px] font-black tracking-tight leading-none whitespace-nowrap" style={{ color: comboColor }}>
+                                {comboPrice ? formatPrice(comboPrice) : 'Liên hệ'}
                               </span>
-                              {combo.type === 'mix' && <ChevronRight size={10} />}
-                            </div>
-                          )}
-                          {combo.type !== 'mix' && (
-                            <div
-                              className={cn(
-                                "absolute right-2 top-2 h-4 w-4 rounded-full flex items-center justify-center",
-                                isBestSeller ? "border-2" : "border"
+
+                              {avgPricePerBottle > 0 && (
+                                <div 
+                                  className="mx-auto mt-2 inline-flex max-w-full items-center justify-center rounded-md px-2 py-0.5 text-[8.5px] xs:text-[9px] md:text-[10px] font-bold whitespace-nowrap"
+                                  style={{ 
+                                    backgroundColor: `${comboColor}10`,
+                                    color: comboColor
+                                  }}
+                                >
+                                  Chỉ <span className="mx-1 font-black">{formatPrice(avgPricePerBottle)}</span> / chai
+                                </div>
                               )}
-                              style={{ borderColor: isBestSeller ? brandColor : tokens.border }}
-                            >
-                              <div
-                                className="h-2.5 w-2.5 rounded-full"
-                                style={{ backgroundColor: quantity === totalBottles ? brandColor : 'transparent' }}
-                              />
                             </div>
-                          )}
+                          </div>
+
+                          {/* Footer của Card (Phần dưới: Tiết kiệm) */}
+                          <div 
+                            className={cn(
+                              "px-2 py-2 md:px-2 md:py-2 border-t text-[9px] xs:text-[10px] font-medium",
+                              cornerRadius === 'none' ? 'rounded-b-none' : cornerRadius === 'sm' ? 'rounded-b-[6px]' : 'rounded-b-[10px]'
+                            )} 
+                            style={{ 
+                              borderColor: `${comboColor}14`,
+                              backgroundColor: `${comboColor}08`,
+                              color: tokens.bodyText
+                            }}
+                          >
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-1.5">
+                              <div className="flex items-center justify-center md:justify-start gap-2 md:gap-1.5 min-w-0">
+                                <span className="h-7 w-7 md:h-6 md:w-6 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${comboColor}12` }}>
+                                {isBestSeller ? (
+                                  <PiggyBank className="h-3.5 w-3.5 md:h-3 md:w-3 shrink-0" style={{ color: comboColor }} />
+                                ) : (
+                                  <Gift className="h-3.5 w-3.5 md:h-3 md:w-3 shrink-0" style={{ color: comboColor }} />
+                                )}
+                                </span>
+                                <div className="text-left space-y-0.5 min-w-0">
+                                  <p className="text-[8.5px] md:text-[10px] leading-tight font-medium text-slate-600 dark:text-slate-300">
+                                    Tiết kiệm
+                                  </p>
+                                  <p className="font-extrabold text-[11px] xs:text-[12px] md:text-[12px] leading-tight whitespace-nowrap" style={{ color: comboColor }}>
+                                    {savingAmount > 0 ? formatPrice(savingAmount) : 'nhiều hơn'}
+                                  </p>
+                                  <p className="text-[7.5px] xs:text-[8px] md:text-[10px] opacity-75 leading-none font-medium text-slate-500 whitespace-nowrap">so với mua lẻ</p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleComboClick();
+                                }}
+                                className="h-7 md:h-7 w-full md:w-auto md:min-w-[62px] rounded-full px-3 md:px-2 inline-flex items-center justify-center gap-1 md:gap-0.5 text-[9px] md:text-[10px] font-bold text-white shadow-sm transition-all hover:shadow-md active:scale-95 shrink-0"
+                                style={{ backgroundColor: comboColor }}
+                              >
+                                <span>Chọn</span>
+                                <ChevronRight className="h-3.5 w-3.5 md:h-4 md:w-4" strokeWidth={3} />
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
@@ -3307,7 +3577,8 @@ function PremiumStyle({
                 <div className="flex gap-2">
                   <button
                     className={cn(
-                      "flex-1 py-2 px-2.5 md:py-3.5 md:px-4 rounded-xl font-bold flex items-center justify-center gap-1.5 text-white transition-all hover:shadow-lg hover:scale-[1.01]",
+                      "flex-1 py-2 px-2.5 md:py-3.5 md:px-4 font-bold flex items-center justify-center gap-1.5 text-white transition-all hover:shadow-lg hover:scale-[1.01]",
+                      getRadiusClass(cornerRadius, 'button'),
                       mobileFontSize === 'xs' ? 'text-[10px]' : mobileFontSize === 'sm' ? 'text-xs' : 'text-sm',
                       "md:text-sm"
                     )}
@@ -3325,7 +3596,8 @@ function PremiumStyle({
                   </button>
                   <button
                     className={cn(
-                      "flex-1 py-2 px-2.5 md:py-3.5 md:px-4 rounded-xl font-bold border flex items-center justify-center gap-1.5 transition-all hover:shadow-md hover:scale-[1.01]",
+                      "flex-1 py-2 px-2.5 md:py-3.5 md:px-4 font-bold border flex items-center justify-center gap-1.5 transition-all hover:shadow-md hover:scale-[1.01]",
+                      getRadiusClass(cornerRadius, 'button'),
                       mobileFontSize === 'xs' ? 'text-[10px]' : mobileFontSize === 'sm' ? 'text-xs' : 'text-sm',
                       "md:text-sm"
                     )}
@@ -3344,7 +3616,10 @@ function PremiumStyle({
                 </div>
                 {showAddToCart && (
                   <button
-                    className={`py-3.5 px-8 rounded-xl font-semibold flex items-center justify-center gap-2 border transition-all ${inStock ? 'hover:shadow-lg hover:scale-[1.01]' : 'opacity-50 cursor-not-allowed'}`}
+                    className={cn(
+                      `py-3.5 px-8 font-semibold flex items-center justify-center gap-2 border transition-all ${inStock ? 'hover:shadow-lg hover:scale-[1.01]' : 'opacity-50 cursor-not-allowed'}`,
+                      getRadiusClass(cornerRadius, 'button')
+                    )}
                     style={{
                       borderColor: primaryButtonColors.border,
                       color: primaryButtonColors.text,
@@ -3368,16 +3643,15 @@ function PremiumStyle({
             )}
 
             {highlightsEnabled && highlights && highlights.length > 0 && highlightsPosition === 'info_column' && (
-              <div className={`grid grid-cols-3 gap-2 border-t pt-4 ${getHighlightsSpacingClass(highlightsSpacing)} animate-fadeIn`} style={{ borderColor: tokens.divider }}>
-                {highlights.map((item, index) => {
-                  const Icon = CLASSIC_HIGHLIGHT_ICON_MAP[item.icon] || BadgeCheck;
-                  return (
-                    <div key={`${item.icon}-${index}`} className="flex flex-col items-center text-center p-2.5 rounded-2xl" style={{ backgroundColor: tokens.surfaceMuted }}>
-                      <Icon size={20} style={{ color: tokens.primary }} />
-                      <span className="text-[10px] md:text-xs font-semibold mt-1 line-clamp-1" style={{ color: tokens.bodyText }}>{item.text}</span>
-                    </div>
-                  );
-                })}
+              <div className={`${getHighlightsSpacingClass(highlightsSpacing)}`}>
+                <HighlightsGrid
+                  highlights={highlights}
+                  tokens={tokens}
+                  spacing={highlightsSpacing}
+                  layoutStyle="premium"
+                  isSingleImage={images.length <= 1}
+                  position="info_column"
+                />
               </div>
             )}
           </div>
@@ -3417,7 +3691,7 @@ function PremiumStyle({
           return (
             <div className="border-t pt-6 mt-8" style={{ borderColor: tokens.divider }}>
               <div 
-                className="rounded-2xl py-3 px-2 md:p-5 relative border"
+                className={cn("py-3 px-2 md:p-5 relative border", getRadiusClass(cornerRadius, 'box'))}
                 style={{ 
                   backgroundColor: tokens.surfaceMuted || '#f8fafc',
                   borderColor: tokens.border || '#e2e8f0'
@@ -3608,7 +3882,7 @@ function PremiumStyle({
                   onClick={() => setActiveAttrModal(null)}
                 >
                   <div 
-                    className="rounded-2xl p-6 max-w-sm w-full border text-center relative shadow-2xl"
+                    className={cn("p-6 max-w-sm w-full border text-center relative shadow-2xl", getRadiusClass(cornerRadius, 'box'))}
                     style={{ 
                       backgroundColor: tokens.surface || '#ffffff',
                       borderColor: tokens.border || '#e2e8f0'
@@ -3646,10 +3920,18 @@ function PremiumStyle({
           const bgColor = BANNER_COLOR_MAP[premiumBannerBg] ?? tokens.primary;
           const textColor = BANNER_COLOR_MAP[premiumBannerText] ?? '#ffffff';
           return (
-            <div className="rounded-2xl p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-center mt-8" style={{ backgroundColor: bgColor, color: textColor }}>
+            <div className={cn("p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-center mt-8", getRadiusClass(cornerRadius, 'box'))} style={{ backgroundColor: bgColor, color: textColor }}>
               {premiumBannerItems.map((item, idx) => (
-                <div key={idx} className={`space-y-0.5${idx > 0 ? ' border-l' : ''}`} style={{ borderColor: `${textColor}33` }}>
-                  <p className="text-sm font-extrabold uppercase tracking-wide">{item.title}</p>
+                <div
+                  key={idx}
+                  className={cn(
+                    "space-y-0.5 min-w-0 px-2 md:px-0",
+                    idx % 2 === 1 && "border-l",
+                    idx % 4 !== 0 && "md:border-l"
+                  )}
+                  style={{ borderColor: `${textColor}33` }}
+                >
+                  <p className="min-h-[34px] flex items-center justify-center text-sm font-extrabold uppercase tracking-wide leading-tight text-center">{item.title}</p>
                   <p className="text-[11px] opacity-80">{item.subtitle}</p>
                 </div>
               ))}
@@ -4205,7 +4487,6 @@ function ModernStyle({
   const discountBadgeColors = resolveProductDetailElementColor(accentColors?.discountBadge ?? 'primary', tokens);
   const primaryButtonColors = resolveProductDetailElementColor(accentColors?.primaryButton ?? 'primary', tokens);
   const comboBadgeColors = resolveProductDetailElementColor(accentColors?.comboBadge ?? 'black', tokens);
-  const attachImageHighlights = showHighlights && highlightsPosition === 'image_column' && highlightsSpacing === 'none';
 
   const heroContainerClass = heroStyle === 'full'
     ? 'border rounded-2xl'
@@ -4269,9 +4550,17 @@ function ModernStyle({
             {heroStyle === 'split' ? (
               <div className={`overflow-hidden ${heroContainerClass}`} style={heroContainerStyle}>
                 <div className="grid md:grid-cols-2 gap-3 items-center p-3 md:p-5">
-                  <div className={imageFrame.frameWidthClassName}>
+                  <div className={`${imageFrame.frameWidthClassName} ${
+                    showHighlights && highlightsPosition === 'image_column' && highlightsSpacing === 'none'
+                      ? 'mb-0'
+                      : ''
+                  }`}>
                     <div
-                      className={`relative ${attachImageHighlights ? 'rounded-t-xl rounded-b-none' : 'rounded-xl'} overflow-hidden group/carousel ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                      className={`relative overflow-hidden ${
+                        showHighlights && highlightsPosition === 'image_column' && highlightsSpacing === 'none'
+                          ? 'rounded-t-xl rounded-b-none'
+                          : 'rounded-xl'
+                      } group/carousel ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                       style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                       role={canOpenLightbox ? 'button' : undefined}
                       tabIndex={canOpenLightbox ? 0 : -1}
@@ -4330,15 +4619,16 @@ function ModernStyle({
                         </span>
                       )}
                     </div>
-                    {showHighlights && highlightsPosition === 'image_column' && (
-                      <div className={attachImageHighlights ? '' : getHighlightsSpacingClass(highlightsSpacing)}>
-                        <HighlightsGrid
-                          highlights={highlights}
-                          tokens={tokens}
-                          className={attachImageHighlights ? 'rounded-t-none rounded-b-xl border-t' : 'rounded-xl'}
-                          style={attachImageHighlights ? { borderColor: tokens.divider } : undefined}
-                        />
-                      </div>
+
+                    {showHighlights && highlightsPosition === 'image_column' && (images.length <= 1 || highlightsSpacing === 'none') && (
+                      <HighlightsGrid
+                        highlights={highlights}
+                        tokens={tokens}
+                        spacing={highlightsSpacing}
+                        layoutStyle="modern"
+                        isSingleImage={images.length <= 1}
+                        position="image_column"
+                      />
                     )}
                   </div>
                 </div>
@@ -4346,9 +4636,17 @@ function ModernStyle({
             ) : (
               <div className={`overflow-hidden ${heroContainerClass}`} style={heroContainerStyle}>
                 <div className={heroImageWrapperClass}>
-                  <div className={imageFrame.frameWidthClassName}>
+                  <div className={`${imageFrame.frameWidthClassName} ${
+                    showHighlights && highlightsPosition === 'image_column' && highlightsSpacing === 'none'
+                      ? 'mb-0'
+                      : ''
+                  }`}>
                     <div
-                      className={`relative overflow-hidden ${attachImageHighlights ? 'rounded-t-xl rounded-b-none' : 'rounded-xl'} group/carousel ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                      className={`relative overflow-hidden ${
+                        showHighlights && highlightsPosition === 'image_column' && highlightsSpacing === 'none'
+                          ? 'rounded-t-xl rounded-b-none'
+                          : 'rounded-xl'
+                      } group/carousel ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                       style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                       role={canOpenLightbox ? 'button' : undefined}
                       tabIndex={canOpenLightbox ? 0 : -1}
@@ -4407,15 +4705,16 @@ function ModernStyle({
                         </span>
                       )}
                     </div>
-                    {showHighlights && highlightsPosition === 'image_column' && (
-                      <div className={attachImageHighlights ? '' : getHighlightsSpacingClass(highlightsSpacing)}>
-                        <HighlightsGrid
-                          highlights={highlights}
-                          tokens={tokens}
-                          className={attachImageHighlights ? 'rounded-t-none rounded-b-xl border-t' : 'rounded-xl'}
-                          style={attachImageHighlights ? { borderColor: tokens.divider } : undefined}
-                        />
-                      </div>
+
+                    {showHighlights && highlightsPosition === 'image_column' && (images.length <= 1 || highlightsSpacing === 'none') && (
+                      <HighlightsGrid
+                        highlights={highlights}
+                        tokens={tokens}
+                        spacing={highlightsSpacing}
+                        layoutStyle="modern"
+                        isSingleImage={images.length <= 1}
+                        position="image_column"
+                      />
                     )}
                   </div>
                 </div>
@@ -4438,6 +4737,18 @@ function ModernStyle({
                   />
                 </div>
               </>
+            )}
+            {showHighlights && highlightsPosition === 'image_column' && !(images.length <= 1 || highlightsSpacing === 'none') && (
+              <div className={imageFrame.frameWidthClassName}>
+                <HighlightsGrid
+                  highlights={highlights}
+                  tokens={tokens}
+                  spacing={highlightsSpacing}
+                  layoutStyle="modern"
+                  isSingleImage={images.length <= 1}
+                  position="image_column"
+                />
+              </div>
             )}
           </div>
 
@@ -4596,8 +4907,15 @@ function ModernStyle({
             )}
 
             {showHighlights && highlightsPosition !== 'image_column' && (
-              <div className={`${getHighlightsSpacingClass(highlightsSpacing)} mb-6 animate-fadeIn`}>
-                <HighlightsGrid highlights={highlights} tokens={tokens} />
+              <div className={`${getHighlightsSpacingClass(highlightsSpacing)} mb-6`}>
+                <HighlightsGrid
+                  highlights={highlights}
+                  tokens={tokens}
+                  spacing={highlightsSpacing}
+                  layoutStyle="modern"
+                  isSingleImage={images.length <= 1}
+                  position="info_column"
+                />
               </div>
             )}
           </div>
@@ -4904,7 +5222,6 @@ function MinimalStyle({
   const primaryButtonColors = resolveProductDetailElementColor(accentColors?.primaryButton ?? 'primary', tokens);
   const comboBadgeColors = resolveProductDetailElementColor(accentColors?.comboBadge ?? 'black', tokens);
   const canOpenLightbox = enableImageLightbox && images.length > 0;
-  const attachImageHighlights = showHighlights && highlightsPosition === 'image_column' && highlightsSpacing === 'none';
 
   const handleOpenLightbox = () => {
     if (!canOpenLightbox) {
@@ -4990,10 +5307,18 @@ function MinimalStyle({
                   </div>
                 )}
 
-                <div className={`flex-1 ${imageFrame.frameWidthClassName}`}>
+                <div className={`flex-1 ${imageFrame.frameWidthClassName} ${
+                  showHighlights && highlightsPosition === 'image_column' && highlightsSpacing === 'none'
+                    ? 'mb-0'
+                    : ''
+                }`}>
                   <div
                     ref={mainImageRef}
-                    className={`relative w-full ${attachImageHighlights ? 'rounded-t-sm rounded-b-none' : 'rounded-sm'} overflow-hidden group/carousel ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
+                    className={`relative w-full overflow-hidden ${
+                      showHighlights && highlightsPosition === 'image_column' && highlightsSpacing === 'none'
+                        ? 'rounded-t-sm rounded-b-none'
+                        : 'rounded-sm'
+                    } group/carousel ${canOpenLightbox ? 'cursor-zoom-in' : ''}`.trim()}
                     style={{ ...mainImageFrameStyle, backgroundColor: tokens.surfaceMuted }}
                     role={canOpenLightbox ? 'button' : undefined}
                     tabIndex={canOpenLightbox ? 0 : -1}
@@ -5052,15 +5377,16 @@ function MinimalStyle({
                       </span>
                     )}
                   </div>
+
                   {showHighlights && highlightsPosition === 'image_column' && (
-                    <div className={attachImageHighlights ? '' : `${getHighlightsSpacingClass(highlightsSpacing)} w-full`}>
-                      <HighlightsGrid
-                        highlights={highlights}
-                        tokens={tokens}
-                        className={attachImageHighlights ? 'rounded-t-none rounded-b-sm border-t' : 'rounded-xl'}
-                        style={attachImageHighlights ? { borderColor: tokens.divider } : undefined}
-                      />
-                    </div>
+                    <HighlightsGrid
+                      highlights={highlights}
+                      tokens={tokens}
+                      spacing={highlightsSpacing}
+                      layoutStyle="minimal"
+                      isSingleImage={images.length <= 1}
+                      position="image_column"
+                    />
                   )}
                 </div>
               </div>
@@ -5195,8 +5521,15 @@ function MinimalStyle({
             )}
 
             {showHighlights && highlightsPosition !== 'image_column' && (
-              <div className={`${getHighlightsSpacingClass(highlightsSpacing)} mb-6 animate-fadeIn`}>
-                <HighlightsGrid highlights={highlights} tokens={tokens} />
+              <div className={`${getHighlightsSpacingClass(highlightsSpacing)} mb-6`}>
+                <HighlightsGrid
+                  highlights={highlights}
+                  tokens={tokens}
+                  spacing={highlightsSpacing}
+                  layoutStyle="minimal"
+                  isSingleImage={images.length <= 1}
+                  position="info_column"
+                />
               </div>
             )}
           </div>

@@ -685,7 +685,7 @@ function UsersTable({
                     )}
                     {showActions && (
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-1">
                           {canEdit && (
                             <Link href={`/admin/users/${user._id}/edit`}><Button variant="ghost" size="icon"><Edit size={16}/></Button></Link>
                           )}

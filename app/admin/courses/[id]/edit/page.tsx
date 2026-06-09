@@ -16,6 +16,7 @@ import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/co
 import { COURSE_LEVEL_OPTIONS, parseCourseLevel, type CourseLevel } from '@/lib/courses/labels';
 import { stripHtml, truncateText } from '@/lib/seo';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, cn } from '@/app/admin/components/ui';
+import { CopyableInput } from '@/app/admin/components/CopyTextButton';
 import { ImageUploader } from '@/app/admin/components/ImageUploader';
 import { LexicalEditor } from '@/app/admin/components/LexicalEditor';
 import { CourseCurriculumEditor } from '@/app/admin/courses/components/CourseCurriculumEditor';
@@ -507,7 +508,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
                 <CardContent className="space-y-4 p-6">
                   <div className="space-y-2">
                     <Label>Tiêu đề <span className="text-red-500">*</span></Label>
-                    <Input value={title} onChange={handleTitleChange} required />
+                    <CopyableInput value={title} onChange={handleTitleChange} required copyLabel="tiêu đề" />
                   </div>
                   <div className="space-y-2">
                     <Label>Slug</Label>

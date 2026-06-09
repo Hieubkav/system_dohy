@@ -303,7 +303,7 @@ export function CourseStudentsPanel({ courseId, showCourseColumn = false }: Cour
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(student)} title="Chỉnh sửa trạng thái">
                         <Edit size={16} />
                       </Button>

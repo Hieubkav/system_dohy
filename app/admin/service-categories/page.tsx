@@ -8,9 +8,12 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { Edit, FolderTree, Loader2, Plus, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui';
-import { BulkActionBar, ColumnToggle, SelectCheckbox, SortableHeader, useSortableData } from '../components/TableUtilities';
+import { AdminDragHandle, buildOrderUpdates, BulkActionBar, ColumnToggle, getReorderedItems, SelectCheckbox, SortableHeader, SortableTableRow, useAdminDndSensors, useSortableData } from '../components/TableUtilities';
 import { ModuleGuard } from '../components/ModuleGuard';
 import { DeleteConfirmDialog } from '../components/DeleteConfirmDialog';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 export default function ServiceCategoriesListPage() {
   return (
@@ -24,14 +27,16 @@ function ServiceCategoriesContent() {
   const categoriesData = useQuery(api.serviceCategories.listAll, {});
   const servicesData = useQuery(api.services.listAll, {});
   const deleteCategory = useMutation(api.serviceCategories.remove);
+  const reorderCategories = useMutation(api.serviceCategories.reorder);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: null });
-  const [visibleColumns, setVisibleColumns] = useState(['select', 'name', 'slug', 'count', 'status', 'actions']);
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: 'order' });
+  const [visibleColumns, setVisibleColumns] = useState(['select', 'drag', 'name', 'slug', 'count', 'status', 'actions']);
   const [selectedIds, setSelectedIds] = useState<Id<"serviceCategories">[]>([]);
   const [deleteTargetId, setDeleteTargetId] = useState<Id<"serviceCategories"> | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+  const dndSensors = useAdminDndSensors();
 
   const deleteInfo = useQuery(
     api.serviceCategories.getDeleteInfo,
@@ -56,12 +61,17 @@ function ServiceCategoriesContent() {
 
   const columns = [
     { key: 'select', label: 'Chọn' },
+    { key: 'drag', label: 'Kéo', required: true },
     { key: 'name', label: 'Tên danh mục', required: true },
     { key: 'slug', label: 'Slug' },
     { key: 'count', label: 'Số dịch vụ' },
     { key: 'status', label: 'Trạng thái' },
     { key: 'actions', label: 'Hành động', required: true }
   ];
+  const resolvedVisibleColumns = Array.from(new Set([
+    ...columns.filter(c => c.required).map(c => c.key),
+    ...visibleColumns.filter(key => columns.some(col => col.key === key)),
+  ]));
 
   const handleSort = (key: string) => {
     setSortConfig(prev => ({ direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc', key }));
@@ -80,6 +90,7 @@ function ServiceCategoriesContent() {
   }, [categories, searchTerm]);
 
   const sortedData = useSortableData(filteredData, sortConfig);
+  const isReorderEnabled = !searchTerm.trim() && (sortConfig.key === null || sortConfig.key === 'order');
 
   const toggleSelectAll = () =>{  setSelectedIds(selectedIds.length === sortedData.length ? [] : sortedData.map(item => item.id as Id<"serviceCategories">)); };
   const toggleSelectItem = (id: Id<"serviceCategories">) =>{  setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); };
@@ -115,6 +126,27 @@ function ServiceCategoriesContent() {
       } catch {
         toast.error('Không thể xóa danh mục');
       }
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    if (!isReorderEnabled) {return;}
+    const reordered = getReorderedItems(sortedData, event.active.id, event.over?.id, item => item.id);
+    if (!reordered) {return;}
+
+    try {
+      await reorderCategories({
+        items: buildOrderUpdates(
+          reordered,
+          sortedData.map(item => item.order),
+          item => item.id as Id<"serviceCategories">,
+          (_item, index) => index
+        ),
+      });
+      setSortConfig({ direction: 'asc', key: 'order' });
+      toast.success('Đã cập nhật thứ tự danh mục');
+    } catch {
+      toast.error('Không thể cập nhật thứ tự danh mục');
     }
   };
 
@@ -159,56 +191,75 @@ function ServiceCategoriesContent() {
                 <Input placeholder="Tìm kiếm danh mục..." className="pl-9" value={searchTerm} onChange={(e) =>{  setSearchTerm(e.target.value); }} />
               </div>
             </div>
-            <ColumnToggle columns={columns} visibleColumns={visibleColumns} onToggle={toggleColumn} />
+            <ColumnToggle columns={columns} visibleColumns={resolvedVisibleColumns} onToggle={toggleColumn} />
           </div>
+          {!isReorderEnabled && (
+            <div className="px-4 py-3 text-xs text-slate-500 border-b border-slate-100 dark:border-slate-800">
+              Tắt tìm kiếm và quay về thứ tự mặc định để kéo thả đổi vị trí.
+            </div>
+          )}
+          <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <Table>
             <TableHeader>
               <TableRow>
-                {visibleColumns.includes('select') && (
+                {resolvedVisibleColumns.includes('select') && (
                   <TableHead className="w-[40px]">
                     <SelectCheckbox checked={selectedIds.length === sortedData.length && sortedData.length > 0} onChange={toggleSelectAll} indeterminate={selectedIds.length > 0 && selectedIds.length < sortedData.length} />
                   </TableHead>
                 )}
-                {visibleColumns.includes('name') && <SortableHeader label="Tên danh mục" sortKey="name" sortConfig={sortConfig} onSort={handleSort} />}
-                {visibleColumns.includes('slug') && <SortableHeader label="Slug" sortKey="slug" sortConfig={sortConfig} onSort={handleSort} />}
-                {visibleColumns.includes('count') && <SortableHeader label="Số dịch vụ" sortKey="count" sortConfig={sortConfig} onSort={handleSort} className="text-center" />}
-                {visibleColumns.includes('status') && <SortableHeader label="Trạng thái" sortKey="active" sortConfig={sortConfig} onSort={handleSort} />}
-                {visibleColumns.includes('actions') && <TableHead className="text-right">Hành động</TableHead>}
+                {resolvedVisibleColumns.includes('drag') && <TableHead className="w-[40px]" />}
+                {resolvedVisibleColumns.includes('name') && <SortableHeader label="Tên danh mục" sortKey="name" sortConfig={sortConfig} onSort={handleSort} />}
+                {resolvedVisibleColumns.includes('slug') && <SortableHeader label="Slug" sortKey="slug" sortConfig={sortConfig} onSort={handleSort} />}
+                {resolvedVisibleColumns.includes('count') && <SortableHeader label="Số dịch vụ" sortKey="count" sortConfig={sortConfig} onSort={handleSort} className="text-center" />}
+                {resolvedVisibleColumns.includes('status') && <SortableHeader label="Trạng thái" sortKey="active" sortConfig={sortConfig} onSort={handleSort} />}
+                {resolvedVisibleColumns.includes('actions') && <TableHead className="text-right">Hành động</TableHead>}
               </TableRow>
             </TableHeader>
+            <SortableContext items={sortedData.map(item => item.id)} strategy={verticalListSortingStrategy}>
             <TableBody>
               {sortedData.map(cat => (
-                <TableRow key={cat.id} className={selectedIds.includes(cat.id) ? 'bg-teal-500/5' : ''}>
-                  {visibleColumns.includes('select') && (
+                <SortableTableRow key={cat.id} id={cat.id} disabled={!isReorderEnabled} selected={selectedIds.includes(cat.id)} selectedClassName="bg-teal-500/5">
+                  {({ attributes, disabled, listeners }) => (
+                    <>
+                  {resolvedVisibleColumns.includes('select') && (
                     <TableCell><SelectCheckbox checked={selectedIds.includes(cat.id)} onChange={() =>{  toggleSelectItem(cat.id); }} /></TableCell>
                   )}
-                  {visibleColumns.includes('name') && <TableCell className="font-medium">{cat.name}</TableCell>}
-                  {visibleColumns.includes('slug') && <TableCell className="text-slate-500 font-mono text-sm">{cat.slug}</TableCell>}
-                  {visibleColumns.includes('count') && <TableCell className="text-center"><Badge variant="secondary">{cat.count}</Badge></TableCell>}
-                  {visibleColumns.includes('status') && (
-                    <TableCell>
-                      <Badge variant={cat.active ? 'default' : 'secondary'}>{cat.active ? 'Hoạt động' : 'Ẩn'}</Badge>
+                  {resolvedVisibleColumns.includes('drag') && (
+                    <TableCell className="w-[40px]">
+                      <AdminDragHandle attributes={attributes} disabled={disabled} listeners={listeners} />
                     </TableCell>
                   )}
-                  {visibleColumns.includes('actions') && (
+                  {resolvedVisibleColumns.includes('name') && <TableCell className="font-medium">{cat.name}</TableCell>}
+                  {resolvedVisibleColumns.includes('slug') && <TableCell className="text-slate-500 font-mono text-sm">{cat.slug}</TableCell>}
+                  {resolvedVisibleColumns.includes('count') && <TableCell className="text-center"><Badge variant="secondary">{cat.count}</Badge></TableCell>}
+                  {resolvedVisibleColumns.includes('status') && (
+                    <TableCell>
+                      <Badge variant={cat.active ? 'default' : 'secondary'}>{cat.active ? 'Hiện' : 'Ẩn'}</Badge>
+                    </TableCell>
+                  )}
+                  {resolvedVisibleColumns.includes('actions') && (
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1">
                         <Link href={`/admin/service-categories/${cat.id}/edit`}><Button variant="ghost" size="icon"><Edit size={16}/></Button></Link>
                         <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={ async () => handleDelete(cat.id as Id<"serviceCategories">)}><Trash2 size={16}/></Button>
                       </div>
                     </TableCell>
                   )}
-                </TableRow>
+                    </>
+                  )}
+                </SortableTableRow>
               ))}
               {sortedData.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={visibleColumns.length} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={resolvedVisibleColumns.length} className="text-center py-8 text-slate-500">
                     {searchTerm ? 'Không tìm thấy kết quả phù hợp' : 'Chưa có danh mục nào'}
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
+            </SortableContext>
           </Table>
+          </DndContext>
           {sortedData.length > 0 && (
             <div className="p-4 border-t border-slate-100 dark:border-slate-800 text-sm text-slate-500">
               Hiển thị {sortedData.length} / {categories.length} danh mục

@@ -17,6 +17,7 @@ import { ResourceFilterTagsInput } from '@/app/admin/components/ResourceFilterTa
 import { stripHtml, truncateText } from '@/lib/seo';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../components/ui';
+import { CopyableInput } from '../../components/CopyTextButton';
 
 const MODULE_KEY = 'resources';
 
@@ -162,7 +163,7 @@ export default function ResourceCreatePage() {
               <CardContent className="space-y-4 p-6">
                 <div className="space-y-2">
                   <Label>Tiêu đề <span className="text-red-500">*</span></Label>
-                  <Input value={title} onChange={handleTitleChange} required placeholder="Nhập tiêu đề tài nguyên..." />
+                  <CopyableInput value={title} onChange={handleTitleChange} required placeholder="Nhập tiêu đề tài nguyên..." copyLabel="tiêu đề" />
                 </div>
                 <div className="space-y-2">
                   <Label>Slug</Label>
