@@ -1129,7 +1129,9 @@ const renderKanban = ({
                 className="flex items-start gap-2.5 p-2.5 border rounded-sm transition-all duration-200 group border-l-[3px]"
                 style={{
                   backgroundColor: isDarkBg ? '#18181b' : '#ffffff', // Nền xám sẫm đục giúp card nổi bật trên nền đen
-                  borderColor: isDarkBg ? '#27272a' : '#e4e4e7',
+                  borderTopColor: isDarkBg ? '#27272a' : '#e4e4e7',
+                  borderRightColor: isDarkBg ? '#27272a' : '#e4e4e7',
+                  borderBottomColor: isDarkBg ? '#27272a' : '#e4e4e7',
                   borderLeftColor: tokens.primary, // Viền trái tag mang màu thương hiệu
                 }}
               >
