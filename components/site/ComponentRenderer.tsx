@@ -393,7 +393,15 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
     }
     case 'Marquee': {
       return wrapWithFont(
-        <MarqueeSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <MarqueeSection
+          config={config}
+          brandColor={resolvedColors.primary}
+          secondary={resolvedColors.secondary}
+          mode={resolvedColors.mode}
+          title={title}
+          fontStyle={fontStyle}
+          fontClassName="font-active"
+        />
       );
     }
     case 'Footer': {
@@ -6187,7 +6195,17 @@ function FooterSection({
 }
 
 // ============ MARQUEE SECTION ============
-function MarqueeSection({ config, brandColor, secondary, mode, title }: { config: Record<string, unknown>; brandColor: string; secondary: string; mode: 'single' | 'dual'; title: string }) {
+function MarqueeSection({
+  config, brandColor, secondary, mode, title, fontStyle, fontClassName
+}: {
+  config: Record<string, unknown>;
+  brandColor: string;
+  secondary: string;
+  mode: 'single' | 'dual';
+  title: string;
+  fontStyle?: React.CSSProperties;
+  fontClassName?: string;
+}) {
   const marqueeMode: MarqueeBrandMode = mode === 'single' ? 'single' : 'dual';
   const tokens = getMarqueeSectionColors({ primary: brandColor, secondary, mode: marqueeMode });
   const rawItems = Array.isArray(config.items) ? config.items : [];
@@ -6202,6 +6220,7 @@ function MarqueeSection({ config, brandColor, secondary, mode, title }: { config
   const spacing = normalizeMarqueeSpacing(headerConfig.spacing, config.noVerticalMargin);
   const cornerRadius = normalizeMarqueeCornerRadius(config.cornerRadius, config.noBorderRadius);
 
+
   return (
     <MarqueeSectionShared
       items={items}
@@ -6215,6 +6234,8 @@ function MarqueeSection({ config, brandColor, secondary, mode, title }: { config
       mode={marqueeMode}
       title={title}
       context="site"
+      fontStyle={fontStyle}
+      fontClassName={fontClassName}
       hideHeader={headerConfig.hideHeader}
       showTitle={headerConfig.showTitle}
       showSubtitle={headerConfig.showSubtitle}
