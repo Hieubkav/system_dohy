@@ -150,6 +150,17 @@ const GROUP_HOVER_COLOR: Record<string, string> = {
 export default function ExperiencesPage() {
   const { t } = useI18n();
   const [activeMainTab, setActiveMainTab] = useState<'hub' | 'layout_config' | 'dark_mode'>('hub');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab === 'layout_config' || tab === 'dark_mode') {
+        setActiveMainTab(tab);
+      }
+    }
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [activeGroup, setActiveGroup] = useState<ExperienceGroup>(null);
