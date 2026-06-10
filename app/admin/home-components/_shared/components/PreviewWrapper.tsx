@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Eye, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { Eye, Monitor, Smartphone, Tablet, Sun, Moon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -42,6 +42,7 @@ export const PreviewWrapper = ({
 }) => {
   const pathname = usePathname();
   const config = useQuery(api.homeComponentSystemConfig.getConfig);
+  const [isDark, setIsDark] = React.useState(false);
 
   const detectedType = React.useMemo(() => {
     if (!pathname) return null;
@@ -76,24 +77,43 @@ export const PreviewWrapper = ({
               ))}
             </div>
           </div>
-          <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-1 shrink-0">
-            {devices.map((d) => (
-              <button key={d.id} type="button" onClick={() =>{  setDevice(d.id); }} title={d.label}
-                className={cn("p-1.5 rounded-md transition-all",
-                  device === d.id ? "bg-white dark:bg-slate-700 shadow-sm" : "text-slate-400 hover:text-slate-600")}>
-                <d.icon size={16} />
-              </button>
-            ))}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1 shrink-0 gap-1">
+            <div className="flex">
+              {devices.map((d) => (
+                <button key={d.id} type="button" onClick={() =>{  setDevice(d.id); }} title={d.label}
+                  className={cn("p-1.5 rounded-md transition-all",
+                    device === d.id ? "bg-white dark:bg-slate-700 shadow-sm" : "text-slate-400 hover:text-slate-600")}>
+                  <d.icon size={16} />
+                </button>
+              ))}
+            </div>
+            <div className="w-[1px] h-5 bg-slate-200 dark:bg-slate-700 self-center mx-1" />
+            <button
+              type="button"
+              onClick={() => setIsDark(!isDark)}
+              title={isDark ? "Chuyển sang chế độ Sáng" : "Chuyển sang chế độ Tối"}
+              className={cn(
+                "p-1.5 rounded-md transition-all",
+                isDark ? "bg-slate-700 text-amber-400" : "text-slate-500 hover:bg-white hover:text-slate-700 shadow-sm"
+              )}
+            >
+              {isDark ? <Sun size={16} /> : <Moon size={16} />}
+            </button>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         {/* Preview width only shrinks this frame; Tailwind sm/md/lg still reads the admin viewport, so preview layout classes must branch from device. */}
         <div
-          className={cn("@container mx-auto transition-all duration-300", deviceWidthClass, fontClassName)}
+          className={cn("@container mx-auto transition-all duration-300", deviceWidthClass, fontClassName, isDark ? "dark bg-slate-950" : "")}
           style={fontStyle}
         >
-          {children}
+          {React.Children.map(children, child => {
+            if (React.isValidElement(child)) {
+              return React.cloneElement(child, { isDark } as any);
+            }
+            return child;
+          })}
         </div>
         {info && (
           <div className="mt-3 text-xs text-slate-500">

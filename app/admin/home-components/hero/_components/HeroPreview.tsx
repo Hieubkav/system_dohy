@@ -13,6 +13,7 @@ import { parseHighlightedHeading } from '@/lib/utils/heroText';
 import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import {
   getBentoColors,
   getAPCATextColor,
@@ -91,6 +92,7 @@ export const HeroPreview = ({
   spacing = DEFAULT_HERO_SPACING,
   fontStyle,
   fontClassName,
+  isDark,
 }: { 
   slides: { id: number; image: string; link: string; mediaType?: 'image' | 'video' }[]; 
   brandColor: string;
@@ -103,6 +105,7 @@ export const HeroPreview = ({
   spacing?: HeroSpacing;
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
+  isDark?: boolean;
 }) => {
   const { device, setDevice } = usePreviewDevice();
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -129,14 +132,14 @@ export const HeroPreview = ({
     secondary,
   });
   const placeholderColors = brandColors.getPlaceholder();
-  const colors = getHeroColors(brandColors.primary, brandColors.secondary, brandColors.useDualBrand);
-  const sliderColors = getSliderColors(brandColors.primary, brandColors.secondary, mode);
-  const fadeColors = getFadeColors(brandColors.primary, brandColors.secondary, mode);
-  const bentoColors = getBentoColors(brandColors.primary, brandColors.secondary, mode);
-  const conquestColors = getConquestColors(brandColors.primary, brandColors.secondary, mode);
-  const fullscreenColors = getFullscreenColors(brandColors.primary, brandColors.secondary, mode);
-  const splitColors = getSplitColors(brandColors.primary, brandColors.secondary, mode);
-  const parallaxColors = getParallaxColors(brandColors.primary, brandColors.secondary, mode);
+  const colors = adaptTokensForDarkMode(getHeroColors(brandColors.primary, brandColors.secondary, brandColors.useDualBrand), isDark ?? false);
+  const sliderColors = adaptTokensForDarkMode(getSliderColors(brandColors.primary, brandColors.secondary, mode), isDark ?? false);
+  const fadeColors = adaptTokensForDarkMode(getFadeColors(brandColors.primary, brandColors.secondary, mode), isDark ?? false);
+  const bentoColors = adaptTokensForDarkMode(getBentoColors(brandColors.primary, brandColors.secondary, mode), isDark ?? false);
+  const conquestColors = adaptTokensForDarkMode(getConquestColors(brandColors.primary, brandColors.secondary, mode), isDark ?? false);
+  const fullscreenColors = adaptTokensForDarkMode(getFullscreenColors(brandColors.primary, brandColors.secondary, mode), isDark ?? false);
+  const splitColors = adaptTokensForDarkMode(getSplitColors(brandColors.primary, brandColors.secondary, mode), isDark ?? false);
+  const parallaxColors = adaptTokensForDarkMode(getParallaxColors(brandColors.primary, brandColors.secondary, mode), isDark ?? false);
   const isEmblaPreviewStyle = previewStyle === 'slider' || previewStyle === 'bento' || previewStyle === 'fullscreen' || previewStyle === 'conquest' || previewStyle === 'split' || previewStyle === 'parallax' || previewStyle === 'fade' || previewStyle === 'builderCoffee';
   const cornerRadiusClassName = getHeroCornerRadiusClassName(cornerRadius);
   const sectionSpacingClassName = getSectionSpacingClassName(spacing);
@@ -402,7 +405,7 @@ export const HeroPreview = ({
   );
 
   const renderBuilderCoffeeStyle = () => (
-    <section className="relative w-full overflow-hidden bg-white pb-[50px]">
+    <section className="relative w-full overflow-hidden bg-white dark:bg-slate-950 pb-[50px]">
       <div className="mx-auto w-full max-w-7xl px-3">
         <div className="mt-5 flex flex-wrap -mx-3">
           <div className="grid w-full max-w-full grid-cols-3 gap-[10px] px-3">
@@ -495,7 +498,7 @@ export const HeroPreview = ({
                       )}
                     </>
                   ) : (
-                    <div className="flex aspect-[16/9] w-full items-center justify-center bg-slate-50"><span className="text-sm text-slate-400">Chưa có banner</span></div>
+                    <div className="flex aspect-[16/9] w-full items-center justify-center bg-slate-50 dark:bg-slate-900"><span className="text-sm text-slate-400">Chưa có banner</span></div>
                   )}
                 </div>
               </div>
