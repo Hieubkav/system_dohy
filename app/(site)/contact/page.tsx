@@ -255,11 +255,9 @@ function MapPreview({
 
 export default function ContactPage() {
   const { isLoading: isContactLoading, brandColor, secondaryColor, colorMode, config, contactData, socialLinks } = useContactPageData();
-  const { siteDarkMode } = useSiteSettings();
+  const { isDark } = useSiteSettings();
   const pathname = usePathname();
   const resolvedSecondary = resolveSecondary(brandColor, secondaryColor, colorMode);
-
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   if (isContactLoading) {
     return (

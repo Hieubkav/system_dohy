@@ -559,8 +559,7 @@ function OrdersByPhoneView({
 
 function TraCuuContent() {
   const brandColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
   const tokens = useMemo(
     () => getCheckoutColors(brandColors.primary, brandColors.secondary, brandColors.mode, isDark),
     [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]
@@ -745,8 +744,7 @@ function TraCuuContent() {
 
 function LoadingFallback() {
   const brandColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
   const tokens = getCheckoutColors(brandColors.primary, brandColors.secondary, brandColors.mode, isDark);
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: tokens.pageBg }}>

@@ -36,26 +36,7 @@ export default function HomePageClient({
 
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
   const systemColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
-  const [siteThemeOverride, setSiteThemeOverride] = useState<string | null>(null);
-
-  useEffect(() => {
-    setSiteThemeOverride(typeof window !== 'undefined' ? localStorage.getItem('site_theme_override') : null);
-    const handleThemeChange = () => {
-      setSiteThemeOverride(localStorage.getItem('site_theme_override'));
-    };
-    window.addEventListener('site-theme-change', handleThemeChange);
-    return () => {
-      window.removeEventListener('site-theme-change', handleThemeChange);
-    };
-  }, []);
-
-  // Tính isDark từ DB setting + override — KHÔNG đọc từ DOM class (bị admin panel ghi đè)
-  const isDark = siteThemeOverride === 'dark'
-    ? true
-    : siteThemeOverride === 'light'
-      ? false
-      : siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
 
   const bgStyle = useMemo(() => {
     if (!systemConfig?.homePageBackground) {return {};}

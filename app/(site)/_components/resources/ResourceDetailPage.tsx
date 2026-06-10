@@ -52,8 +52,7 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
   const router = useRouter();
   const config = useResourcesDetailConfig();
   const brandColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
   const { addItem, openDrawer } = useCart();
   const { openLoginModal, token } = useCustomerAuth();
   const resource = useQuery(api.resources.getBySlug, { slug });

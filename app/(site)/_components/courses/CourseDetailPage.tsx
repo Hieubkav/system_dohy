@@ -42,7 +42,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const router = useRouter();
   const config = useCoursesDetailConfig();
   const brandColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
+  const { isDark } = useSiteSettings();
   const { addItem, openDrawer } = useCart();
   const { customer, token } = useCustomerAuth();
   const course = useQuery(api.courses.getBySlug, { slug });
@@ -61,7 +61,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const secondaryColor = brandColors.secondary || '';
   const colorMode = brandColors.mode || 'single';
 
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
 
   // Tự sinh màu gradient Modern ở chế độ 1 màu
   const accent = useMemo(() => {

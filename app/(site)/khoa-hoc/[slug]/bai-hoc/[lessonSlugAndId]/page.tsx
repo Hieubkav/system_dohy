@@ -21,11 +21,9 @@ export default function LessonDetailPage({ params }: LessonPageProps) {
   const { slug, lessonSlugAndId } = use(params);
   const router = useRouter();
   const brandColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
+  const { isDark } = useSiteSettings();
   const config = useLessonDetailConfig();
   const { isAuthenticated, isLoading: authLoading, token } = useCustomerAuth();
-
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   // Parse ID bài học từ slug lai (lessonSlugAndId) dạng tieu-de-bai-hoc--[id]
   const lessonId = useMemo(() => {

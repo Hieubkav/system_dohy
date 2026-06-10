@@ -137,8 +137,7 @@ function SearchProductCardActions({
   onAddToCart: (e: React.MouseEvent) => void;
   onBuyNow: (e: React.MouseEvent) => void;
 }) {
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
 
   if (!showAddToCartButton && !showBuyNowButton) return null;
 
@@ -185,8 +184,7 @@ function SearchProductCardActions({
 
 function SearchContent() {
   const brandColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
   
   const primaryColor = brandColors.primary || '#ea580c';
   const secondaryColor = brandColors.secondary || '#f97316';

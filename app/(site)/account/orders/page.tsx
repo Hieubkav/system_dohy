@@ -332,8 +332,7 @@ function StatCard({
 export default function AccountOrdersPage() {
   const brandColors = useBrandColors();
   const brandColor = brandColors.primary;
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
   const tokens = useMemo(
     () => getAccountOrdersColors(brandColors.primary, brandColors.secondary, brandColors.mode, isDark),
     [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]

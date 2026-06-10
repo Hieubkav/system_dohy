@@ -22,8 +22,7 @@ import { getAccountProfileColors } from '@/components/site/account/profile/color
 
 export default function AccountProfilePage() {
   const brandColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
   const tokens = useMemo(
     () => getAccountProfileColors(brandColors.primary, brandColors.secondary, brandColors.mode, isDark),
     [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]
