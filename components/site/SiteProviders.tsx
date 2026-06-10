@@ -30,7 +30,16 @@ export function SiteProviders({ children }: { children: React.ReactNode }) {
       hasDarkClass: root.classList.contains('dark'),
     };
 
-    const applyTheme = () => {
+    const applyTheme = (isFromEvent?: boolean) => {
+      if (siteDarkMode) {
+        const lastDefault = localStorage.getItem('site_theme_last_default');
+        if (lastDefault && lastDefault !== siteDarkMode) {
+          // Admin vừa mới thay đổi cấu hình mặc định ở trang quản trị
+          localStorage.removeItem('site_theme_override');
+        }
+        localStorage.setItem('site_theme_last_default', siteDarkMode);
+      }
+
       const override = localStorage.getItem('site_theme_override');
       let isDark = false;
       if (override === 'dark') {
@@ -41,25 +50,39 @@ export function SiteProviders({ children }: { children: React.ReactNode }) {
         isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
       }
 
-      root.setAttribute('data-theme', isDark ? 'dark' : 'light');
-      root.style.colorScheme = isDark ? 'dark' : 'light';
-      root.classList.toggle('dark', isDark);
+      const currentlyDark = root.classList.contains('dark');
+      const currentlyTheme = root.getAttribute('data-theme');
+
+      if (currentlyDark !== isDark || currentlyTheme !== (isDark ? 'dark' : 'light')) {
+        root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        root.style.colorScheme = isDark ? 'dark' : 'light';
+        root.classList.toggle('dark', isDark);
+
+        // Chỉ phát sự kiện nếu không phải bắt nguồn từ chính sự kiện site-theme-change để tránh vòng lặp
+        if (!isFromEvent) {
+          window.dispatchEvent(new Event('site-theme-change'));
+        }
+      }
     };
 
-    applyTheme();
+    applyTheme(false);
 
-    window.addEventListener('site-theme-change', applyTheme);
+    const handleThemeChangeEvent = () => {
+      applyTheme(true);
+    };
+
+    window.addEventListener('site-theme-change', handleThemeChangeEvent);
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleSystemChange = () => {
-      applyTheme();
+      applyTheme(false);
     };
     if (siteDarkMode === 'system') {
       mediaQuery.addEventListener('change', handleSystemChange);
     }
 
     return () => {
-      window.removeEventListener('site-theme-change', applyTheme);
+      window.removeEventListener('site-theme-change', handleThemeChangeEvent);
       if (siteDarkMode === 'system') {
         mediaQuery.removeEventListener('change', handleSystemChange);
       }
