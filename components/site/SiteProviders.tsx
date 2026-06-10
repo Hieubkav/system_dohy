@@ -30,36 +30,39 @@ export function SiteProviders({ children }: { children: React.ReactNode }) {
       hasDarkClass: root.classList.contains('dark'),
     };
 
-    const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const applyTheme = () => {
+      const override = localStorage.getItem('site_theme_override');
+      let isDark = false;
+      if (override === 'dark') {
+        isDark = true;
+      } else if (override === 'light') {
+        isDark = false;
+      } else {
+        isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      }
 
-    root.setAttribute('data-theme', isDark ? 'dark' : 'light');
-    root.style.colorScheme = isDark ? 'dark' : 'light';
-    root.classList.toggle('dark', isDark);
+      root.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      root.style.colorScheme = isDark ? 'dark' : 'light';
+      root.classList.toggle('dark', isDark);
+    };
 
+    applyTheme();
+
+    window.addEventListener('site-theme-change', applyTheme);
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemChange = () => {
+      applyTheme();
+    };
     if (siteDarkMode === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = (e: MediaQueryListEvent) => {
-        root.setAttribute('data-theme', e.matches ? 'dark' : 'light');
-        root.style.colorScheme = e.matches ? 'dark' : 'light';
-        root.classList.toggle('dark', e.matches);
-      };
-      mediaQuery.addEventListener('change', handleChange);
-      
-      return () => {
-        mediaQuery.removeEventListener('change', handleChange);
-        const previous = previousThemeRef.current;
-        if (!previous) {return;}
-        if (previous.dataTheme) {
-          root.setAttribute('data-theme', previous.dataTheme);
-        } else {
-          root.removeAttribute('data-theme');
-        }
-        root.style.colorScheme = previous.colorScheme;
-        root.classList.toggle('dark', previous.hasDarkClass);
-      };
+      mediaQuery.addEventListener('change', handleSystemChange);
     }
 
     return () => {
+      window.removeEventListener('site-theme-change', applyTheme);
+      if (siteDarkMode === 'system') {
+        mediaQuery.removeEventListener('change', handleSystemChange);
+      }
       const previous = previousThemeRef.current;
       if (!previous) {return;}
       if (previous.dataTheme) {

@@ -9,7 +9,7 @@ import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useBrandColors, useSiteSettings } from './hooks';
 import dynamic from 'next/dynamic';
-import { ArrowLeft, ChevronDown, ChevronRight, Heart, LogOut, Mail, Package, Phone, Search, User, X } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight, Heart, LogOut, Mail, Package, Phone, Search, User, X, Sun, Moon } from 'lucide-react';
 import { CartIcon } from './CartIcon';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
 import { getMenuColors, resolveMenuLayerColors, type MenuColors, type MenuLayerColorConfig } from './header/colors';
@@ -96,6 +96,7 @@ interface HeaderConfig {
   cart?: { show?: boolean };
   wishlist?: { show?: boolean };
   login?: { show?: boolean; text?: string };
+  showDarkModeToggle?: boolean;
 }
 
 const DEFAULT_CONFIG: HeaderConfig = {
@@ -128,6 +129,7 @@ const DEFAULT_CONFIG: HeaderConfig = {
     slogan: '',
   },
   wishlist: { show: true },
+  showDarkModeToggle: false,
 };
 
 const DEFAULT_LINKS = {
@@ -200,6 +202,57 @@ const HeaderSearchAutocomplete = dynamic(
   () => import('./HeaderSearchAutocomplete').then((mod) => ({ default: mod.HeaderSearchAutocomplete })),
   { ssr: false, loading: () => null }
 );
+
+function DarkModeToggle({ tokens, variant: _variant = 'desktop' }: { tokens: any; variant?: 'desktop' | 'mobile' }) {
+  const [mounted, setMounted] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setIsDark(document.documentElement.classList.contains('dark'));
+
+    const handleThemeChange = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    window.addEventListener('site-theme-change', handleThemeChange);
+    return () => {
+      window.removeEventListener('site-theme-change', handleThemeChange);
+    };
+  }, []);
+
+  const toggleTheme = () => {
+    const nextDark = !isDark;
+    const root = document.documentElement;
+    root.classList.toggle('dark', nextDark);
+    root.setAttribute('data-theme', nextDark ? 'dark' : 'light');
+    root.style.colorScheme = nextDark ? 'dark' : 'light';
+    localStorage.setItem('site_theme_override', nextDark ? 'dark' : 'light');
+    window.dispatchEvent(new Event('site-theme-change'));
+  };
+
+  if (!mounted) {
+    return <div className="w-9 h-9" />;
+  }
+
+  const color = tokens?.iconButtonText || 'currentColor';
+  const hoverBg = tokens?.iconButtonHoverBg || 'rgba(0,0,0,0.05)';
+
+  return (
+    <button
+      onClick={toggleTheme}
+      className="p-2 rounded-full transition-colors flex items-center justify-center"
+      style={{
+        color,
+        '--hover-bg': hoverBg,
+      } as React.CSSProperties}
+      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = hoverBg; }}
+      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+      aria-label="Toggle dark mode"
+    >
+      {isDark ? <Sun size={18} /> : <Moon size={18} />}
+    </button>
+  );
+}
 
 export function Header({ initialData, staticMode }: { initialData?: HeaderInitialData; staticMode?: boolean }) {
   const brandColors = useBrandColors();
@@ -1502,6 +1555,9 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                   />
                 </div>
               )}
+              {config.showDarkModeToggle && (
+                <DarkModeToggle tokens={navbarActionTokens} />
+              )}
               {showCart && (
                 <CartIcon variant="mobile" className="hidden lg:flex" tokens={navbarActionTokens} />
               )}
@@ -1524,6 +1580,9 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                 >
                   <Search size={20} />
                 </button>
+              )}
+              {config.showDarkModeToggle && (
+                <DarkModeToggle tokens={navbarActionTokens} variant="mobile" />
               )}
               {showCart && (
                 <CartIcon variant="mobile" tokens={navbarActionTokens} />
@@ -1686,6 +1745,9 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                     <Search size={20} />
                   </button>
                 )}
+                {config.showDarkModeToggle && (
+                  <DarkModeToggle tokens={navbarActionTokens} variant="mobile" />
+                )}
                 {showCart && (
                   <CartIcon variant="mobile" tokens={navbarActionTokens} />
                 )}
@@ -1703,6 +1765,9 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                     <Heart size={20} />
                     <span>Yêu thích</span>
                   </Link>
+                )}
+                {config.showDarkModeToggle && (
+                  <DarkModeToggle tokens={navbarActionTokens} />
                 )}
                 {showCart && (
                   <CartIcon tokens={navbarActionTokens} />
@@ -2293,6 +2358,11 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
             </Link>
           )}
 
+          {/* Dark Mode */}
+          {config.showDarkModeToggle && (
+            <DarkModeToggle tokens={{ ...navbarActionTokens, iconButtonText: '#ffffff' }} />
+          )}
+
           {/* Cart */}
           {showCart && (
             <CartIcon variant="mobile" tokens={{ ...navbarActionTokens, iconButtonText: '#ffffff' }} />
@@ -2319,6 +2389,9 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
             >
               <Search size={18} />
             </button>
+          )}
+          {config.showDarkModeToggle && (
+            <DarkModeToggle tokens={{ ...navbarActionTokens, iconButtonText: '#ffffff' }} variant="mobile" />
           )}
           {showCart && (
             <CartIcon variant="mobile" tokens={{ ...navbarActionTokens, iconButtonText: '#ffffff' }} />
@@ -2768,6 +2841,9 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                     <User size={18} />
                   </Link>
                 )}
+                {config.showDarkModeToggle && (
+                  <DarkModeToggle tokens={navbarActionTokens} />
+                )}
                 {showCart && (
                   <CartIcon variant="mobile" tokens={navbarActionTokens} />
                 )}
@@ -2781,6 +2857,9 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                   >
                     <Search size={18} />
                   </button>
+                )}
+                {config.showDarkModeToggle && (
+                  <DarkModeToggle tokens={navbarActionTokens} variant="mobile" />
                 )}
                 {showCart && (
                   <CartIcon variant="mobile" tokens={navbarActionTokens} />

@@ -23,6 +23,7 @@ import {
   normalizeHomepageCategoryHeroStyle,
 } from '@/app/admin/home-components/homepage-category-hero/_lib/constants';
 import { getHomepageCategoryHeroColors, type HomepageCategoryHeroTokens } from '@/app/admin/home-components/homepage-category-hero/_lib/colors';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import { getHomepageCategoryHeroIcon } from '@/app/admin/home-components/homepage-category-hero/_lib/icon-options';
 import { autoGenerateHomepageCategoryHeroMenu, buildCategoryAggregateMap } from '@/app/admin/home-components/homepage-category-hero/_lib/auto-generate';
 import { ChevronDown, ChevronLeft, ChevronRight, Package } from 'lucide-react';
@@ -313,6 +314,7 @@ export function HomepageCategoryHeroSection({
   mode = 'single',
   previewDevice,
   tokens,
+  isDark,
 }: {
   config: HomepageCategoryHeroConfig;
   brandColor: string;
@@ -320,10 +322,14 @@ export function HomepageCategoryHeroSection({
   mode?: 'single' | 'dual';
   previewDevice?: 'desktop' | 'tablet' | 'mobile';
   tokens?: HomepageCategoryHeroTokens;
+  isDark?: boolean;
 }) {
   const resolvedTokens = useMemo(
-    () => tokens ?? getHomepageCategoryHeroColors(brandColor, secondary ?? '', mode),
-    [tokens, brandColor, secondary, mode]
+    () => adaptTokensForDarkMode(
+      tokens ?? getHomepageCategoryHeroColors(brandColor, secondary ?? '', mode),
+      isDark ?? false
+    ),
+    [tokens, brandColor, secondary, mode, isDark]
   );
   const resolvedConfig = useMemo(() => ({
     ...DEFAULT_HOMEPAGE_CATEGORY_HERO_CONFIG,

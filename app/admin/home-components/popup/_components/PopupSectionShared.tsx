@@ -8,6 +8,7 @@ import { deviceWidths, type PreviewDevice } from '../../_shared/hooks/usePreview
 import { getPopupColorTokens } from '../_lib/colors';
 import { POPUP_STYLES } from '../_lib/constants';
 import type { PopupConfig, PopupStyle } from '../_types';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 type PopupContext = 'preview' | 'site';
 
@@ -202,12 +203,12 @@ const getOverlayPaddingClass = (config: PopupConfig) => {
   return 'p-4';
 };
 
-function PopupActions({ config, brandColor, onClose, onDismissToday, forceStack = false, isDarkBg = false }: { config: PopupConfig; brandColor: string; onClose: () => void; onDismissToday: () => void; forceStack?: boolean; isDarkBg?: boolean }) {
+function PopupActions({ config, brandColor, onClose, onDismissToday, forceStack = false, isDarkBg = false, isDark }: { config: PopupConfig; brandColor: string; onClose: () => void; onDismissToday: () => void; forceStack?: boolean; isDarkBg?: boolean; isDark?: boolean }) {
   const hasPrimaryLink = config.primaryButtonLink.trim().length > 0 && config.primaryButtonLink !== '#';
   const hasSecondaryLink = config.secondaryButtonLink.trim().length > 0 && config.secondaryButtonLink !== '#';
   const hasPrimaryText = config.primaryButtonText.trim().length > 0;
   const hasSecondaryText = config.secondaryButtonText.trim().length > 0;
-  const tokens = getPopupColorTokens(brandColor, config.colorIntensity);
+  const tokens = adaptTokensForDarkMode(getPopupColorTokens(brandColor, config.colorIntensity), isDark ?? false);
   const secondaryClass = `inline-flex min-h-[46px] flex-1 items-center justify-center rounded-2xl border px-5 py-2.5 text-center text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 whitespace-normal break-words ${config.secondaryButtonDisabled ? 'cursor-not-allowed opacity-55' : isDarkBg ? 'hover:bg-white/10 text-white' : 'hover:bg-slate-50 text-slate-700'}`;
   const primaryClass = `inline-flex min-h-[46px] flex-1 items-center justify-center rounded-2xl px-5 py-2.5 text-center text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 whitespace-normal break-words ${config.primaryButtonDisabled ? 'cursor-not-allowed opacity-55' : 'hover:brightness-95'}`;
   const wrapperClass = forceStack ? 'flex flex-col gap-2.5' : 'flex flex-col gap-2.5 sm:flex-row';
@@ -295,8 +296,8 @@ function PopupActions({ config, brandColor, onClose, onDismissToday, forceStack 
   );
 }
 
-function PopupText({ config, brandColor, align = 'center', isDarkBg = false }: { config: PopupConfig; brandColor: string; align?: 'center' | 'left'; isDarkBg?: boolean }) {
-  const tokens = getPopupColorTokens(brandColor, config.colorIntensity);
+function PopupText({ config, brandColor, align = 'center', isDarkBg = false, isDark }: { config: PopupConfig; brandColor: string; align?: 'center' | 'left'; isDarkBg?: boolean; isDark?: boolean }) {
+  const tokens = adaptTokensForDarkMode(getPopupColorTokens(brandColor, config.colorIntensity), isDark ?? false);
 
   return (
     <div className={align === 'center' ? 'text-center' : 'text-left'}>
@@ -332,8 +333,8 @@ function CloseButton({ onClose, isDarkBg = false }: { onClose: () => void; isDar
   );
 }
 
-function PopupCard({ config, brandColor, secondary, style, previewDevice, onClose, onDismissToday }: { config: PopupConfig; brandColor: string; secondary?: string; style: PopupStyle; previewDevice: PreviewDevice; onClose: () => void; onDismissToday: () => void }) {
-  const tokens = getPopupColorTokens(brandColor, config.colorIntensity);
+function PopupCard({ config, brandColor, secondary, style, previewDevice, onClose, onDismissToday, isDark }: { config: PopupConfig; brandColor: string; secondary?: string; style: PopupStyle; previewDevice: PreviewDevice; onClose: () => void; onDismissToday: () => void; isDark?: boolean }) {
+  const tokens = adaptTokensForDarkMode(getPopupColorTokens(brandColor, config.colorIntensity), isDark ?? false);
   const borderStyle = { borderColor: tokens.border };
   const isMobilePreview = previewDevice === 'mobile';
   const darkBg = isDarkBackground(style, config.backgroundMode);
@@ -351,7 +352,7 @@ function PopupCard({ config, brandColor, secondary, style, previewDevice, onClos
         <CloseButton onClose={onClose} isDarkBg={darkBg} />
         {hasSunburst && <SunburstPattern />}
         <div className="relative z-10 w-full space-y-5">
-          <PopupText config={config} brandColor={brandColor} align="center" isDarkBg={darkBg} />
+          <PopupText config={config} brandColor={brandColor} align="center" isDarkBg={darkBg} isDark={isDark} />
           <div className="w-full overflow-hidden">
             {config.imageUrl.trim() ? (
               <img src={config.imageUrl} alt={config.heading || sectionImageAlt} className="mx-auto aspect-[3/4] w-[190px] rounded-full object-cover border-2 border-white/10 shadow-md" />
@@ -359,7 +360,7 @@ function PopupCard({ config, brandColor, secondary, style, previewDevice, onClos
               <PopupImage config={config} className="min-h-[180px] p-2" />
             )}
           </div>
-          <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} forceStack={true} isDarkBg={darkBg} />
+          <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} forceStack={true} isDarkBg={darkBg} isDark={isDark} />
         </div>
       </div>
     );
@@ -371,8 +372,8 @@ function PopupCard({ config, brandColor, secondary, style, previewDevice, onClos
         <CloseButton onClose={onClose} />
         <PopupImage config={config} className={isMobilePreview ? 'min-h-[150px] overflow-hidden' : 'min-h-[240px]'} />
         <div className={`flex flex-col justify-center space-y-5 ${isMobilePreview ? 'pr-10' : 'pr-0 sm:pr-6'}`}>
-          <PopupText config={config} brandColor={brandColor} align="left" />
-          <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} forceStack={isMobilePreview} />
+          <PopupText config={config} brandColor={brandColor} align="left" isDark={isDark} />
+          <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} forceStack={isMobilePreview} isDark={isDark} />
         </div>
       </div>
     );
@@ -384,9 +385,9 @@ function PopupCard({ config, brandColor, secondary, style, previewDevice, onClos
         <CloseButton onClose={onClose} />
         <div className={`mx-auto mb-4 h-1.5 w-14 rounded-full ${isMobilePreview ? '' : 'sm:hidden'}`} style={{ backgroundColor: tokens.primaryBorder }} />
         <div className={`grid items-center gap-5 ${isMobilePreview ? '' : 'sm:grid-cols-[1fr_auto]'}`}>
-          <PopupText config={config} brandColor={brandColor} align="left" />
+          <PopupText config={config} brandColor={brandColor} align="left" isDark={isDark} />
           <div className={isMobilePreview ? 'min-w-0 w-full' : 'min-w-[260px]'}>
-            <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} forceStack={isMobilePreview} />
+            <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} forceStack={isMobilePreview} isDark={isDark} />
           </div>
         </div>
       </div>
@@ -399,8 +400,8 @@ function PopupCard({ config, brandColor, secondary, style, previewDevice, onClos
         <CloseButton onClose={onClose} />
         <div className="space-y-5">
           <PopupIcon config={config} brandColor={brandColor} />
-          <PopupText config={config} brandColor={brandColor} align="left" />
-          <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} />
+          <PopupText config={config} brandColor={brandColor} align="left" isDark={isDark} />
+          <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} isDark={isDark} />
         </div>
       </div>
     );
@@ -418,8 +419,8 @@ function PopupCard({ config, brandColor, secondary, style, previewDevice, onClos
             </div>
           )}
           <div className="min-w-0 flex-1 space-y-4">
-            <PopupText config={config} brandColor={brandColor} align="left" />
-            <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} />
+            <PopupText config={config} brandColor={brandColor} align="left" isDark={isDark} />
+            <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} isDark={isDark} />
           </div>
         </div>
       </div>
@@ -432,9 +433,9 @@ function PopupCard({ config, brandColor, secondary, style, previewDevice, onClos
         <CloseButton onClose={onClose} />
         <div className={`mx-auto max-w-2xl space-y-6 bg-white p-6 text-center sm:p-8 ${roundedClass(config, 'rounded-[2rem]', 'rounded-2xl')}`} style={{ boxShadow: tokens.premiumShadow }}>
           <PopupIcon config={config} brandColor={brandColor} />
-          <PopupText config={config} brandColor={brandColor} />
+          <PopupText config={config} brandColor={brandColor} isDark={isDark} />
           <div className="mx-auto max-w-md">
-            <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} />
+            <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} isDark={isDark} />
           </div>
         </div>
       </div>
@@ -468,8 +469,8 @@ function PopupCard({ config, brandColor, secondary, style, previewDevice, onClos
       <CloseButton onClose={onClose} />
       <div className="space-y-5">
         <PopupIcon config={config} brandColor={brandColor} />
-        <PopupText config={config} brandColor={brandColor} />
-        <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} />
+        <PopupText config={config} brandColor={brandColor} isDark={isDark} />
+        <PopupActions config={config} brandColor={brandColor} onClose={onClose} onDismissToday={onDismissToday} isDark={isDark} />
       </div>
     </div>
   );
@@ -485,6 +486,7 @@ function PopupOverlay({
   fontStyle,
   fontClassName,
   onClose,
+  isDark,
 }: {
   config: PopupConfig;
   brandColor: string;
@@ -495,8 +497,9 @@ function PopupOverlay({
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
   onClose: () => void;
+  isDark?: boolean;
 }) {
-  const tokens = getPopupColorTokens(brandColor, config.colorIntensity);
+  const tokens = adaptTokensForDarkMode(getPopupColorTokens(brandColor, config.colorIntensity), isDark ?? false);
   const isPreview = context === 'preview';
   const style = config.style;
   const positionClass = style === 'bottom-sheet'
@@ -530,7 +533,7 @@ function PopupOverlay({
       onClick={onClose}
     >
       <div onClick={(event) => event.stopPropagation()} className="contents">
-        <PopupCard config={config} brandColor={brandColor} secondary={secondary} style={style} previewDevice={previewDevice} onClose={onClose} onDismissToday={handleDismissToday} />
+        <PopupCard config={config} brandColor={brandColor} secondary={secondary} style={style} previewDevice={previewDevice} onClose={onClose} onDismissToday={handleDismissToday} isDark={isDark} />
       </div>
     </div>
   );
@@ -545,6 +548,7 @@ function PopupRuntime({
   previewDevice,
   fontStyle,
   fontClassName,
+  isDark,
 }: {
   config: PopupConfig;
   brandColor: string;
@@ -554,6 +558,7 @@ function PopupRuntime({
   previewDevice: PreviewDevice;
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
+  isDark?: boolean;
 }) {
   const [visible, setVisible] = React.useState(context === 'preview');
   const [wasShownInPageView, setWasShownInPageView] = React.useState(false);
@@ -622,7 +627,7 @@ function PopupRuntime({
     return null;
   }
 
-  return <PopupOverlay config={config} brandColor={brandColor} secondary={secondary} mode={mode} context={context} previewDevice={previewDevice} fontStyle={fontStyle} fontClassName={fontClassName} onClose={handleClose} />;
+  return <PopupOverlay config={config} brandColor={brandColor} secondary={secondary} mode={mode} context={context} previewDevice={previewDevice} fontStyle={fontStyle} fontClassName={fontClassName} onClose={handleClose} isDark={isDark} />;
 }
 
 export function PopupSectionShared({
@@ -645,7 +650,7 @@ export function PopupSectionShared({
   const nextConfig = { ...config, style };
 
   if (!includePreviewWrapper) {
-    return <PopupRuntime config={nextConfig} brandColor={brandColor} secondary={secondary} mode={mode} context={context} previewDevice={previewDevice} fontStyle={fontStyle} fontClassName={fontClassName} />;
+    return <PopupRuntime config={nextConfig} brandColor={brandColor} secondary={secondary} mode={mode} context={context} previewDevice={previewDevice} fontStyle={fontStyle} fontClassName={fontClassName} isDark={isDark} />;
   }
 
   return (
@@ -672,7 +677,7 @@ export function PopupSectionShared({
                 <div className="h-28 rounded-2xl bg-white" />
               </div>
             </div>
-            <PopupRuntime config={nextConfig} brandColor={brandColor} secondary={secondary} mode={mode} context="preview" previewDevice={previewDevice} fontStyle={fontStyle} fontClassName={fontClassName} />
+            <PopupRuntime config={nextConfig} brandColor={brandColor} secondary={secondary} mode={mode} context="preview" previewDevice={previewDevice} fontStyle={fontStyle} fontClassName={fontClassName} isDark={isDark} />
           </div>
         </BrowserFrame>
       </PreviewWrapper>

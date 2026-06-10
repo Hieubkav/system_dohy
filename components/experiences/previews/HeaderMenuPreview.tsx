@@ -2,7 +2,7 @@
 
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Id } from '@/convex/_generated/dataModel';
-import { ChevronDown, ChevronRight, Eye, Heart, LogOut, Mail, Package, Phone, Search, ShoppingCart, User } from 'lucide-react';
+import { ChevronDown, ChevronRight, Eye, Heart, LogOut, Mail, Package, Phone, Search, ShoppingCart, User, Moon } from 'lucide-react';
 import { Card, CardContent, cn } from '@/app/admin/components/ui';
 import { getMenuColors, resolveMenuLayerColors, type MenuColorMode, type MenuColors, type MenuLayerColorConfig } from '@/components/site/header/colors';
 import { buildMenuTree, type MenuTreeNode } from '@/lib/utils/menu-tree';
@@ -41,6 +41,7 @@ export type HeaderMenuConfig = {
   };
   wishlist: { show: boolean };
   megaLevel1Color?: 'default' | 'primary' | 'secondary';
+  showDarkModeToggle?: boolean;
 };
 
 type MenuItem = {
@@ -945,6 +946,11 @@ export function HeaderMenuPreview({
                     </button>
                   </div>
                 )}
+                {config.showDarkModeToggle && (
+                  <button className="p-2 transition-colors hover:text-[var(--menu-icon-hover)]" style={{ color: layerColors.navbar.text, ...menuVars }}>
+                    <Moon size={20} />
+                  </button>
+                )}
                 {config.cart.show && (
                   <a href={defaultLinks.cart} className="p-2 relative" style={{ color: layerColors.navbar.text }}>
                     <ShoppingCart size={20} />
@@ -972,6 +978,11 @@ export function HeaderMenuPreview({
               {showSearch && (
                 <button onClick={() => setSearchOpen((prev) => !prev)} className="p-2" style={{ color: layerColors.navbar.text }}>
                   <Search size={20} />
+                </button>
+              )}
+              {config.showDarkModeToggle && (
+                <button className="p-2" style={{ color: layerColors.navbar.text }}>
+                  <Moon size={20} />
                 </button>
               )}
               {config.cart.show && (
@@ -1111,6 +1122,11 @@ export function HeaderMenuPreview({
                     <Search size={20} />
                   </button>
                 )}
+                {config.showDarkModeToggle && (
+                  <button className="p-2" style={{ color: layerColors.navbar.text }}>
+                    <Moon size={20} />
+                  </button>
+                )}
                 {config.cart.show && (
                   <a href={defaultLinks.cart} className="p-2 relative" style={{ color: layerColors.navbar.text }}>
                     <ShoppingCart size={20} />
@@ -1134,6 +1150,11 @@ export function HeaderMenuPreview({
                   >
                     <Heart size={20} /><span>Yêu thích</span>
                   </a>
+                )}
+                {config.showDarkModeToggle && (
+                  <button className="p-2 transition-colors flex flex-col items-center text-xs gap-0.5 hover:text-[var(--menu-icon-hover)]" style={{ color: layerColors.navbar.text, ...menuVars }}>
+                    <Moon size={20} /><span>Theme</span>
+                  </button>
                 )}
                 {config.cart.show && (
                   <a
@@ -1536,6 +1557,11 @@ export function HeaderMenuPreview({
                   <User size={18} />
                 </a>
               )}
+              {config.showDarkModeToggle && (
+                <button className="p-2 transition-colors hover:text-[var(--menu-icon-hover)]" style={{ color: layerColors.navbar.text, ...menuVars }}>
+                  <Moon size={18} />
+                </button>
+              )}
               {config.cart.show && (
                 <a
                   href={defaultLinks.cart}
@@ -1570,6 +1596,11 @@ export function HeaderMenuPreview({
               {showSearch && (
                 <button onClick={() => setSearchOpen((prev) => !prev)} className="p-2" style={{ color: layerColors.navbar.text }}>
                   <Search size={18} />
+                </button>
+              )}
+              {config.showDarkModeToggle && (
+                <button className="p-2" style={{ color: layerColors.navbar.text }}>
+                  <Moon size={18} />
                 </button>
               )}
               {config.cart.show && (
@@ -1822,6 +1853,13 @@ export function HeaderMenuPreview({
             >
               <Heart size={18} />
             </a>
+          )}
+
+          {/* Dark Mode */}
+          {config.showDarkModeToggle && (
+            <button className="p-2 text-white hover:opacity-80 transition-opacity">
+              <Moon size={18} />
+            </button>
           )}
 
           {/* Cart */}

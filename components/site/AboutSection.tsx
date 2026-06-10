@@ -6,6 +6,7 @@ import { SectionHeader } from '@/app/admin/home-components/_shared/components/Se
 import { extractSectionHeaderConfig } from '@/app/admin/home-components/_shared/hooks/useSectionHeaderState';
 import { getSectionSpacingClassName, normalizeSectionSpacing } from '@/app/admin/home-components/_shared/types/sectionSpacing';
 import { getAboutSectionColors } from '@/app/admin/home-components/about/_lib/colors';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import {
   normalizeAboutCornerRadius,
   normalizeAboutImages,
@@ -24,9 +25,10 @@ interface AboutSectionProps {
   secondary: string;
   mode: AboutBrandMode;
   title: string;
+  isDark?: boolean;
 }
 
-export function AboutSection({ config, brandColor, secondary, mode, title }: AboutSectionProps) {
+export function AboutSection({ config, brandColor, secondary, mode, title, isDark }: AboutSectionProps) {
   const safeConfig = config as Partial<AboutConfig>;
   const style = normalizeAboutStyle(safeConfig.style);
   const images = normalizeAboutImages(safeConfig.images, typeof safeConfig.image === 'string' ? safeConfig.image : '');
@@ -34,11 +36,14 @@ export function AboutSection({ config, brandColor, secondary, mode, title }: Abo
   const spacing = safeConfig.noVerticalMargin === true ? 'none' : normalizeSectionSpacing(headerConfig.spacing);
   const cornerRadius = normalizeAboutCornerRadius(safeConfig.cornerRadius, safeConfig.noBorderRadius);
 
-  const tokens = getAboutSectionColors({
-    primary: brandColor,
-    secondary,
-    mode,
-  });
+  const tokens = adaptTokensForDarkMode(
+    getAboutSectionColors({
+      primary: brandColor,
+      secondary,
+      mode,
+    }),
+    isDark ?? false
+  );
 
   return (
     <section className={`${getSectionSpacingClassName(spacing)} px-3`}>
