@@ -71,7 +71,7 @@ import {
   TrustBadgesTrustCue,
   useTrustBadgesSectionState,
 } from '@/app/admin/home-components/gallery/_components/TrustBadgesSectionShared';
-import { getFooterLayoutColors, type FooterLayoutColors } from '@/app/admin/home-components/footer/_lib/colors';
+import { getFooterThemeColors, type FooterLayoutColors } from '@/app/admin/home-components/footer/_lib/colors';
 import { getFooterCornerRadiusClassName, getFooterLogoBackgroundClassName, getFooterLogoBackgroundStyle, getFooterLogoSize, getFooterMaxWidthClass, getFooterSectionSpacingClassName } from '@/app/admin/home-components/footer/_lib/constants';
 import type { ProcessBrandMode } from '@/app/admin/home-components/process/_types';
 import { normalizeProcessConfig, normalizeProcessRenderSteps, normalizeProcessStyle } from '@/app/admin/home-components/process/_lib/normalize';
@@ -361,7 +361,7 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
     }
     case 'SpeedDial': {
       return wrapWithFont(
-        <SpeedDialSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <SpeedDialSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'ProductCategories': {
@@ -435,7 +435,7 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
     }
     case 'Footer': {
       return wrapWithFont(
-        <FooterSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} />
+        <FooterSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} isDark={isDark} />
       );
     }
     default: {
@@ -5775,11 +5775,13 @@ function FooterSection({
   brandColor,
   secondary,
   mode,
+  isDark,
 }: {
   config: Record<string, unknown>;
   brandColor: string;
   secondary: string;
   mode: FooterBrandMode;
+  isDark?: boolean;
 }) {
   const style = (config.style as FooterStyle) || 'classic';
   const logo = (config.logo as string) || '';
@@ -5800,7 +5802,7 @@ function FooterSection({
   const bctLogoSrc = bctLogoType === 'dang-ky'
     ? '/images/bct/logo-da-dang-ky-bct.webp'
     : '/images/bct/logo-da-thong-bao-bct.png';
-  const colors: FooterLayoutColors = getFooterLayoutColors(style, brandColor, secondary, mode);
+  const colors: FooterLayoutColors = getFooterThemeColors(style, brandColor, secondary, mode, isDark ?? false);
   const logoSizeLevel = typeof config.logoSizeLevel === 'number' ? config.logoSizeLevel : 1;
   const resolveLogoSize = (baseSize: number) => getFooterLogoSize(baseSize, logoSizeLevel);
   const logoBackgroundStyle = typeof config.logoBackgroundStyle === 'string' ? config.logoBackgroundStyle as FooterLogoBackgroundStyle : 'none';

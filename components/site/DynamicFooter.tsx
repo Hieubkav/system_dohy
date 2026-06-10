@@ -6,7 +6,7 @@ import { PublicImage as Image } from '@/components/shared/PublicImage';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useBrandColors, useSiteSettings, useSocialLinks } from './hooks';
-import { getFooterLayoutColors } from '@/app/admin/home-components/footer/_lib/colors';
+import { getFooterThemeColors } from '@/app/admin/home-components/footer/_lib/colors';
 import { getFooterCornerRadiusClassName, getFooterLogoBackgroundClassName, getFooterLogoBackgroundStyle, getFooterLogoSize, getFooterMaxWidthClass, getFooterSectionSpacingClassName } from '@/app/admin/home-components/footer/_lib/constants';
 import type { FooterBrandMode, FooterCornerRadius, FooterLogoBackgroundStyle, FooterStyle } from '@/app/admin/home-components/footer/_types';
 import { resolveTypeOverrideColors } from '@/app/admin/home-components/_shared/lib/typeColorOverride';
@@ -83,9 +83,35 @@ export function DynamicFooter() {
     <div className="font-active" style={fontStyle}>{node}</div>
   );
   const { primary: brandColor, secondary, mode } = resolvedColors;
-  const { siteName, logo: siteLogo } = useSiteSettings();
+  const { siteName, logo: siteLogo, siteDarkMode } = useSiteSettings();
+  const [isDark, setIsDark] = React.useState(false);
   const socialLinks = useSocialLinks();
   const components = useQuery(api.homeComponents.listActive);
+
+  React.useEffect(() => {
+    const syncDarkMode = () => {
+      const storedTheme = localStorage.getItem('site_theme_override');
+      if (storedTheme) {
+        setIsDark(storedTheme === 'dark');
+        return;
+      }
+      if (siteDarkMode === 'dark') {
+        setIsDark(true);
+        return;
+      }
+      if (siteDarkMode === 'system') {
+        setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
+        return;
+      }
+      setIsDark(false);
+    };
+
+    syncDarkMode();
+    window.addEventListener('site-theme-change', syncDarkMode);
+    return () => {
+      window.removeEventListener('site-theme-change', syncDarkMode);
+    };
+  }, [siteDarkMode]);
   
   const footerComponent = React.useMemo(() => {
     if (snapshotDemo) {
@@ -130,7 +156,7 @@ export function DynamicFooter() {
   };
 
   // Fallback footer nếu không có Footer component
-  const fallbackBgDark = getFooterLayoutColors('classic', brandColor, secondary, mode as FooterBrandMode).bg;
+  const fallbackBgDark = getFooterThemeColors('classic', brandColor, secondary, mode as FooterBrandMode, isDark).bg;
   if (!footerComponent && !snapshotDemo) {
     return wrapWithFont(
       <footer className="text-white" style={{ backgroundColor: fallbackBgDark }}>
@@ -153,7 +179,7 @@ export function DynamicFooter() {
   const resolveLogoSize = (baseSize: number) => getFooterLogoSize(baseSize, logoSizeLevel);
   const socials = getSocials(config);
   const columns = getColumns(config);
-  const colors = getFooterLayoutColors(style, brandColor, secondary, mode as FooterBrandMode);
+  const colors = getFooterThemeColors(style, brandColor, secondary, mode as FooterBrandMode, isDark);
   const useOriginalSocialIconColors = config.useOriginalSocialIconColors !== false;
   const maxWidthClass = getFooterMaxWidthClass(config.maxWidth);
   const waveMaxWidthClass = maxWidthClass === 'max-w-6xl' || maxWidthClass === 'max-w-7xl' ? 'max-w-8xl' : maxWidthClass;
