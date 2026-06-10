@@ -128,12 +128,14 @@ export const getCardsColors = (primary: string, secondary: string, mode: StatsBr
 export const getIconsColors = (primary: string, secondary: string, mode: StatsBrandMode) => {
   const secondaryResolved = resolveStatsSecondary(primary, secondary, mode);
   const secondaryStrong = getTint(secondaryResolved, -0.18, primary);
+  const sectionBg = '#ffffff';
 
   return {
+    sectionBg,
     circleBg: primary,
     textOnCircle: getAPCATextColor(primary, 20, 700),
     ring: getTint(secondaryResolved, -0.12, primary),
-    label: ensureAPCATextColor(secondaryStrong, '#ffffff', 14, 600),
+    label: ensureAPCATextColor(secondaryStrong, sectionBg, 14, 600),
   };
 };
 

@@ -51,7 +51,7 @@ export function SectionHeader({
 
   const badgeElement = hasBadge && (
     <div className={cn('mb-3 md:mb-4', alignClass)}>
-      <span className="inline-block px-3 py-1 text-[11px] font-medium tracking-wider uppercase bg-slate-100 text-slate-600 rounded-full border border-slate-200">
+      <span className="inline-block px-3 py-1 text-[11px] font-medium tracking-wider uppercase bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 rounded-full border border-slate-200">
         {resolvedBadgeText}
       </span>
     </div>
@@ -60,10 +60,10 @@ export function SectionHeader({
   const titleElement = hasTitle && (
     <h2
       className={cn(
-        'text-2xl md:text-3xl tracking-tight leading-tight text-balance mb-2',
+        'text-2xl md:text-3xl tracking-tight leading-tight text-balance mb-2 text-slate-900 dark:text-white',
         uppercaseText ? 'uppercase font-bold' : 'font-bold'
       )}
-      style={titleColor ? { color: titleColor } : { color: '#0f172a' }}
+      style={titleColor ? { color: titleColor } : undefined}
     >
       {resolvedTitle}
     </h2>

@@ -352,7 +352,7 @@ export const StatsPreview = ({
       <div>
         <div className={containerClass}>
           {sharedHeader}
-          <section className={cn("w-full", device === 'mobile' ? 'py-3 px-2' : 'py-4 px-3')}>
+          <section className={cn("w-full", device === 'mobile' ? 'py-3 px-2' : 'py-4 px-3')} style={{ backgroundColor: colors.sectionBg }}>
             <div className={cn('grid gap-4', device === 'mobile' ? 'gap-3' : '', gridClass)}>
               {items.slice(0, desktopColumns).map((item, idx) => {
                 const IconCmp = item.iconType === 'lucide' && item.iconName ? resolveIconComponent(item.iconName) : null;

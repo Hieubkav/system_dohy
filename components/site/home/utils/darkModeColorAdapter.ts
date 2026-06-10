@@ -6,7 +6,7 @@ import { oklch, formatHex, parse, formatRgb } from 'culori';
  * Chuyển đổi một chuỗi màu đơn lẻ sang tông màu tương thích Dark Mode nếu cần thiết.
  * Giữ nguyên các màu sắc thương hiệu chính (Brand Colors) và chỉ điều chỉnh các màu trung hòa.
  */
-export function adaptColorForDarkMode(colorStr: string, isDark: boolean): string {
+export function adaptColorForDarkMode(colorStr: string, isDark: boolean, key = ''): string {
   if (!isDark) return colorStr;
   if (typeof colorStr !== 'string') return colorStr;
   
@@ -39,6 +39,10 @@ export function adaptColorForDarkMode(colorStr: string, isDark: boolean): string
     
     // Tăng ngưỡng chroma lên 0.08 để bao quát các tông xám Slate/Blue-grey có sắc độ nhẹ
     const chromaThreshold = 0.08;
+    
+    const isBackgroundKey = key.toLowerCase().includes('bg') || 
+                            key.toLowerCase().includes('surface') || 
+                            key.toLowerCase().includes('background');
     
     if ((color.c ?? 0) < chromaThreshold) {
       const l = color.l ?? 0;
@@ -81,6 +85,11 @@ export function adaptColorForDarkMode(colorStr: string, isDark: boolean): string
           c: Math.min((color.c ?? 0), 0.005),
         });
         return alpha < 1 ? formatRgb(borderDark) : formatHex(borderDark);
+      }
+
+      // Nếu là thuộc tính chỉ NỀN (background/surface/bg) mà vốn dĩ đã TỐI (L < 0.5), ta giữ nguyên tông tối của nó, không được biến thành nền sáng!
+      if (isBackgroundKey && l < 0.5) {
+        return colorStr;
       }
 
       // 5. Chữ chính tối (L < 0.25) -> Chữ chính sáng (L = 0.92) (~zinc-200)
@@ -160,7 +169,7 @@ export function adaptTokensForDarkMode<T>(tokens: T, isDark: boolean): T {
                         trimmed === 'white' || 
                         trimmed === 'black';
         if (isColor) {
-          result[key] = adaptColorForDarkMode(val, isDark);
+          result[key] = adaptColorForDarkMode(val, isDark, key);
         } else {
           result[key] = val;
         }
