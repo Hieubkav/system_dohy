@@ -149,7 +149,36 @@ export default function ServicesPage() {
 function ServicesContent() {
   const { primary: brandColor, secondary, mode } = useBrandColors();
   const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const checkIsDark = () => {
+      const storedTheme = localStorage.getItem('site_theme_override');
+      if (storedTheme) {
+        return storedTheme === 'dark';
+      }
+      if (siteDarkMode === 'dark') {
+        return true;
+      }
+      if (siteDarkMode === 'system') {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      return false;
+    };
+
+    setIsDark(checkIsDark());
+
+    const handleThemeChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ isDark: boolean }>;
+      setIsDark(customEvent.detail.isDark);
+    };
+
+    window.addEventListener('site-theme-change', handleThemeChange);
+    return () => {
+      window.removeEventListener('site-theme-change', handleThemeChange);
+    };
+  }, [siteDarkMode]);
+
   const tokens = useMemo(
     () => getServicesListColors(brandColor, secondary, mode || 'single', isDark),
     [brandColor, secondary, mode, isDark]

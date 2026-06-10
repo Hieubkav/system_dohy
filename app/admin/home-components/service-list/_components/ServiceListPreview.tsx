@@ -6,7 +6,7 @@ import { api } from '@/convex/_generated/api';
 import { useBrandColors } from '@/components/site/hooks';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import type { SectionSpacing } from '../../_shared/types/sectionSpacing';
 import {
@@ -16,6 +16,7 @@ import {
   getServiceListValidationResult,
 } from '../_lib/colors';
 import { ServiceListSectionShared } from './ServiceListSectionShared';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import type {
   ServiceListBrandMode,
   ServiceListCardRadius,
@@ -120,6 +121,7 @@ export const ServiceListPreview = ({
   fontClassName,
 }: ServiceListPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
   const systemColors = useBrandColors();
 
@@ -156,6 +158,8 @@ export const ServiceListPreview = ({
     secondary,
   }), [brandColor, secondary, mode]);
 
+  const adaptedTokens = React.useMemo(() => adaptTokensForDarkMode(validation.tokens, isDark), [validation.tokens, isDark]);
+
   const modeLabel = mode === 'single' ? '1 màu (single)' : '2 màu (dual)';
 
   return (
@@ -173,7 +177,7 @@ export const ServiceListPreview = ({
         fontClassName={fontClassName}
       >
         <BrowserFrame url="yoursite.com/services">
-          <div className="w-full transition-colors duration-300" style={{ backgroundColor: homePageBgColor }}>
+          <div className="w-full transition-colors duration-300" style={{ backgroundColor: isDark ? '#0a0a0a' : homePageBgColor }}>
             <ServiceListSectionShared
               context="preview"
               mode={mode}
@@ -193,7 +197,7 @@ export const ServiceListPreview = ({
               desktopColumns={desktopColumns}
               sectionTitle={title}
               items={displayItems}
-              tokens={validation.tokens}
+              tokens={adaptedTokens}
               device={device}
               showViewAll={showViewAll}
             />
