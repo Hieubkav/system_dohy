@@ -115,6 +115,7 @@ export const getCardsColors = (primary: string, secondary: string, mode: StatsBr
   const secondaryResolved = resolveStatsSecondary(primary, secondary, mode);
 
   return {
+    sectionBg: '#ffffff',
     border: '#e5e7eb',
     accent: secondaryResolved,
     iconColor: secondaryResolved,
@@ -152,6 +153,7 @@ export const getMinimalColors = (primary: string, secondary: string, mode: Stats
   const secondaryStrong = getTint(secondaryResolved, -0.18, primary);
 
   return {
+    sectionBg: '#f8fafc',
     accent: secondaryStrong,
     value: ensureAPCATextColor(primary, '#ffffff', 32, 700),
   };

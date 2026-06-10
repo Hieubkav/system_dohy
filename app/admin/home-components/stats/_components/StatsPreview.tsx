@@ -11,6 +11,8 @@ import { SectionHeader } from '../../_shared/components/SectionHeader';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { STATS_STYLES } from '../_lib/constants';
 import { AnimatedValue } from './AnimatedValue';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
+import { usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import {
   getCardsColors,
   getBuilderOverlayColors,
@@ -125,6 +127,7 @@ export const StatsPreview = ({
   enableAnimation?: boolean;
 }) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const previewStyle = selectedStyle ?? 'horizontal';
   const setPreviewStyle = (style: string) => onStyleChange?.(style as StatsStyle);
   const modeLabel = mode === 'dual' ? '2 màu' : '1 màu';
@@ -155,7 +158,7 @@ export const StatsPreview = ({
   const containerClass = fullWidth ? 'w-full' : 'max-w-7xl mx-auto';
 
   const renderHorizontalStyle = () => {
-    const colors = getHorizontalColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getHorizontalColors(brandColor, secondary, mode), isDark);
     
     // Responsive logic based on device state and desktopColumns
     let displayCount: number = desktopColumns ?? 4;
@@ -247,7 +250,7 @@ export const StatsPreview = ({
   };
 
   const renderCardsStyle = () => {
-    const colors = getCardsColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getCardsColors(brandColor, secondary, mode), isDark);
     
     // Responsive logic
     let displayCount: number = desktopColumns ?? 4;
@@ -273,7 +276,7 @@ export const StatsPreview = ({
       <div>
         <div className={containerClass}>
           {sharedHeader}
-          <section className={cn('w-full overflow-hidden border bg-white', cardRadiusClassName, device === 'mobile' ? 'p-2' : 'p-3')}>
+          <section className={cn('w-full overflow-hidden border', cardRadiusClassName, device === 'mobile' ? 'p-2' : 'p-3')} style={{ backgroundColor: colors.sectionBg, borderColor: colors.border }}>
             <div className={cn('grid divide-x divide-y divide-gray-200', gridClass, device === 'desktop' && 'divide-y-0')}>
               {items.slice(0, displayCount).map((item, idx) => {
                 const IconCmp = item.iconType === 'lucide' && item.iconName ? resolveIconComponent(item.iconName) : null;
@@ -330,7 +333,7 @@ export const StatsPreview = ({
   };
 
   const renderIconsStyle = () => {
-    const colors = getIconsColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getIconsColors(brandColor, secondary, mode), isDark);
     let gridClass = '';
     if (device === 'mobile') {
       gridClass = desktopColumns === 3 ? 'grid-cols-1' : 'grid-cols-2';
@@ -424,7 +427,7 @@ export const StatsPreview = ({
   };
 
   const renderGradientStyle = () => {
-    const colors = getGradientColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getGradientColors(brandColor, secondary, mode), isDark);
     let gridClass = '';
     if (device === 'mobile') {
       gridClass = desktopColumns === 3 ? 'grid-cols-1' : 'grid-cols-2';
@@ -504,7 +507,7 @@ export const StatsPreview = ({
   };
 
   const renderMinimalStyle = () => {
-    const colors = getMinimalColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getMinimalColors(brandColor, secondary, mode), isDark);
     let gridClass = '';
     if (device === 'mobile') {
       gridClass = desktopColumns === 3 ? 'grid-cols-1' : 'grid-cols-2';
@@ -523,7 +526,7 @@ export const StatsPreview = ({
       <div>
         <div className={containerClass}>
           {sharedHeader}
-          <section className={cn('w-full bg-slate-50 dark:bg-slate-900', cardRadiusClassName, device === 'mobile' ? 'py-6 px-3' : 'py-8 px-4')}>
+          <section className={cn('w-full', cardRadiusClassName, device === 'mobile' ? 'py-6 px-3' : 'py-8 px-4')} style={{ backgroundColor: colors.sectionBg }}>
             <div className={cn('grid gap-4', device === 'mobile' ? '' : '', gridClass)}>
               {items.slice(0, desktopColumns).map((item, idx) => {
                 const IconCmp = item.iconType === 'lucide' && item.iconName ? resolveIconComponent(item.iconName) : null;
@@ -579,7 +582,7 @@ export const StatsPreview = ({
   };
 
   const renderCounterStyle = () => {
-    const colors = getCounterColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getCounterColors(brandColor, secondary, mode), isDark);
     let gridClass = '';
     if (device === 'mobile') {
       gridClass = desktopColumns === 3 ? 'grid-cols-1' : 'grid-cols-2';
@@ -656,7 +659,7 @@ export const StatsPreview = ({
   };
 
   const renderSolarHeroStyle = () => {
-    const colors = getSolarHeroColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getSolarHeroColors(brandColor, secondary, mode), isDark);
     const gridClass = desktopColumns === 3
       ? device === 'mobile' ? 'grid-cols-1' : 'grid-cols-3'
       : device === 'desktop' ? 'grid-cols-4' : 'grid-cols-2';
@@ -711,7 +714,7 @@ export const StatsPreview = ({
   };
 
   const renderBuilderOverlayStyle = () => {
-    const colors = getBuilderOverlayColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getBuilderOverlayColors(brandColor, secondary, mode), isDark);
     const gridClass = desktopColumns === 3 ? 'md:basis-1/3 md:max-w-[33.333333%]' : 'md:basis-1/4 md:max-w-[25%]';
     const visibleItems = items.slice(0, desktopColumns ?? 4);
     const isCompact = device !== 'desktop';
