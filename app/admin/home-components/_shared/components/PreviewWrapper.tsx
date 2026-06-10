@@ -96,7 +96,9 @@ export const PreviewWrapper = ({
                 {visibleStyles.map((s) => (
                   <button key={s.id} type="button" onClick={() =>{  setPreviewStyle(s.id); }}
                     className={cn("px-3 py-1 text-xs font-medium rounded-md transition-all whitespace-nowrap",
-                      previewStyle === s.id ? "bg-white dark:bg-slate-700 shadow-sm" : "text-slate-500 hover:text-slate-700")}>
+                      previewStyle === s.id 
+                        ? "bg-white text-slate-900 dark:bg-slate-700 dark:text-slate-100 shadow-sm" 
+                        : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100")}>
                     {s.label}
                   </button>
                 ))}
@@ -107,7 +109,9 @@ export const PreviewWrapper = ({
                 {devices.map((d) => (
                   <button key={d.id} type="button" onClick={() =>{  setDevice(d.id); }} title={d.label}
                     className={cn("p-1.5 rounded-md transition-all",
-                      device === d.id ? "bg-white dark:bg-slate-700 shadow-sm" : "text-slate-400 hover:text-slate-600")}>
+                      device === d.id 
+                        ? "bg-white text-slate-800 dark:bg-slate-700 dark:text-slate-100 shadow-sm" 
+                        : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-100")}>
                     <d.icon size={16} />
                   </button>
                 ))}
@@ -119,7 +123,9 @@ export const PreviewWrapper = ({
                 title={isDark ? "Chuyển sang chế độ Sáng" : "Chuyển sang chế độ Tối"}
                 className={cn(
                   "p-1.5 rounded-md transition-all",
-                  isDark ? "bg-slate-700 text-amber-400" : "text-slate-500 hover:bg-white hover:text-slate-700 shadow-sm"
+                  isDark 
+                    ? "bg-slate-700 text-amber-400 dark:bg-slate-700 dark:text-amber-300" 
+                    : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
                 )}
               >
                 {isDark ? <Sun size={16} /> : <Moon size={16} />}
