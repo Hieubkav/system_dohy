@@ -53,6 +53,7 @@ export default function SystemHomeComponentsPage() {
   const [typeAiImportOverrides, setTypeAiImportOverrides] = useState<Record<string, AiImportOverride>>({});
   const [globalFontOverride, setGlobalFontOverrideState] = useState({ enabled: false, fontKey: DEFAULT_FONT_KEY });
   const [homePageBackground, setHomePageBackgroundState] = useState({
+    enabled: false,
     type: 'white' as 'white' | 'black' | 'primary' | 'secondary' | 'custom',
     customColor: '',
   });
@@ -64,7 +65,7 @@ export default function SystemHomeComponentsPage() {
     setTypeFontOverrides(config.typeFontOverrides);
     setTypeAiImportOverrides(config.typeAiImportOverrides);
     setGlobalFontOverrideState(config.globalFontOverride ?? { enabled: false, fontKey: DEFAULT_FONT_KEY });
-    setHomePageBackgroundState(config.homePageBackground ?? { type: 'white', customColor: '' });
+    setHomePageBackgroundState(config.homePageBackground ?? { enabled: false, type: 'white', customColor: '' });
   }, [config]);
 
   const componentTypes = useMemo(() => (
@@ -225,19 +226,21 @@ export default function SystemHomeComponentsPage() {
   };
 
   const handleHomePageBackgroundChange = async (next: {
+    enabled?: boolean;
     type?: 'white' | 'black' | 'primary' | 'secondary' | 'custom';
     customColor?: string;
   }) => {
     const nextState = {
+      enabled: typeof next.enabled === 'boolean' ? next.enabled : homePageBackground.enabled,
       type: next.type ?? homePageBackground.type,
       customColor: next.customColor ?? homePageBackground.customColor,
     };
     setHomePageBackgroundState(nextState);
     try {
       await setHomePageBackground(nextState);
-      toast.success('Đã cập nhật màu nền trang chủ.');
+      toast.success('Đã cập nhật cấu hình màu nền trang chủ.');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật màu nền trang chủ.');
+      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật cấu hình màu nền trang chủ.');
     }
   };
 
@@ -377,49 +380,77 @@ export default function SystemHomeComponentsPage() {
                 <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">Màu nền trang chủ</div>
                 <p className="text-xs text-slate-500 dark:text-slate-400">Thiết lập màu nền cho toàn bộ trang chủ ở phía client.</p>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
-                {[
-                  { value: 'white', label: 'Trắng' },
-                  { value: 'black', label: 'Đen' },
-                  { value: 'primary', label: 'Màu chính' },
-                  { value: 'secondary', label: 'Màu phụ' },
-                  { value: 'custom', label: 'Tự chọn' }
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => handleHomePageBackgroundChange({ type: opt.value as any })}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400">Áp dụng màu nền trang chủ</label>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">Khi tắt, trang chủ sử dụng màu nền theme mặc định (Trắng ở Light và Tối ở Dark).</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleHomePageBackgroundChange({ enabled: !homePageBackground.enabled })}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-600 focus:ring-offset-2",
+                    homePageBackground.enabled ? "bg-cyan-600" : "bg-slate-200 dark:bg-slate-700"
+                  )}
+                >
+                  <span
                     className={cn(
-                      "px-3 py-2 text-xs font-medium rounded-md border transition-all",
-                      homePageBackground.type === opt.value
-                        ? "border-cyan-600 bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400 dark:border-cyan-400"
-                        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                      "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+                      homePageBackground.enabled ? "translate-x-5" : "translate-x-0"
                     )}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                  />
+                </button>
               </div>
 
-              {homePageBackground.type === 'custom' && (
-                <div className="flex items-center gap-2 pt-2">
-                  <input
-                    type="color"
-                    value={homePageBackground.customColor || '#ffffff'}
-                    onChange={(event) => handleHomePageBackgroundChange({ customColor: event.target.value })}
-                    className="h-8 w-8 rounded border border-slate-200 cursor-pointer p-0 dark:border-slate-700 dark:bg-slate-900"
-                  />
-                  <input
-                    type="text"
-                    placeholder="#ffffff"
-                    value={homePageBackground.customColor}
-                    onChange={(event) => handleHomePageBackgroundChange({ customColor: event.target.value })}
-                    className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                  />
+              {homePageBackground.enabled && (
+                <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+                    {[
+                      { value: 'white', label: 'Trắng' },
+                      { value: 'black', label: 'Đen' },
+                      { value: 'primary', label: 'Màu chính' },
+                      { value: 'secondary', label: 'Màu phụ' },
+                      { value: 'custom', label: 'Tự chọn' }
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => handleHomePageBackgroundChange({ type: opt.value as any })}
+                        className={cn(
+                          "px-3 py-2 text-xs font-medium rounded-md border transition-all",
+                          homePageBackground.type === opt.value
+                            ? "border-cyan-600 bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400 dark:border-cyan-400"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {homePageBackground.type === 'custom' && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        type="color"
+                        value={homePageBackground.customColor || '#ffffff'}
+                        onChange={(event) => handleHomePageBackgroundChange({ customColor: event.target.value })}
+                        className="h-8 w-8 rounded border border-slate-200 cursor-pointer p-0 dark:border-slate-700 dark:bg-slate-900"
+                      />
+                      <input
+                        type="text"
+                        placeholder="#ffffff"
+                        value={homePageBackground.customColor}
+                        onChange={(event) => handleHomePageBackgroundChange({ customColor: event.target.value })}
+                        className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
+        </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <Button

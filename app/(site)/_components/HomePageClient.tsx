@@ -36,9 +36,26 @@ export default function HomePageClient({
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
   const systemColors = useBrandColors();
 
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    setIsDark(document.documentElement.classList.contains('dark'));
+    const handleThemeChange = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    window.addEventListener('site-theme-change', handleThemeChange);
+    return () => {
+      window.removeEventListener('site-theme-change', handleThemeChange);
+    };
+  }, []);
+
   const bgStyle = useMemo(() => {
     if (!systemConfig?.homePageBackground) {return {};}
-    const { type, customColor } = systemConfig.homePageBackground;
+    const { enabled, type, customColor } = systemConfig.homePageBackground;
+    if (!enabled || isDark) {return {};}
     let color = '';
     switch (type) {
       case 'white':
@@ -60,7 +77,7 @@ export default function HomePageClient({
         color = '#ffffff';
     }
     return { backgroundColor: color };
-  }, [systemConfig?.homePageBackground, systemColors]);
+  }, [systemConfig?.homePageBackground, systemColors, isDark]);
 
   useEffect(() => {
     const canIdle = typeof window.requestIdleCallback === 'function';

@@ -42,6 +42,7 @@ const aiImportOverrideDoc = v.object({
 });
 
 const homePageBackgroundDoc = v.object({
+  enabled: v.optional(v.boolean()),
   type: v.union(
     v.literal("white"),
     v.literal("black"),
@@ -122,16 +123,18 @@ const normalizeGlobalFontOverride = (value: unknown) => {
 const normalizeHomePageBackground = (value: unknown) => {
   if (!value || typeof value !== "object") {
     return {
+      enabled: false,
       type: "white" as const,
       customColor: "",
     };
   }
   const record = value as Record<string, unknown>;
+  const enabled = typeof record.enabled === "boolean" ? record.enabled : false;
   const type = (["white", "black", "primary", "secondary", "custom"].includes(record.type as string))
     ? (record.type as "white" | "black" | "primary" | "secondary" | "custom")
     : ("white" as const);
   const customColor = typeof record.customColor === "string" ? record.customColor : "";
-  return { type, customColor };
+  return { enabled, type, customColor };
 };
 
 const normalizeOverrides = (value: unknown): Record<string, { enabled: boolean; systemEnabled: boolean; mode: "single" | "dual"; primary: string; secondary: string }> => {
@@ -413,6 +416,7 @@ export const bulkSetTypeAiImportOverride = mutation({
 
 export const setHomePageBackground = mutation({
   args: {
+    enabled: v.boolean(),
     type: v.union(
       v.literal("white"),
       v.literal("black"),
@@ -424,6 +428,7 @@ export const setHomePageBackground = mutation({
   },
   handler: async (ctx, args) => {
     const next = {
+      enabled: args.enabled,
       type: args.type,
       customColor: args.customColor ?? "",
     };
