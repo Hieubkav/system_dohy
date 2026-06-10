@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import dynamic from 'next/dynamic';
 import { cn } from '@/app/admin/components/ui';
 import { useQuery } from 'convex/react';
@@ -27,35 +27,7 @@ interface HomeComponentRendererProps {
 
 export function HomeComponentRenderer({ component, snapshotComponentKey }: HomeComponentRendererProps) {
   const systemColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const checkIsDark = () => {
-      const storedTheme = localStorage.getItem('site_theme_override');
-      if (storedTheme) {
-        return storedTheme === 'dark';
-      }
-      if (siteDarkMode === 'dark') {
-        return true;
-      }
-      if (siteDarkMode === 'system') {
-        return window.matchMedia('(prefers-color-scheme: dark)').matches;
-      }
-      return false;
-    };
-
-    setIsDark(checkIsDark());
-
-    const handleThemeChange = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    };
-
-    window.addEventListener('site-theme-change', handleThemeChange);
-    return () => {
-      window.removeEventListener('site-theme-change', handleThemeChange);
-    };
-  }, [siteDarkMode]);
+  const { isDark } = useSiteSettings();
 
   const snapshotCtx = useSnapshotDemoContext();
   const isSnapshotMode = Boolean(snapshotCtx);

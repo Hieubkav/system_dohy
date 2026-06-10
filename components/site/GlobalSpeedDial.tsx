@@ -35,34 +35,8 @@ export function GlobalSpeedDial() {
   const components = useQuery(api.homeComponents.listActive);
   const chatbotConfig = useQuery(api.systemIntegrations.getPublicAiConfig);
   const systemColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
+  const { isDark } = useSiteSettings();
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
-  const [isDark, setIsDark] = React.useState(false);
-
-  React.useEffect(() => {
-    const syncDarkMode = () => {
-      const storedTheme = localStorage.getItem('site_theme_override');
-      if (storedTheme) {
-        setIsDark(storedTheme === 'dark');
-        return;
-      }
-      if (siteDarkMode === 'dark') {
-        setIsDark(true);
-        return;
-      }
-      if (siteDarkMode === 'system') {
-        setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
-        return;
-      }
-      setIsDark(false);
-    };
-
-    syncDarkMode();
-    window.addEventListener('site-theme-change', syncDarkMode);
-    return () => {
-      window.removeEventListener('site-theme-change', syncDarkMode);
-    };
-  }, [siteDarkMode]);
 
   const resolvedColors = resolveTypeOverrideColors({
     type: 'SpeedDial',

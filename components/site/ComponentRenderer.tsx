@@ -193,8 +193,7 @@ interface ComponentRendererProps {
 
 export function ComponentRenderer({ component }: ComponentRendererProps) {
   const systemColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
-  const [isDark, setIsDark] = React.useState(false);
+  const { isDark } = useSiteSettings();
   const isSnapshotMode = Boolean(useSnapshotDemoContext());
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig, isSnapshotMode ? 'skip' : undefined);
   const { type, title, config } = component;
@@ -208,31 +207,6 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
     overrides: systemConfig?.typeFontOverrides ?? null,
     globalOverride: systemConfig?.globalFontOverride ?? null,
   });
-
-  React.useEffect(() => {
-    const syncDarkMode = () => {
-      const storedTheme = localStorage.getItem('site_theme_override');
-      if (storedTheme) {
-        setIsDark(storedTheme === 'dark');
-        return;
-      }
-      if (siteDarkMode === 'dark') {
-        setIsDark(true);
-        return;
-      }
-      if (siteDarkMode === 'system') {
-        setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
-        return;
-      }
-      setIsDark(false);
-    };
-
-    syncDarkMode();
-    window.addEventListener('site-theme-change', syncDarkMode);
-    return () => {
-      window.removeEventListener('site-theme-change', syncDarkMode);
-    };
-  }, [siteDarkMode]);
 
   const fontStyle = { '--font-active': `var(${resolvedFont.fontVariable})` } as React.CSSProperties;
   const wrapWithFont = (node: React.ReactNode) => (

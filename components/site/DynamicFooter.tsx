@@ -83,35 +83,9 @@ export function DynamicFooter() {
     <div className="font-active" style={fontStyle}>{node}</div>
   );
   const { primary: brandColor, secondary, mode } = resolvedColors;
-  const { siteName, logo: siteLogo, siteDarkMode } = useSiteSettings();
-  const [isDark, setIsDark] = React.useState(false);
+  const { siteName, logo: siteLogo, isDark } = useSiteSettings();
   const socialLinks = useSocialLinks();
   const components = useQuery(api.homeComponents.listActive);
-
-  React.useEffect(() => {
-    const syncDarkMode = () => {
-      const storedTheme = localStorage.getItem('site_theme_override');
-      if (storedTheme) {
-        setIsDark(storedTheme === 'dark');
-        return;
-      }
-      if (siteDarkMode === 'dark') {
-        setIsDark(true);
-        return;
-      }
-      if (siteDarkMode === 'system') {
-        setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
-        return;
-      }
-      setIsDark(false);
-    };
-
-    syncDarkMode();
-    window.addEventListener('site-theme-change', syncDarkMode);
-    return () => {
-      window.removeEventListener('site-theme-change', syncDarkMode);
-    };
-  }, [siteDarkMode]);
   
   const footerComponent = React.useMemo(() => {
     if (snapshotDemo) {
