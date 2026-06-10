@@ -4,7 +4,6 @@ import React from 'react';
 import { AlertTriangle, Eye } from 'lucide-react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
-import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import {
   getCTAAccentBalance,
@@ -21,6 +20,36 @@ const CTA_STYLES: { id: CTAStyle; label: string }[] = [
   { id: 'gradient', label: '(5) Chuyển màu' },
   { id: 'minimal', label: '(6) Tối giản' },
 ];
+
+const CTAPreviewContent = ({
+  config,
+  brandColor,
+  secondary,
+  mode,
+  style,
+}: {
+  config: CTAConfig;
+  brandColor: string;
+  secondary: string;
+  mode: 'single' | 'dual';
+  style: CTAStyle;
+}) => {
+  const { isDark } = usePreviewDark();
+  const { tokens } = React.useMemo(() => getCTAValidationResult({
+    config,
+    primary: brandColor,
+    secondary,
+    mode,
+    style,
+    isDark,
+  }), [brandColor, config, isDark, mode, secondary, style]);
+
+  return (
+    <BrowserFrame url="yoursite.com">
+      <CTASectionShared config={config} style={style} tokens={tokens} context="preview" />
+    </BrowserFrame>
+  );
+};
 
 export const CTAPreview = ({
   config,
@@ -42,14 +71,12 @@ export const CTAPreview = ({
   fontClassName?: string;
 }) => {
   const { device, setDevice } = usePreviewDevice();
-  const { isDark } = usePreviewDark();
   const style = selectedStyle;
 
   const {
     accessibility,
     harmonyStatus,
     resolvedSecondary,
-    tokens,
   } = getCTAValidationResult({
     config,
     primary: brandColor,
@@ -57,8 +84,6 @@ export const CTAPreview = ({
     mode,
     style,
   });
-
-  const adaptedTokens = React.useMemo(() => adaptTokensForDarkMode(tokens, isDark), [tokens, isDark]);
 
   const accentBalance = getCTAAccentBalance(style);
 
@@ -76,9 +101,13 @@ export const CTAPreview = ({
         fontStyle={fontStyle}
         fontClassName={fontClassName}
       >
-        <BrowserFrame url="yoursite.com">
-          <CTASectionShared config={config} style={style} tokens={adaptedTokens} context="preview" />
-        </BrowserFrame>
+        <CTAPreviewContent
+          config={config}
+          brandColor={brandColor}
+          secondary={secondary}
+          mode={mode}
+          style={style}
+        />
       </PreviewWrapper>
 
       {mode === 'dual' && harmonyStatus.isTooSimilar && (

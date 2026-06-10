@@ -45,8 +45,9 @@ import {
 import { getCategoryProductsColors } from '@/app/admin/home-components/category-products/_lib/colors';
 import { getCategoryProductsCardRadiusClassName, getCategoryProductsImageRadiusClassName, getCategoryProductsResponsiveGridClassName, normalizeCategoryProductsCornerRadius } from '@/app/admin/home-components/category-products/_types';
 import { getProductCategoriesColors } from '@/app/admin/home-components/product-categories/_lib/colors';
-import { getCTAColors } from '@/app/admin/home-components/cta/_lib/colors';
+import { getCTAThemeTokens } from '@/app/admin/home-components/cta/_lib/colors';
 import { CTASectionShared } from '@/app/admin/home-components/cta/_components/CTASectionShared';
+import { normalizeCTAStyle } from '@/app/admin/home-components/cta/_lib/constants';
 import { BenefitsSectionShared } from '@/app/admin/home-components/benefits/_components/BenefitsSectionShared';
 import { getBenefitsSectionColors, normalizeBenefitsHarmony, normalizeBenefitsStyle } from '@/app/admin/home-components/benefits/_lib/colors';
 import { FaqSectionShared } from '@/app/admin/home-components/faq/_components/FaqSectionShared';
@@ -293,7 +294,7 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
     }
     case 'CTA': {
       return wrapWithFont(
-        <CTASection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} />
+        <CTASection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} isDark={isDark} />
       );
     }
     case 'Testimonials': {
@@ -2005,11 +2006,13 @@ function CTASection({
   brandColor,
   secondary,
   mode,
+  isDark,
 }: {
   config: Record<string, unknown>;
   brandColor: string;
   secondary: string;
   mode: 'single' | 'dual';
+  isDark?: boolean;
 }) {
   const ctaConfig = config as {
     title?: string;
@@ -2027,13 +2030,14 @@ function CTASection({
     style?: CTAStyle;
   };
 
-  const style = ctaConfig.style ?? 'banner';
+  const style = normalizeCTAStyle(ctaConfig.style);
 
-  const tokens = getCTAColors({
+  const tokens = getCTAThemeTokens({
     primary: brandColor,
     secondary,
     mode,
     style,
+    isDark: isDark ?? false,
   });
 
   return (

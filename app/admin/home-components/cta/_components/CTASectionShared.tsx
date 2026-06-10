@@ -76,10 +76,6 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
   const radiusClassNames = getRadiusClassNames(config.cornerRadius);
   const containerWidthClassName = getContainerWidthClassName(config.containerWidth);
   const spacingClassName = getSpacingClassName(normalizedStyle, config.noVerticalMargin === true ? 'none' : config.spacing);
-  const usesNeutralBorder = normalizedStyle === 'centered'
-    || normalizedStyle === 'split'
-    || normalizedStyle === 'floating'
-    || normalizedStyle === 'minimal';
 
   const badge = getValue(config.badge);
   const title = getValue(config.title) ?? CTA_FALLBACKS.title;
@@ -112,11 +108,10 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
         buttonBaseClass,
         radiusClassNames.button,
         'whitespace-nowrap border',
-        usesNeutralBorder && 'border-slate-200 hover:border-slate-400 hover:bg-slate-50/80 dark:border-white/15 dark:hover:border-white/35 dark:hover:bg-white/5',
       )}
       style={{
         backgroundColor: tokens.secondaryButtonBg ?? 'transparent',
-        borderColor: usesNeutralBorder ? undefined : tokens.secondaryButtonBorder,
+        borderColor: tokens.secondaryButtonBorder,
         color: tokens.secondaryButtonText,
       }}
     >
@@ -215,12 +210,12 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
 
   if (normalizedStyle === 'split') {
     return (
-      <section className={cn('bg-slate-50 px-4', spacingClassName, sectionClass)} style={{ background: tokens.sectionBg, borderColor: tokens.sectionBorder }}>
+      <section className={cn('px-4', spacingClassName, sectionClass)} style={{ background: tokens.sectionBg, borderColor: tokens.sectionBorder }}>
         <div
-          className={cn(containerWidthClassName, radiusClassNames.card, 'border border-slate-200 p-4 transition-colors hover:border-slate-400 sm:p-6 md:p-8 dark:border-white/10 dark:hover:border-white/30')}
+          className={cn(containerWidthClassName, radiusClassNames.card, 'border p-4 transition-colors sm:p-6 md:p-8')}
           style={{
             backgroundColor: tokens.cardBg,
-            borderColor: undefined,
+            borderColor: tokens.cardBorder,
           }}
         >
           <div className="grid grid-cols-1 items-center gap-5 sm:gap-6 md:grid-cols-[1fr,auto]">
@@ -246,13 +241,13 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
 
   if (normalizedStyle === 'floating') {
     return (
-      <section className={cn('bg-slate-50 px-4', spacingClassName, sectionClass)} style={{ background: tokens.sectionBg }}>
+      <section className={cn('px-4', spacingClassName, sectionClass)} style={{ background: tokens.sectionBg }}>
         <div className={cn(containerWidthClassName, 'px-4 sm:px-6 @max-md/preview:px-4')}>
           <div
-            className={cn(radiusClassNames.card, 'border border-slate-200 p-5 transition-colors hover:border-slate-400 sm:p-6 md:p-8 @max-md/preview:p-5 dark:border-white/10 dark:hover:border-white/30')}
+            className={cn(radiusClassNames.card, 'border p-5 transition-colors sm:p-6 md:p-8 @max-md/preview:p-5')}
             style={{
               backgroundColor: tokens.cardBg,
-              borderColor: undefined,
+              borderColor: tokens.cardBorder,
             }}
           >
             <div className="flex flex-col items-center justify-between gap-5 text-center sm:gap-6 md:flex-row md:text-left @max-md/preview:flex-col @max-md/preview:text-center @max-md/preview:gap-5">
@@ -333,10 +328,10 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
   if (isFullWidth) {
     return (
       <section
-        className={cn('border-y border-slate-200 px-4 transition-colors hover:border-slate-400 dark:border-white/10 dark:hover:border-white/30', spacingClassName, sectionClass)}
+        className={cn('border-y px-4 transition-colors', spacingClassName, sectionClass)}
         style={{
           background: tokens.sectionBg,
-          borderColor: undefined,
+          borderColor: tokens.sectionBorder,
         }}
       >
         <div className="mx-auto w-full flex flex-col items-center justify-between gap-4 px-4 sm:gap-5 sm:px-6 md:flex-row md:gap-8 @max-md/preview:flex-col @max-md/preview:gap-4 @max-md/preview:px-4">
@@ -366,7 +361,7 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
         className={cn(
           'mx-auto max-w-7xl border transition-all duration-200',
           radiusClassNames.card,
-          'flex flex-col items-center justify-between gap-4 px-6 py-8 sm:gap-5 sm:px-8 sm:py-10 md:flex-row md:gap-8 @max-md/preview:flex-col @max-md/preview:gap-4 @max-md/preview:px-6 @max-md/preview:py-8 dark:border-white/10 dark:hover:border-white/30',
+          'flex flex-col items-center justify-between gap-4 px-6 py-8 sm:gap-5 sm:px-8 sm:py-10 md:flex-row md:gap-8 @max-md/preview:flex-col @max-md/preview:gap-4 @max-md/preview:px-6 @max-md/preview:py-8',
         )}
         style={{
           background: tokens.sectionBg,
