@@ -22,6 +22,7 @@ import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
 import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, type PreviewDevice } from '../../_shared/hooks/usePreviewDevice';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import {
   getAPCATextColor,
   getSpeedDialColorTokens,
@@ -88,6 +89,7 @@ interface SpeedDialSectionSharedProps {
   previewStyle?: SpeedDialStyle;
   onPreviewStyleChange?: (style: SpeedDialStyle) => void;
   enableShadow?: boolean;
+  isDark?: boolean;
 }
 
 /** Icon dùng PNG logo (fill full nút, không cần bg color) */
@@ -1037,15 +1039,19 @@ export function SpeedDialSectionShared({
   previewStyle,
   onPreviewStyleChange,
   enableShadow = true,
+  isDark,
 }: SpeedDialSectionSharedProps) {
   const selectedStyle = previewStyle ?? style;
   const normalizedActions = React.useMemo(() => normalizeSpeedDialActions(actions), [actions]);
   const resolvedSectionTitle = sectionTitle.trim().length > 0 ? sectionTitle : 'Speed Dial';
-  const tokens = React.useMemo(() => getSpeedDialColorTokens({
-    primary: brandColor,
-    secondary,
-    mode,
-  }), [brandColor, secondary, mode]);
+  const tokens = React.useMemo(() => adaptTokensForDarkMode(
+    getSpeedDialColorTokens({
+      primary: brandColor,
+      secondary,
+      mode,
+    }),
+    isDark ?? false
+  ), [brandColor, secondary, mode, isDark]);
   const [isOpen, setIsOpen] = React.useState(defaultOpen);
   const [isScrolled, setIsScrolled] = React.useState(false);
 

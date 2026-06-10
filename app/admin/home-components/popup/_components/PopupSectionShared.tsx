@@ -25,6 +25,7 @@ interface PopupSectionSharedProps {
   setPreviewDevice?: (device: PreviewDevice) => void;
   previewStyle?: PopupStyle;
   onPreviewStyleChange?: (style: PopupStyle) => void;
+  isDark?: boolean;
 }
 
 const getPopupStorageKey = (config: PopupConfig) => {
@@ -638,6 +639,7 @@ export function PopupSectionShared({
   setPreviewDevice,
   previewStyle,
   onPreviewStyleChange,
+  isDark,
 }: PopupSectionSharedProps) {
   const style = previewStyle ?? config.style;
   const nextConfig = { ...config, style };

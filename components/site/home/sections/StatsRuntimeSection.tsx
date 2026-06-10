@@ -52,7 +52,9 @@ const getItemContainerClass = (mediaPlacement?: 'top' | 'left', mediaAlign?: 'le
   return `flex flex-col ${getItemAlignClass(mediaAlign)}`;
 };
 
-export function StatsRuntimeSection({ config, brandColor, secondary, mode, title }: HomeComponentSectionProps) {
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
+
+export function StatsRuntimeSection({ config, brandColor, secondary, mode, title, isDark }: HomeComponentSectionProps & { isDark?: boolean }) {
   const items = (config.items as StatsItem[]) || [];
   const style = (config.style as StatsStyle) || 'horizontal';
   const headerConfig = extractSectionHeaderConfig(config);
@@ -95,7 +97,7 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
   });
 
   if (style === 'horizontal') {
-    const colors = getHorizontalColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getHorizontalColors(brandColor, secondary, mode), isDark ?? false);
     const { grid, tablet, mobile } = gc(desktopColumns);
     return (
       <section className={cn(sectionSpacingClassName, 'px-3')}>
@@ -141,7 +143,7 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
   }
 
   if (style === 'cards') {
-    const colors = getCardsColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getCardsColors(brandColor, secondary, mode), isDark ?? false);
     const { grid, tablet, mobile } = gc(desktopColumns);
     return (
       <section className={cn(sectionSpacingClassName, 'px-3')}>
@@ -180,7 +182,7 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
   }
 
   if (style === 'icons') {
-    const colors = getIconsColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getIconsColors(brandColor, secondary, mode), isDark ?? false);
     const { grid, tablet, mobile } = gc(desktopColumns);
     return (
       <section className={cn(sectionSpacingClassName, 'px-3')}>
@@ -223,7 +225,7 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
   }
 
   if (style === 'gradient') {
-    const colors = getGradientColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getGradientColors(brandColor, secondary, mode), isDark ?? false);
     const { grid, tablet, mobile } = gc(desktopColumns);
     return (
       <section className={cn(sectionSpacingClassName, 'px-3')}>
@@ -260,7 +262,7 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
   }
 
   if (style === 'minimal') {
-    const colors = getMinimalColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getMinimalColors(brandColor, secondary, mode), isDark ?? false);
     const { grid, tablet, mobile } = gc(desktopColumns);
     return (
       <section className={cn(sectionSpacingClassName, 'px-3')}>
@@ -298,7 +300,7 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
   }
 
   if (style === 'solar-hero') {
-    const colors = getSolarHeroColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getSolarHeroColors(brandColor, secondary, mode), isDark ?? false);
     const gridClass = desktopColumns === 3 ? 'grid-cols-1 sm:grid-cols-3 md:grid-cols-3' : 'grid-cols-2 sm:grid-cols-2 md:grid-cols-4';
     return (
       <section
@@ -338,7 +340,7 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
   }
 
   if (style === 'builder-overlay') {
-    const colors = getBuilderOverlayColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getBuilderOverlayColors(brandColor, secondary, mode), isDark ?? false);
     const itemWidthClass = desktopColumns === 3
       ? 'basis-full max-w-full sm:basis-1/3 sm:max-w-[33.333333%]'
       : 'basis-1/2 max-w-[50%] sm:basis-1/2 sm:max-w-[50%] md:basis-1/4 md:max-w-[25%]';
@@ -394,7 +396,7 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
   }
 
   // counter (default fallback)
-  const colors = getCounterColors(brandColor, secondary, mode);
+  const colors = adaptTokensForDarkMode(getCounterColors(brandColor, secondary, mode), isDark ?? false);
   const { grid, tablet, mobile } = gc(desktopColumns);
   return (
     <section className={cn(sectionSpacingClassName, 'px-3')}>

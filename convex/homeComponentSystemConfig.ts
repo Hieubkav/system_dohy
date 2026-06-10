@@ -3,9 +3,11 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { HOME_COMPONENT_TYPE_VALUES } from "../lib/home-components/componentTypes";
 import { DEFAULT_FONT_KEY, FONT_REGISTRY } from "../lib/fonts/registry";
+import { COMPONENT_LAYOUTS } from "./lib/componentLayouts";
 
 const GROUP_KEY = "home_components";
 const HIDDEN_TYPES_KEY = "create_hidden_types";
+const HIDDEN_LAYOUTS_KEY = "create_hidden_layouts";
 const OVERRIDES_KEY = "type_color_overrides";
 const FONT_OVERRIDES_KEY = "type_font_overrides";
 const GLOBAL_FONT_OVERRIDE_KEY = "global_font_override";
@@ -199,6 +201,7 @@ export const getConfig = query({
   args: {},
   handler: async (ctx) => {
     const hiddenTypes = normalizeHiddenTypes(await getSettingValue(ctx, HIDDEN_TYPES_KEY));
+    const hiddenLayouts = normalizeHiddenTypes(await getSettingValue(ctx, HIDDEN_LAYOUTS_KEY));
     const overrides = normalizeOverrides(await getSettingValue(ctx, OVERRIDES_KEY));
     const fontOverrides = normalizeFontOverrides(await getSettingValue(ctx, FONT_OVERRIDES_KEY));
     const globalFontOverride = normalizeGlobalFontOverride(await getSettingValue(ctx, GLOBAL_FONT_OVERRIDE_KEY));
@@ -206,6 +209,7 @@ export const getConfig = query({
     const homePageBackground = normalizeHomePageBackground(await getSettingValue(ctx, HOME_PAGE_BACKGROUND_KEY));
     return {
       hiddenTypes,
+      hiddenLayouts,
       typeColorOverrides: overrides,
       typeFontOverrides: fontOverrides,
       globalFontOverride,
@@ -215,6 +219,7 @@ export const getConfig = query({
   },
   returns: v.object({
     hiddenTypes: v.array(v.string()),
+    hiddenLayouts: v.array(v.string()),
     typeColorOverrides: v.record(v.string(), colorOverrideDoc),
     typeFontOverrides: v.record(v.string(), fontOverrideDoc),
     globalFontOverride: globalFontOverrideDoc,
@@ -232,6 +237,7 @@ export const setCreateVisibility = mutation({
   },
   returns: v.null(),
 });
+
 
 export const setTypeColorOverride = mutation({
   args: {
@@ -426,3 +432,68 @@ export const setHomePageBackground = mutation({
   },
   returns: v.null(),
 });
+
+export const setHiddenLayouts = mutation({
+  args: { hiddenLayouts: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    const normalized = normalizeHiddenTypes(args.hiddenLayouts);
+    await upsertSetting(ctx, HIDDEN_LAYOUTS_KEY, normalized);
+    return null;
+  },
+  returns: v.null(),
+});
+
+export const hideUnusedLayoutsAndTypes = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const components = await ctx.db.query("homeComponents").collect();
+    const usedTypes = new Set<string>();
+    const usedLayouts = new Set<string>();
+
+    components.forEach((c) => {
+      usedTypes.add(c.type);
+      const style = c.config?.style ?? c.config?.layout;
+      if (typeof style === "string" && style.trim().length > 0) {
+        usedLayouts.add(`${c.type}:${style.trim()}`);
+      }
+    });
+
+    const hiddenTypes: string[] = [];
+    const hiddenLayouts: string[] = [];
+
+    Object.entries(COMPONENT_LAYOUTS).forEach(([type, layouts]) => {
+      if (!usedTypes.has(type)) {
+        hiddenTypes.push(type);
+      } else {
+        layouts.forEach((style) => {
+          if (!usedLayouts.has(`${type}:${style}`)) {
+            hiddenLayouts.push(`${type}:${style}`);
+          }
+        });
+      }
+    });
+
+    await upsertSetting(ctx, HIDDEN_TYPES_KEY, hiddenTypes);
+    await upsertSetting(ctx, HIDDEN_LAYOUTS_KEY, hiddenLayouts);
+
+    return {
+      hiddenTypesCount: hiddenTypes.length,
+      hiddenLayoutsCount: hiddenLayouts.length,
+    };
+  },
+  returns: v.object({
+    hiddenTypesCount: v.number(),
+    hiddenLayoutsCount: v.number(),
+  }),
+});
+
+export const showAllLayoutsAndTypes = mutation({
+  args: {},
+  handler: async (ctx) => {
+    await upsertSetting(ctx, HIDDEN_TYPES_KEY, []);
+    await upsertSetting(ctx, HIDDEN_LAYOUTS_KEY, []);
+    return null;
+  },
+  returns: v.null(),
+});
+

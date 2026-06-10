@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
-import { BookOpen, Briefcase, CreditCard, Eye, FileText, Heart, LayoutTemplate, Loader2, Mail, Package, Save, ShoppingCart, Users } from 'lucide-react';
+import { BookOpen, Briefcase, CreditCard, Eye, FileText, Heart, LayoutTemplate, Loader2, Mail, Package, Save, ShoppingCart, Users, Sun, Moon } from 'lucide-react';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, cn } from '@/app/admin/components/ui';
 import { useBrandColors } from '@/components/site/hooks';
 import {
@@ -134,6 +134,23 @@ export default function HeaderMenuExperiencePage() {
   const [previewDevice, setPreviewDevice] = useState<DeviceType>('desktop');
   const [previewStyle, setPreviewStyle] = useState<HeaderLayoutStyle>('classic');
   const [isSaving, setIsSaving] = useState(false);
+
+  const siteDarkModeSetting = useQuery(api.settings.getByKey, { key: 'site_dark_mode' });
+  const siteDarkMode = (siteDarkModeSetting?.value as 'light' | 'dark') || 'light';
+
+  const handleToggleDarkMode = async () => {
+    const nextMode = siteDarkMode === 'dark' ? 'light' : 'dark';
+    try {
+      await setMultipleSettings({
+        settings: [
+          { group: 'site', key: 'site_dark_mode', value: nextMode }
+        ]
+      });
+      toast.success(`Đã chuyển sang chế độ ${nextMode === 'dark' ? 'Tối' : 'Sáng'}`);
+    } catch {
+      toast.error('Không thể cập nhật chế độ Dark Mode');
+    }
+  };
 
   const savedStyleRaw = headerStyleSetting?.value as string | undefined;
   const savedStyle = (savedStyleRaw === 'transparent' || savedStyleRaw === 'centered' ? 'allbirds' : savedStyleRaw) as HeaderLayoutStyle | undefined ?? 'classic';
@@ -456,16 +473,27 @@ export default function HeaderMenuExperiencePage() {
             Quay lại danh sách
           </Link>
         </div>
-        <Button
-          size="sm"
-          onClick={handleSave}
-          disabled={(!hasChanges && !hasStyleChanges) || isSaving}
-          className="gap-1.5"
-          style={{ backgroundColor: resolvedBrandColor }}
-        >
-          {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-          <span>{hasChanges || hasStyleChanges ? 'Lưu' : 'Đã lưu'}</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleToggleDarkMode}
+            className="gap-1.5 border-slate-200 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          >
+            {siteDarkMode === 'dark' ? <Sun size={14} className="text-amber-500" /> : <Moon size={14} className="text-indigo-500" />}
+            <span>{siteDarkMode === 'dark' ? 'Giao diện Sáng' : 'Giao diện Tối'}</span>
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={(!hasChanges && !hasStyleChanges) || isSaving}
+            className="gap-1.5"
+            style={{ backgroundColor: resolvedBrandColor }}
+          >
+            {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+            <span>{hasChanges || hasStyleChanges ? 'Lưu' : 'Đã lưu'}</span>
+          </Button>
+        </div>
       </div>
 
       <Card>

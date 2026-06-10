@@ -22,6 +22,7 @@ import {
 } from '@/app/admin/home-components/service-list/_types';
 import { buildDetailPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { useSnapshotDemoContext } from '@/components/modules/homepage/SnapshotDemoProvider';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 interface ServiceListSectionProps {
   config: Record<string, unknown>;
@@ -30,6 +31,7 @@ interface ServiceListSectionProps {
   mode: ServiceListBrandMode;
   title: string;
   snapshotComponentKey?: string;
+  isDark?: boolean;
 }
 
 type ServiceRecord = {
@@ -73,6 +75,7 @@ export function ServiceListSection({
   mode,
   title,
   snapshotComponentKey,
+  isDark,
 }: ServiceListSectionProps) {
   const snapshotDemo = useSnapshotDemoContext();
   const safeConfig = config as Partial<ServiceListConfig>;
@@ -184,11 +187,14 @@ export function ServiceListSection({
     );
   }
 
-  const tokens = getServiceListColorTokens({
-    primary: brandColor,
-    secondary,
-    mode,
-  });
+  const tokens = React.useMemo(() => {
+    const rawTokens = getServiceListColorTokens({
+      primary: brandColor,
+      secondary,
+      mode,
+    });
+    return adaptTokensForDarkMode(rawTokens, isDark ?? false);
+  }, [brandColor, secondary, mode, isDark]);
 
   const items = services.map((service, index) => {
     const preview = mapServiceToPreview(service, index, { categorySlugMap, routeMode });

@@ -6,10 +6,12 @@ import { getCTAColors } from '@/app/admin/home-components/cta/_lib/colors';
 import type { CTAConfig, CTAStyle } from '@/app/admin/home-components/cta/_types';
 import type { HomeComponentSectionProps } from '../types';
 
-export function CtaRuntimeSection({ config, brandColor, secondary, mode }: HomeComponentSectionProps) {
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
+
+export function CtaRuntimeSection({ config, brandColor, secondary, mode, isDark }: HomeComponentSectionProps & { isDark?: boolean }) {
   const ctaConfig = config as Partial<CTAConfig> & { style?: CTAStyle };
   const style = ctaConfig.style ?? 'banner';
-  const tokens = getCTAColors({ primary: brandColor, secondary, mode, style });
+  const tokens = adaptTokensForDarkMode(getCTAColors({ primary: brandColor, secondary, mode, style }), isDark ?? false);
 
   return (
     <CTASectionShared

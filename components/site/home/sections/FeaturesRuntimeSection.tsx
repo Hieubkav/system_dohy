@@ -8,7 +8,8 @@ import { normalizeFeaturesCornerRadius, type FeatureItem, type FeaturesStyle } f
 import { normalizeSectionSpacing } from '@/app/admin/home-components/_shared/types/sectionSpacing';
 import type { HomeComponentSectionProps } from '../types';
 
-export function FeaturesRuntimeSection({ config, brandColor, secondary, mode, title }: HomeComponentSectionProps) {
+
+export function FeaturesRuntimeSection({ config, brandColor, secondary, mode, title, isDark }: HomeComponentSectionProps & { isDark?: boolean }) {
   const items = Array.isArray(config.items) ? (config.items as FeatureItem[]) : [];
   const style = (config.style as FeaturesStyle) ?? 'carousel6';
   const showIcons = config.showIcons !== false;
@@ -49,6 +50,7 @@ export function FeaturesRuntimeSection({ config, brandColor, secondary, mode, ti
           spacing={spacing}
           desktopColumns={config.desktopColumns === 4 ? 4 : 3}
           cornerRadius={cornerRadius}
+          isDark={isDark}
         />
       </div>
     </section>

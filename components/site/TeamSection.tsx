@@ -12,6 +12,7 @@ import type {
   TeamBrandMode,
   TeamStyle,
 } from '@/app/admin/home-components/team/_types';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 interface TeamSectionProps {
   config: Record<string, unknown>;
@@ -19,6 +20,7 @@ interface TeamSectionProps {
   secondary: string;
   mode: TeamBrandMode;
   title: string;
+  isDark?: boolean;
 }
 
 export function TeamSection({
@@ -27,15 +29,19 @@ export function TeamSection({
   secondary,
   mode,
   title,
+  isDark,
 }: TeamSectionProps) {
   const normalizedConfig = normalizeTeamConfig(config);
   const style = normalizeTeamStyle((normalizedConfig.style as TeamStyle | undefined) ?? 'grid');
 
-  const tokens = React.useMemo(() => getTeamColorTokens({
-    primary: brandColor,
-    secondary,
-    mode,
-  }), [brandColor, secondary, mode]);
+  const tokens = React.useMemo(() => {
+    const rawTokens = getTeamColorTokens({
+      primary: brandColor,
+      secondary,
+      mode,
+    });
+    return adaptTokensForDarkMode(rawTokens, isDark ?? false);
+  }, [brandColor, secondary, mode, isDark]);
 
   const sectionTitle = (title || '').trim().length > 0
     ? title

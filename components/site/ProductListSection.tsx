@@ -27,6 +27,7 @@ import { useCartConfig } from '@/lib/experiences';
 import { getProductsListColors, type ProductsListColors } from '@/components/site/products/colors';
 import { ProductCardActions } from '@/components/site/shared/ProductCardActions';
 import { QuickAddVariantModal } from '@/components/products/QuickAddVariantModal';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 // 6 Styles theo mẫu previews.tsx
 // 'minimal' = Luxury Minimal, 'commerce' = Commerce Card, 'bento' = Bento Grid
@@ -40,6 +41,7 @@ interface ProductListSectionProps {
   mode?: 'single' | 'dual';
   title: string;
   snapshotComponentKey?: string;
+  isDark?: boolean;
 }
 
 type ProductListSiteProduct = {
@@ -227,7 +229,7 @@ function WineCarouselSiteSection({
   );
 }
 
-export function ProductListSection({ config, brandColor, secondary, mode, title, snapshotComponentKey }: ProductListSectionProps) {
+export function ProductListSection({ config, brandColor, secondary, mode, title, snapshotComponentKey, isDark }: ProductListSectionProps) {
   const snapshotDemo = useSnapshotDemoContext();
   const style = (config.style as ProductListStyle) || 'commerce';
   const itemCount = (config.itemCount as number) || 8;
@@ -323,8 +325,11 @@ export function ProductListSection({ config, brandColor, secondary, mode, title,
   const [quickAddTarget, setQuickAddTarget] = React.useState<{ product: any; action: 'addToCart' | 'buyNow' } | null>(null);
 
   const tokens = React.useMemo(
-    () => getProductsListColors(brandColor, secondary, mode || 'single'),
-    [brandColor, secondary, mode]
+    () => {
+      const rawTokens = getProductsListColors(brandColor, secondary, mode || 'single');
+      return adaptTokensForDarkMode(rawTokens, isDark ?? false);
+    },
+    [brandColor, secondary, mode, isDark]
   );
 
   const handleAddToCart = async (product: any) => {
@@ -897,14 +902,14 @@ export function ProductListSection({ config, brandColor, secondary, mode, title,
                     {showAddToCartButton || showBuyNowButton ? (
                       <ProductCardActions
                         product={showcaseFeatured as any}
-                        tokens={{
+                        tokens={adaptTokensForDarkMode({
                           ...tokens,
                           primaryActionBg: brandColor,
                           primaryActionText: '#ffffff',
                           secondaryActionBorder: 'rgba(255,255,255,0.4)',
                           secondaryActionText: '#ffffff',
                           secondaryActionHoverBg: 'rgba(255,255,255,0.1)',
-                        }}
+                        }, isDark ?? false)}
                         showStock={showStock}
                         showAddToCartButton={showAddToCartButton}
                         showBuyNowButton={showBuyNowButton}

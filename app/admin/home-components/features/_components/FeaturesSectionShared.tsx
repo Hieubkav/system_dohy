@@ -71,7 +71,10 @@ interface FeaturesSectionSharedProps {
   spacing?: SectionSpacing;
   desktopColumns?: FeaturesDesktopColumns;
   cornerRadius?: FeaturesCornerRadius;
+  isDark?: boolean;
 }
+
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 export function FeaturesSectionShared({
   items,
@@ -98,6 +101,7 @@ export function FeaturesSectionShared({
   spacing = DEFAULT_SECTION_SPACING,
   desktopColumns = DEFAULT_FEATURES_DESKTOP_COLUMNS,
   cornerRadius = DEFAULT_FEATURES_CORNER_RADIUS,
+  isDark,
 }: FeaturesSectionSharedProps) {
   const normalizedItems = React.useMemo(() => normalizeItems(items), [items]);
   const previewDevice = resolveDevice(device);
@@ -105,11 +109,11 @@ export function FeaturesSectionShared({
   const resolvedCornerRadius = normalizeFeaturesCornerRadius(cornerRadius);
   const cardRadiusClassName = getFeaturesCornerRadiusClassName(resolvedCornerRadius);
 
-  const colors = React.useMemo(() => getFeaturesColorTokens({
+  const colors = React.useMemo(() => adaptTokensForDarkMode(getFeaturesColorTokens({
     primary: brandColor,
     secondary,
     mode,
-  }), [brandColor, secondary, mode]);
+  }), isDark ?? false), [brandColor, secondary, mode, isDark]);
 
   const sectionTitle = title?.trim() || 'Tính năng nổi bật';
 

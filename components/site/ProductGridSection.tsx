@@ -27,6 +27,7 @@ import { getProductsListColors } from '@/components/site/products/colors';
 import { ProductCardActions } from '@/components/site/shared/ProductCardActions';
 import { QuickAddVariantModal } from '@/components/products/QuickAddVariantModal';
 import { CategoryTabSlider } from '@/components/shared/CategoryTabSlider';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 
 interface ProductGridSectionProps {
@@ -36,9 +37,10 @@ interface ProductGridSectionProps {
   mode?: 'single' | 'dual';
   title: string;
   snapshotComponentKey?: string;
+  isDark?: boolean;
 }
 
-export function ProductGridSection({ config, brandColor, secondary, mode, title, snapshotComponentKey }: ProductGridSectionProps) {
+export function ProductGridSection({ config, brandColor, secondary, mode, title, snapshotComponentKey, isDark }: ProductGridSectionProps) {
   const snapshotDemo = useSnapshotDemoContext();
   const style = resolveGridStyle(config.style as string | undefined);
   const desktopColumns: 3 | 4 | 5 | 6 = (config.desktopColumns === 3 || config.desktopColumns === 5 || config.desktopColumns === 6) ? config.desktopColumns : 4;
@@ -136,8 +138,11 @@ export function ProductGridSection({ config, brandColor, secondary, mode, title,
   const [quickAddTarget, setQuickAddTarget] = React.useState<{ product: any; action: 'addToCart' | 'buyNow' } | null>(null);
 
   const tokens = React.useMemo(
-    () => getProductsListColors(brandColor, secondary, mode || 'single'),
-    [brandColor, secondary, mode]
+    () => {
+      const rawTokens = getProductsListColors(brandColor, secondary, mode || 'single');
+      return adaptTokensForDarkMode(rawTokens, isDark ?? false);
+    },
+    [brandColor, secondary, mode, isDark]
   );
 
   const handleAddToCart = async (product: any) => {

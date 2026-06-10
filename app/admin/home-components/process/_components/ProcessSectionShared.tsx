@@ -59,6 +59,7 @@ interface ProcessSectionSharedProps {
   cornerRadius?: ProcessCornerRadius;
   circularCtaText?: string;
   circularCtaLink?: string;
+  isDark?: boolean;
 }
 
 const PROCESS_STYLES: Array<{ id: ProcessStyle; label: string }> = [
@@ -1473,6 +1474,8 @@ const ProcessSectionContent = ({
   return renderGrid({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius });
 };
 
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
+
 export function ProcessSectionShared({
   steps,
   sectionTitle,
@@ -1503,8 +1506,9 @@ export function ProcessSectionShared({
   cornerRadius = DEFAULT_PROCESS_CORNER_RADIUS,
   circularCtaText = '',
   circularCtaLink = '',
+  isDark,
 }: ProcessSectionSharedProps) {
-  const tokens = React.useMemo(() => getProcessColors(brandColor, secondary, mode), [brandColor, secondary, mode]);
+  const tokens = React.useMemo(() => adaptTokensForDarkMode(getProcessColors(brandColor, secondary, mode), isDark ?? false), [brandColor, secondary, mode, isDark]);
   const selectedStyle = previewStyle ?? style;
   const maxVisible = getMaxVisible(selectedStyle, context, previewDevice);
   const info = getSharedInfoText(selectedStyle, steps.length, Math.min(steps.length, maxVisible), mode);

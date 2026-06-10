@@ -42,6 +42,9 @@ export default function SystemHomeComponentsPage() {
   const setTypeAiImportOverride = useMutation(api.homeComponentSystemConfig.setTypeAiImportOverride);
   const bulkSetTypeAiImportOverride = useMutation(api.homeComponentSystemConfig.bulkSetTypeAiImportOverride);
   const setHomePageBackground = useMutation(api.homeComponentSystemConfig.setHomePageBackground);
+  const hideUnusedLayoutsAndTypes = useMutation(api.homeComponentSystemConfig.hideUnusedLayoutsAndTypes);
+  const showAllLayoutsAndTypes = useMutation(api.homeComponentSystemConfig.showAllLayoutsAndTypes);
+
 
   const [hiddenTypes, setHiddenTypes] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -274,6 +277,27 @@ export default function SystemHomeComponentsPage() {
     }
   };
 
+  const handleHideUnusedLayoutsAndTypes = async () => {
+    try {
+      const result = await hideUnusedLayoutsAndTypes();
+      toast.success(
+        `Đã ẩn thành công ${result.hiddenTypesCount} loại component và ${result.hiddenLayoutsCount} layout không sử dụng.`
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể tự động ẩn layout & type chưa dùng.');
+    }
+  };
+
+  const handleShowAllLayoutsAndTypes = async () => {
+    try {
+      await showAllLayoutsAndTypes();
+      toast.success('Đã hiển thị lại toàn bộ layout và component types.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể phục hồi toàn bộ hiển thị.');
+    }
+  };
+
+
   const handleBulkCustom = async () => {
     if (selectedTypes.length === 0) {return;}
     try {
@@ -417,6 +441,21 @@ export default function SystemHomeComponentsPage() {
             <Button variant="outline" size="sm" onClick={handleHideUnusedTypes} disabled={unusedTypes.length === 0}>
               Ẩn type chưa dùng
             </Button>
+            <Button
+              className="bg-cyan-600 hover:bg-cyan-700 text-white font-medium shadow-sm"
+              size="sm"
+              onClick={handleHideUnusedLayoutsAndTypes}
+            >
+              Ẩn layout & type chưa dùng
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleShowAllLayoutsAndTypes}
+              className="text-cyan-600 border-cyan-200 hover:bg-cyan-50 dark:text-cyan-400 dark:border-cyan-800 dark:hover:bg-cyan-950/40"
+            >
+              Hiện toàn bộ layout & type
+            </Button>
             <Button variant="outline" size="sm" onClick={handleBulkCustom} disabled={selectedTypes.length === 0}>
               Bật custom đã chọn
             </Button>
@@ -430,6 +469,12 @@ export default function SystemHomeComponentsPage() {
             <span className="text-xs text-slate-500">
               {stats ? `Chưa dùng ${unusedTypes.length} type` : 'Đang tính số type chưa dùng...'}
             </span>
+            {config?.hiddenLayouts && config.hiddenLayouts.length > 0 && (
+              <span className="text-xs text-slate-500">
+                · Đang ẩn {config.hiddenLayouts.length} layout
+              </span>
+            )}
+
           </div>
 
           <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">

@@ -103,7 +103,9 @@ const HeroRuntimeVideo = ({ src, className }: { src: string; className: string }
   );
 };
 
-export function HeroRuntimeSection({ config, brandColor, secondary, mode }: HomeComponentSectionProps) {
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
+
+export function HeroRuntimeSection({ config, brandColor, secondary, mode, isDark }: HomeComponentSectionProps & { isDark?: boolean }) {
   const rawSlides = (config.slides as { image: string; link: string; mediaType?: 'image' | 'video' }[]) || [];
   // Auto-detect mediaType nếu chưa có (backward-compatible)
   const slides = rawSlides.map(s => ({ ...s, mediaType: s.mediaType ?? (isVideoUrl(s.image) ? 'video' as const : undefined) }));
@@ -114,13 +116,13 @@ export function HeroRuntimeSection({ config, brandColor, secondary, mode }: Home
   const [currentSlide, setCurrentSlide] = React.useState(0);
   const primaryHref = content.primaryButtonLink || slides[currentSlide]?.link || '#';
   const secondaryHref = content.secondaryButtonLink || '#';
-  const sliderColors = getSliderColors(brandColor, secondary, mode);
-  const fadeColors = getFadeColors(brandColor, secondary, mode);
-  const bentoColors = getBentoColors(brandColor, secondary, mode);
-  const conquestColors = getConquestColors(brandColor, secondary, mode);
-  const fullscreenColors = getFullscreenColors(brandColor, secondary, mode);
-  const splitColors = getSplitColors(brandColor, secondary, mode);
-  const parallaxColors = getParallaxColors(brandColor, secondary, mode);
+  const sliderColors = adaptTokensForDarkMode(getSliderColors(brandColor, secondary, mode), isDark ?? false);
+  const fadeColors = adaptTokensForDarkMode(getFadeColors(brandColor, secondary, mode), isDark ?? false);
+  const bentoColors = adaptTokensForDarkMode(getBentoColors(brandColor, secondary, mode), isDark ?? false);
+  const conquestColors = adaptTokensForDarkMode(getConquestColors(brandColor, secondary, mode), isDark ?? false);
+  const fullscreenColors = adaptTokensForDarkMode(getFullscreenColors(brandColor, secondary, mode), isDark ?? false);
+  const splitColors = adaptTokensForDarkMode(getSplitColors(brandColor, secondary, mode), isDark ?? false);
+  const parallaxColors = adaptTokensForDarkMode(getParallaxColors(brandColor, secondary, mode), isDark ?? false);
   const renderWithSpacing = (node: React.ReactNode) => (
     <div className={sectionSpacingClassName}>
       {node}

@@ -42,6 +42,7 @@ import type * as landingPages from "../landingPages.js";
 import type * as lib_aggregates_pageViews from "../lib/aggregates/pageViews.js";
 import type * as lib_aggregates_publicContent from "../lib/aggregates/publicContent.js";
 import type * as lib_commerce from "../lib/commerce.js";
+import type * as lib_componentLayouts from "../lib/componentLayouts.js";
 import type * as lib_courseEnrollment from "../lib/courseEnrollment.js";
 import type * as lib_fileService from "../lib/fileService.js";
 import type * as lib_helpers from "../lib/helpers.js";
@@ -150,6 +151,7 @@ declare const fullApi: ApiFromModules<{
   "lib/aggregates/pageViews": typeof lib_aggregates_pageViews;
   "lib/aggregates/publicContent": typeof lib_aggregates_publicContent;
   "lib/commerce": typeof lib_commerce;
+  "lib/componentLayouts": typeof lib_componentLayouts;
   "lib/courseEnrollment": typeof lib_courseEnrollment;
   "lib/fileService": typeof lib_fileService;
   "lib/helpers": typeof lib_helpers;
