@@ -3,6 +3,35 @@
 import { oklch, formatHex, parse, formatRgb } from 'culori';
 
 /**
+ * Điều chỉnh các màu sắc bên trong chuỗi gradient (linear-gradient/radial-gradient)
+ * sang tông màu Dark Mode tương ứng.
+ */
+export function adaptGradientForDarkMode(gradientStr: string, isDark: boolean): string {
+  if (!isDark) return gradientStr;
+
+  // Thay thế các mã màu Hex
+  let result = gradientStr.replace(/#([0-9a-fA-F]{3,8})\b/g, (match) => {
+    return adaptColorForDarkMode(match, isDark, 'background');
+  });
+
+  // Thay thế các định dạng rgb/rgba
+  result = result.replace(/rgba?\(.*?\)/g, (match) => {
+    return adaptColorForDarkMode(match, isDark, 'background');
+  });
+
+  // Thay thế các định dạng hsl/hsla
+  result = result.replace(/hsla?\(.*?\)/g, (match) => {
+    return adaptColorForDarkMode(match, isDark, 'background');
+  });
+
+  // Thay thế từ khóa white/black nếu đứng cô lập
+  result = result.replace(/\bwhite\b/g, () => adaptColorForDarkMode('#ffffff', isDark, 'background'));
+  result = result.replace(/\bblack\b/g, () => adaptColorForDarkMode('#000000', isDark, 'background'));
+
+  return result;
+}
+
+/**
  * Chuyển đổi một chuỗi màu đơn lẻ sang tông màu tương thích Dark Mode nếu cần thiết.
  * Giữ nguyên các màu sắc thương hiệu chính (Brand Colors) và chỉ điều chỉnh các màu trung hòa.
  */
@@ -21,6 +50,11 @@ export function adaptColorForDarkMode(colorStr: string, isDark: boolean, key = '
     trimmed === ''
   ) {
     return colorStr;
+  }
+
+  // Xử lý gradient trước tiên
+  if (trimmed.toLowerCase().includes('gradient')) {
+    return adaptGradientForDarkMode(trimmed, isDark);
   }
   
   // Xử lý một số từ khóa màu cơ bản trước khi parse
@@ -49,6 +83,9 @@ export function adaptColorForDarkMode(colorStr: string, isDark: boolean, key = '
       
       // 1. Nền chính cực sáng (L > 0.95) -> Nền tối sâu (L = 0.14) (~zinc-950)
       if (l > 0.95) {
+        if (!isBackgroundKey) {
+          return colorStr; // Giữ nguyên chữ sáng
+        }
         const darkColor = oklch({
           ...color,
           l: 0.14,
@@ -59,6 +96,9 @@ export function adaptColorForDarkMode(colorStr: string, isDark: boolean, key = '
       
       // 2. Nền phụ sáng (L > 0.88) -> Nền phụ tối (L = 0.21) (~zinc-900)
       if (l > 0.88) {
+        if (!isBackgroundKey) {
+          return colorStr; // Giữ nguyên chữ sáng
+        }
         const darkColor = oklch({
           ...color,
           l: 0.21,
@@ -69,6 +109,9 @@ export function adaptColorForDarkMode(colorStr: string, isDark: boolean, key = '
       
       // 3. Nền phụ thứ ba/Alt (L > 0.82) -> Nền tối sáng vừa (L = 0.27) (~zinc-800)
       if (l > 0.82) {
+        if (!isBackgroundKey) {
+          return colorStr; // Giữ nguyên chữ sáng
+        }
         const darkColor = oklch({
           ...color,
           l: 0.27,
@@ -79,6 +122,9 @@ export function adaptColorForDarkMode(colorStr: string, isDark: boolean, key = '
       
       // 4. Đường viền (L > 0.75) -> Viền tối rõ ràng hơn (L = 0.35) (~zinc-700/750)
       if (l > 0.75) {
+        if (!isBackgroundKey && !key.toLowerCase().includes('border')) {
+          return colorStr; // Giữ nguyên chữ sáng
+        }
         const borderDark = oklch({
           ...color,
           l: 0.35,
@@ -133,6 +179,9 @@ export function adaptColorForDarkMode(colorStr: string, isDark: boolean, key = '
     // Nếu là màu brand/accent có sắc độ (Chroma cao)
     // Tăng độ sáng nếu màu brand quá tối để đảm bảo độ tương phản APCA trên nền đen
     if ((color.l ?? 0) < 0.45) {
+      if (isBackgroundKey) {
+        return colorStr;
+      }
       const brightenedColor = oklch({
         ...color,
         l: 0.55,
@@ -165,6 +214,7 @@ export function adaptTokensForDarkMode<T>(tokens: T, isDark: boolean): T {
         const isColor = trimmed.startsWith('#') || 
                         trimmed.startsWith('rgb') || 
                         trimmed.startsWith('hsl') || 
+                        trimmed.toLowerCase().includes('gradient') || 
                         trimmed === 'transparent' || 
                         trimmed === 'white' || 
                         trimmed === 'black';
