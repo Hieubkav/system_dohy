@@ -15,8 +15,54 @@ const devices = [
   { icon: Smartphone, id: 'mobile' as const, label: 'Mobile (375px)' }
 ];
 
-export const PreviewDarkContext = React.createContext<{ isDark: boolean }>({ isDark: false });
-export const usePreviewDark = () => React.useContext(PreviewDarkContext);
+type PreviewDarkContextValue = { isDark: boolean };
+
+let previewDarkSnapshot = false;
+const previewDarkListeners = new Set<(isDark: boolean) => void>();
+
+const setPreviewDarkSnapshot = (isDark: boolean) => {
+  if (previewDarkSnapshot === isDark) {return;}
+  previewDarkSnapshot = isDark;
+  previewDarkListeners.forEach((listener) => listener(isDark));
+};
+
+const subscribePreviewDark = (listener: (isDark: boolean) => void) => {
+  previewDarkListeners.add(listener);
+  return () => {
+    previewDarkListeners.delete(listener);
+  };
+};
+
+export const PreviewDarkContext = React.createContext<PreviewDarkContextValue | null>(null);
+export const usePreviewDark = () => {
+  const context = React.useContext(PreviewDarkContext);
+  const [isDark, setIsDark] = React.useState(previewDarkSnapshot);
+
+  React.useEffect(() => subscribePreviewDark(setIsDark), []);
+
+  return context ?? { isDark };
+};
+
+const injectPreviewDark = (children: React.ReactNode, isDark: boolean): React.ReactNode => (
+  React.Children.map(children, (child) => {
+    if (!React.isValidElement(child)) {
+      return child;
+    }
+
+    if (typeof child.type !== 'string') {
+      return React.cloneElement(child, { isDark } as any);
+    }
+
+    const childProps = child.props as { children?: React.ReactNode };
+    if (!childProps.children) {
+      return child;
+    }
+
+    return React.cloneElement(child, {
+      children: injectPreviewDark(childProps.children, isDark),
+    } as any);
+  })
+);
 
 export const PreviewWrapper = ({ 
   title, 
@@ -67,6 +113,10 @@ export const PreviewWrapper = ({
 
     return () => observer.disconnect();
   }, []);
+
+  React.useEffect(() => {
+    setPreviewDarkSnapshot(isDark);
+  }, [isDark]);
 
   const detectedType = React.useMemo(() => {
     if (!pathname) return null;
@@ -139,12 +189,7 @@ export const PreviewWrapper = ({
             className={cn("@container mx-auto transition-all duration-300", deviceWidthClass, fontClassName, isDark ? "dark bg-slate-950" : "")}
             style={fontStyle}
           >
-            {React.Children.map(children, child => {
-              if (React.isValidElement(child) && typeof child.type !== 'string') {
-                return React.cloneElement(child, { isDark } as any);
-              }
-              return child;
-            })}
+            {injectPreviewDark(children, isDark)}
           </div>
           {info && (
             <div className="mt-3 text-xs text-slate-500">

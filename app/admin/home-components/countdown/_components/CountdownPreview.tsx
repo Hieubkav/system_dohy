@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
+import { usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { getCountdownColorTokens } from '../_lib/colors';
 import { useCountdownTimer } from '../_lib/timer';
 import { normalizeCountdownConfig } from '../_lib/normalize';
@@ -11,6 +12,7 @@ import type {
   CountdownConfig,
   CountdownStyle,
 } from '../_types';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 interface CountdownPreviewProps {
   config: CountdownConfig;
@@ -34,6 +36,7 @@ export const CountdownPreview = ({
   fontClassName,
 }: CountdownPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
 
   const normalizedConfig = React.useMemo(() => {
     const normalized = normalizeCountdownConfig(config);
@@ -44,12 +47,12 @@ export const CountdownPreview = ({
   }, [config, selectedStyle]);
 
   const tokens = React.useMemo(
-    () => getCountdownColorTokens({
+    () => adaptTokensForDarkMode(getCountdownColorTokens({
       primary: brandColor,
       secondary,
       mode,
-    }),
-    [brandColor, secondary, mode],
+    }), isDark),
+    [brandColor, secondary, mode, isDark],
   );
 
   const timeLeft = useCountdownTimer(normalizedConfig.endDate);

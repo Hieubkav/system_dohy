@@ -4,7 +4,7 @@ import React from 'react';
 import { Image as ImageIcon } from 'lucide-react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import type { SectionSpacing } from '../../_shared/types/sectionSpacing';
 import {
@@ -13,6 +13,7 @@ import {
 import { CLIENTS_STYLES } from '../_lib/constants';
 import { ClientsSectionShared } from './ClientsSectionShared';
 import type { ClientItem, ClientsBrandMode, ClientsCornerRadius, ClientsStyle, ClientsHeaderAlign } from '../_types';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 interface ClientsPreviewProps {
   items: ClientItem[];
@@ -75,6 +76,7 @@ export const ClientsPreview = ({
   cornerRadius,
 }: ClientsPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
 
   const validation = React.useMemo(() => getClientsValidationResult({
     primary: brandColor,
@@ -82,6 +84,7 @@ export const ClientsPreview = ({
     mode,
     style: selectedStyle,
   }), [brandColor, secondary, mode, selectedStyle]);
+  const tokens = React.useMemo(() => adaptTokensForDarkMode(validation.tokens, isDark), [validation.tokens, isDark]);
 
   const info = getImageInfoText(selectedStyle, items.length);
   const resolvedTitle = typeof title === 'string' ? title.trim() : '';
@@ -104,13 +107,13 @@ export const ClientsPreview = ({
       >
         <BrowserFrame>
           {items.length === 0 ? (
-            <section className="px-4 py-8" style={{ backgroundColor: validation.tokens.neutralSurface }}>
+            <section className="px-4 py-8" style={{ backgroundColor: tokens.neutralSurface }}>
               <div className="flex flex-col items-center justify-center h-40">
-                <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: validation.tokens.placeholderIconBackground }}>
-                  <ImageIcon size={28} style={{ color: validation.tokens.placeholderIcon }} />
+                <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: tokens.placeholderIconBackground }}>
+                  <ImageIcon size={28} style={{ color: tokens.placeholderIcon }} />
                 </div>
-                <p className="text-sm font-medium" style={{ color: validation.tokens.neutralText }}>Chưa có ảnh banner</p>
-                <p className="text-xs mt-1" style={{ color: validation.tokens.placeholderText }}>Thêm từ 1 đến 8 ảnh để xem preview</p>
+                <p className="text-sm font-medium" style={{ color: tokens.neutralText }}>Chưa có ảnh banner</p>
+                <p className="text-xs mt-1" style={{ color: tokens.placeholderText }}>Thêm từ 1 đến 8 ảnh để xem preview</p>
               </div>
             </section>
           ) : (
@@ -119,7 +122,7 @@ export const ClientsPreview = ({
               title={resolvedTitle}
               style={selectedStyle}
               items={items}
-              tokens={validation.tokens}
+              tokens={tokens}
               device={device}
               hideHeader={hideHeader}
               showTitle={showTitle}
@@ -140,8 +143,8 @@ export const ClientsPreview = ({
       </PreviewWrapper>
 
       <ColorInfoPanel
-        brandColor={validation.tokens.primary}
-        secondary={mode === 'single' ? validation.tokens.primary : validation.tokens.secondary}
+        brandColor={tokens.primary}
+        secondary={mode === 'single' ? tokens.primary : tokens.secondary}
         description={mode === 'single'
           ? 'Chế độ một màu: màu chính được dùng cho badge, viền ảnh, nền overlay và các điểm nhấn của banner ảnh thương hiệu.'
           : 'Màu phụ áp dụng cho badge, viền ảnh, nền overlay và các điểm nhấn của banner ảnh thương hiệu.'}

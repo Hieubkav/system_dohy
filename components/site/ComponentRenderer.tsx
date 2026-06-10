@@ -16,6 +16,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useBrandColors, useSiteSettings } from './hooks';
 import { useSnapshotDemoContext } from '@/components/modules/homepage/SnapshotDemoProvider';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import { cn } from '@/app/admin/components/ui';
 import { resolveTypeOverrideColors } from '@/app/admin/home-components/_shared/lib/typeColorOverride';
 import { resolveTypeOverrideFont } from '@/app/admin/home-components/_shared/lib/typeFontOverride';
@@ -258,6 +259,7 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
           secondary={resolvedColors.secondary}
           mode={resolvedColors.mode}
           tokens={heroTokens}
+          isDark={isDark}
         />
       );
     }
@@ -269,6 +271,7 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
           secondary={resolvedColors.secondary} 
           mode={resolvedColors.mode} 
           title={title} 
+          isDark={isDark}
         />
       );
     }
@@ -279,17 +282,17 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
     }
     case 'Services': {
       return wrapWithFont(
-        <ServicesSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <ServicesSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Benefits': {
       return wrapWithFont(
-        <BenefitsSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <BenefitsSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'FAQ': {
       return wrapWithFont(
-        <FAQSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <FAQSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'CTA': {
@@ -299,7 +302,7 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
     }
     case 'Testimonials': {
       return wrapWithFont(
-        <TestimonialsSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <TestimonialsSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Contact': {
@@ -310,53 +313,53 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
     case 'Gallery':
     case 'Partners': {
       return wrapWithFont(
-        <GallerySection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} type={type} />
+        <GallerySection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} type={type} isDark={isDark} />
       );
     }
     case 'TrustBadges': {
       return wrapWithFont(
-        <TrustBadgesSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <TrustBadgesSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Pricing': {
       return wrapWithFont(
-        <PricingSectionRuntime config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <PricingSectionRuntime config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'ProductList': {
       return wrapWithFont(
-        <ProductListSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <ProductListSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'ProductGrid': {
       const gridStyle = (config.style as string) || '';
       if (gridStyle === 'tabbed' || gridStyle === 'storefront') {
         return wrapWithFont(
-          <ProductGridSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} title={title} />
+          <ProductGridSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
         );
       }
       return wrapWithFont(
-        <ProductListSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <ProductListSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'ServiceList': {
       return wrapWithFont(
-        <ServiceListSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <ServiceListSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Blog': {
       return wrapWithFont(
-        <BlogSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <BlogSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Career': {
       return wrapWithFont(
-        <CareerSectionRuntime config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <CareerSectionRuntime config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'CaseStudy': {
       return wrapWithFont(
-        <CaseStudySection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <CaseStudySection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'SpeedDial': {
@@ -366,7 +369,7 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
     }
     case 'ProductCategories': {
       return wrapWithFont(
-        <ProductCategoriesSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <ProductCategoriesSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'CategoryProducts': {
@@ -377,47 +380,48 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
           secondary={resolvedColors.secondary}
           mode={resolvedColors.mode}
           title={title}
+          isDark={isDark}
         />
       );
     }
     case 'Team': {
       return wrapWithFont(
-        <TeamSectionRuntime config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <TeamSectionRuntime config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Features': {
       return wrapWithFont(
-        <FeaturesSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <FeaturesSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Process': {
       return wrapWithFont(
-        <ProcessSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <ProcessSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Clients': {
       return wrapWithFont(
-        <ClientsSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <ClientsSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Video': {
       return wrapWithFont(
-        <VideoSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <VideoSection config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Countdown': {
       return wrapWithFont(
-        <CountdownSectionWrapper config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} title={title} />
+        <CountdownSectionWrapper config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} title={title} isDark={isDark} />
       );
     }
     case 'VoucherPromotions': {
       return wrapWithFont(
-        <VoucherPromotionsSectionRuntime config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <VoucherPromotionsSectionRuntime config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Popup': {
       return wrapWithFont(
-        <PopupSectionRuntime config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <PopupSectionRuntime config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Marquee': {
@@ -430,6 +434,7 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
           title={title}
           fontStyle={fontStyle}
           fontClassName="font-active"
+          isDark={isDark}
         />
       );
     }
@@ -1363,8 +1368,8 @@ const resolveStatsIconComponent = (iconName?: string) => {
   return iconMap[iconName] ?? null;
 };
 
-function StatsSection({ config, brandColor, secondary, mode, title: _title }: { config: Record<string, unknown>; brandColor: string;
-  secondary: string; mode: 'single' | 'dual'; title: string }) {
+function StatsSection({ config, brandColor, secondary, mode, title: _title, isDark }: { config: Record<string, unknown>; brandColor: string;
+  secondary: string; mode: 'single' | 'dual'; title: string; isDark?: boolean }) {
   void _title;
   const items = (config.items as StatsItemWithIcon[]) || [];
   const style = (config.style as StatsStyle) || 'horizontal';
@@ -1400,7 +1405,7 @@ function StatsSection({ config, brandColor, secondary, mode, title: _title }: { 
 
   // Style 1: Thanh ngang - Full width bar với dividers
   if (style === 'horizontal') {
-    const colors = getHorizontalColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getHorizontalColors(brandColor, secondary, mode), isDark ?? false);
     return (
       <section className="py-12 px-4">
         <div className="max-w-5xl mx-auto">
@@ -1449,7 +1454,7 @@ function StatsSection({ config, brandColor, secondary, mode, title: _title }: { 
 
   // Style 2: Cards - Grid cards với hover effects và accent line
   if (style === 'cards') {
-    const colors = getCardsColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getCardsColors(brandColor, secondary, mode), isDark ?? false);
     return (
       <section className="py-12 px-4">
         <div className="max-w-5xl mx-auto">
@@ -1503,7 +1508,7 @@ function StatsSection({ config, brandColor, secondary, mode, title: _title }: { 
 
   // Style 3: Icon Grid - Circle containers với shadow và hover scale
   if (style === 'icons') {
-    const colors = getIconsColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getIconsColors(brandColor, secondary, mode), isDark ?? false);
     return (
       <section className="py-12 px-4">
         <div className="max-w-5xl mx-auto">
@@ -1558,7 +1563,7 @@ function StatsSection({ config, brandColor, secondary, mode, title: _title }: { 
 
   // Style 4: Gradient - Glass morphism với gradient background
   if (style === 'gradient') {
-    const colors = getGradientColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getGradientColors(brandColor, secondary, mode), isDark ?? false);
     return (
       <section className="py-12 px-4">
         <div className="max-w-5xl mx-auto">
@@ -1612,7 +1617,7 @@ function StatsSection({ config, brandColor, secondary, mode, title: _title }: { 
 
   // Style 5: Minimal - Clean, simple với typography focus
   if (style === 'minimal') {
-    const colors = getMinimalColors(brandColor, secondary, mode);
+    const colors = adaptTokensForDarkMode(getMinimalColors(brandColor, secondary, mode), isDark ?? false);
     return (
       <section className="py-12 md:py-16 px-4 bg-slate-50">
         <div className="max-w-5xl mx-auto">
@@ -1658,7 +1663,7 @@ function StatsSection({ config, brandColor, secondary, mode, title: _title }: { 
   }
 
   // Style 6: Counter - Big numbers với animated feel & progress indicator
-  const colors = getCounterColors(brandColor, secondary, mode);
+  const colors = adaptTokensForDarkMode(getCounterColors(brandColor, secondary, mode), isDark ?? false);
   return (
     <section className="py-12 md:py-16 px-4">
       <div className="max-w-5xl mx-auto">
@@ -1723,12 +1728,14 @@ function ServicesSection({
   secondary,
   mode,
   title,
+  isDark,
 }: {
   config: Record<string, unknown>;
   brandColor: string;
   secondary: string;
   mode: 'single' | 'dual';
   title: string;
+  isDark?: boolean;
 }) {
   const items = (config.items as ServiceItem[]) || [];
   const style = (config.style as ServicesStyle) || 'elegantGrid';
@@ -1737,7 +1744,7 @@ function ServicesSection({
   const mediaAlign = getServicesMediaAlign(config.mediaAlign);
   const spacing = normalizeServicesSpacing(config.spacing);
   const cornerRadius = normalizeServicesCornerRadius(config.cornerRadius);
-  const colors = getServicesColors(brandColor, secondary, mode);
+  const colors = adaptTokensForDarkMode(getServicesColors(brandColor, secondary, mode), isDark ?? false);
 
   // Extract header config
   const headerConfig = extractSectionHeaderConfig(config);
@@ -1787,12 +1794,14 @@ function BenefitsSection({
   secondary,
   mode,
   title,
+  isDark,
 }: {
   config: Record<string, unknown>;
   brandColor: string;
   secondary: string;
   mode: 'single' | 'dual';
   title: string;
+  isDark?: boolean;
 }) {
   const benefitsConfig = config as {
     items?: Array<{ icon?: string; title?: string; description?: string }>;
@@ -1831,12 +1840,12 @@ function BenefitsSection({
 
   const harmony = normalizeBenefitsHarmony(benefitsConfig.harmony);
 
-  const tokens = getBenefitsSectionColors({
+  const tokens = adaptTokensForDarkMode(getBenefitsSectionColors({
     harmony,
     mode,
     primary: brandColor,
     secondary,
-  });
+  }), isDark ?? false);
 
   const _hasSharedHeaderConfig = (
     typeof benefitsConfig.hideHeader === 'boolean'
@@ -1906,12 +1915,14 @@ function FAQSection({
   secondary,
   mode,
   title,
+  isDark,
 }: {
   config: Record<string, unknown>;
   brandColor: string;
   secondary: string;
   mode: 'single' | 'dual';
   title: string;
+  isDark?: boolean;
 }) {
   const faqConfig = config as {
     items?: Array<{ question?: string; answer?: string }>;
@@ -1934,12 +1945,12 @@ function FAQSection({
     buttonLink: faqConfig.buttonLink,
   };
 
-  const tokens = getFaqColors({
+  const tokens = adaptTokensForDarkMode(getFaqColors({
     primary: brandColor,
     secondary,
     mode,
     style,
-  });
+  }), isDark ?? false);
 
   // Extract header config
   const headerConfig = extractSectionHeaderConfig(config);
@@ -2063,8 +2074,8 @@ function CTASection({
   );
 }
 
-function TestimonialsSection({ config, brandColor, secondary, mode, title }: { config: Record<string, unknown>; brandColor: string;
-  secondary: string; mode: 'single' | 'dual'; title: string }) {
+function TestimonialsSection({ config, brandColor, secondary, mode, title, isDark }: { config: Record<string, unknown>; brandColor: string;
+  secondary: string; mode: 'single' | 'dual'; title: string; isDark?: boolean }) {
   const items = Array.isArray(config.items) ? config.items : [];
   const style = normalizeTestimonialsStyle(config.style);
   const desktopColumns = normalizeTestimonialsDesktopColumns(config.desktopColumns);
@@ -2072,11 +2083,11 @@ function TestimonialsSection({ config, brandColor, secondary, mode, title }: { c
   const cornerRadius = normalizeTestimonialsCornerRadius(config.cornerRadius, config.noBorderRadius);
   const isFullBleedTestimonials = style === 'split-carousel' || style === 'overlap-carousel';
   const sectionSpacingClassName = getTestimonialsSectionSpacingClassName(spacing);
-  const colors = getTestimonialsSectionColors({
+  const colors = adaptTokensForDarkMode(getTestimonialsSectionColors({
     primary: brandColor,
     secondary,
     mode,
-  });
+  }), isDark ?? false);
 
   // Extract header config
   const headerConfig = extractSectionHeaderConfig(config);
@@ -2447,12 +2458,14 @@ function TrustBadgesSection({
   secondary,
   mode,
   title,
+  isDark,
 }: {
   config: Record<string, unknown>;
   brandColor: string;
   secondary: string;
   mode: 'single' | 'dual';
   title: string;
+  isDark?: boolean;
 }) {
   const items = (config.items as TrustBadgeItem[]) || [];
   const trustCueText = typeof config.trustCueText === 'string' ? config.trustCueText : DEFAULT_TRUST_CUE_TEXT;
@@ -2471,7 +2484,7 @@ function TrustBadgesSection({
   const headerConfig = extractSectionHeaderConfig(config);
   const {
     cardBorder,
-    colors,
+    colors: rawColors,
     innerRadiusClassName,
     radiusClassName,
     renderConfig,
@@ -2485,6 +2498,7 @@ function TrustBadgesSection({
     secondary,
     selectedStyle: config.style as TrustBadgesStyle | undefined,
   });
+  const colors = React.useMemo(() => adaptTokensForDarkMode(rawColors, isDark ?? false), [rawColors, isDark]);
   const style = renderConfig.style;
   const desktopColumns = renderConfig.desktopColumns;
   const responsiveGridClassName = siteGridClassName;
@@ -2930,8 +2944,8 @@ function TrustBadgesSection({
   );
 }
 
-function GallerySection({ config, brandColor, secondary, mode, title, type }: { config: Record<string, unknown>; brandColor: string;
-  secondary: string; mode: 'single' | 'dual'; title: string; type: string }) {
+function GallerySection({ config, brandColor, secondary, mode, title, type, isDark }: { config: Record<string, unknown>; brandColor: string;
+  secondary: string; mode: 'single' | 'dual'; title: string; type: string; isDark?: boolean }) {
   const items = (config.items as { url: string; link?: string; name?: string }[]) || [];
   const style = type === 'Partners'
     ? normalizePartnersStyle(config.style)
@@ -2952,7 +2966,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
   const marqueeScrollRef = React.useRef<HTMLDivElement>(null);
   const marqueeBaseTrackRef = React.useRef<HTMLDivElement>(null);
   const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);
-  const colors = getGalleryColorTokens({ primary: brandColor, secondary, mode, harmony });
+  const colors = adaptTokensForDarkMode(getGalleryColorTokens({ primary: brandColor, secondary, mode, harmony }), isDark ?? false);
   const normalizedItems = items.map((item, idx) => ({ ...item, id: item.url ? `${item.url}-${idx}` : `gallery-${idx}` }));
   const marqueeBaseItems = React.useMemo(() => getGalleryMarqueeBaseItems(normalizedItems), [normalizedItems]);
   const lightboxItems = style === 'marquee' ? marqueeBaseItems : normalizedItems;
@@ -3468,9 +3482,10 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
   // Extract header config for Partners
   const partnersHeaderConfig = extractSectionHeaderConfig(config);
 
-  const renderPartnersWithHeader = (content: React.ReactNode, bgClass = 'bg-white', isDark = false) => {
+  const renderPartnersWithHeader = (content: React.ReactNode, bgClass = 'bg-white', forceDarkHeader = false) => {
+    const darkHeader = forceDarkHeader || Boolean(isDark);
     return (
-      <section className={cn('w-full px-3', bgClass, getPartnersSectionSpacingClassName(partnersSpacing, 'siteOuter'))}>
+      <section className={cn('w-full px-3', isDark ? '' : bgClass, getPartnersSectionSpacingClassName(partnersSpacing, 'siteOuter'))} style={isDark ? { backgroundColor: colors.neutralBackground } : undefined}>
         <div className="mx-auto w-full max-w-7xl">
           {!partnersHeaderConfig.hideHeader && (
             <SectionHeader
@@ -3486,7 +3501,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
               subtitleAboveTitle={partnersHeaderConfig.subtitleAboveTitle}
               uppercaseText={partnersHeaderConfig.uppercaseText}
               brandColor={brandColor}
-              className={cn(isDark && '[&_h2]:text-white [&_p]:text-slate-400 [&_span]:text-slate-400')}
+              className={cn(darkHeader && '[&_h2]:text-white [&_p]:text-slate-400 [&_span]:text-slate-400')}
             />
           )}
           {content}
@@ -3619,7 +3634,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
     const logoColorIntensity = normalizePartnersLogoColorIntensity(config.logoColorIntensity, logoColorMode);
 
     return (
-      <div className="w-full bg-white">
+      <div className="w-full" style={{ backgroundColor: isDark ? colors.neutralBackground : '#ffffff' }}>
         {!partnersHeaderConfig.hideHeader && (
           <div className={cn('mx-auto w-full max-w-7xl px-4 sm:px-6', partnersSpacing === 'none' ? 'pt-0' : partnersSpacing === 'compact' ? 'pt-4 md:pt-6' : 'pt-8 md:pt-12')}>
             <SectionHeader
@@ -3716,8 +3731,8 @@ function GallerySection({ config, brandColor, secondary, mode, title, type }: { 
 import { ProductCategoriesSectionShared } from '@/app/admin/home-components/product-categories/_components/ProductCategoriesSectionShared';
 import { normalizeProductCategoriesCornerRadius, normalizeProductCategoriesSpacing, normalizeProductCategoriesDesktopColumns, type ProductCategoriesAlign, type ProductCategoriesResolvedItem, type ProductCategoriesStyle } from '@/app/admin/home-components/product-categories/_types';
 
-function ProductCategoriesSection({ config, brandColor, secondary, mode, title }: { config: Record<string, unknown>; brandColor: string;
-  secondary: string; mode: 'single' | 'dual'; title: string }) {
+function ProductCategoriesSection({ config, brandColor, secondary, mode, title, isDark }: { config: Record<string, unknown>; brandColor: string;
+  secondary: string; mode: 'single' | 'dual'; title: string; isDark?: boolean }) {
   const categoriesConfig = (config.categories as { categoryId: string; customImage?: string; imageMode?: string }[]) || [];
   const style = (config.style as ProductCategoriesStyle) || 'image-strip';
   const showProductCount = (config.showProductCount as boolean) ?? true;
@@ -3729,7 +3744,7 @@ function ProductCategoriesSection({ config, brandColor, secondary, mode, title }
       ? config.subheading
       : '';
   const headerAlign = (config.headerAlign as ProductCategoriesAlign) ?? (config.align as ProductCategoriesAlign) ?? 'center';
-  const colors = React.useMemo(() => getProductCategoriesColors(brandColor, secondary, mode), [brandColor, secondary, mode]);
+  const colors = React.useMemo(() => adaptTokensForDarkMode(getProductCategoriesColors(brandColor, secondary, mode), isDark ?? false), [brandColor, secondary, mode, isDark]);
   const [device, setDevice] = React.useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   
   const categoriesData = useQuery(api.productCategories.listActive);
@@ -3909,12 +3924,14 @@ function CategoryProductsSection({
   secondary,
   mode,
   title: _title,
+  isDark,
 }: {
   config: Record<string, unknown>;
   brandColor: string;
   secondary: string;
   mode: 'single' | 'dual';
   title: string;
+  isDark?: boolean;
 }) {
   const sections = (config.sections as { categoryId: string; itemCount: number }[]) || [];
   const selectionMode = (config.selectionMode as 'real' | 'demo' | undefined) ?? 'real';
@@ -3928,8 +3945,8 @@ function CategoryProductsSection({
   const cardRadiusClassName = getCategoryProductsCardRadiusClassName(cornerRadius);
   const imageRadiusClassName = getCategoryProductsImageRadiusClassName(cornerRadius);
   const colors = React.useMemo(
-    () => getCategoryProductsColors(brandColor, secondary, mode),
-    [brandColor, secondary, mode]
+    () => adaptTokensForDarkMode(getCategoryProductsColors(brandColor, secondary, mode), isDark ?? false),
+    [brandColor, secondary, mode, isDark]
   );
 
   // Query categories and products
@@ -4046,8 +4063,8 @@ function CategoryProductsSection({
   const [quickAddTarget, setQuickAddTarget] = React.useState<{ product: any; action: 'addToCart' | 'buyNow' } | null>(null);
 
   const tokens = React.useMemo(
-    () => getProductsListColors(brandColor, secondary, mode || 'single'),
-    [brandColor, secondary, mode]
+    () => adaptTokensForDarkMode(getProductsListColors(brandColor, secondary, mode || 'single'), isDark ?? false),
+    [brandColor, secondary, mode, isDark]
   );
 
   const handleAddToCart = async (product: any) => {
@@ -5160,8 +5177,8 @@ function CategoryProductsSection({
 
 // ============ FEATURES SECTION ============
 // Shared renderer parity with admin preview (6 styles)
-function FeaturesSection({ config, brandColor, secondary, mode, title }: { config: Record<string, unknown>; brandColor: string;
-  secondary: string; mode: 'single' | 'dual'; title: string }) {
+function FeaturesSection({ config, brandColor, secondary, mode, title, isDark }: { config: Record<string, unknown>; brandColor: string;
+  secondary: string; mode: 'single' | 'dual'; title: string; isDark?: boolean }) {
   const rawItems = config.items as unknown;
   const items = Array.isArray(rawItems)
     ? rawItems
@@ -5217,14 +5234,15 @@ function FeaturesSection({ config, brandColor, secondary, mode, title }: { confi
       spacing={headerConfig.spacing}
       desktopColumns={config.desktopColumns === 4 ? 4 : 3}
       cornerRadius={config.cornerRadius === 'none' || config.cornerRadius === 'sm' || config.cornerRadius === 'lg' ? config.cornerRadius : 'lg'}
+      isDark={isDark}
     />
   );
 }
 
 // ============ PROCESS SECTION ============
 // 7 Professional Styles: Horizontal, Stepper, Cards, Accordion, Minimal, Grid, Alternating
-function ProcessSection({ config, brandColor, secondary, mode, title }: { config: Record<string, unknown>; brandColor: string;
-  secondary: string; mode: ProcessBrandMode; title: string }) {
+function ProcessSection({ config, brandColor, secondary, mode, title, isDark }: { config: Record<string, unknown>; brandColor: string;
+  secondary: string; mode: ProcessBrandMode; title: string; isDark?: boolean }) {
   const steps = normalizeProcessRenderSteps(config.steps);
   if (steps.length === 0) {return null;}
 
@@ -5255,6 +5273,7 @@ function ProcessSection({ config, brandColor, secondary, mode, title }: { config
       desktopColumns={desktopColumns}
       spacing={normalizedConfig.spacing}
       cornerRadius={normalizedConfig.cornerRadius}
+      isDark={isDark}
     />
   );
 }
@@ -5266,12 +5285,14 @@ function ClientsSection({
   secondary,
   mode,
   title,
+  isDark,
 }: {
   config: Record<string, unknown>;
   brandColor: string;
   secondary: string;
   mode: ClientsBrandMode;
   title: string;
+  isDark?: boolean;
 }) {
   const items = normalizeClientItems(config.items);
   if (items.length === 0) {return null;}
@@ -5279,11 +5300,11 @@ function ClientsSection({
   const style = normalizeClientsStyleSafe(config.style);
   const spacing = normalizeSectionSpacing(config.spacing);
   const cornerRadius = normalizeClientsCornerRadius(config.cornerRadius, config.noBorderRadius);
-  const tokens = getClientsColorTokens({
+  const tokens = adaptTokensForDarkMode(getClientsColorTokens({
     primary: brandColor,
     secondary,
     mode,
-  });
+  }), isDark ?? false);
 
   return (
     <ClientsSectionShared
@@ -5313,17 +5334,17 @@ function ClientsSection({
 // ============ VIDEO SECTION ============
 // 6 Styles: centered, split, fullwidth, cinema, minimal, parallax
 
-function VideoSection({ config, brandColor, secondary, mode, title }: { config: Record<string, unknown>; brandColor: string;
-  secondary: string; mode: VideoBrandMode; title: string }) {
+function VideoSection({ config, brandColor, secondary, mode, title, isDark }: { config: Record<string, unknown>; brandColor: string;
+  secondary: string; mode: VideoBrandMode; title: string; isDark?: boolean }) {
   const normalizedConfig = normalizeVideoConfig(config);
   const style = normalizeVideoStyle(normalizedConfig.style);
 
-  const tokens = React.useMemo(() => getVideoColorTokens({
+  const tokens = React.useMemo(() => adaptTokensForDarkMode(getVideoColorTokens({
     primary: brandColor,
     secondary,
     mode,
     style,
-  }), [brandColor, secondary, mode, style]);
+  }), isDark ?? false), [brandColor, secondary, mode, style, isDark]);
 
   return (
     <VideoSectionShared
@@ -6230,7 +6251,7 @@ function FooterSection({
 
 // ============ MARQUEE SECTION ============
 function MarqueeSection({
-  config, brandColor, secondary, mode, title, fontStyle, fontClassName
+  config, brandColor, secondary, mode, title, fontStyle, fontClassName, isDark
 }: {
   config: Record<string, unknown>;
   brandColor: string;
@@ -6239,9 +6260,10 @@ function MarqueeSection({
   title: string;
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
+  isDark?: boolean;
 }) {
   const marqueeMode: MarqueeBrandMode = mode === 'single' ? 'single' : 'dual';
-  const tokens = getMarqueeSectionColors({ primary: brandColor, secondary, mode: marqueeMode });
+  const tokens = adaptTokensForDarkMode(getMarqueeSectionColors({ primary: brandColor, secondary, mode: marqueeMode }), isDark ?? false);
   const rawItems = Array.isArray(config.items) ? config.items : [];
   const items = rawItems.map((item, idx) => normalizeMarqueeItem(item, idx));
   const style = normalizeMarqueeStyle(config.style);

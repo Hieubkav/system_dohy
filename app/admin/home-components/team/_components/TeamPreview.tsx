@@ -3,7 +3,7 @@
 import React from 'react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import type { SectionSpacing } from '../../_shared/types/sectionSpacing';
 import {
@@ -19,6 +19,7 @@ import type {
   TeamEditorMember,
   TeamStyle,
 } from '../_types';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 interface TeamPreviewProps {
   members: TeamEditorMember[];
@@ -73,6 +74,7 @@ export const TeamPreview = ({
   cornerRadius,
 }: TeamPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const style = normalizeTeamStyle(selectedStyle);
 
   const validation = React.useMemo(() => getTeamValidationResult({
@@ -80,6 +82,7 @@ export const TeamPreview = ({
     secondary,
     mode,
   }), [brandColor, secondary, mode]);
+  const tokens = React.useMemo(() => adaptTokensForDarkMode(validation.tokens, isDark), [validation.tokens, isDark]);
 
   const modeLabel = mode === 'single' ? '1 màu (single)' : '2 màu (dual)';
 
@@ -104,7 +107,7 @@ export const TeamPreview = ({
             mode={mode}
             style={style}
             title={title}
-            tokens={validation.tokens}
+            tokens={tokens}
             device={device}
             carouselId={`team-preview-carousel-${device}`}
             texts={texts}
@@ -127,7 +130,7 @@ export const TeamPreview = ({
 
       {mode === 'dual' ? (
         <ColorInfoPanel
-          brandColor={validation.tokens.primary}
+          brandColor={tokens.primary}
           secondary={validation.resolvedSecondary}
           description="Màu phụ áp dụng cho role, icon social, accent line và điều hướng carousel của Team."
         />

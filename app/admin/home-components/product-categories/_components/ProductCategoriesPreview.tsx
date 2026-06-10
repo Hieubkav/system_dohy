@@ -5,7 +5,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { PRODUCT_CATEGORIES_STYLES } from '../_lib/constants';
 import { getProductCategoriesColors } from '../_lib/colors';
@@ -24,6 +24,7 @@ import type {
   ProductCategoriesSelectionMode,
   ProductCategoriesStyle,
 } from '../_types';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 export const ProductCategoriesPreview = ({ 
   config, 
@@ -53,9 +54,10 @@ export const ProductCategoriesPreview = ({
   demoCategories?: DemoProductCategoryItem[];
 }) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const previewStyle = (selectedStyle ?? config.style) || 'image-strip';
   const setPreviewStyle = (s: string) => onStyleChange?.(s as ProductCategoriesStyle);
-  const colors = React.useMemo(() => getProductCategoriesColors(brandColor, secondary, mode), [brandColor, secondary, mode]);
+  const colors = React.useMemo(() => adaptTokensForDarkMode(getProductCategoriesColors(brandColor, secondary, mode), isDark), [brandColor, secondary, mode, isDark]);
   const productsData = useQuery(api.products.listPublicResolved, { limit: 100 });
   const categoriesConfig = React.useMemo(() => config.categories ?? [], [config.categories]);
 

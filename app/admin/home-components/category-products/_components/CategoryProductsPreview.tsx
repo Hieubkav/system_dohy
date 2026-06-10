@@ -7,7 +7,7 @@ import { cn } from '../../../components/ui';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { PreviewImage } from '../../_shared/components/PreviewImage';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { ProductImageWithOverlayAuto } from '@/components/shared/ProductImageWithOverlay';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { CATEGORY_PRODUCTS_STYLES } from '../_lib/constants';
@@ -20,6 +20,7 @@ import { getProductImageAspectRatioCssValue, getProductImageAspectRatioLabel, re
 import { QuickAddVariantModal } from '@/components/products/QuickAddVariantModal';
 import type { Id } from '@/convex/_generated/dataModel';
 import { buildPreviewQuickAddProduct, type PreviewQuickAddAction, type PreviewQuickAddProduct } from '../../_shared/lib/previewQuickAdd';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import type {
   CategoryProductsBrandMode,
   CategoryProductsConfig,
@@ -61,15 +62,16 @@ export const CategoryProductsPreview = ({
   fontClassName,
 }: CategoryProductsPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const previewStyle = selectedStyle || 'grid';
   const setPreviewStyle = (s: string) =>{  onStyleChange(s as CategoryProductsStyle); };
   const colors = React.useMemo(
-    () => getCategoryProductsColors(_brandColor, secondary, mode),
-    [_brandColor, secondary, mode]
+    () => adaptTokensForDarkMode(getCategoryProductsColors(_brandColor, secondary, mode), isDark),
+    [_brandColor, secondary, mode, isDark]
   );
   const listTokens = React.useMemo(
-    () => getProductsListColors(_brandColor, secondary, mode || 'single'),
-    [_brandColor, secondary, mode]
+    () => adaptTokensForDarkMode(getProductsListColors(_brandColor, secondary, mode || 'single'), isDark),
+    [_brandColor, secondary, mode, isDark]
   );
   const saleModeSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'saleMode' });
   const aspectRatioSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'defaultImageAspectRatio' });

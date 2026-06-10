@@ -15,7 +15,7 @@ import type { CategoryTabItem } from './ProductGridForm';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
 import { PreviewImage } from '../../_shared/components/PreviewImage';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { SectionHeader } from '../../_shared/components/SectionHeader';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { SaleBadge } from '@/components/site/shared/BrandColorHelpers';
@@ -26,6 +26,7 @@ import { CategoryTabSlider } from '@/components/shared/CategoryTabSlider';
 import { QuickAddVariantModal } from '@/components/products/QuickAddVariantModal';
 import type { Id } from '@/convex/_generated/dataModel';
 import { buildPreviewQuickAddProduct, type PreviewQuickAddAction, type PreviewQuickAddProduct } from '../../_shared/lib/previewQuickAdd';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 export const ProductGridPreview = ({
   brandColor,
@@ -87,6 +88,7 @@ export const ProductGridPreview = ({
 }) => {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const aspectRatioSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'defaultImageAspectRatio' });
   const visibleCategoryTabs = categoryTabs ?? [];
   const isMinimalStyle = (selectedStyle ?? 'commerce') === 'minimal';
@@ -102,8 +104,8 @@ export const ProductGridPreview = ({
     [imageAspectRatio]
   );
   const tokens = React.useMemo(
-    () => getProductsListColors(brandColor, secondary, 'single'),
-    [brandColor, secondary]
+    () => adaptTokensForDarkMode(getProductsListColors(brandColor, secondary, 'single'), isDark),
+    [brandColor, secondary, isDark]
   );
   const [quickAddTarget, setQuickAddTarget] = React.useState<{ product: PreviewQuickAddProduct; action: PreviewQuickAddAction } | null>(null);
   const onPreviewAction = React.useCallback((item: ProductListPreviewItem | undefined, action: PreviewQuickAddAction) => {
@@ -176,15 +178,15 @@ export const ProductGridPreview = ({
   const renderEmptyCategoryState = () => {
     const adminProductsUrl = '/admin/products';
     return (
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-12 text-center shadow-sm">
-        <Package size={40} className="mx-auto mb-3 text-slate-300 animate-pulse" />
-        <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-4">Danh mục này hiện chưa có sản phẩm nào.</p>
+      <div className="rounded-2xl border border-dashed px-6 py-12 text-center shadow-sm" style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}>
+        <Package size={40} className="mx-auto mb-3" style={{ color: tokens.emptyStateIconColor }} />
+        <p className="text-sm font-medium mb-4" style={{ color: tokens.emptyStateText }}>Danh mục này hiện chưa có sản phẩm nào.</p>
         <a
           href={adminProductsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white rounded-lg transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm"
-          style={{ backgroundColor: brandColor }}
+          className="inline-flex items-center justify-center px-4 py-2 text-xs font-bold rounded-lg transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm"
+          style={{ backgroundColor: tokens.primaryActionBg, color: tokens.primaryActionText }}
         >
           Quản lý sản phẩm ngay
         </a>
@@ -267,9 +269,10 @@ export const ProductGridPreview = ({
                     return (
                       <div
                         key={item.id}
-                        className={cn('group bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-slate-300 transition-all duration-300 flex flex-col cursor-pointer', cardRadiusClassName)}
+                        className={cn('group border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer', cardRadiusClassName)}
+                        style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}
                       >
-                        <div className="relative overflow-hidden bg-slate-100" style={imageAspectRatioStyle}>
+                        <div className="relative overflow-hidden" style={{ ...imageAspectRatioStyle, backgroundColor: tokens.filterBarBackground }}>
                           {item.image ? (
                             <PreviewImage
                               src={item.image}
@@ -278,7 +281,7 @@ export const ProductGridPreview = ({
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center">
-                              <Package size={40} className="text-slate-300" />
+                              <Package size={40} style={{ color: tokens.emptyStateIconColor }} />
                             </div>
                           )}
                           {discount && (
@@ -289,13 +292,13 @@ export const ProductGridPreview = ({
                         </div>
 
                         <div className="p-4 flex flex-col flex-1">
-                          <h3 className="font-bold text-slate-900 text-base truncate group-hover:opacity-80 transition-colors">
+                          <h3 className="font-bold text-base truncate group-hover:opacity-80 transition-colors" style={{ color: tokens.bodyText }}>
                             {item.name}
                           </h3>
                           <div className="flex items-center gap-2 mt-auto pt-2 mb-4">
-                            <span className="font-bold text-base" style={{ color: brandColor }}>{item.price}</span>
+                            <span className="font-bold text-base" style={{ color: tokens.priceColor }}>{item.price}</span>
                             {item.originalPrice && (
-                              <span className="text-xs text-slate-400 line-through">
+                              <span className="text-xs line-through" style={{ color: tokens.priceOriginalText }}>
                                 {item.originalPrice}
                               </span>
                             )}
@@ -322,7 +325,7 @@ export const ProductGridPreview = ({
                             <button
                               type="button"
                               className="w-full gap-1.5 border-2 py-1.5 px-4 rounded-lg font-medium flex items-center justify-center transition-colors hover:bg-opacity-10 whitespace-nowrap text-xs md:text-sm"
-                              style={{ borderColor: `${brandColor}30`, color: brandColor }}
+                              style={{ borderColor: tokens.secondaryActionBorder, color: tokens.secondaryActionText, backgroundColor: tokens.secondaryActionHoverBg }}
                             >
                               Xem chi tiết <ArrowRight className="w-3 h-3 flex-shrink-0" />
                             </button>
@@ -407,9 +410,10 @@ export const ProductGridPreview = ({
                     return (
                       <div
                         key={item.id}
-                        className={cn('group bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-slate-300 transition-all duration-300 flex flex-col cursor-pointer', cardRadiusClassName)}
+                        className={cn('group border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer', cardRadiusClassName)}
+                        style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}
                       >
-                        <div className="relative overflow-hidden bg-slate-100" style={imageAspectRatioStyle}>
+                        <div className="relative overflow-hidden" style={{ ...imageAspectRatioStyle, backgroundColor: tokens.filterBarBackground }}>
                           {item.image ? (
                             <PreviewImage
                               src={item.image}
@@ -418,7 +422,7 @@ export const ProductGridPreview = ({
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center">
-                              <Package size={40} className="text-slate-300" />
+                              <Package size={40} style={{ color: tokens.emptyStateIconColor }} />
                             </div>
                           )}
                           {discount && (
@@ -429,13 +433,13 @@ export const ProductGridPreview = ({
                         </div>
 
                         <div className="p-4 flex flex-col flex-1">
-                          <h3 className="font-bold text-slate-900 text-base truncate group-hover:opacity-80 transition-colors">
+                          <h3 className="font-bold text-base truncate group-hover:opacity-80 transition-colors" style={{ color: tokens.bodyText }}>
                             {item.name}
                           </h3>
                           <div className="flex items-center gap-2 mt-auto pt-2 mb-4">
-                            <span className="font-bold text-base" style={{ color: brandColor }}>{item.price}</span>
+                            <span className="font-bold text-base" style={{ color: tokens.priceColor }}>{item.price}</span>
                             {item.originalPrice && (
-                              <span className="text-xs text-slate-400 line-through">
+                              <span className="text-xs line-through" style={{ color: tokens.priceOriginalText }}>
                                 {item.originalPrice}
                               </span>
                             )}
@@ -462,7 +466,7 @@ export const ProductGridPreview = ({
                             <button
                               type="button"
                               className="w-full gap-1.5 border-2 py-1.5 px-4 rounded-lg font-medium flex items-center justify-center transition-colors hover:bg-opacity-10 whitespace-nowrap text-xs md:text-sm"
-                              style={{ borderColor: `${brandColor}30`, color: brandColor }}
+                              style={{ borderColor: tokens.secondaryActionBorder, color: tokens.secondaryActionText, backgroundColor: tokens.secondaryActionHoverBg }}
                             >
                               Xem chi tiết <ArrowRight className="w-3 h-3 flex-shrink-0" />
                             </button>
@@ -479,7 +483,7 @@ export const ProductGridPreview = ({
                     <button
                       type="button"
                       className="px-10 py-3 rounded-full text-sm font-bold border-2 transition-colors hover:bg-opacity-10"
-                      style={{ borderColor: brandColor, color: brandColor }}
+                      style={{ borderColor: tokens.secondaryActionBorder, color: tokens.secondaryActionText, backgroundColor: tokens.secondaryActionHoverBg }}
                     >
                       Xem thêm sản phẩm
                     </button>

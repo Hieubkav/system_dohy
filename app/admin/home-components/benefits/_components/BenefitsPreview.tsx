@@ -3,7 +3,7 @@
 import React from 'react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { SectionHeader } from '../../_shared/components/SectionHeader';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { BENEFITS_STYLES } from '../_lib/constants';
@@ -15,6 +15,7 @@ import {
 } from '../_lib/colors';
 import { BenefitsSectionShared } from './BenefitsSectionShared';
 import type { BenefitItem, BenefitsBrandMode, BenefitsConfig, BenefitsStyle } from '../_types';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 interface BenefitsPreviewProps {
   items: BenefitItem[];
@@ -42,6 +43,7 @@ export const BenefitsPreview = ({
   fontClassName,
 }: BenefitsPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const resolvedTitle = typeof title === 'string' ? title.trim() : '';
 
   const previewStyle = normalizeBenefitsStyle(selectedStyle ?? '1');
@@ -63,13 +65,13 @@ export const BenefitsPreview = ({
   );
 
   const tokens = React.useMemo(
-    () => getBenefitsSectionColors({
+    () => adaptTokensForDarkMode(getBenefitsSectionColors({
       harmony,
       mode,
       primary: brandColor,
       secondary,
-    }),
-    [brandColor, secondary, mode, harmony],
+    }), isDark),
+    [brandColor, secondary, mode, harmony, isDark],
   );
 
   const sectionConfig = React.useMemo(

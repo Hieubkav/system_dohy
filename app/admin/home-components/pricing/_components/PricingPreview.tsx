@@ -4,7 +4,7 @@ import React from 'react';
 import { SectionHeader } from '../../_shared/components/SectionHeader';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { getSectionSpacingClassName, normalizeSectionSpacing, type SectionSpacing } from '../../_shared/types/sectionSpacing';
 import {
@@ -20,6 +20,7 @@ import type {
   PricingPlan,
   PricingStyle,
 } from '../_types';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 interface PricingPreviewProps {
   title?: string;
@@ -64,6 +65,7 @@ export function PricingPreview({
   gridCols: gridColsProp = 3,
 }: PricingPreviewProps) {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const [isYearly, setIsYearly] = React.useState(false);
 
   const previewStyle = selectedStyle;
@@ -84,6 +86,7 @@ export function PricingPreview({
     secondary,
     mode,
   }), [brandColor, secondary, mode]);
+  const tokens = React.useMemo(() => adaptTokensForDarkMode(validation.tokens, isDark), [validation.tokens, isDark]);
 
   const modeLabel = mode === 'single' ? '1 màu (single)' : '2 màu (dual)';
 
@@ -129,7 +132,7 @@ export function PricingPreview({
               plans={plans}
               style={previewStyle}
               mode={mode}
-              tokens={validation.tokens}
+              tokens={tokens}
               texts={texts}
               isYearly={isYearly}
               showBillingToggle={showBillingToggle}

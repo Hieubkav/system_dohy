@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import {
   DEFAULT_DEMO_VOUCHERS,
@@ -20,6 +20,7 @@ import {
   normalizeVoucherStyle,
   type VoucherPromotionsStyle,
 } from '@/lib/home-components/voucher-promotions';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 interface VoucherPromotionsPreviewProps {
   config: VoucherPromotionsConfig;
@@ -49,6 +50,7 @@ export const VoucherPromotionsPreview = ({
   fontClassName,
 }: VoucherPromotionsPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = React.useState(0);
 
@@ -76,6 +78,7 @@ export const VoucherPromotionsPreview = ({
     secondary,
     mode,
   }), [brandColor, secondary, mode]);
+  const tokens = React.useMemo(() => adaptTokensForDarkMode(validation.tokens, isDark), [validation.tokens, isDark]);
 
   const handleCopy = React.useCallback((code: string) => {
     setCopiedCode(code);
@@ -108,7 +111,7 @@ export const VoucherPromotionsPreview = ({
           showCta={config.showCta ?? true}
           ctaVariant={config.ctaVariant ?? 'button'}
           vouchers={vouchers}
-          tokens={validation.tokens}
+          tokens={tokens}
           copiedCode={copiedCode}
           onCopy={handleCopy}
           currentIndex={currentIndex}

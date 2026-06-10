@@ -7,7 +7,7 @@ import { cn } from '../../../components/ui';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
 import { PreviewImage } from '../../_shared/components/PreviewImage';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import type { SectionSpacing } from '../../_shared/types/sectionSpacing';
 import { getPreviewDeviceClass } from '../../_shared/lib/previewResponsive';
@@ -25,6 +25,7 @@ import {
   TrustBadgesTrustCue,
   useTrustBadgesSectionState,
 } from './TrustBadgesSectionShared';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 // Best Practices: Grayscale-to-color hover, lightbox/zoom indicator, verification links, alt text accessibility
 interface TrustBadgeItem { id: number; url: string; link: string; name?: string }
@@ -55,6 +56,7 @@ export const TrustBadgesPreview = ({
   fontClassName?: string;
 }) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const [carouselRef, carouselApi] = useEmblaCarousel({ align: 'start', containScroll: 'trimSnaps' });
   const [cardsRef, cardsApi] = useEmblaCarousel({ align: 'start', containScroll: 'trimSnaps' });
   const [sealRef, sealApi] = useEmblaCarousel({ align: 'start', axis: 'y', containScroll: 'trimSnaps' });
@@ -67,12 +69,13 @@ export const TrustBadgesPreview = ({
   const [selectedSnap, setSelectedSnap] = useState(0);
   const {
     cardBorder,
-    colors,
+    colors: rawColors,
     innerRadiusClassName,
     radiusClassName,
     renderConfig,
     sectionSpacingClassName,
   } = useTrustBadgesSectionState({ brandColor, config, desktopColumns, mode, previewDevice: device, secondary, selectedStyle });
+  const colors = React.useMemo(() => adaptTokensForDarkMode(rawColors, isDark), [rawColors, isDark]);
   const previewStyle = renderConfig.style;
   const setPreviewStyle = (s: string) => onStyleChange?.(s as TrustBadgesStyle);
   const normalizedDesktopColumns = renderConfig.desktopColumns;

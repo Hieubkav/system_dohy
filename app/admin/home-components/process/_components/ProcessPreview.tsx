@@ -6,6 +6,7 @@ import { ProcessSectionShared } from './ProcessSectionShared';
 import { normalizeProcessRenderSteps } from '../_lib/normalize';
 import type { ProcessBrandMode, ProcessCornerRadius, ProcessStyle } from '../_types';
 import { usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
+import { usePreviewDark } from '../../_shared/components/PreviewWrapper';
 
 interface ProcessPreviewProps {
   steps: unknown;
@@ -61,6 +62,7 @@ export const ProcessPreview = ({
   circularCtaLink,
 }: ProcessPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const normalizedSteps = React.useMemo(() => normalizeProcessRenderSteps(steps), [steps]);
 
   return (
@@ -94,6 +96,7 @@ export const ProcessPreview = ({
       cornerRadius={cornerRadius}
       circularCtaText={circularCtaText}
       circularCtaLink={circularCtaLink}
+      isDark={isDark}
     />
   );
 };

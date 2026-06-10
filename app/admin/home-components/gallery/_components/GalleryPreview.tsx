@@ -9,7 +9,7 @@ import { cn } from '../../../components/ui';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
 import { PreviewImage } from '../../_shared/components/PreviewImage';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { SectionHeader } from '../../_shared/components/SectionHeader';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import type { SectionSpacing } from '../../_shared/types/sectionSpacing';
@@ -18,6 +18,7 @@ import { getGalleryMarqueeBaseItems } from '../_lib/constants';
 import type { GalleryItem, GalleryStyle, GalleryCornerRadius, GalleryDesktopColumns } from '../_types';
 import { getGalleryColorTokens } from '../_lib/colors';
 import type { GalleryColorTokens, GalleryHarmony } from '../_lib/colors';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 const usePrefersReducedMotion = () => {
   const [prefersReducedMotion, setPrefersReducedMotion] = React.useState(false);
@@ -210,6 +211,7 @@ export const GalleryPreview = ({
   cornerRadius?: GalleryCornerRadius;
 }): React.ReactElement => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryItem | null>(null);
   const [isMarqueeInteractionPaused, setIsMarqueeInteractionPaused] = useState(false);
   const [marqueeRepeatCount, setMarqueeRepeatCount] = useState(2);
@@ -217,7 +219,10 @@ export const GalleryPreview = ({
   const marqueeScrollRef = React.useRef<HTMLDivElement>(null);
   const marqueeBaseTrackRef = React.useRef<HTMLDivElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
-  const colors = getGalleryColorTokens({ primary: brandColor, secondary, mode, harmony });
+  const colors = React.useMemo(
+    () => adaptTokensForDarkMode(getGalleryColorTokens({ primary: brandColor, secondary, mode, harmony }), isDark),
+    [brandColor, secondary, mode, harmony, isDark]
+  );
   const ONE = 1;
   const NEGATIVE_ONE = -1;
 
@@ -225,6 +230,7 @@ export const GalleryPreview = ({
   const systemColors = useBrandColors();
 
   const homePageBgColor = React.useMemo(() => {
+    if (isDark) {return colors.neutralBackground ?? '#020617';}
     if (!systemConfig?.homePageBackground) {return '#ffffff';}
     const { type, customColor } = systemConfig.homePageBackground;
     switch (type) {
@@ -241,7 +247,7 @@ export const GalleryPreview = ({
       default:
         return '#ffffff';
     }
-  }, [systemConfig?.homePageBackground, systemColors]);
+  }, [systemConfig?.homePageBackground, systemColors, colors.neutralBackground, isDark]);
   let previewStyle = selectedStyle;
   if (!previewStyle) {
     previewStyle = 'spotlight';

@@ -3,13 +3,14 @@
 import React from 'react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { SectionHeader } from '../../_shared/components/SectionHeader';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import type { SectionSpacing } from '../../_shared/types/sectionSpacing';
 import { ServicesSectionCore } from '@/components/site/ServicesSectionCore';
 import { getServicesColors } from '../_lib/colors';
 import { DEFAULT_SERVICES_CORNER_RADIUS, DEFAULT_SERVICES_SPACING, getServicesSectionSpacingClassName, type ServiceItem, type ServiceItemMediaAlign, type ServiceItemMediaPlacement, type ServicesBrandMode, type ServicesCornerRadius, type ServicesSpacing, type ServicesStyle } from '../_types';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 const SERVICES_STYLES: Array<{ id: ServicesStyle; label: string }> = [
   { id: 'elegantGrid', label: '(1) Lưới thẻ' },
@@ -74,11 +75,12 @@ export const ServicesPreview = ({
   fontClassName?: string;
 }) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
 
   const previewStyle = selectedStyle;
   const colors = React.useMemo(
-    () => getServicesColors(brandColor, secondary, mode),
-    [brandColor, secondary, mode],
+    () => adaptTokensForDarkMode(getServicesColors(brandColor, secondary, mode), isDark),
+    [brandColor, secondary, mode, isDark],
   );
 
   return (

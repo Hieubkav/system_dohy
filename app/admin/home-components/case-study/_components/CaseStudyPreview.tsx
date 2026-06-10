@@ -4,7 +4,7 @@ import React from 'react';
 import { Image as ImageIcon } from 'lucide-react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { CASE_STUDY_STYLES } from '../_lib/constants';
 import { getCaseStudyColors } from '../_lib/colors';
@@ -15,6 +15,7 @@ import {
   DEFAULT_CASE_STUDY_DESKTOP_COLUMNS,
   DEFAULT_CASE_STUDY_SPACING,
 } from '../_types';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 interface CaseStudyPreviewProps {
   projects: CaseStudyProject[];
@@ -93,12 +94,13 @@ export const CaseStudyPreview = ({
   fontClassName,
 }: CaseStudyPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const previewStyle = selectedStyle ?? 'grid';
   const setPreviewStyle = (value: string) => onStyleChange?.(value as CaseStudyStyle);
 
   const colors = React.useMemo(
-    () => getCaseStudyColors(brandColor, secondary, mode),
-    [brandColor, secondary, mode],
+    () => adaptTokensForDarkMode(getCaseStudyColors(brandColor, secondary, mode), isDark),
+    [brandColor, secondary, mode, isDark],
   );
 
   return (
