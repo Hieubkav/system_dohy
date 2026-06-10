@@ -71,125 +71,61 @@ export function adaptColorForDarkMode(colorStr: string, isDark: boolean, key = '
     
     const alpha = color.alpha !== undefined ? color.alpha : 1;
     
-    // Tăng ngưỡng chroma lên 0.08 để bao quát các tông xám Slate/Blue-grey có sắc độ nhẹ
-    const chromaThreshold = 0.08;
-    
+    const l = color.l ?? 0;
+    const c = color.c ?? 0;
+    const h = color.h ?? 0;
+
     const isBackgroundKey = key.toLowerCase().includes('bg') || 
                             key.toLowerCase().includes('surface') || 
                             key.toLowerCase().includes('background');
-    
-    if ((color.c ?? 0) < chromaThreshold) {
-      const l = color.l ?? 0;
-      
-      // 1. Nền chính cực sáng (L > 0.95) -> Nền tối sâu (L = 0.14) (~zinc-950)
-      if (l > 0.95) {
-        if (!isBackgroundKey) {
-          return colorStr; // Giữ nguyên chữ sáng
-        }
-        const darkColor = oklch({
-          ...color,
-          l: 0.14,
-          c: Math.min((color.c ?? 0), 0.005),
-        });
-        return alpha < 1 ? formatRgb(darkColor) : formatHex(darkColor);
-      }
-      
-      // 2. Nền phụ sáng (L > 0.88) -> Nền phụ tối (L = 0.21) (~zinc-900)
-      if (l > 0.88) {
-        if (!isBackgroundKey) {
-          return colorStr; // Giữ nguyên chữ sáng
-        }
-        const darkColor = oklch({
-          ...color,
-          l: 0.21,
-          c: Math.min((color.c ?? 0), 0.005),
-        });
-        return alpha < 1 ? formatRgb(darkColor) : formatHex(darkColor);
-      }
-      
-      // 3. Nền phụ thứ ba/Alt (L > 0.82) -> Nền tối sáng vừa (L = 0.27) (~zinc-800)
-      if (l > 0.82) {
-        if (!isBackgroundKey) {
-          return colorStr; // Giữ nguyên chữ sáng
-        }
-        const darkColor = oklch({
-          ...color,
-          l: 0.27,
-          c: Math.min((color.c ?? 0), 0.005),
-        });
-        return alpha < 1 ? formatRgb(darkColor) : formatHex(darkColor);
-      }
-      
-      // 4. Đường viền (L > 0.75) -> Viền tối rõ ràng hơn (L = 0.35) (~zinc-700/750)
-      if (l > 0.75) {
-        if (!isBackgroundKey && !key.toLowerCase().includes('border')) {
-          return colorStr; // Giữ nguyên chữ sáng
-        }
-        const borderDark = oklch({
-          ...color,
-          l: 0.35,
-          c: Math.min((color.c ?? 0), 0.005),
-        });
-        return alpha < 1 ? formatRgb(borderDark) : formatHex(borderDark);
-      }
 
-      // Nếu là thuộc tính chỉ NỀN (background/surface/bg) mà vốn dĩ đã TỐI (L < 0.5), ta giữ nguyên tông tối của nó, không được biến thành nền sáng!
-      if (isBackgroundKey && l < 0.5) {
-        return colorStr;
+    if (isBackgroundKey) {
+      // Nếu là màu nền sáng (L >= 0.45), chuyển thành nền tối bảo toàn sắc độ
+      if (l >= 0.45) {
+        const darkL = 0.12 + (1 - l) * 0.05; // l = 1.0 -> 0.12, l = 0.45 -> 0.147
+        const darkC = Math.min(c * 0.35, 0.015); // Giảm sắc độ để nền tối dịu mắt
+        const darkColor = oklch({
+          ...color,
+          l: darkL,
+          c: darkC,
+          h,
+        });
+        return alpha < 1 ? formatRgb(darkColor) : formatHex(darkColor);
       }
-
-      // 5. Chữ chính tối (L < 0.25) -> Chữ chính sáng (L = 0.92) (~zinc-200)
-      if (l < 0.25) {
+      // Nền tối sẵn thì giữ nguyên
+      return colorStr;
+    } else {
+      // Nếu là màu chữ, viền, icon...
+      // Chữ tối (L < 0.45) -> chuyển thành chữ sáng bảo toàn sắc độ
+      if (l < 0.45) {
+        const lightL = 0.88 + (0.45 - l) * 0.12; // l = 0 -> 0.934, l = 0.45 -> 0.88
+        const lightC = Math.min(c * 0.5, 0.01); // Giảm sắc độ để chữ sáng không chói
         const lightColor = oklch({
           ...color,
-          l: 0.92,
-          c: Math.min((color.c ?? 0), 0.005),
+          l: lightL,
+          c: lightC,
+          h,
         });
         return alpha < 1 ? formatRgb(lightColor) : formatHex(lightColor);
       }
-      
-      // 6. Chữ phụ trung bình (L < 0.58) -> Chữ phụ sáng (L = 0.71) (~zinc-400)
-      if (l < 0.58) {
-        const lightMuted = oklch({
-          ...color,
-          l: 0.71,
-          c: Math.min((color.c ?? 0), 0.01),
-        });
-        return alpha < 1 ? formatRgb(lightMuted) : formatHex(lightMuted);
+
+      // Nếu là màu nhấn/thương hiệu sáng (C >= 0.06)
+      if (c >= 0.06) {
+        // Tăng nhẹ độ sáng nếu nó quá tối để tăng tương phản trên nền tối
+        if (l < 0.6) {
+          const brightenedColor = oklch({
+            ...color,
+            l: 0.65,
+            c: Math.min(c, 0.15),
+            h,
+          });
+          return alpha < 1 ? formatRgb(brightenedColor) : formatHex(brightenedColor);
+        }
       }
 
-      // 7. Chữ phụ rất nhạt/Subtle (L < 0.75) -> Chữ phụ tối/Subtle sáng vừa (L = 0.55) (~zinc-500)
-      if (l < 0.75) {
-        const lightSubtle = oklch({
-          ...color,
-          l: 0.55,
-          c: Math.min((color.c ?? 0), 0.01),
-        });
-        return alpha < 1 ? formatRgb(lightSubtle) : formatHex(lightSubtle);
-      }
-
-      // 8. Trường hợp còn lại: Điều chỉnh tuyến tính đảo ngược nhẹ
-      const adjustedColor = oklch({
-        ...color,
-        l: 0.15 + (1 - l) * 0.7,
-      });
-      return alpha < 1 ? formatRgb(adjustedColor) : formatHex(adjustedColor);
+      // Các trường hợp chữ sáng sẵn hoặc trung tính sáng giữ nguyên
+      return colorStr;
     }
-    
-    // Nếu là màu brand/accent có sắc độ (Chroma cao)
-    // Tăng độ sáng nếu màu brand quá tối để đảm bảo độ tương phản APCA trên nền đen
-    if ((color.l ?? 0) < 0.45) {
-      if (isBackgroundKey) {
-        return colorStr;
-      }
-      const brightenedColor = oklch({
-        ...color,
-        l: 0.55,
-      });
-      return alpha < 1 ? formatRgb(brightenedColor) : formatHex(brightenedColor);
-    }
-    
-    return colorStr;
   } catch {
     return colorStr;
   }

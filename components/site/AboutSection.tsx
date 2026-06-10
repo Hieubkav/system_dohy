@@ -5,6 +5,7 @@ import { AboutSectionShared } from '@/app/admin/home-components/about/_component
 import { SectionHeader } from '@/app/admin/home-components/_shared/components/SectionHeader';
 import { extractSectionHeaderConfig } from '@/app/admin/home-components/_shared/hooks/useSectionHeaderState';
 import { getSectionSpacingClassName, normalizeSectionSpacing } from '@/app/admin/home-components/_shared/types/sectionSpacing';
+import { cn } from '@/app/admin/components/ui';
 import { getAboutSectionColors } from '@/app/admin/home-components/about/_lib/colors';
 import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import {
@@ -46,7 +47,7 @@ export function AboutSection({ config, brandColor, secondary, mode, title, isDar
   );
 
   return (
-    <section className={`${getSectionSpacingClassName(spacing)} px-3`}>
+    <section className={cn(getSectionSpacingClassName(spacing), "px-3", isDark && "dark")}>
       <div className="mx-auto max-w-7xl">
         <SectionHeader
           title={title}
@@ -64,6 +65,7 @@ export function AboutSection({ config, brandColor, secondary, mode, title, isDar
         />
         <AboutSectionShared
           context="site"
+          isDark={isDark}
           mode={mode}
           style={style}
           title={title}
