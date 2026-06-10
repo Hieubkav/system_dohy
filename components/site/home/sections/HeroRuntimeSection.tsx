@@ -247,7 +247,7 @@ export function HeroRuntimeSection({ config, brandColor, secondary, mode, isDark
 
   if (style === 'slider') {
     return renderWithSpacing(
-      <section className="relative w-full bg-slate-900 overflow-hidden">
+      <section className={cn("relative w-full overflow-hidden", isDark ? "bg-slate-950" : "bg-transparent")}>
         <h1 className="sr-only">{content.heading || 'Trang chủ'}</h1>
         <div className="relative w-full aspect-[21/9] max-h-[400px] md:max-h-[550px] overflow-hidden" ref={heroEmblaRef}>
           <div className="flex h-full">
@@ -285,7 +285,7 @@ export function HeroRuntimeSection({ config, brandColor, secondary, mode, isDark
 
   if (style === 'fade') {
     return renderWithSpacing(
-      <section className="relative w-full bg-slate-900 overflow-hidden">
+      <section className={cn("relative w-full overflow-hidden", isDark ? "bg-slate-950" : "bg-transparent")}>
         <h1 className="sr-only">{content.heading || 'Trang chủ'}</h1>
         <div className="relative w-full aspect-[21/9] max-h-[450px] md:max-h-[600px]" ref={heroEmblaRef}>
           <div className="flex h-full w-full">
@@ -314,7 +314,7 @@ export function HeroRuntimeSection({ config, brandColor, secondary, mode, isDark
 
   if (style === 'builderCoffee') {
     return renderWithSpacing(
-      <section className="relative w-full overflow-hidden bg-white pb-[50px]">
+      <section className={cn("relative w-full overflow-hidden pb-[50px]", isDark ? "bg-slate-950" : "bg-white")}>
         <div className="mx-auto w-full max-w-7xl px-3">
           <div className="mt-5 flex flex-wrap -mx-3">
             <div className="grid w-full max-w-full grid-cols-3 gap-[10px] px-3">
@@ -322,7 +322,7 @@ export function HeroRuntimeSection({ config, brandColor, secondary, mode, isDark
                 <div className="relative">
                   <h1 className="sr-only">{content.heading || 'Trang chủ'}</h1>
                   <div
-                    className={cn('relative flex w-full select-none items-center overflow-hidden bg-white', cornerRadiusClassName)}
+                    className={cn('relative flex w-full select-none items-center overflow-hidden', isDark ? "bg-slate-900" : "bg-white", cornerRadiusClassName)}
                     role="toolbar"
                     ref={heroEmblaRef}
                   >
@@ -396,7 +396,7 @@ export function HeroRuntimeSection({ config, brandColor, secondary, mode, isDark
     const bentoCurrentSlide = bentoSlides.length > 0 ? currentSlide % bentoSlides.length : 0;
     const bentoPlaceholders = ['#f1f5f9', '#e2e8f0', '#f1f5f9', '#e2e8f0'];
     return renderWithSpacing(
-      <section className="relative w-full bg-slate-900 overflow-hidden p-2 md:p-4">
+      <section className={cn("relative w-full overflow-hidden p-2 md:p-4", isDark ? "bg-slate-950" : "bg-transparent")}>
         <h1 className="sr-only">{content.heading || 'Trang chủ'}</h1>
         <div className="mx-auto w-full max-w-7xl">
           <div className="relative aspect-[16/9] max-h-[400px] overflow-hidden md:hidden" ref={heroEmblaRef}>
@@ -495,7 +495,7 @@ export function HeroRuntimeSection({ config, brandColor, secondary, mode, isDark
     const tripleSlides = slides.slice(0, 3);
     const triplePlaceholders = ['#f1f5f9', '#e2e8f0', '#f1f5f9'];
     return renderWithSpacing(
-      <section className="relative w-full bg-slate-900 overflow-hidden p-2 md:p-4">
+      <section className={cn("relative w-full overflow-hidden p-2 md:p-4", isDark ? "bg-slate-950" : "bg-transparent")}>
         <h1 className="sr-only">{content.heading || 'Trang chủ'}</h1>
         <div className="mx-auto w-full max-w-7xl">
           <div className="relative aspect-[16/9] max-h-[400px] overflow-hidden md:hidden" ref={heroEmblaRef}>
@@ -557,7 +557,7 @@ export function HeroRuntimeSection({ config, brandColor, secondary, mode, isDark
     const tripleSlides = slides.slice(0, 3);
     const triplePlaceholders = ['#f1f5f9', '#e2e8f0', '#f1f5f9'];
     return renderWithSpacing(
-      <section className="relative w-full bg-slate-900 overflow-hidden p-2 md:p-4">
+      <section className={cn("relative w-full overflow-hidden p-2 md:p-4", isDark ? "bg-slate-950" : "bg-transparent")}>
         <h1 className="sr-only">{content.heading || 'Trang chủ'}</h1>
         <div className="mx-auto w-full max-w-7xl">
           <div className="relative aspect-[16/9] max-h-[400px] overflow-hidden md:hidden" ref={heroEmblaRef}>
@@ -661,7 +661,7 @@ export function HeroRuntimeSection({ config, brandColor, secondary, mode, isDark
       }
       : { borderColor: 'rgba(255,255,255,0.3)', color: '#ffffff' };
     return renderWithSpacing(
-      <section className="relative w-full bg-slate-900 overflow-hidden">
+      <section className={cn("relative w-full overflow-hidden", isDark ? "bg-slate-950" : "bg-transparent")}>
         <div className="relative w-full aspect-[16/9] overflow-hidden">
           {!showFullscreenContent ? (
             <>
@@ -876,7 +876,7 @@ export function HeroRuntimeSection({ config, brandColor, secondary, mode, isDark
   }
 
   return renderWithSpacing(
-    <section className="relative w-full bg-slate-900 overflow-hidden">
+    <section className={cn("relative w-full overflow-hidden", isDark ? "bg-slate-950" : "bg-transparent")}>
       <h1 className="sr-only">{content.heading || 'Trang chủ'}</h1>
       <div className="md:hidden" style={{ backgroundColor: parallaxColors.cardBg }}>
         <div className="relative h-[280px] w-full overflow-hidden" ref={heroEmblaRef}>
