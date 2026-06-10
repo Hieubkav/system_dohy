@@ -140,7 +140,7 @@ export const PreviewWrapper = ({
             style={fontStyle}
           >
             {React.Children.map(children, child => {
-              if (React.isValidElement(child)) {
+              if (React.isValidElement(child) && typeof child.type !== 'string') {
                 return React.cloneElement(child, { isDark } as any);
               }
               return child;
