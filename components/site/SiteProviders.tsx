@@ -31,24 +31,8 @@ export function SiteProviders({ children }: { children: React.ReactNode }) {
     };
 
     const applyTheme = (isFromEvent?: boolean) => {
-      if (siteDarkMode) {
-        const lastDefault = localStorage.getItem('site_theme_last_default');
-        if (lastDefault && lastDefault !== siteDarkMode) {
-          // Admin vừa mới thay đổi cấu hình mặc định ở trang quản trị
-          localStorage.removeItem('site_theme_override');
-        }
-        localStorage.setItem('site_theme_last_default', siteDarkMode);
-      }
-
-      const override = localStorage.getItem('site_theme_override');
-      let isDark = false;
-      if (override === 'dark') {
-        isDark = true;
-      } else if (override === 'light') {
-        isDark = false;
-      } else {
-        isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-      }
+      // DB là single source of truth — không dùng localStorage override
+      const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
       const currentlyDark = root.classList.contains('dark');
       const currentlyTheme = root.getAttribute('data-theme');
@@ -58,7 +42,6 @@ export function SiteProviders({ children }: { children: React.ReactNode }) {
         root.style.colorScheme = isDark ? 'dark' : 'light';
         root.classList.toggle('dark', isDark);
 
-        // Chỉ phát sự kiện nếu không phải bắt nguồn từ chính sự kiện site-theme-change để tránh vòng lặp
         if (!isFromEvent) {
           window.dispatchEvent(new Event('site-theme-change'));
         }

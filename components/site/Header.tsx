@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import Link from 'next/link';
 import { PublicImage as Image } from '@/components/shared/PublicImage';
 import { useRouter, usePathname } from 'next/navigation';
-import { useQuery } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useBrandColors, useSiteSettings } from './hooks';
@@ -206,6 +206,7 @@ const HeaderSearchAutocomplete = dynamic(
 function DarkModeToggle({ tokens, variant: _variant = 'desktop' }: { tokens: any; variant?: 'desktop' | 'mobile' }) {
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const setSetting = useMutation(api.settings.set);
 
   useEffect(() => {
     setMounted(true);
@@ -222,12 +223,15 @@ function DarkModeToggle({ tokens, variant: _variant = 'desktop' }: { tokens: any
 
   const toggleTheme = () => {
     const nextDark = !isDark;
+    const nextValue = nextDark ? 'dark' : 'light';
+    // Optimistic UI: apply theme ngay lập tức
     const root = document.documentElement;
     root.classList.toggle('dark', nextDark);
-    root.setAttribute('data-theme', nextDark ? 'dark' : 'light');
-    root.style.colorScheme = nextDark ? 'dark' : 'light';
-    localStorage.setItem('site_theme_override', nextDark ? 'dark' : 'light');
+    root.setAttribute('data-theme', nextValue);
+    root.style.colorScheme = nextValue;
     window.dispatchEvent(new Event('site-theme-change'));
+    // Persist vào DB (single source of truth)
+    void setSetting({ group: 'site', key: 'site_dark_mode', value: nextValue });
   };
 
   if (!mounted) {
