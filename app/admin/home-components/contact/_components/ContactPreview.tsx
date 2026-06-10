@@ -7,8 +7,9 @@ import { AlertTriangle, Eye } from 'lucide-react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
 import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
-import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
+import { useBrandColors } from '@/components/site/hooks';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
+import type { PreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { CONTACT_STYLES } from '../_lib/constants';
 import { getContactValidationResult } from '../_lib/colors';
 import { normalizeContactConfig } from '../_lib/normalize';
@@ -33,6 +34,57 @@ interface ContactPreviewProps {
   fontClassName?: string;
 }
 
+interface ContactPreviewContentProps {
+  config: ContactConfigState;
+  brandColor: string;
+  secondary: string;
+  mode: ContactBrandMode;
+  previewStyle: ContactStyle;
+  title?: string;
+  mapData?: ContactMapData | null;
+  device: PreviewDevice;
+  homePageBgColor: string;
+}
+
+const ContactPreviewContent = ({
+  config,
+  brandColor,
+  secondary,
+  mode,
+  previewStyle,
+  title,
+  mapData,
+  device,
+  homePageBgColor,
+}: ContactPreviewContentProps) => {
+  const { isDark } = usePreviewDark();
+
+  const validation = React.useMemo(() => getContactValidationResult({
+    primary: brandColor,
+    secondary,
+    mode,
+    isDark,
+  }), [brandColor, secondary, mode, isDark]);
+
+  return (
+    <BrowserFrame url="yoursite.com/contact">
+      <div className="w-full transition-colors duration-300" style={{ backgroundColor: isDark ? '#0f172a' : homePageBgColor }}>
+        <ContactSectionShared
+          config={{ ...config, style: previewStyle }}
+          style={previewStyle}
+          tokens={validation.tokens}
+          mode={mode}
+          context="preview"
+          device={device}
+          title={title}
+          mapData={mapData ?? undefined}
+          isDark={isDark}
+        />
+      </div>
+    </BrowserFrame>
+  );
+};
+
 export function ContactPreview({
   config,
   brandColor,
@@ -46,32 +98,37 @@ export function ContactPreview({
   fontClassName,
 }: ContactPreviewProps) {
   const { device, setDevice } = usePreviewDevice();
-  const { isDark } = usePreviewDark();
   const normalizedConfig = React.useMemo(() => normalizeContactConfig(config), [config]);
   const previewStyle = selectedStyle ?? normalizedConfig.style;
 
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const systemColors = useBrandColors();
   const homePageBgColor = React.useMemo(() => {
     if (!systemConfig?.homePageBackground) {
       return '#ffffff';
     }
     const { type, customColor } = systemConfig.homePageBackground;
-    if (type === 'black') {
-      return '#000000';
+    switch (type) {
+      case 'white':
+        return '#ffffff';
+      case 'black':
+        return '#000000';
+      case 'primary':
+        return systemColors.primary;
+      case 'secondary':
+        return systemColors.secondary || systemColors.primary;
+      case 'custom':
+        return customColor?.trim() || '#ffffff';
+      default:
+        return '#ffffff';
     }
-    if (type === 'custom' && customColor) {
-      return customColor.trim();
-    }
-    return '#ffffff';
-  }, [systemConfig?.homePageBackground]);
+  }, [systemConfig?.homePageBackground, systemColors.primary, systemColors.secondary]);
 
   const validation = React.useMemo(() => getContactValidationResult({
     primary: brandColor,
     secondary,
     mode,
   }), [brandColor, secondary, mode]);
-
-  const adaptedTokens = React.useMemo(() => adaptTokensForDarkMode(validation.tokens, isDark), [validation.tokens, isDark]);
 
   const warningMessages = React.useMemo(() => {
     if (mode === 'single') {return [];}
@@ -121,20 +178,17 @@ export function ContactPreview({
         fontStyle={fontStyle}
         fontClassName={fontClassName}
       >
-        <BrowserFrame url="yoursite.com/contact">
-          <div className="w-full transition-colors duration-300" style={{ backgroundColor: isDark ? '#0f172a' : homePageBgColor }}>
-            <ContactSectionShared
-              config={{ ...normalizedConfig, style: previewStyle }}
-              style={previewStyle}
-              tokens={adaptedTokens}
-              mode={mode}
-              context="preview"
-              device={device}
-              title={title}
-              mapData={mapData ?? undefined}
-            />
-          </div>
-        </BrowserFrame>
+        <ContactPreviewContent
+          config={normalizedConfig}
+          brandColor={brandColor}
+          secondary={secondary}
+          mode={mode}
+          previewStyle={previewStyle}
+          title={title}
+          mapData={mapData}
+          device={device}
+          homePageBgColor={homePageBgColor}
+        />
       </PreviewWrapper>
 
       {mode === 'dual' && (
@@ -142,11 +196,11 @@ export function ContactPreview({
           <ColorInfoPanel
             brandColor={brandColor}
             secondary={validation.resolvedSecondary}
-            description="Contact ưu tiên nền trắng ngà, chữ đen; màu phụ chỉ dùng nhẹ cho trạng thái hover/focus."
+            description="Contact dùng palette sáng/tối riêng; màu phụ hỗ trợ badge, nhãn và focus state để giữ tương phản tốt."
           />
 
           {warningMessages.length > 0 && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-400/40 dark:bg-amber-950/40 dark:text-amber-100">
               <div className="space-y-2">
                 {warningMessages.map((message) => (
                   <div key={message} className="flex items-start gap-2">

@@ -6,7 +6,6 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { ContactSectionShared } from '@/app/admin/home-components/contact/_components/ContactSectionShared';
 import { getContactValidationResult } from '@/app/admin/home-components/contact/_lib/colors';
-import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import { normalizeContactConfig } from '@/app/admin/home-components/contact/_lib/normalize';
 import type { ContactBrandMode } from '@/app/admin/home-components/contact/_types';
 import { getContactMapDataFromSettings } from '@/lib/contact/getContactMapData';
@@ -46,15 +45,12 @@ export function ContactSection({ config, brandColor, secondary, mode, title, sna
   }, [contactSettings, snapshotData]);
 
   const validation = React.useMemo(() => {
-    const rawResult = getContactValidationResult({
+    return getContactValidationResult({
       primary: brandColor,
       secondary,
       mode,
+      isDark: isDark ?? false,
     });
-    return {
-      ...rawResult,
-      tokens: adaptTokensForDarkMode(rawResult.tokens, isDark ?? false),
-    };
   }, [brandColor, secondary, mode, isDark]);
 
   return (
@@ -67,6 +63,7 @@ export function ContactSection({ config, brandColor, secondary, mode, title, sna
       title={title}
       mapData={mapData}
       sourcePath={pathname}
+      isDark={isDark ?? false}
     />
   );
 }

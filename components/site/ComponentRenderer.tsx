@@ -14,7 +14,7 @@ import { getProductsListColors } from '@/components/site/products/colors';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { useBrandColors } from './hooks';
+import { useBrandColors, useSiteSettings } from './hooks';
 import { useSnapshotDemoContext } from '@/components/modules/homepage/SnapshotDemoProvider';
 import { cn } from '@/app/admin/components/ui';
 import { resolveTypeOverrideColors } from '@/app/admin/home-components/_shared/lib/typeColorOverride';
@@ -191,6 +191,8 @@ interface ComponentRendererProps {
 
 export function ComponentRenderer({ component }: ComponentRendererProps) {
   const systemColors = useBrandColors();
+  const { siteDarkMode } = useSiteSettings();
+  const [isDark, setIsDark] = React.useState(false);
   const isSnapshotMode = Boolean(useSnapshotDemoContext());
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig, isSnapshotMode ? 'skip' : undefined);
   const { type, title, config } = component;
@@ -204,9 +206,35 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
     overrides: systemConfig?.typeFontOverrides ?? null,
     globalOverride: systemConfig?.globalFontOverride ?? null,
   });
+
+  React.useEffect(() => {
+    const syncDarkMode = () => {
+      const storedTheme = localStorage.getItem('site_theme_override');
+      if (storedTheme) {
+        setIsDark(storedTheme === 'dark');
+        return;
+      }
+      if (siteDarkMode === 'dark') {
+        setIsDark(true);
+        return;
+      }
+      if (siteDarkMode === 'system') {
+        setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
+        return;
+      }
+      setIsDark(false);
+    };
+
+    syncDarkMode();
+    window.addEventListener('site-theme-change', syncDarkMode);
+    return () => {
+      window.removeEventListener('site-theme-change', syncDarkMode);
+    };
+  }, [siteDarkMode]);
+
   const fontStyle = { '--font-active': `var(${resolvedFont.fontVariable})` } as React.CSSProperties;
   const wrapWithFont = (node: React.ReactNode) => (
-    <div className="font-active" style={fontStyle}>{node}</div>
+    <div className={cn('font-active', isDark && 'dark')} style={fontStyle}>{node}</div>
   );
 
   // Render component dựa vào type
@@ -275,7 +303,7 @@ export function ComponentRenderer({ component }: ComponentRendererProps) {
     }
     case 'Contact': {
       return wrapWithFont(
-        <ContactSectionRuntime config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} />
+        <ContactSectionRuntime config={config} brandColor={resolvedColors.primary} secondary={resolvedColors.secondary} mode={resolvedColors.mode} title={title} isDark={isDark} />
       );
     }
     case 'Gallery':
