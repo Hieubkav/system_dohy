@@ -5,6 +5,7 @@ import {
   normalizeContactDesktopColumns,
   normalizeContactSpacing,
 } from './constants';
+import { normalizeContactIconValue } from './iconOptions';
 import type {
   ContactConfig,
   ContactConfigState,
@@ -81,7 +82,7 @@ const normalizeContactItems = (input: unknown): ContactInfoItem[] => {
 
       return {
         id: Number.isFinite(id) ? id : index + 1,
-        icon: coerceText(record.icon) || 'circle-help',
+        icon: normalizeContactIconValue(coerceText(record.icon) || coerceText(record.fieldKey) || 'help-circle'),
         label: coerceText(record.label),
         value: coerceText(record.value),
         href: coerceText(record.href),
