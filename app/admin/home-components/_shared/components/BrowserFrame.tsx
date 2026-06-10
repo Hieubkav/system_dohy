@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-export const BrowserFrame = ({ children, url = 'yoursite.com' }: { children: React.ReactNode; url?: string }) => (
+export const BrowserFrame = ({ children, url = 'yoursite.com', isDark }: { children: React.ReactNode; url?: string; isDark?: boolean }) => (
   <div className="@container/preview border rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-lg">
     <div className="bg-slate-100 dark:bg-slate-800 px-4 py-2 flex items-center gap-2 border-b">
       <div className="flex gap-1.5">
@@ -14,6 +14,11 @@ export const BrowserFrame = ({ children, url = 'yoursite.com' }: { children: Rea
         <div className="bg-white dark:bg-slate-700 rounded-md px-3 py-1 text-xs text-slate-400 max-w-xs">{url}</div>
       </div>
     </div>
-    {children}
+    {React.Children.map(children, child => {
+      if (React.isValidElement(child)) {
+        return React.cloneElement(child, { isDark } as any);
+      }
+      return child;
+    })}
   </div>
 );

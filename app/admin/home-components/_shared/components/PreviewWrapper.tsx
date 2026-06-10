@@ -44,6 +44,27 @@ export const PreviewWrapper = ({
   const config = useQuery(api.homeComponentSystemConfig.getConfig);
   const [isDark, setIsDark] = React.useState(false);
 
+  React.useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
+    // Initial sync
+    setIsDark(document.documentElement.classList.contains('dark'));
+
+    // Observe changes to html class list
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   const detectedType = React.useMemo(() => {
     if (!pathname) return null;
     const typeInfo = COMPONENT_TYPES.find(t => 
