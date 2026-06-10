@@ -291,8 +291,7 @@ export default function CoursesPage() {
 
 function CoursesContent() {
   const brandColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
   const config = useCoursesListConfig();
   const router = useRouter();
   const { token } = useCustomerAuth();

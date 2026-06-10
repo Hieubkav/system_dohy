@@ -160,8 +160,7 @@ export default function PostsPage() {
 function PostsContent() {
   const brandColors = useBrandColors();
   const brandColor = brandColors.primary;
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
   const tokens = useMemo(
     () => getPostsListColors(brandColors.primary, brandColors.secondary, brandColors.mode || 'single', isDark),
     [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]

@@ -461,8 +461,7 @@ export default function ResourcesPage() {
 
 function ResourcesContent() {
   const brandColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
   const config = useResourcesListConfig();
   const router = useRouter();
   const pathname = usePathname();

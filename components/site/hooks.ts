@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useQuery } from 'convex/react';
 import { formatHex, oklch } from 'culori';
 import { api } from '@/convex/_generated/api';
@@ -71,20 +72,57 @@ export function useSiteSettings() {
   const snapshotDemo = useSnapshotDemoContext();
   const snapshotSite = snapshotDemo?.getSiteSettings();
   const settings = useQuery(api.settings.listByGroup, snapshotSite ? 'skip' : { group: 'site' });
-  
-  if (!snapshotSite && settings === undefined) {
-    return { isLoading: true, settings: {} as Record<string, string | boolean> };
-  }
+  const [isDark, setIsDark] = useState(false);
   
   const settingsMap: Record<string, string | boolean> = {};
   if (snapshotSite) {
     Object.entries(snapshotSite).forEach(([key, value]) => {
       settingsMap[key] = value;
     });
-  } else {
-    settings?.forEach(s => {
+  } else if (settings !== undefined) {
+    settings.forEach(s => {
       settingsMap[s.key] = typeof s.value === 'boolean' ? s.value : (s.value as string);
     });
+  }
+
+  const isLoading = !snapshotSite && settings === undefined;
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const checkDark = () => {
+      if (typeof window !== 'undefined') {
+        return document.documentElement.classList.contains('dark');
+      }
+      return settingsMap.site_dark_mode === 'dark';
+    };
+
+    setIsDark(checkDark());
+
+    const handleThemeChange = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+
+    window.addEventListener('site-theme-change', handleThemeChange);
+    return () => {
+      window.removeEventListener('site-theme-change', handleThemeChange);
+    };
+  }, [isLoading, settingsMap.site_dark_mode]);
+  
+  if (isLoading) {
+    return { 
+      isLoading: true, 
+      settings: {} as Record<string, string | boolean>,
+      brandColor: DEFAULT_BRAND_COLOR,
+      brandPrimary: DEFAULT_BRAND_COLOR,
+      brandSecondary: '',
+      favicon: '',
+      logo: '',
+      siteDescription: '',
+      siteName: 'Website',
+      siteDarkMode: 'light',
+      isDark: false
+    };
   }
   
   const brandPrimary = (settingsMap.site_brand_primary as string) || DEFAULT_BRAND_COLOR;
@@ -104,6 +142,7 @@ export function useSiteSettings() {
     siteDescription: (settingsMap.site_description as string) || '',
     siteName: (settingsMap.site_name as string) || 'Website',
     siteDarkMode: (settingsMap.site_dark_mode as string) || 'light',
+    isDark,
   };
 }
 
