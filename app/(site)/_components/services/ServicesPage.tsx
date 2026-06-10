@@ -168,9 +168,8 @@ function ServicesContent() {
 
     setIsDark(checkIsDark());
 
-    const handleThemeChange = (e: Event) => {
-      const customEvent = e as CustomEvent<{ isDark: boolean }>;
-      setIsDark(customEvent.detail.isDark);
+    const handleThemeChange = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
     };
 
     window.addEventListener('site-theme-change', handleThemeChange);
