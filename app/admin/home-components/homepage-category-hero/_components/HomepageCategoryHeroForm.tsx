@@ -547,13 +547,13 @@ export function HomepageCategoryHeroForm({
           </div>
           <div className="space-y-2">
             <Label className="text-sm">Kích thước</Label>
-            <select value={categoryImageSize} onChange={(e) => setCategoryImageSize(e.target.value as HomepageCategoryHeroCategoryImageSize)} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm">
+            <select value={categoryImageSize} onChange={(e) => setCategoryImageSize(e.target.value as HomepageCategoryHeroCategoryImageSize)} className="h-10 w-full rounded-md border border-slate-200 bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 px-3 text-sm">
               {avatarSizeOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
           </div>
           <div className="space-y-2">
             <Label className="text-sm">Hình dạng</Label>
-            <select value={categoryImageShape} onChange={(e) => setCategoryImageShape(e.target.value as HomepageCategoryHeroCategoryImageShape)} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm">
+            <select value={categoryImageShape} onChange={(e) => setCategoryImageShape(e.target.value as HomepageCategoryHeroCategoryImageShape)} className="h-10 w-full rounded-md border border-slate-200 bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 px-3 text-sm">
               {avatarShapeOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
           </div>
@@ -814,13 +814,13 @@ export function HomepageCategoryHeroForm({
                             value={item.categoryId}
                             onChange={(e) => updateCategory(item.id, { categoryId: e.target.value })}
                             className={cn(
-                              'h-10 w-full rounded-md border bg-white px-3 text-sm',
+                              'h-10 w-full rounded-md border bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 px-3 text-sm',
                               isDuplicate ? 'border-amber-400' : 'border-slate-200'
                             )}
                           >
-                            <option value="">-- Chọn danh mục --</option>
+                            <option value="" className="text-slate-500 dark:text-slate-400">-- Chọn danh mục --</option>
                             {resolvedCategoriesData.map((cat) => (
-                              <option key={cat._id} value={cat._id}>{cat.name}</option>
+                              <option key={cat._id} value={cat._id} className="text-slate-900 dark:text-slate-100">{cat.name}</option>
                             ))}
                           </select>
                           {isDuplicate && <p className="text-xs text-amber-700">Danh mục này đang bị trùng.</p>}
@@ -964,11 +964,11 @@ export function HomepageCategoryHeroForm({
                                             <select
                                               value={link.categoryId}
                                               onChange={(e) => updateGroupItem(item.id, group.id, link.id, { targetType: 'category', categoryId: e.target.value })}
-                                              className="h-7 flex-1 min-w-0 rounded border border-slate-200 bg-white px-2 text-[11px]"
+                                              className="h-7 flex-1 min-w-0 rounded border border-slate-200 bg-white text-slate-900 dark:bg-slate-800 dark:text-slate-100 dark:border-slate-700 px-2 text-[11px]"
                                             >
-                                              <option value="">-- Danh mục --</option>
+                                              <option value="" className="text-slate-500 dark:text-slate-400">-- Danh mục --</option>
                                               {resolvedCategoriesData.map((cat) => (
-                                                <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                                <option key={cat._id} value={cat._id} className="text-slate-900 dark:text-slate-100">{cat.name}</option>
                                               ))}
                                             </select>
                                           )}
