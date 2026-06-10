@@ -274,8 +274,8 @@ export default function ContactPage() {
       {config.layoutStyle !== 'form-only' && (
         <div className="text-center mb-10">
           <h1
-            className="text-3xl font-bold tracking-tight dark:text-[#f5f5f7]"
-            style={!isDark ? { color: brandColor } : undefined}
+            className="text-3xl font-bold tracking-tight"
+            style={{ color: brandColor }}
           >
             Liên hệ với chúng tôi
           </h1>
