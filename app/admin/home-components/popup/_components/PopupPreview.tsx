@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
+import { usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { PopupSectionShared } from './PopupSectionShared';
 import type { PopupConfig, PopupStyle } from '../_types';
 
@@ -19,6 +20,7 @@ interface PopupPreviewProps {
 
 export function PopupPreview({ config, brandColor, secondary, mode, fontStyle, fontClassName, title, selectedStyle, onStyleChange }: PopupPreviewProps) {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
 
   return (
     <PopupSectionShared
@@ -35,6 +37,7 @@ export function PopupPreview({ config, brandColor, secondary, mode, fontStyle, f
       setPreviewDevice={setDevice}
       previewStyle={selectedStyle}
       onPreviewStyleChange={onStyleChange}
+      isDark={isDark}
     />
   );
 }

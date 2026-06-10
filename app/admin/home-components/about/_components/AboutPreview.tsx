@@ -6,7 +6,7 @@ import { api } from '@/convex/_generated/api';
 import { useBrandColors } from '@/components/site/hooks';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { SectionHeader } from '../../_shared/components/SectionHeader';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { getSectionSpacingClassName, type SectionSpacing } from '../../_shared/types/sectionSpacing';
@@ -15,6 +15,7 @@ import {
   getAboutSectionColors,
   getAboutValidationResult,
 } from '../_lib/colors';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import { AboutSectionShared } from './AboutSectionShared';
 import type { AboutBrandMode, AboutConfig, AboutCornerRadius, AboutStyle } from '../_types';
 
@@ -67,6 +68,7 @@ export const AboutPreview = ({
   cornerRadius,
 }: AboutPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
   const systemColors = useBrandColors();
 
@@ -105,12 +107,8 @@ export const AboutPreview = ({
   );
 
   const tokens = React.useMemo(
-    () => getAboutSectionColors({
-      primary: brandColor,
-      secondary,
-      mode,
-    }),
-    [brandColor, secondary, mode],
+    () => adaptTokensForDarkMode(getAboutSectionColors({ primary: brandColor, secondary, mode }), isDark),
+    [brandColor, secondary, mode, isDark],
   );
 
   return (
@@ -128,7 +126,7 @@ export const AboutPreview = ({
         fontClassName={fontClassName}
       >
         <BrowserFrame url="yoursite.com/about">
-          <div className="w-full transition-colors duration-300" style={{ backgroundColor: homePageBgColor }}>
+          <div className="w-full transition-colors duration-300" style={{ backgroundColor: isDark ? '#0f172a' : homePageBgColor }}>
             <div className="container mx-auto px-4">
               <div className={getSectionSpacingClassName(spacing)}>
                 <SectionHeader

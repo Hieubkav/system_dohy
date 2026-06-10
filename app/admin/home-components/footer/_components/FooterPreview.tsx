@@ -3,12 +3,13 @@
 import React from 'react';
 import { getIconNode } from '../../speed-dial/_components/SpeedDialSectionShared';
 import { cn } from '../../../components/ui';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
 import { PreviewImage } from '../../_shared/components/PreviewImage';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { getPreviewDeviceClass } from '../../_shared/lib/previewResponsive';
 import { getFooterLayoutColors } from '../_lib/colors';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import { getFooterCornerRadiusClassName, getFooterLogoBackgroundClassName, getFooterLogoBackgroundStyle, getFooterLogoSize, getFooterMaxWidthClass, getFooterSectionSpacingClassName } from '../_lib/constants';
 import type { FooterBrandMode, FooterConfig, FooterStyle } from '../_types';
 
@@ -67,9 +68,10 @@ export const FooterPreview = ({
   fontClassName?: string;
 }) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const previewStyle = selectedStyle ?? 'classic';
   const setPreviewStyle = (value: string) => onStyleChange?.(value as FooterStyle);
-  const colors = getFooterLayoutColors(previewStyle, brandColor, secondary, mode);
+  const colors = adaptTokensForDarkMode(getFooterLayoutColors(previewStyle, brandColor, secondary, mode), isDark);
   const useOriginalSocialIconColors = config.useOriginalSocialIconColors !== false;
   const logoSizeLevel = config.logoSizeLevel ?? 1;
   const resolveLogoSize = (baseSize: number) => getFooterLogoSize(baseSize, logoSizeLevel);

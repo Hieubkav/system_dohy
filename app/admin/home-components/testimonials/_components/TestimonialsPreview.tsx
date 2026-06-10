@@ -2,9 +2,10 @@
 
 import React from 'react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import type { SectionSpacing } from '../../_shared/types/sectionSpacing';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import { getTestimonialsSectionColors } from '../_lib/colors';
 import { TestimonialsSectionShared } from './TestimonialsSectionShared';
 import type {
@@ -81,6 +82,7 @@ export const TestimonialsPreview = ({
   cornerRadius?: TestimonialsCornerRadius;
 }) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const previewStyle = selectedStyle ?? 'cards';
   const itemCount = items.length;
 
@@ -90,7 +92,10 @@ export const TestimonialsPreview = ({
     }
   };
 
-  const colors = getTestimonialsSectionColors({ mode, primary: brandColor, secondary });
+  const colors = React.useMemo(
+    () => adaptTokensForDarkMode(getTestimonialsSectionColors({ mode, primary: brandColor, secondary }), isDark),
+    [mode, brandColor, secondary, isDark]
+  );
 
   return (
     <PreviewWrapper

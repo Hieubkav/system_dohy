@@ -3,6 +3,7 @@
 import React from 'react';
 import { SpeedDialSectionShared } from './SpeedDialSectionShared';
 import { usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
+import { usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import type { SpeedDialAction, SpeedDialBrandMode, SpeedDialPosition, SpeedDialStyle } from '../_types';
 
 interface SpeedDialPreviewProps {
@@ -33,6 +34,7 @@ export function SpeedDialPreview({
   enableShadow = true,
 }: SpeedDialPreviewProps) {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const styleForRender = selectedStyle ?? style;
 
   return (
@@ -52,6 +54,7 @@ export function SpeedDialPreview({
       onPreviewStyleChange={onStyleChange}
       defaultOpen={defaultOpen}
       enableShadow={enableShadow}
+      isDark={isDark}
     />
   );
 }

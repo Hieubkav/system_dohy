@@ -3,7 +3,7 @@
 import React from 'react';
 import { cn } from '../../../components/ui';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import type { SectionSpacing } from '../../_shared/types/sectionSpacing';
@@ -14,6 +14,7 @@ import {
   type BlogBrandMode,
 } from '../_lib/colors';
 import { BLOG_STYLES } from '../_lib/constants';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import type { BlogCardRadius, BlogStyle } from '../_types';
 import { BlogSectionRuntime } from './BlogSectionRuntime';
 import type { PreviewDevice } from '../../_shared/hooks/usePreviewDevice';
@@ -205,13 +206,13 @@ export const BlogPreview = ({
   cornerRadius = 'lg',
 }: BlogPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const previewDeviceWidthClass = deviceWidths[device];
 
-  const tokens = getBlogColorTokens({
-    primary: brandColor,
-    secondary,
-    mode,
-  });
+  const tokens = React.useMemo(
+    () => adaptTokensForDarkMode(getBlogColorTokens({ primary: brandColor, secondary, mode }), isDark),
+    [brandColor, secondary, mode, isDark]
+  );
 
   const validation = getBlogValidationResult({
     primary: brandColor,
@@ -281,7 +282,7 @@ export const BlogPreview = ({
         <BrowserFrame url="yoursite.com/blog">
           <div className={getPreviewContentClassName(device)}>
             <div
-              className={cn('bg-white transition-all duration-300 relative flex flex-col', getDeviceFrameClassName(device))}
+              className={cn(isDark ? 'bg-slate-900' : 'bg-white', 'transition-all duration-300 relative flex flex-col', getDeviceFrameClassName(device))}
               style={{
                 borderTopColor: tokens.primary.solid,
               } as React.CSSProperties}

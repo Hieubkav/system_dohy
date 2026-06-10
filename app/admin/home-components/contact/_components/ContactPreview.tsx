@@ -6,7 +6,8 @@ import { api } from '@/convex/_generated/api';
 import { AlertTriangle, Eye } from 'lucide-react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { CONTACT_STYLES } from '../_lib/constants';
 import { getContactValidationResult } from '../_lib/colors';
@@ -45,6 +46,7 @@ export function ContactPreview({
   fontClassName,
 }: ContactPreviewProps) {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const normalizedConfig = React.useMemo(() => normalizeContactConfig(config), [config]);
   const previewStyle = selectedStyle ?? normalizedConfig.style;
 
@@ -68,6 +70,8 @@ export function ContactPreview({
     secondary,
     mode,
   }), [brandColor, secondary, mode]);
+
+  const adaptedTokens = React.useMemo(() => adaptTokensForDarkMode(validation.tokens, isDark), [validation.tokens, isDark]);
 
   const warningMessages = React.useMemo(() => {
     if (mode === 'single') {return [];}
@@ -118,11 +122,11 @@ export function ContactPreview({
         fontClassName={fontClassName}
       >
         <BrowserFrame url="yoursite.com/contact">
-          <div className="w-full transition-colors duration-300" style={{ backgroundColor: homePageBgColor }}>
+          <div className="w-full transition-colors duration-300" style={{ backgroundColor: isDark ? '#0f172a' : homePageBgColor }}>
             <ContactSectionShared
               config={{ ...normalizedConfig, style: previewStyle }}
               style={previewStyle}
-              tokens={validation.tokens}
+              tokens={adaptedTokens}
               mode={mode}
               context="preview"
               device={device}

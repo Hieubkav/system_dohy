@@ -3,7 +3,8 @@
 import React from 'react';
 import { AlertTriangle, Eye } from 'lucide-react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import {
   getCTAAccentBalance,
@@ -41,6 +42,7 @@ export const CTAPreview = ({
   fontClassName?: string;
 }) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const style = selectedStyle;
 
   const {
@@ -55,6 +57,8 @@ export const CTAPreview = ({
     mode,
     style,
   });
+
+  const adaptedTokens = React.useMemo(() => adaptTokensForDarkMode(tokens, isDark), [tokens, isDark]);
 
   const accentBalance = getCTAAccentBalance(style);
 
@@ -73,7 +77,7 @@ export const CTAPreview = ({
         fontClassName={fontClassName}
       >
         <BrowserFrame url="yoursite.com">
-          <CTASectionShared config={config} style={style} tokens={tokens} context="preview" />
+          <CTASectionShared config={config} style={style} tokens={adaptedTokens} context="preview" />
         </BrowserFrame>
       </PreviewWrapper>
 

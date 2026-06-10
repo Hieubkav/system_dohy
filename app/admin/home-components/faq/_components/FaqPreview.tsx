@@ -5,7 +5,8 @@ import { AlertTriangle, Eye } from 'lucide-react';
 import { cn } from '../../../components/ui';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import { SectionHeader } from '../../_shared/components/SectionHeader';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import type { SectionSpacing } from '../../_shared/types/sectionSpacing';
@@ -85,6 +86,7 @@ export const FaqPreview = ({
   spacing?: SectionSpacing;
 }) => {
   const { device, setDevice } = usePreviewDevice();
+  const { isDark } = usePreviewDark();
   const style = selectedStyle;
   const maxVisible = device === 'mobile' ? 4 : 6;
   const sectionSpacingClassName = getFaqSectionSpacingClassName(spacing);
@@ -100,12 +102,10 @@ export const FaqPreview = ({
     ? brandColor.trim()
     : '#3b82f6';
 
-  const tokens = getFaqColors({
-    primary: normalizedPrimary,
-    secondary,
-    mode,
-    style,
-  });
+  const tokens = React.useMemo(
+    () => adaptTokensForDarkMode(getFaqColors({primary: normalizedPrimary, secondary, mode, style}), isDark),
+    [normalizedPrimary, secondary, mode, style, isDark]
+  );
 
   const resolvedSecondary = resolveFaqSecondary(normalizedPrimary, secondary, mode);
   const harmonyStatus = mode === 'dual'

@@ -10,7 +10,7 @@ import { cn } from '../../../components/ui';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
 import { PreviewImage } from '../../_shared/components/PreviewImage';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { SectionHeader } from '../../_shared/components/SectionHeader';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import { DEFAULT_SECTION_SPACING, getSectionSpacingClassName, type SectionSpacing } from '../../_shared/types/sectionSpacing';
@@ -22,6 +22,7 @@ import { getProductsListColors } from '@/components/site/products/colors';
 import { QuickAddVariantModal } from '@/components/products/QuickAddVariantModal';
 import type { Id } from '@/convex/_generated/dataModel';
 import { buildPreviewQuickAddProduct, type PreviewQuickAddAction, type PreviewQuickAddProduct } from '../../_shared/lib/previewQuickAdd';
+import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 
 // Embla Carousel sub-component — tách riêng vì cần hooks
 function CarouselPreviewInner({
@@ -257,6 +258,7 @@ function WineCarouselPreviewInner({
   cartButtonsLayout,
   tokens,
   isProduct = true,
+  isDark = false,
   onPreviewAction,
 }: {
   displayItems: ProductListPreviewItem[];
@@ -271,6 +273,7 @@ function WineCarouselPreviewInner({
   cartButtonsLayout?: 'stack' | 'grid-2';
   tokens?: any;
   isProduct?: boolean;
+  isDark?: boolean;
   onPreviewAction: (item: ProductListPreviewItem, action: PreviewQuickAddAction) => void;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -310,7 +313,7 @@ function WineCarouselPreviewInner({
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
   return (
-    <section className={cn('bg-white py-8 md:py-10', device === 'mobile' ? 'px-3' : 'px-4 md:px-6')} style={{ fontFamily: 'var(--font-roboto), Roboto, sans-serif' }}>
+    <section className={cn('py-8 md:py-10 transition-colors duration-300', device === 'mobile' ? 'px-3' : 'px-4 md:px-6')} style={{ fontFamily: 'var(--font-roboto), Roboto, sans-serif', backgroundColor: isDark ? '#0f0f10' : '#ffffff' }}>
       {header}
       <div className="mb-2 flex justify-end gap-2">
         <button
@@ -318,7 +321,12 @@ function WineCarouselPreviewInner({
           aria-label="Cuộn trước"
           disabled={!canScrollPrev}
           onClick={scrollPrev}
-          className={cn('flex h-8 w-8 items-center justify-center rounded-full border transition-colors md:h-9 md:w-9', canScrollPrev ? 'border-stone-200 hover:bg-stone-50' : 'cursor-not-allowed border-stone-100 opacity-40')}
+          className={cn(
+            'flex h-8 w-8 items-center justify-center rounded-full border transition-colors md:h-9 md:w-9',
+            canScrollPrev
+              ? (isDark ? 'border-zinc-800 hover:bg-zinc-800 text-zinc-300' : 'border-stone-200 hover:bg-stone-50 text-stone-600')
+              : (isDark ? 'cursor-not-allowed border-zinc-900 opacity-20 text-zinc-600' : 'cursor-not-allowed border-stone-100 opacity-40')
+          )}
           style={canScrollPrev ? { color: brandColor } : undefined}
         >
           <ChevronLeft size={17} />
@@ -328,7 +336,12 @@ function WineCarouselPreviewInner({
           aria-label="Cuộn sau"
           disabled={!canScrollNext}
           onClick={scrollNext}
-          className={cn('flex h-8 w-8 items-center justify-center rounded-full transition-colors md:h-9 md:w-9', canScrollNext ? 'text-white' : 'cursor-not-allowed border border-stone-100 opacity-40')}
+          className={cn(
+            'flex h-8 w-8 items-center justify-center rounded-full transition-colors md:h-9 md:w-9',
+            canScrollNext
+              ? 'text-white'
+              : (isDark ? 'cursor-not-allowed border border-zinc-900 opacity-20 bg-transparent text-zinc-600' : 'cursor-not-allowed border border-stone-100 opacity-40')
+          )}
           style={canScrollNext ? { backgroundColor: brandColor } : undefined}
         >
           <ChevronRight size={17} />
@@ -347,8 +360,14 @@ function WineCarouselPreviewInner({
                   device === 'mobile' ? 'w-[140px]' : device === 'tablet' ? 'w-[180px]' : 'w-[calc((100%-4rem)/5)] min-w-[180px]',
                 )}
               >
-                <div className={cn("group relative flex h-full flex-col overflow-hidden rounded-md border border-stone-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-stone-200/50", cardRadiusClassName)}>
-                  <div className="relative aspect-square overflow-hidden border-b border-stone-50 bg-white">
+                <div className={cn(
+                  "group relative flex h-full flex-col overflow-hidden rounded-md border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
+                  isDark
+                    ? "border-zinc-850 bg-zinc-900/60 hover:shadow-black/50"
+                    : "border-stone-100 bg-white shadow-sm hover:shadow-stone-200/50",
+                  cardRadiusClassName
+                )}>
+                  <div className={cn("relative aspect-square overflow-hidden border-b", isDark ? "border-zinc-850 bg-zinc-950" : "border-stone-50 bg-white")}>
                     {discount ? (
                       <span className="absolute left-0 top-2 z-10 rounded-r-md px-2 py-0.5 text-[10px] font-bold text-white shadow-sm sm:top-3 sm:px-2.5 sm:text-xs" style={{ backgroundColor: brandColor }}>
                         {discount}
@@ -358,28 +377,28 @@ function WineCarouselPreviewInner({
                       {item.image ? (
                         <PreviewImage src={item.image} alt={item.name} className="h-full w-full object-contain p-1 transition-opacity duration-300" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-stone-50">
-                          <Package size={34} className="text-stone-300" />
+                        <div className={cn("flex h-full w-full items-center justify-center", isDark ? "bg-zinc-900" : "bg-stone-50")}>
+                          <Package size={34} className={isDark ? "text-zinc-700" : "text-stone-300"} />
                         </div>
                       )}
                     </div>
                   </div>
 
                   <div className="flex flex-1 flex-col p-2 sm:p-3">
-                    <h3 className="mb-1.5 line-clamp-3 text-sm font-bold leading-tight transition-colors sm:mb-2 sm:text-base" style={{ color: brandColor }}>
+                    <h3 className="mb-1.5 line-clamp-3 text-sm font-bold leading-tight transition-colors sm:mb-2 sm:text-base" style={{ color: tokens.primary }}>
                       {item.name}
                     </h3>
                     <div className="mb-1.5 flex flex-col gap-0.5 sm:mb-2 sm:gap-1" />
-                    <div className="mt-auto flex flex-col gap-1.5 border-t border-stone-100 pt-1.5 sm:pt-2">
+                    <div className={cn("mt-auto flex flex-col gap-1.5 border-t pt-1.5 sm:pt-2", isDark ? "border-zinc-800" : "border-stone-100")}>
                       <div className="flex items-end justify-between gap-2">
                         <div className="flex min-w-0 flex-col">
                           {item.originalPrice ? (
-                            <span className="text-[10px] font-medium text-stone-400 line-through decoration-stone-400 decoration-1 sm:text-xs">{item.originalPrice}</span>
+                            <span className={cn("text-[10px] font-medium line-through decoration-1 sm:text-xs", isDark ? "text-zinc-500 decoration-zinc-750" : "text-stone-400 decoration-stone-400")}>{item.originalPrice}</span>
                           ) : null}
-                          <span className="text-base font-bold sm:text-lg" style={{ color: brandColor }}>{item.price}</span>
+                          <span className="text-base font-bold sm:text-lg" style={{ color: tokens.primary }}>{item.price}</span>
                         </div>
                         {(!isProduct || (!showAddToCartButton && !showBuyNowButton)) && (
-                          <button type="button" className="shrink-0 rounded px-2 py-1 text-[10px] font-medium text-white transition-colors sm:px-3 sm:py-1.5 sm:text-xs" style={{ backgroundColor: brandColor }}>
+                          <button type="button" className="shrink-0 rounded px-2 py-1 text-[10px] font-medium text-white transition-colors sm:px-3 sm:py-1.5 sm:text-xs" style={{ backgroundColor: tokens.primary }}>
                             Xem
                           </button>
                         )}
@@ -485,9 +504,10 @@ export const ProductListPreview = ({
   showBuyNowButton?: boolean;
   cartButtonsLayout?: 'stack' | 'grid-2';
 }) => {
+  const { isDark } = usePreviewDark();
   const tokens = React.useMemo(
-    () => getProductsListColors(brandColor, secondary, 'single'),
-    [brandColor, secondary]
+    () => adaptTokensForDarkMode(getProductsListColors(brandColor, secondary, 'single'), isDark),
+    [brandColor, secondary, isDark]
   );
   const displayTitle = sectionTitle ?? (componentType === 'ServiceList' ? 'Dịch vụ nổi bật' : 'Sản phẩm nổi bật');
   const displaySubtitle = subtitleProp ?? '';
@@ -737,9 +757,9 @@ export const ProductListPreview = ({
   const renderEmptyState = () => (
     <section className={cn("py-8 md:py-10", device === 'mobile' ? 'px-3' : 'px-4 md:px-6')}>
       {renderSectionHeader()}
-      <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-6 py-10 text-center">
-        <Package size={36} className="mx-auto mb-3 text-slate-300" />
-        <p className="text-sm font-medium text-slate-500">{emptyMessage}</p>
+      <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-10 text-center">
+        <Package size={36} className="mx-auto mb-3 text-slate-300 dark:text-slate-650" />
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{emptyMessage}</p>
       </div>
     </section>
   );
@@ -1040,6 +1060,7 @@ export const ProductListPreview = ({
       cartButtonsLayout={cartButtonsLayout}
       tokens={tokens}
       isProduct={isProduct}
+      isDark={isDark}
       onPreviewAction={onPreviewAction}
     />
   );
@@ -1270,12 +1291,12 @@ export const ProductListPreview = ({
         {displayItems.slice(0, itemCount).map((item) => {
           const discount = getDiscount(item.price, item.originalPrice);
           return (
-            <div key={item.id} className={cn("bg-white border border-slate-200 p-3 flex flex-col group hover:shadow-lg hover:border-slate-300 transition-all cursor-pointer overflow-hidden", cardRadiusClassName)}>
-              <div className={cn("relative w-full overflow-hidden mb-3", imageRadiusClassName)} style={{ ...imageAspectRatioStyle, backgroundColor: `${secondary}08` }}>
+            <div key={item.id} className={cn("bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 flex flex-col group hover:shadow-lg hover:border-slate-300 dark:hover:border-slate-600 transition-all cursor-pointer overflow-hidden", cardRadiusClassName)}>
+              <div className={cn("relative w-full overflow-hidden mb-3", imageRadiusClassName)} style={{ ...imageAspectRatioStyle, backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : `${secondary}08` }}>
                 {item.image ? (
                   <PreviewImage src={item.image} alt={item.name} className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center"><Package size={32} className="text-slate-300" /></div>
+                  <div className="h-full w-full flex items-center justify-center bg-slate-50 dark:bg-slate-900"><Package size={32} className="text-slate-300 dark:text-slate-600" /></div>
                 )}
                 {discount && <div className="absolute top-2 left-2"><SaleBadge text={discount} className="text-[10px] px-1.5 py-0.5" /></div>}
                 <div className="absolute bottom-2 right-2 translate-y-10 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
@@ -1283,10 +1304,10 @@ export const ProductListPreview = ({
                 </div>
               </div>
               <div className="mt-auto px-1">
-                <h4 className="font-medium text-sm text-slate-900 line-clamp-2 group-hover:opacity-80 transition-colors">{item.name}</h4>
+                <h4 className="font-medium text-sm text-slate-900 dark:text-slate-100 line-clamp-2 group-hover:opacity-80 transition-colors">{item.name}</h4>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-sm font-bold" style={{ color: brandColor }}>{item.price}</span>
-                  {item.originalPrice && <span className="text-[10px] text-slate-400 line-through">{item.originalPrice}</span>}
+                  {item.originalPrice && <span className="text-[10px] text-slate-400 dark:text-slate-500 line-through">{item.originalPrice}</span>}
                 </div>
               </div>
             </div>
@@ -1340,7 +1361,8 @@ export const ProductListPreview = ({
                   <div className="relative isolate aspect-[380/460] overflow-visible [perspective:2500px]">
                     <div
                       className={cn(
-                        "relative h-full w-full overflow-hidden bg-white shadow-sm transition duration-500",
+                        "relative h-full w-full overflow-hidden shadow-sm transition duration-500",
+                        isDark ? "bg-slate-900" : "bg-white",
                         "group-hover:[transform:perspective(900px)_translateY(-5%)_rotateX(25deg)_translateZ(0)] group-hover:shadow-[2px_35px_32px_-8px_rgba(0,0,0,0.55)]",
                         isActive && "[transform:perspective(900px)_translateY(-5%)_rotateX(25deg)_translateZ(0)] shadow-[2px_35px_32px_-8px_rgba(0,0,0,0.55)]",
                         imageRadiusClassName,
@@ -1356,11 +1378,11 @@ export const ProductListPreview = ({
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center bg-slate-100 dark:bg-slate-700">
-                          <Package size={48} className="text-slate-300" />
+                          <Package size={48} className="text-slate-300 dark:text-slate-600" />
                         </div>
                       )}
                       <div className={cn("absolute inset-0 z-10 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent opacity-70 transition duration-500 group-hover:opacity-0", isActive && "opacity-0")} />
-                      <div className={cn("absolute inset-0 z-10 bg-white opacity-0 transition duration-500 group-hover:opacity-100", isActive && "opacity-100")} />
+                      <div className={cn("absolute inset-0 z-10 opacity-0 transition duration-500 group-hover:opacity-100", isDark ? "bg-slate-900" : "bg-white", isActive && "opacity-100")} />
                       {discount && (
                         <div className="absolute right-3 top-3 z-20">
                           <SaleBadge text={discount} className="text-[11px] px-3 py-1 font-bold shadow-lg" />
@@ -1369,11 +1391,19 @@ export const ProductListPreview = ({
                       {/* Overlay text — luôn show tên/giá; nút Xem chi tiết chỉ khi KHÔNG có cart buttons */}
                       <div className={cn("absolute inset-x-0 bottom-0 z-20 space-y-2 p-4 text-center transition duration-500 group-hover:translate-y-1", isActive && "translate-y-1")}>
                         {item.category ? (
-                          <div className={cn("text-[11px] font-semibold uppercase tracking-wide text-white/70 transition-colors duration-500 group-hover:text-slate-500", isActive && "text-slate-500")}>
+                          <div className={cn(
+                            "text-[11px] font-semibold uppercase tracking-wide text-white/70 transition-colors duration-500",
+                            isDark ? "group-hover:text-slate-400" : "group-hover:text-slate-500",
+                            isActive && (isDark ? "text-slate-400" : "text-slate-500")
+                          )}>
                             {item.category}
                           </div>
                         ) : null}
-                        <h3 className={cn("line-clamp-2 text-base font-bold leading-snug text-white transition-colors duration-500 group-hover:text-slate-900", isActive && "text-slate-900")}>
+                        <h3 className={cn(
+                          "line-clamp-2 text-base font-bold leading-snug text-white transition-colors duration-500",
+                          isDark ? "group-hover:text-slate-100" : "group-hover:text-slate-900",
+                          isActive && (isDark ? "text-slate-100" : "text-slate-900")
+                        )}>
                           {item.name}
                         </h3>
                         <div className="flex flex-wrap items-baseline justify-center gap-2">
@@ -1383,7 +1413,11 @@ export const ProductListPreview = ({
                             </span>
                           )}
                           {item.originalPrice && (
-                            <span className={cn("text-xs text-white/55 line-through transition-colors duration-500 group-hover:text-slate-400", isActive && "text-slate-400")}>
+                            <span className={cn(
+                              "text-xs text-white/55 line-through transition-colors duration-500",
+                              isDark ? "group-hover:text-slate-400" : "group-hover:text-slate-400",
+                              isActive && "text-slate-400"
+                            )}>
                               {item.originalPrice}
                             </span>
                           )}
@@ -1593,7 +1627,7 @@ export const ProductListPreview = ({
     const sfTextOnBrand = sfLuminance(brandColor) > 0.4 ? '#1e293b' : '#ffffff';
 
     return (
-      <section className={cn('py-0', device === 'mobile' ? '' : '')}>
+      <section className={cn('py-0 overflow-hidden rounded-xl border', isDark ? 'border-zinc-850' : 'border-slate-100')}>
         {/* Header bar with brand bg */}
         <div
           className="flex items-center gap-3 px-4 py-3 rounded-t-xl overflow-x-auto"
@@ -1604,15 +1638,18 @@ export const ProductListPreview = ({
             <button
               key={cat}
               type="button"
-              className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-slate-800 whitespace-nowrap hover:bg-slate-50 transition-colors"
+              className={cn(
+                "px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-colors",
+                isDark ? "bg-zinc-900 text-zinc-100 hover:bg-zinc-800" : "bg-white text-slate-800 hover:bg-slate-50"
+              )}
             >
               {cat}
             </button>
           ))}
         </div>
 
-        {/* Product grid - white bg */}
-        <div className={cn('px-4 py-6', device === 'mobile' ? '' : 'px-6')}>
+        {/* Product grid - dynamic bg */}
+        <div className={cn('px-4 py-6 transition-colors duration-300', isDark ? 'bg-zinc-950/70' : 'bg-slate-50/50', device === 'mobile' ? '' : 'px-6')}>
           <div
             className={cn(
               'grid gap-4',
@@ -1627,22 +1664,22 @@ export const ProductListPreview = ({
                   className="group flex flex-col cursor-pointer"
                 >
                   {/* Image + discount badge */}
-                  <div className={cn("relative bg-white overflow-hidden mb-3", imageRadiusClassName)} style={imageAspectRatioStyle}>
+                  <div className={cn("relative overflow-hidden mb-3 border aspect-square", isDark ? "bg-zinc-900/60 border-zinc-850" : "bg-white border-slate-100", imageRadiusClassName)} style={imageAspectRatioStyle}>
                     {item.image ? (
                       <PreviewImage
                         src={item.image}
                         alt={item.name}
-                        className="h-full w-full object-contain"
+                        className="h-full w-full object-contain p-1"
                       />
                     ) : (
-                      <div className="h-full w-full flex items-center justify-center bg-slate-50">
-                        <Package size={32} className="text-slate-300" />
+                      <div className={cn("h-full w-full flex items-center justify-center", isDark ? "bg-zinc-900" : "bg-slate-50")}>
+                        <Package size={32} className="text-slate-300 dark:text-slate-650" />
                       </div>
                     )}
                     {discount && (
                       <div className="absolute top-1 right-1">
                         <span
-                          className="inline-flex items-center justify-center w-9 h-9 rounded-full text-white text-[10px] font-bold"
+                          className="inline-flex items-center justify-center w-8 h-8 rounded-full text-white text-[9px] font-bold"
                           style={{ backgroundColor: brandColor }}
                         >
                           {discount}
@@ -1652,12 +1689,12 @@ export const ProductListPreview = ({
                   </div>
 
                   {/* Info */}
-                  <h3 className="font-medium text-slate-900 text-xs line-clamp-2 mb-1 group-hover:opacity-80 transition-colors">
+                  <h3 className={cn("font-medium text-xs line-clamp-2 mb-1 group-hover:opacity-80 transition-colors", isDark ? "text-slate-200" : "text-slate-900")}>
                     {item.name}
                   </h3>
 
                   {/* Rating */}
-                  <div className="flex items-center gap-1 text-[10px] text-slate-400 mb-1">
+                  <div className={cn("flex items-center gap-1 text-[10px] mb-1", isDark ? "text-slate-500" : "text-slate-400")}>
                     <span className="text-yellow-400">★</span>
                     <span>0.0</span>
                     <span>(0 Đánh giá)</span>
@@ -1669,21 +1706,21 @@ export const ProductListPreview = ({
                       {item.price}
                     </span>
                     {item.originalPrice && (
-                      <span className="text-[10px] text-slate-400 line-through">
+                      <span className={cn("text-[10px] line-through", isDark ? "text-slate-500" : "text-slate-400")}>
                         {item.originalPrice}
                       </span>
                     )}
                   </div>
 
                   {/* Cart + heart */}
-                  <div className="flex items-center justify-between mt-auto">
+                  <div className="flex items-center justify-between mt-auto pt-1">
                     <span
-                      className="flex items-center gap-1 text-[10px] font-medium"
+                      className="flex items-center gap-1 text-[10px] font-semibold"
                       style={{ color: brandColor }}
                     >
                       🛒 Thêm vào giỏ
                     </span>
-                    <span className="text-slate-300 text-xs">♡</span>
+                    <span className={cn("text-xs transition-colors", isDark ? "text-slate-600 hover:text-slate-400" : "text-slate-300 hover:text-slate-500")}>♡</span>
                   </div>
                 </div>
               );
