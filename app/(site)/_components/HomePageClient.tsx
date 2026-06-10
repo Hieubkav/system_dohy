@@ -3,6 +3,7 @@
 import { HomeComponentRenderer } from '@/components/site/home/HomeComponentRenderer';
 import { HomePageLoading } from '@/components/site/loading/HomePageLoading';
 import { useBrandColors } from '@/components/site/hooks';
+import { useSiteSettings } from '@/components/site/hooks';
 import { api } from '@/convex/_generated/api';
 import type { Doc } from '@/convex/_generated/dataModel';
 import { useQuery } from 'convex/react';
@@ -35,22 +36,26 @@ export default function HomePageClient({
 
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
   const systemColors = useBrandColors();
-
-  const [isDark, setIsDark] = useState(false);
+  const { siteDarkMode } = useSiteSettings();
+  const [siteThemeOverride, setSiteThemeOverride] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    setIsDark(document.documentElement.classList.contains('dark'));
+    setSiteThemeOverride(typeof window !== 'undefined' ? localStorage.getItem('site_theme_override') : null);
     const handleThemeChange = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
+      setSiteThemeOverride(localStorage.getItem('site_theme_override'));
     };
     window.addEventListener('site-theme-change', handleThemeChange);
     return () => {
       window.removeEventListener('site-theme-change', handleThemeChange);
     };
   }, []);
+
+  // Tính isDark từ DB setting + override — KHÔNG đọc từ DOM class (bị admin panel ghi đè)
+  const isDark = siteThemeOverride === 'dark'
+    ? true
+    : siteThemeOverride === 'light'
+      ? false
+      : siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   const bgStyle = useMemo(() => {
     if (!systemConfig?.homePageBackground) {return {};}

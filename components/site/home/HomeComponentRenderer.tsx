@@ -6,6 +6,7 @@ import { cn } from '@/app/admin/components/ui';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useBrandColors } from '@/components/site/hooks';
+import { useSiteSettings } from '@/components/site/hooks';
 import { useSnapshotDemoContext } from '@/components/modules/homepage/SnapshotDemoProvider';
 import { resolveTypeOverrideColors, type ColorOverrideState } from '@/app/admin/home-components/_shared/lib/typeColorOverride';
 import { resolveTypeOverrideFont, type FontOverrideState } from '@/app/admin/home-components/_shared/lib/typeFontOverride';
@@ -26,18 +27,27 @@ interface HomeComponentRendererProps {
 
 export function HomeComponentRenderer({ component, snapshotComponentKey }: HomeComponentRendererProps) {
   const systemColors = useBrandColors();
-  const [isDark, setIsDark] = useState(false);
+  const { siteDarkMode } = useSiteSettings();
+  const [siteThemeOverride, setSiteThemeOverride] = useState<string | null>(null);
 
   useEffect(() => {
-    setIsDark(document.documentElement.classList.contains('dark'));
+    // Đọc override từ localStorage khi mount (user bấm nút dark mode trên site)
+    setSiteThemeOverride(typeof window !== 'undefined' ? localStorage.getItem('site_theme_override') : null);
     const handleThemeChange = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
+      setSiteThemeOverride(localStorage.getItem('site_theme_override'));
     };
     window.addEventListener('site-theme-change', handleThemeChange);
     return () => {
       window.removeEventListener('site-theme-change', handleThemeChange);
     };
   }, []);
+
+  // Tính isDark từ DB setting + override — KHÔNG đọc từ DOM class
+  const isDark = siteThemeOverride === 'dark'
+    ? true
+    : siteThemeOverride === 'light'
+      ? false
+      : siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   const snapshotCtx = useSnapshotDemoContext();
   const isSnapshotMode = Boolean(snapshotCtx);

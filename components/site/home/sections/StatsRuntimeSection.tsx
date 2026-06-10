@@ -149,7 +149,7 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
       <section className={cn(sectionSpacingClassName, 'px-3')}>
         <div className={containerClass}>
           {sharedHeader}
-          <div className={cn('w-full overflow-hidden border bg-white', cardRadiusClassName)} style={{ borderColor: colors.border }}>
+          <div className={cn('w-full overflow-hidden border', cardRadiusClassName)} style={{ borderColor: colors.border, backgroundColor: colors.sectionBg }}>
             <div className={`grid ${mobile} ${tablet} ${grid} divide-x divide-y divide-gray-200 md:divide-y-0`}>
               {items.slice(0, desktopColumns).map((item, idx) => {
                 const IconCmp = item.iconType === 'lucide' && item.iconName ? resolveIconComponent(item.iconName) : null;
@@ -268,7 +268,7 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
       <section className={cn(sectionSpacingClassName, 'px-3')}>
         <div className={containerClass}>
           {sharedHeader}
-          <div className={cn('bg-slate-50 py-8 px-5', cardRadiusClassName)}>
+          <div className={cn('py-8 px-5', cardRadiusClassName)} style={{ backgroundColor: colors.sectionBg }}>
             <div className={`grid gap-5 ${mobile} ${tablet} ${grid}`}>
               {items.slice(0, desktopColumns).map((item, idx) => {
                 const IconCmp = item.iconType === 'lucide' && item.iconName ? resolveIconComponent(item.iconName) : null;
@@ -287,7 +287,7 @@ export function StatsRuntimeSection({ config, brandColor, secondary, mode, title
                     <div className={mediaPlacement === 'left' ? 'flex flex-col justify-center' : 'flex flex-col items-center justify-center'}>
                       {mediaPlacement !== 'left' && <div className="w-10 h-0.5 rounded-full mb-2.5" style={{ backgroundColor: colors.accent }} />}
                       <AnimatedValue value={item.value} enabled={enableAnimation} className="text-[22px] sm:text-[27px] md:text-[33px] font-bold tracking-tight tabular-nums leading-none" style={{ color: colors.value }} />
-                      <h3 className="text-[11px] md:text-[15px] font-medium text-slate-500 mt-1">{item.label}</h3>
+                      <h3 className="text-[11px] md:text-[15px] font-medium mt-1" style={{ color: colors.label }}>{item.label}</h3>
                     </div>
                   </div>
                 );

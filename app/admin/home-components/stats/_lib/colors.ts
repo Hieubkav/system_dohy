@@ -158,6 +158,7 @@ export const getMinimalColors = (primary: string, secondary: string, mode: Stats
     sectionBg: '#f8fafc',
     accent: secondaryStrong,
     value: ensureAPCATextColor(primary, '#ffffff', 32, 700),
+    label: '#64748b',
   };
 };
 
