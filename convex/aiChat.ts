@@ -71,12 +71,6 @@ type ChatjptRequestBody = {
   stream?: boolean;
 };
 
-type ChatjptClientFallback = {
-  body: ChatjptRequestBody;
-  endpoint: string;
-  reason: "server-egress-403";
-};
-
 type SearchGroup = {
   items: SearchItem[];
 };
@@ -120,15 +114,6 @@ type SendMessageResult = {
   suggestions: SearchItem[];
 };
 
-type OptimizeHeadlineResult = {
-  clientFallback?: ChatjptClientFallback;
-  headline?: string;
-  model: string;
-  provider: AiProvider;
-  source: "ai" | "client-fallback";
-  warning?: string;
-};
-
 const toStringValue = (value: unknown, fallback: string) => (
   typeof value === "string" && value.trim() ? value.trim() : fallback
 );
@@ -159,38 +144,7 @@ const normalizeRuntimeModel = (provider: AiProvider, value: unknown) => {
 
 const sanitizeMessage = (message: string) => message.trim().slice(0, 1200);
 
-const sanitizeHeadlineInput = (headline: string) => headline.trim().replaceAll(/\s+/g, " ").slice(0, 180);
-
-const cleanOptimizedHeadline = (headline: string) => {
-  const firstLine = headline
-    .replace(/^```(?:text)?/i, "")
-    .replace(/```$/i, "")
-    .split("\n")
-    .map((line) => line.trim())
-    .find(Boolean) ?? "";
-
-  return firstLine
-    .replace(/^["'“”‘’]+|["'“”‘’]+$/g, "")
-    .replace(/^\d+[).:-]\s*/, "")
-    .trim()
-    .slice(0, 160);
-};
-
 const isHtmlResponse = (value: string) => /<(?:!doctype|html|head|body)\b/i.test(value);
-
-const buildHeadlineOptimizationPrompt = (headline: string, keyword?: string) => [
-  "Hãy tối ưu tiêu đề bài viết tiếng Việt sau để tự nhiên, thu hút click nhưng không phóng đại sai sự thật.",
-  `Tiêu đề hiện tại: ${headline}`,
-  keyword ? `Từ khóa chính: ${keyword}` : "",
-  "",
-  "Yêu cầu:",
-  "- Chỉ trả về 1 tiêu đề duy nhất, không giải thích.",
-  "- Giữ đúng chủ đề và intent của tiêu đề gốc.",
-  "- Ưu tiên rõ lợi ích, cụ thể, dễ hiểu trên mobile.",
-  "- Có thể tăng độ tò mò nhưng không dùng claim tuyệt đối nếu không có bằng chứng.",
-  "- Không emoji, không hashtag, không markdown, không đặt trong dấu ngoặc kép.",
-  "- Độ dài khuyến nghị 45-85 ký tự nếu phù hợp.",
-].filter(Boolean).join("\n");
 
 const GREETING_ONLY_QUERIES = new Set([
   "alo",
@@ -626,107 +580,5 @@ export const sendMessage = action({
     model: v.string(),
     provider: v.union(v.literal("gemini"), v.literal("chatjpt")),
     suggestions: v.array(suggestionDoc),
-  }),
-});
-
-export const optimizeHeadline = action({
-  args: {
-    headline: v.string(),
-    keyword: v.optional(v.string()),
-  },
-  handler: async (ctx, args): Promise<OptimizeHeadlineResult> => {
-    const headline = sanitizeHeadlineInput(args.headline);
-    const keyword = args.keyword ? sanitizeHeadlineInput(args.keyword).slice(0, 120) : undefined;
-    if (!headline) {
-      throw new Error("Vui lòng nhập tiêu đề cần tối ưu.");
-    }
-
-    const rateLimit: { allowed: boolean; remaining: number; resetIn: number } = await ctx.runMutation(
-      internal.aiChat.consumeAiChatRateLimit,
-      { identifier: `headline-generator:${headline.slice(0, 120)}` }
-    );
-    if (!rateLimit.allowed) {
-      throw new Error("Bạn đang tối ưu hơi nhanh. Vui lòng thử lại sau ít phút.");
-    }
-
-    const config: RuntimeConfig = await ctx.runQuery(internal.aiChat.getRuntimeConfig, {});
-    if (!config.enabled) {
-      throw new Error("Trợ lý AI đang tắt.");
-    }
-    if (config.provider === "gemini" && !config.apiKey) {
-      throw new Error("Trợ lý AI chưa có API key.");
-    }
-
-    const message = buildHeadlineOptimizationPrompt(headline, keyword);
-    const systemPrompt = "Bạn là biên tập viên headline SEO tiếng Việt. Viết tiêu đề rõ lợi ích, có sức hút, trung thực và phù hợp bài viết website.";
-    const chatjptArgs: ChatjptAnswerArgs = {
-      assistantContext: "",
-      message,
-      model: config.model,
-      sourcePath: "/admin/posts/headline-generator",
-      suggestions: [],
-      systemPrompt,
-    };
-    let rawHeadline = "";
-    try {
-      rawHeadline = config.provider === "gemini"
-        ? await generateGeminiAnswer({
-          apiKey: config.apiKey,
-          assistantContext: "",
-          message,
-          model: config.model,
-          sourcePath: "/admin/posts/headline-generator",
-          suggestions: [],
-          systemPrompt,
-          temperature: Math.min(0.7, Math.max(0.2, config.temperature)),
-        })
-        : await generateChatjptAnswer(chatjptArgs);
-    } catch (error) {
-      if (config.provider === "chatjpt" && error instanceof ChatjptHttpError && error.status === 403) {
-        return {
-          clientFallback: {
-            body: buildChatjptRequestBody(chatjptArgs),
-            endpoint: CHATJPT_API_ENDPOINT,
-            reason: "server-egress-403",
-          },
-          model: config.model,
-          provider: config.provider,
-          source: "client-fallback",
-          warning: "Server bị ChatJPT chặn, đang chuyển sang trình duyệt của bạn.",
-        };
-      }
-      throw error;
-    }
-
-    const optimizedHeadline = cleanOptimizedHeadline(rawHeadline);
-    if (!optimizedHeadline) {
-      throw new Error("AI không trả về tiêu đề hợp lệ.");
-    }
-
-    return {
-      headline: optimizedHeadline,
-      model: config.model,
-      provider: config.provider,
-      source: "ai",
-    };
-  },
-  returns: v.object({
-    clientFallback: v.optional(v.object({
-      body: v.object({
-        messages: v.array(v.object({
-          content: v.string(),
-          role: v.union(v.literal("assistant"), v.literal("system"), v.literal("user")),
-        })),
-        model: v.string(),
-        stream: v.optional(v.boolean()),
-      }),
-      endpoint: v.string(),
-      reason: v.literal("server-egress-403"),
-    })),
-    headline: v.optional(v.string()),
-    model: v.string(),
-    provider: v.union(v.literal("gemini"), v.literal("chatjpt")),
-    source: v.union(v.literal("ai"), v.literal("client-fallback")),
-    warning: v.optional(v.string()),
   }),
 });
