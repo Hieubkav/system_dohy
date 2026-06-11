@@ -17,6 +17,7 @@ import { normalizeRichText } from '@/app/admin/lib/normalize-rich-text';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
 import { CategoryTagsInput } from '@/app/admin/components/AdditionalCategoriesSelect';
+import { HeadlineGeneratorWidget } from '@/app/admin/components/HeadlineGeneratorWidget';
 
 const MODULE_KEY = 'posts';
 
@@ -165,6 +166,11 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
     const val = e.target.value;
     setTitle(val);
     setSlug(generateSlugFromTitle(val));
+  };
+
+  const handleApplyHeadline = (nextTitle: string) => {
+    setTitle(nextTitle);
+    setSlug(generateSlugFromTitle(nextTitle));
   };
 
   const handleApplyAiPost = (item: AiEntityImportPayload) => {
@@ -348,7 +354,10 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
             <CardContent className="p-6 space-y-4">
               {/* Title - always shown (system field) */}
               <div className="space-y-2">
-                <Label>Tiêu đề <span className="text-red-500">*</span></Label>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <Label>Tiêu đề <span className="text-red-500">*</span></Label>
+                  <HeadlineGeneratorWidget currentTitle={title} onSelect={handleApplyHeadline} />
+                </div>
                 <CopyableInput value={title} onChange={handleTitleChange} required copyLabel="tiêu đề" />
               </div>
               {/* Slug - always shown (system field) */}

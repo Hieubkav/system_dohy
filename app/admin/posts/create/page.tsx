@@ -19,6 +19,7 @@ import type { GeneratorRequest, GeneratedArticlePayload } from '@/lib/posts/gene
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
 import { CategoryTagsInput } from '@/app/admin/components/AdditionalCategoriesSelect';
+import { HeadlineGeneratorWidget } from '@/app/admin/components/HeadlineGeneratorWidget';
 
 const MODULE_KEY = 'posts';
 const COC_TARGET_OPTIONS: Array<{ key: GeneratorRequest['templateKey']; label: string; description: string }> = [
@@ -202,6 +203,11 @@ export default function PostCreatePage() {
       .replaceAll(/[đĐ]/g, "d")
       .replaceAll(/[^a-z0-9\s]/g, '')
       .replaceAll(/\s+/g, '-');
+  };
+
+  const handleApplyHeadline = (nextTitle: string) => {
+    setTitle(nextTitle);
+    setSlug(generateSlugFromTitle(nextTitle));
   };
 
   const handleGeneratePreview = () => {
@@ -654,7 +660,10 @@ export default function PostCreatePage() {
             <CardContent className="p-6 space-y-4">
               {/* Title - always shown (system field) */}
               <div className="space-y-2">
-                <Label>Tiêu đề <span className="text-red-500">*</span></Label>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <Label>Tiêu đề <span className="text-red-500">*</span></Label>
+                  <HeadlineGeneratorWidget currentTitle={title} onSelect={handleApplyHeadline} />
+                </div>
                 <CopyableInput value={title} onChange={handleTitleChange} required placeholder="Nhập tiêu đề bài viết..." copyLabel="tiêu đề" />
               </div>
               {/* Slug - always shown (system field) */}
