@@ -111,9 +111,21 @@ export function HeaderMenuPreview({
   servicesEnabled,
   coursesEnabled = false,
 }: HeaderMenuPreviewProps) {
+  const [isDark, setIsDark] = useState(false);
+
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return;
+    setIsDark(document.documentElement.classList.contains('dark'));
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
   const tokens = useMemo<MenuColors>(
-    () => getMenuColors(brandColor, secondaryColor, colorMode),
-    [brandColor, secondaryColor, colorMode]
+    () => getMenuColors(brandColor, secondaryColor, colorMode, isDark),
+    [brandColor, secondaryColor, colorMode, isDark]
   );
   const layerColors = useMemo(
     () => resolveMenuLayerColors(config.layerColors, tokens, colorMode),
@@ -183,12 +195,12 @@ export function HeaderMenuPreview({
   const logoBackgroundStyles: Record<LogoBackgroundStyle, React.CSSProperties> = {
     none: {},
     border: {
-      backgroundColor: 'rgba(255, 255, 255, 0.6)',
+      backgroundColor: isDark ? 'rgba(15, 23, 42, 0.6)' : 'rgba(255, 255, 255, 0.6)',
       border: `1px solid ${tokens.borderStrong}`,
-      boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
+      boxShadow: isDark ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(15, 23, 42, 0.08)',
     },
     outline: {
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.2)',
       border: `1px solid ${tokens.borderStrong}`,
     },
     hairline: {
@@ -198,27 +210,27 @@ export function HeaderMenuPreview({
     inset: {
       backgroundColor: tokens.surfaceAlt,
       border: `1px solid ${tokens.border}`,
-      boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+      boxShadow: isDark ? 'inset 0 1px 0 rgba(255, 255, 255, 0.05)' : 'inset 0 1px 0 rgba(255, 255, 255, 0.8)',
     },
     pill: {
-      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.12)',
       border: `1px solid ${tokens.border}`,
     },
     shadow: {
-      backgroundColor: 'rgba(255, 255, 255, 0.88)',
-      boxShadow: '0 10px 30px rgba(15, 23, 42, 0.16)',
-      border: '1px solid rgba(148, 163, 184, 0.2)',
+      backgroundColor: isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.88)',
+      boxShadow: isDark ? '0 10px 30px rgba(0, 0, 0, 0.4)' : '0 10px 30px rgba(15, 23, 42, 0.16)',
+      border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(148, 163, 184, 0.2)',
       backdropFilter: 'blur(10px)',
     },
     soft: {
       backgroundColor: tokens.surfaceAlt,
       border: `1px solid ${tokens.border}`,
-      boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.7)',
+      boxShadow: isDark ? 'inset 0 1px 0 rgba(255, 255, 255, 0.05)' : 'inset 0 1px 0 rgba(255, 255, 255, 0.7)',
     },
     solid: {
       backgroundColor: tokens.textPrimary,
       border: `1px solid ${tokens.textPrimary}`,
-      boxShadow: '0 12px 28px rgba(15, 23, 42, 0.18)',
+      boxShadow: isDark ? '0 12px 28px rgba(0, 0, 0, 0.4)' : '0 12px 28px rgba(15, 23, 42, 0.18)',
     },
   };
   const hasBackgroundFrame = logoBackgroundStyle !== 'none';

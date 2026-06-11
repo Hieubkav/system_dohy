@@ -20,7 +20,7 @@ export const settingsModule = defineModuleWithRuntime({
      { key: 'enableProductSupplementalAdvanced', label: 'Nội dung mô tả SP', description: 'Bật tab Nội dung mô tả SP trong Admin > Cài đặt nâng cao', icon: Type, enabled: true },
      { key: 'enableShopConfigAdvanced', label: 'Cấu hình cửa hàng', description: 'Bật tab Cấu hình cửa hàng trong Admin > Cài đặt nâng cao', icon: Settings, enabled: true },
      { key: 'enableTrustPages', label: 'Trang tin cậy', icon: Globe },
-     { key: 'enableTrustPagesAutoGenerate', label: 'Tự sinh Trust Pages', icon: Sparkles },
+     { key: 'enableTrustPagesAutoGenerate', label: 'Tự sinh Trust Pages', icon: Sparkles, enabled: true },
    ],
  
   settings: [
@@ -46,8 +46,8 @@ export const settingsModule = defineModuleWithRuntime({
       { enabled: true, fieldKey: 'site_url', group: 'site', isSystem: true, name: 'URL Website', order: 2, required: false, type: 'text' },
       { enabled: true, fieldKey: 'site_logo', group: 'site', isSystem: true, name: 'Logo', order: 3, required: false, type: 'image' },
       { enabled: true, fieldKey: 'site_favicon', group: 'site', isSystem: true, name: 'Favicon', order: 4, required: false, type: 'image' },
-      { enabled: true, fieldKey: 'site_timezone', group: 'site', isSystem: false, name: 'Múi giờ', order: 5, required: false, type: 'select' },
-      { enabled: true, fieldKey: 'site_language', group: 'site', isSystem: false, name: 'Ngôn ngữ', order: 6, required: false, type: 'select' },
+      { enabled: false, fieldKey: 'site_timezone', group: 'site', isSystem: false, name: 'Múi giờ', order: 5, required: false, type: 'select' },
+      { enabled: false, fieldKey: 'site_language', group: 'site', isSystem: false, name: 'Ngôn ngữ', order: 6, required: false, type: 'select' },
       { enabled: true, fieldKey: 'site_brand_primary', group: 'site', isSystem: false, name: 'Màu thương hiệu (chính)', order: 7, required: false, type: 'color' },
       { enabled: true, fieldKey: 'site_brand_secondary', group: 'site', isSystem: false, name: 'Màu thương hiệu (phụ)', order: 8, required: false, type: 'color' },
       { enabled: true, fieldKey: 'contact_email', group: 'contact', linkedFeature: 'enableContact', isSystem: false, name: 'Email', order: 6, required: false, type: 'email' },
