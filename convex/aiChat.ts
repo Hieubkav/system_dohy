@@ -51,6 +51,32 @@ type SearchItem = {
   url: string;
 };
 
+type ChatMessage = {
+  content: string;
+  role: "assistant" | "system" | "user";
+};
+
+type ChatjptAnswerArgs = {
+  assistantContext: string;
+  message: string;
+  model: string;
+  sourcePath?: string;
+  suggestions: SearchItem[];
+  systemPrompt: string;
+};
+
+type ChatjptRequestBody = {
+  messages: ChatMessage[];
+  model: string;
+  stream?: boolean;
+};
+
+type ChatjptClientFallback = {
+  body: ChatjptRequestBody;
+  endpoint: string;
+  reason: "server-egress-403";
+};
+
 type SearchGroup = {
   items: SearchItem[];
 };
@@ -95,9 +121,12 @@ type SendMessageResult = {
 };
 
 type OptimizeHeadlineResult = {
-  headline: string;
+  clientFallback?: ChatjptClientFallback;
+  headline?: string;
   model: string;
   provider: AiProvider;
+  source: "ai" | "client-fallback";
+  warning?: string;
 };
 
 const toStringValue = (value: unknown, fallback: string) => (
@@ -146,6 +175,8 @@ const cleanOptimizedHeadline = (headline: string) => {
     .trim()
     .slice(0, 160);
 };
+
+const isHtmlResponse = (value: string) => /<(?:!doctype|html|head|body)\b/i.test(value);
 
 const buildHeadlineOptimizationPrompt = (headline: string, keyword?: string) => [
   "Hãy tối ưu tiêu đề bài viết tiếng Việt sau để tự nhiên, thu hút click nhưng không phóng đại sai sự thật.",
@@ -196,6 +227,29 @@ const formatSuggestionsForPrompt = (suggestions: SearchItem[]) => {
     .map((item, index) => `${index + 1}. [${item.type}] ${item.title} - ${item.url}`)
     .join("\n");
 };
+
+function buildChatjptUserContent(args: ChatjptAnswerArgs) {
+  return [
+    args.assistantContext,
+    `Câu hỏi khách: ${args.message}`,
+    args.sourcePath ? `Trang hiện tại: ${args.sourcePath}` : "",
+    "",
+    "Dữ liệu site liên quan:",
+    formatSuggestionsForPrompt(args.suggestions),
+  ].filter(Boolean).join("\n");
+}
+
+function buildChatjptRequestBody(args: ChatjptAnswerArgs, stream = false): ChatjptRequestBody {
+  const body: ChatjptRequestBody = {
+    messages: [
+      { role: "system", content: args.systemPrompt },
+      { role: "user", content: buildChatjptUserContent(args) },
+    ],
+    model: normalizeChatjptModel(args.model),
+  };
+
+  return stream ? { ...body, stream: true } : body;
+}
 
 const flattenSuggestions = (result: SearchResult): SearchItem[] => {
   const orderedGroups = [
@@ -357,6 +411,9 @@ function buildChatjptHttpError(status: number, raw: string): string {
   const prefix = `ChatJPT API error: HTTP ${status}`;
   const trimmed = raw.trim();
   if (!trimmed) return prefix;
+  if (isHtmlResponse(trimmed)) {
+    return `${prefix}: ChatJPT đang từ chối yêu cầu hoặc trả về HTML thay vì JSON. Vui lòng thử lại sau hoặc chuyển provider AI sang Gemini.`;
+  }
 
   try {
     const parsed = JSON.parse(trimmed);
@@ -367,35 +424,23 @@ function buildChatjptHttpError(status: number, raw: string): string {
   }
 }
 
-async function generateChatjptAnswer(args: {
-  assistantContext: string;
-  message: string;
-  model: string;
-  sourcePath?: string;
-  suggestions: SearchItem[];
-  systemPrompt: string;
-}) {
+class ChatjptHttpError extends Error {
+  status: number;
+
+  constructor(status: number, raw: string) {
+    super(buildChatjptHttpError(status, raw));
+    this.name = "ChatjptHttpError";
+    this.status = status;
+  }
+}
+
+async function generateChatjptAnswer(args: ChatjptAnswerArgs) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
 
-  const userContent = [
-    args.assistantContext,
-    `Câu hỏi khách: ${args.message}`,
-    args.sourcePath ? `Trang hiện tại: ${args.sourcePath}` : "",
-    "",
-    "Dữ liệu site liên quan:",
-    formatSuggestionsForPrompt(args.suggestions),
-  ].filter(Boolean).join("\n");
-
   try {
     const response = await fetch(CHATJPT_API_ENDPOINT, {
-      body: JSON.stringify({
-        model: normalizeChatjptModel(args.model),
-        messages: [
-          { role: "system", content: args.systemPrompt },
-          { role: "user", content: userContent },
-        ],
-      }),
+      body: JSON.stringify(buildChatjptRequestBody(args)),
       headers: {
         "Content-Type": "application/json",
       },
@@ -405,7 +450,7 @@ async function generateChatjptAnswer(args: {
 
     const raw = await response.text();
     if (!response.ok) {
-      throw new Error(buildChatjptHttpError(response.status, raw));
+      throw new ChatjptHttpError(response.status, raw);
     }
 
     let text = "";
@@ -614,25 +659,44 @@ export const optimizeHeadline = action({
 
     const message = buildHeadlineOptimizationPrompt(headline, keyword);
     const systemPrompt = "Bạn là biên tập viên headline SEO tiếng Việt. Viết tiêu đề rõ lợi ích, có sức hút, trung thực và phù hợp bài viết website.";
-    const rawHeadline = config.provider === "gemini"
-      ? await generateGeminiAnswer({
-        apiKey: config.apiKey,
-        assistantContext: "",
-        message,
-        model: config.model,
-        sourcePath: "/admin/posts/headline-generator",
-        suggestions: [],
-        systemPrompt,
-        temperature: Math.min(0.7, Math.max(0.2, config.temperature)),
-      })
-      : await generateChatjptAnswer({
-        assistantContext: "",
-        message,
-        model: config.model,
-        sourcePath: "/admin/posts/headline-generator",
-        suggestions: [],
-        systemPrompt,
-      });
+    const chatjptArgs: ChatjptAnswerArgs = {
+      assistantContext: "",
+      message,
+      model: config.model,
+      sourcePath: "/admin/posts/headline-generator",
+      suggestions: [],
+      systemPrompt,
+    };
+    let rawHeadline = "";
+    try {
+      rawHeadline = config.provider === "gemini"
+        ? await generateGeminiAnswer({
+          apiKey: config.apiKey,
+          assistantContext: "",
+          message,
+          model: config.model,
+          sourcePath: "/admin/posts/headline-generator",
+          suggestions: [],
+          systemPrompt,
+          temperature: Math.min(0.7, Math.max(0.2, config.temperature)),
+        })
+        : await generateChatjptAnswer(chatjptArgs);
+    } catch (error) {
+      if (config.provider === "chatjpt" && error instanceof ChatjptHttpError && error.status === 403) {
+        return {
+          clientFallback: {
+            body: buildChatjptRequestBody(chatjptArgs),
+            endpoint: CHATJPT_API_ENDPOINT,
+            reason: "server-egress-403",
+          },
+          model: config.model,
+          provider: config.provider,
+          source: "client-fallback",
+          warning: "Server bị ChatJPT chặn, đang chuyển sang trình duyệt của bạn.",
+        };
+      }
+      throw error;
+    }
 
     const optimizedHeadline = cleanOptimizedHeadline(rawHeadline);
     if (!optimizedHeadline) {
@@ -643,11 +707,26 @@ export const optimizeHeadline = action({
       headline: optimizedHeadline,
       model: config.model,
       provider: config.provider,
+      source: "ai",
     };
   },
   returns: v.object({
-    headline: v.string(),
+    clientFallback: v.optional(v.object({
+      body: v.object({
+        messages: v.array(v.object({
+          content: v.string(),
+          role: v.union(v.literal("assistant"), v.literal("system"), v.literal("user")),
+        })),
+        model: v.string(),
+        stream: v.optional(v.boolean()),
+      }),
+      endpoint: v.string(),
+      reason: v.literal("server-egress-403"),
+    })),
+    headline: v.optional(v.string()),
     model: v.string(),
     provider: v.union(v.literal("gemini"), v.literal("chatjpt")),
+    source: v.union(v.literal("ai"), v.literal("client-fallback")),
+    warning: v.optional(v.string()),
   }),
 });
