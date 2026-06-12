@@ -7,6 +7,7 @@ import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { getEmailConfigurationStatus } from '@/lib/email-config-status';
 import { SafeMarkdown } from '@/components/common/SafeMarkdown';
+import { readAiChatStream, streamChatjptFromBrowser } from '@/lib/ai-chat-client';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SYSTEM_TOKEN_KEY = 'system_auth_token';
@@ -305,20 +306,53 @@ export default function IntegrationsPage() {
     setIsTestingAi(true);
     setAiTestResponse('');
     try {
+      let nextResponse = '';
+      let streamError = '';
+      const appendResponse = (text: string) => {
+        nextResponse += text;
+        setAiTestResponse(nextResponse);
+      };
       const response = await fetch('/api/ai-chat', {
         body: JSON.stringify({
           message: aiTestMessage.trim(),
           sessionId: 'system-integrations-test',
           sourcePath: '/system/integrations',
+          stream: true,
         }),
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          Accept: 'text/event-stream',
+          'Content-Type': 'application/json',
+        },
         method: 'POST',
       });
-      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
         throw new Error(typeof data?.message === 'string' ? data.message : 'Gửi thử AI thất bại.');
       }
-      setAiTestResponse(String(data.message ?? 'AI đã phản hồi nhưng không có nội dung.'));
+
+      if ((response.headers.get('content-type') || '').toLowerCase().includes('text/event-stream')) {
+        const fallback = await readAiChatStream(response, {
+          onDelta: appendResponse,
+          onError: (message) => {
+            streamError = message;
+          },
+          onMeta: () => undefined,
+        });
+        if (fallback) {
+          await streamChatjptFromBrowser(fallback, appendResponse);
+        }
+        if (!nextResponse.trim()) {
+          throw new Error(streamError || 'AI đã phản hồi nhưng không có nội dung.');
+        }
+      } else {
+        const data = await response.json().catch(() => ({}));
+        const message = String(data.message ?? '').trim();
+        if (!message) {
+          throw new Error('AI đã phản hồi nhưng không có nội dung.');
+        }
+        nextResponse = message;
+        setAiTestResponse(message);
+      }
       toast.success('AI phản hồi thành công.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Gửi thử AI thất bại.');
