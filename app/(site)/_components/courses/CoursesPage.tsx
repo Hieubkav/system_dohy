@@ -553,6 +553,7 @@ function CoursesContent() {
         brandColor={brandColors.primary}
         radiusClass={cardRadiusClass}
         isDark={isDark}
+        darkModePremiumBorder={config.darkModePremiumBorder}
       />
     );
   };
@@ -608,6 +609,7 @@ function CoursesContent() {
         brandColor={brandColors.primary}
         radiusClass={cardRadiusClass}
         isDark={isDark}
+        darkModePremiumBorder={config.darkModePremiumBorder}
       />
     );
   };

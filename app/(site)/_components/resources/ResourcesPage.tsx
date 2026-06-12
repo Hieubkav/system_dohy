@@ -306,6 +306,7 @@ function ResourceListItem({
   cornerRadius,
   brandColors,
   isDark,
+  darkModePremiumBorder = false,
 }: {
   resource: any;
   category: any;
@@ -316,6 +317,7 @@ function ResourceListItem({
   cornerRadius?: 'none' | 'sm' | 'lg';
   brandColors: { primary: string; secondary?: string; mode?: string };
   isDark: boolean;
+  darkModePremiumBorder?: boolean;
 }) {
   const brandColor = brandColors.primary;
   const { openLoginModal, token } = useCustomerAuth();
@@ -447,6 +449,7 @@ function ResourceListItem({
       brandColor={brandColor}
       radiusClass={getRadiusClass(cornerRadius)}
       isDark={isDark}
+      darkModePremiumBorder={darkModePremiumBorder}
     />
   );
 }
@@ -728,6 +731,7 @@ function ResourcesContent() {
         brandColor={brandColors.primary}
         radiusClass={cardRadiusClass}
         isDark={isDark}
+        darkModePremiumBorder={config.darkModePremiumBorder}
       />
     );
   };
@@ -752,6 +756,7 @@ function ResourcesContent() {
         cornerRadius={config.cornerRadius}
         brandColors={brandColors}
         isDark={isDark}
+        darkModePremiumBorder={config.darkModePremiumBorder}
       />
     );
   };

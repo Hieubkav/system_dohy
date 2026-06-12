@@ -32,6 +32,7 @@ export interface StorefrontCardProps {
   radiusClass?: string;
   isDark?: boolean;
   imageAspectRatioClass?: string;
+  darkModePremiumBorder?: boolean;
 }
 
 export function StorefrontCard({
@@ -49,8 +50,11 @@ export function StorefrontCard({
   brandColor = '#3b82f6',
   radiusClass = 'rounded-xl',
   isDark = false,
-  imageAspectRatioClass = 'aspect-video'
+  imageAspectRatioClass = 'aspect-video',
+  darkModePremiumBorder = false
 }: StorefrontCardProps) {
+
+  const premiumStyle = isDark && darkModePremiumBorder;
 
   if (layout === 'grid') {
     return (
@@ -59,9 +63,13 @@ export function StorefrontCard({
         className={`group overflow-hidden border transition-all duration-300 flex flex-col h-full hover:border-[var(--card-hover-border)] hover:shadow-lg hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-1 ${radiusClass}`}
         style={{
           backgroundColor: isDark ? '#161617' : '#ffffff',
-          borderColor: isDark ? '#27272a' : '#e2e8f0',
+          borderColor: premiumStyle ? `${brandColor}25` : (isDark ? '#27272a' : '#e2e8f0'),
           '--card-hover-border': brandColor,
-          '--card-hover-shadow': `${brandColor}15`,
+          '--card-hover-shadow': premiumStyle ? `${brandColor}2b` : `${brandColor}15`,
+          ...(premiumStyle ? {
+            transitionDuration: '500ms',
+            transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
+          } : {})
         } as React.CSSProperties}
       >
         {/* Hình ảnh */}
@@ -136,9 +144,13 @@ export function StorefrontCard({
       className={`group flex flex-col sm:flex-row gap-4 border transition-all duration-300 p-4 hover:border-[var(--card-hover-border)] hover:shadow-lg hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-0.5 ${radiusClass}`}
       style={{
         backgroundColor: isDark ? '#161617' : '#ffffff',
-        borderColor: isDark ? '#27272a' : '#e2e8f0',
+        borderColor: premiumStyle ? `${brandColor}25` : (isDark ? '#27272a' : '#e2e8f0'),
         '--card-hover-border': brandColor,
-        '--card-hover-shadow': `${brandColor}10`,
+        '--card-hover-shadow': premiumStyle ? `${brandColor}2b` : `${brandColor}10`,
+        ...(premiumStyle ? {
+          transitionDuration: '500ms',
+          transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
+        } : {})
       } as React.CSSProperties}
     >
       {/* Thumbnail */}

@@ -317,6 +317,7 @@ function ProjectsContent() {
         brandColor={brandColor}
         radiusClass={radiusClass}
         isDark={isDark}
+        darkModePremiumBorder={listConfig.darkModePremiumBorder}
       />
     );
   };
@@ -346,6 +347,7 @@ function ProjectsContent() {
         brandColor={brandColor}
         radiusClass={radiusClass}
         isDark={isDark}
+        darkModePremiumBorder={listConfig.darkModePremiumBorder}
       />
     );
   };

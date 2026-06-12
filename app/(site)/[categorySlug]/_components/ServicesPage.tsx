@@ -432,6 +432,7 @@ function ServicesContent() {
         brandColor={brandColor}
         radiusClass={radiusClass}
         isDark={isDark}
+        darkModePremiumBorder={listConfig.darkModePremiumBorder}
       />
     );
   };
@@ -483,6 +484,7 @@ function ServicesContent() {
         brandColor={brandColor}
         radiusClass={radiusClass}
         isDark={isDark}
+        darkModePremiumBorder={listConfig.darkModePremiumBorder}
       />
     );
   };

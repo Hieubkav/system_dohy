@@ -435,6 +435,7 @@ function PostsContent() {
         brandColor={brandColor}
         radiusClass={radiusClass}
         isDark={isDark}
+        darkModePremiumBorder={listConfig.darkModePremiumBorder}
       />
     );
   };
@@ -472,6 +473,7 @@ function PostsContent() {
         brandColor={brandColor}
         radiusClass={radiusClass}
         isDark={isDark}
+        darkModePremiumBorder={listConfig.darkModePremiumBorder}
       />
     );
   };

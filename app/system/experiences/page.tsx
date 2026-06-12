@@ -183,6 +183,7 @@ export default function ExperiencesPage() {
   const [localCornerRadius, setLocalCornerRadius] = useState<Record<string, 'none' | 'sm' | 'lg'>>({});
   const [localCartButtonsLayout, setLocalCartButtonsLayout] = useState<'stack' | 'grid-2'>('stack');
   const [localDarkMode, setLocalDarkMode] = useState<'light' | 'dark' | 'system'>('light');
+  const [localDarkModePremiumBorder, setLocalDarkModePremiumBorder] = useState<Record<string, boolean>>({});
   const [isInitialized, setIsInitialized] = useState(false);
 
   const isLoaded = postsSetting !== undefined &&
@@ -221,6 +222,14 @@ export default function ExperiencesPage() {
       });
       setLocalCartButtonsLayout((productsSetting?.value as any)?.cartButtonsLayout ?? 'stack');
       setLocalDarkMode((darkModeSetting?.value as any) ?? 'light');
+      setLocalDarkModePremiumBorder({
+        posts: (postsSetting?.value as any)?.darkModePremiumBorder ?? false,
+        resources: (resourcesSetting?.value as any)?.darkModePremiumBorder ?? false,
+        courses: (coursesSetting?.value as any)?.darkModePremiumBorder ?? false,
+        services: (servicesSetting?.value as any)?.darkModePremiumBorder ?? false,
+        projects: (projectsSetting?.value as any)?.darkModePremiumBorder ?? false,
+        products: (productsSetting?.value as any)?.darkModePremiumBorder ?? false,
+      });
       setIsInitialized(true);
     }
   }, [isLoaded, isInitialized, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
@@ -247,9 +256,15 @@ export default function ExperiencesPage() {
       localCornerRadius.projects !== ((projectsSetting?.value as any)?.cornerRadius ?? 'lg') ||
       localCornerRadius.products !== ((productsSetting?.value as any)?.cornerRadius ?? 'lg') ||
       localCartButtonsLayout !== ((productsSetting?.value as any)?.cartButtonsLayout ?? 'stack') ||
+      localDarkModePremiumBorder.posts !== ((postsSetting?.value as any)?.darkModePremiumBorder ?? false) ||
+      localDarkModePremiumBorder.resources !== ((resourcesSetting?.value as any)?.darkModePremiumBorder ?? false) ||
+      localDarkModePremiumBorder.courses !== ((coursesSetting?.value as any)?.darkModePremiumBorder ?? false) ||
+      localDarkModePremiumBorder.services !== ((servicesSetting?.value as any)?.darkModePremiumBorder ?? false) ||
+      localDarkModePremiumBorder.projects !== ((projectsSetting?.value as any)?.darkModePremiumBorder ?? false) ||
+      localDarkModePremiumBorder.products !== ((productsSetting?.value as any)?.darkModePremiumBorder ?? false) ||
       localDarkMode !== ((darkModeSetting?.value as any) ?? 'light')
     );
-  }, [localLayouts, localGridColumns, localCornerRadius, localCartButtonsLayout, localDarkMode, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
+  }, [localLayouts, localGridColumns, localCornerRadius, localCartButtonsLayout, localDarkMode, localDarkModePremiumBorder, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
 
   const [isSaving, setIsSaving] = useState(false);
   const handleSaveAll = async () => {
@@ -263,7 +278,8 @@ export default function ExperiencesPage() {
             ...(postsSetting?.value as any),
             layoutStyle: localLayouts.posts,
             gridColumns: localGridColumns.posts,
-            cornerRadius: localCornerRadius.posts
+            cornerRadius: localCornerRadius.posts,
+            darkModePremiumBorder: localDarkModePremiumBorder.posts
           }
         },
         {
@@ -273,7 +289,8 @@ export default function ExperiencesPage() {
             ...(resourcesSetting?.value as any),
             layoutStyle: localLayouts.resources,
             gridColumns: localGridColumns.resources,
-            cornerRadius: localCornerRadius.resources
+            cornerRadius: localCornerRadius.resources,
+            darkModePremiumBorder: localDarkModePremiumBorder.resources
           }
         },
         {
@@ -283,7 +300,8 @@ export default function ExperiencesPage() {
             ...(coursesSetting?.value as any),
             layoutStyle: localLayouts.courses,
             gridColumns: localGridColumns.courses,
-            cornerRadius: localCornerRadius.courses
+            cornerRadius: localCornerRadius.courses,
+            darkModePremiumBorder: localDarkModePremiumBorder.courses
           }
         },
         {
@@ -293,7 +311,8 @@ export default function ExperiencesPage() {
             ...(servicesSetting?.value as any),
             layoutStyle: localLayouts.services,
             gridColumns: localGridColumns.services,
-            cornerRadius: localCornerRadius.services
+            cornerRadius: localCornerRadius.services,
+            darkModePremiumBorder: localDarkModePremiumBorder.services
           }
         },
         {
@@ -303,7 +322,8 @@ export default function ExperiencesPage() {
             ...(projectsSetting?.value as any),
             layoutStyle: localLayouts.projects,
             gridColumns: localGridColumns.projects,
-            cornerRadius: localCornerRadius.projects
+            cornerRadius: localCornerRadius.projects,
+            darkModePremiumBorder: localDarkModePremiumBorder.projects
           }
         },
         {
@@ -314,7 +334,8 @@ export default function ExperiencesPage() {
             layoutStyle: localLayouts.products,
             gridColumns: localGridColumns.products,
             cornerRadius: localCornerRadius.products,
-            cartButtonsLayout: localCartButtonsLayout
+            cartButtonsLayout: localCartButtonsLayout,
+            darkModePremiumBorder: localDarkModePremiumBorder.products
           }
         },
         {
@@ -788,6 +809,7 @@ export default function ExperiencesPage() {
                   const Icon = item.icon;
                   const currentLayout = localLayouts[item.id] || 'grid';
                   const currentGridColumns = localGridColumns[item.id] || 3;
+                  const currentPremiumBorder = localDarkModePremiumBorder[item.id] ?? false;
                   
                   return (
                     <div key={item.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-950/10 transition-colors">
@@ -855,6 +877,26 @@ export default function ExperiencesPage() {
                             </select>
                           </div>
                         )}
+
+                        {/* Premium Dark Mode (Hover & Viền) */}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Premium Dark Mode</span>
+                          <div className="flex items-center h-9">
+                            <button
+                              type="button"
+                              onClick={() => setLocalDarkModePremiumBorder(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                currentPremiumBorder ? 'bg-cyan-500' : 'bg-slate-200 dark:bg-slate-800'
+                              }`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                  currentPremiumBorder ? 'translate-x-4' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        </div>
 
                         {/* Column Selector */}
                         <div className="flex flex-col gap-1">

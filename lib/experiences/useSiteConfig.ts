@@ -19,6 +19,7 @@ type PostsListConfig = {
   showCategories: boolean;
   hideEmptyCategories: boolean;
   postsPerPage: number;
+  darkModePremiumBorder?: boolean;
 };
 
 type SearchFilterConfig = {
@@ -92,6 +93,7 @@ export function usePostsListConfig(): PostsListConfig {
       showCategories?: boolean;
       hideEmptyCategories?: boolean;
       postsPerPage?: number;
+      darkModePremiumBorder?: boolean;
     } | undefined;
     const rawStyle = raw?.layoutStyle;
     const layoutStyle: PostsListConfig['layoutStyle'] = rawStyle === 'sidebar'
@@ -106,6 +108,7 @@ export function usePostsListConfig(): PostsListConfig {
       showCategories: raw?.showCategories ?? true,
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
       postsPerPage: raw?.postsPerPage ?? 12,
+      darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
     };
   }, [experienceSetting?.value]);
 }
@@ -212,6 +215,7 @@ type ProductsListConfig = {
   cartButtonsLayout?: 'stack' | 'grid-2';
   priceFilterMode: 'disabled' | 'custom' | 'smart_dropdown' | 'slider';
   isLoading: boolean;
+  darkModePremiumBorder?: boolean;
 };
 
 export function useProductsListConfig(): ProductsListConfig {
@@ -238,6 +242,7 @@ export function useProductsListConfig(): ProductsListConfig {
       cornerRadius?: ProductsListConfig['cornerRadius'];
       cartButtonsLayout?: 'stack' | 'grid-2';
       priceFilterMode?: 'disabled' | 'custom' | 'smart_dropdown' | 'slider';
+      darkModePremiumBorder?: boolean;
     } | undefined;
 
     const layoutStyle: ProductsListConfig['layoutStyle'] = raw?.layoutStyle ?? 'grid';
@@ -268,6 +273,7 @@ export function useProductsListConfig(): ProductsListConfig {
       cartButtonsLayout: raw?.cartButtonsLayout ?? 'stack',
       priceFilterMode: raw?.priceFilterMode ?? 'custom',
       isLoading,
+      darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
     };
   }, [experienceSetting, cartAvailable, ordersEnabled, wishlistModule, promotionsModule]);
 }
@@ -318,6 +324,7 @@ type ServicesListConfig = {
   showCategories: boolean;
   hideEmptyCategories: boolean;
   postsPerPage: number;
+  darkModePremiumBorder?: boolean;
 };
 
 export function useServicesListConfig(): ServicesListConfig {
@@ -334,6 +341,7 @@ export function useServicesListConfig(): ServicesListConfig {
       showCategories?: boolean;
       hideEmptyCategories?: boolean;
       postsPerPage?: number;
+      darkModePremiumBorder?: boolean;
     } | undefined;
 
     const rawStyle = raw?.layoutStyle;
@@ -350,6 +358,7 @@ export function useServicesListConfig(): ServicesListConfig {
       showCategories: layoutConfig?.showCategories ?? raw?.showCategories ?? true,
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
       postsPerPage: layoutConfig?.postsPerPage ?? raw?.postsPerPage ?? 12,
+      darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
     };
   }, [experienceSetting?.value]);
 }
@@ -365,6 +374,7 @@ type ProjectsListConfig = {
   postsPerPage: number;
   showClientName: boolean;
   showIntroVideo: boolean;
+  darkModePremiumBorder?: boolean;
 };
 
 export function useProjectsListConfig(): ProjectsListConfig {
@@ -382,6 +392,7 @@ export function useProjectsListConfig(): ProjectsListConfig {
       postsPerPage?: number;
       showClientName?: boolean;
       showIntroVideo?: boolean;
+      darkModePremiumBorder?: boolean;
     } | undefined;
     const rawStyle = raw?.layoutStyle;
     const layoutStyle: ProjectsListConfig['layoutStyle'] = rawStyle === 'sidebar'
@@ -398,6 +409,7 @@ export function useProjectsListConfig(): ProjectsListConfig {
       postsPerPage: raw?.postsPerPage ?? 12,
       showClientName: raw?.showClientName ?? true,
       showIntroVideo: raw?.showIntroVideo ?? true,
+      darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
     };
   }, [experienceSetting?.value]);
 }
@@ -437,6 +449,7 @@ type CoursesListConfig = {
   hideEmptyCategories: boolean;
   postsPerPage: number;
   cornerRadius: 'none' | 'sm' | 'lg';
+  darkModePremiumBorder?: boolean;
 };
 
 const normalizeCoursesListLayoutStyle = (value?: string): CoursesListConfig['layoutStyle'] => {
@@ -460,6 +473,7 @@ export function useCoursesListConfig(): CoursesListConfig {
       hideEmptyCategories?: boolean;
       postsPerPage?: number;
       cornerRadius?: 'none' | 'sm' | 'lg';
+      darkModePremiumBorder?: boolean;
     } | undefined;
     const layoutStyle = normalizeCoursesListLayoutStyle(raw?.layoutStyle);
     const layoutConfig = raw?.layouts?.[layoutStyle];
@@ -473,6 +487,7 @@ export function useCoursesListConfig(): CoursesListConfig {
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
       postsPerPage: layoutConfig?.postsPerPage ?? raw?.postsPerPage ?? 12,
       cornerRadius: raw?.cornerRadius ?? 'lg',
+      darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
     };
   }, [experienceSetting?.value]);
 }
@@ -512,6 +527,7 @@ type ResourcesListConfig = {
   hideEmptyCategories: boolean;
   postsPerPage: number;
   cornerRadius: 'none' | 'sm' | 'lg';
+  darkModePremiumBorder?: boolean;
 };
 
 const normalizeResourcesListLayoutStyle = (value?: string): ResourcesListConfig['layoutStyle'] => {
@@ -535,6 +551,7 @@ export function useResourcesListConfig(): ResourcesListConfig {
       hideEmptyCategories?: boolean;
       postsPerPage?: number;
       cornerRadius?: 'none' | 'sm' | 'lg';
+      darkModePremiumBorder?: boolean;
     } | undefined;
     const layoutStyle = normalizeResourcesListLayoutStyle(raw?.layoutStyle);
     const layoutConfig = raw?.layouts?.[layoutStyle];
@@ -548,6 +565,7 @@ export function useResourcesListConfig(): ResourcesListConfig {
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
       postsPerPage: layoutConfig?.postsPerPage ?? raw?.postsPerPage ?? 12,
       cornerRadius: raw?.cornerRadius ?? 'lg',
+      darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
     };
   }, [experienceSetting?.value]);
 }

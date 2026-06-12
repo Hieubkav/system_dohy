@@ -13,6 +13,8 @@ import { getPublicPriceLabel } from '@/lib/products/public-price';
 import { getAttributeIconComponent } from '@/app/admin/attribute-groups/_lib/iconRegistry';
 import { ProductImageWithOverlay } from '@/components/shared/ProductImageWithOverlay';
 import type { WatermarkConfig, ProductFrameConfig } from '@/components/shared/ProductImageWithOverlay';
+import { useSiteSettings } from '@/components/site/hooks';
+import { useProductsListConfig } from '@/lib/experiences';
 
 export function useProductImagePlaceholder() {
   const productImagePlaceholderSetting = useQuery(api.settings.getValue, { key: 'product_image_placeholder', defaultValue: '' });
@@ -336,6 +338,10 @@ export function ProductGrid({
   const productImagePlaceholder = useProductImagePlaceholder();
   const gridCols = gridColumns ?? 3;
   const gridClass = gridCols === 4 ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3';
+  const { isDark } = useSiteSettings();
+  const listConfig = useProductsListConfig();
+  const premiumStyle = isDark && (listConfig?.darkModePremiumBorder ?? false);
+
   return (
     <div className={`grid ${gridClass} gap-4 md:gap-6`}>
       {products.map((product) => (
@@ -348,9 +354,13 @@ export function ProductGrid({
               className={`group ${radiusClass} overflow-hidden border transition-all duration-300 flex flex-col h-full hover:border-[var(--card-hover-border)] hover:shadow-lg hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-1`}
               style={{
                 backgroundColor: tokens.cardBackground,
-                borderColor: tokens.cardBorder,
+                borderColor: premiumStyle ? `${tokens.primary}25` : tokens.cardBorder,
                 '--card-hover-border': tokens.primary,
-                '--card-hover-shadow': `${tokens.primary}15`,
+                '--card-hover-shadow': premiumStyle ? `${tokens.primary}2b` : `${tokens.primary}15`,
+                ...(premiumStyle ? {
+                  transitionDuration: '500ms',
+                  transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
+                } : {})
               } as React.CSSProperties}
             >
               <ProductImageWithOverlay
@@ -506,6 +516,10 @@ export function ProductList({
   cartButtonsLayout?: 'stack' | 'grid-2';
 }) {
   const productImagePlaceholder = useProductImagePlaceholder();
+  const { isDark } = useSiteSettings();
+  const listConfig = useProductsListConfig();
+  const premiumStyle = isDark && (listConfig?.darkModePremiumBorder ?? false);
+
   return (
     <div className="space-y-4">
       {products.map((product) => (
@@ -518,9 +532,13 @@ export function ProductList({
               className={`group flex flex-col sm:flex-row gap-4 ${radiusClass} overflow-hidden border transition-all duration-300 p-4 hover:border-[var(--card-hover-border)] hover:shadow-lg hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-0.5`}
               style={{
                 backgroundColor: tokens.cardBackground,
-                borderColor: tokens.cardBorder,
+                borderColor: premiumStyle ? `${tokens.primary}25` : tokens.cardBorder,
                 '--card-hover-border': tokens.primary,
-                '--card-hover-shadow': `${tokens.primary}10`,
+                '--card-hover-shadow': premiumStyle ? `${tokens.primary}2b` : `${tokens.primary}10`,
+                ...(premiumStyle ? {
+                  transitionDuration: '500ms',
+                  transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
+                } : {})
               } as React.CSSProperties}
             >
               <ProductImageWithOverlay

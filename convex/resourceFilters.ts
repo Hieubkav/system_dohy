@@ -1,4 +1,5 @@
 import { mutation, query, type MutationCtx } from "./_generated/server";
+import { removeOwnerFilesAndCleanup, syncOwnerFilesAndCleanup } from "./lib/fileService";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 
@@ -98,8 +99,24 @@ export const create = mutation({
       nextOrder = filters.reduce((max, filter) => Math.max(max, filter.order ?? -1), -1) + 1;
     }
     const filterId = await ctx.db.insert("resourceFilters", { ...filterData, order: nextOrder });
+
+    if (filterData.iconStorageId) {
+      await syncOwnerFilesAndCleanup(
+        ctx,
+        { ownerField: "iconStorageId", ownerId: filterId, ownerTable: "resourceFilters", purpose: "filter-icon" },
+        [filterData.iconStorageId]
+      );
+    }
+
     if (copyToPartner) {
-      await ctx.db.insert("courseFilters", { ...filterData, order: nextOrder });
+      const partnerFilterId = await ctx.db.insert("courseFilters", { ...filterData, order: nextOrder });
+      if (filterData.iconStorageId) {
+        await syncOwnerFilesAndCleanup(
+          ctx,
+          { ownerField: "iconStorageId", ownerId: partnerFilterId, ownerTable: "courseFilters", purpose: "filter-icon" },
+          [filterData.iconStorageId]
+        );
+      }
     }
     if (copyValuesFromPartnerSlug) {
       const partnerFilter = await ctx.db
@@ -112,7 +129,7 @@ export const create = mutation({
           .withIndex("by_filter", (q) => q.eq("filterId", partnerFilter._id))
           .collect();
         for (const pv of partnerValues) {
-          await ctx.db.insert("resourceFilterValues", {
+          const valueId = await ctx.db.insert("resourceFilterValues", {
             filterId,
             name: pv.name,
             slug: pv.slug,
@@ -121,6 +138,13 @@ export const create = mutation({
             icon: pv.icon,
             iconStorageId: pv.iconStorageId,
           });
+          if (pv.iconStorageId) {
+            await syncOwnerFilesAndCleanup(
+              ctx,
+              { ownerField: "iconStorageId", ownerId: valueId, ownerTable: "resourceFilterValues", purpose: "filter-icon" },
+              [pv.iconStorageId]
+            );
+          }
         }
       }
     }
@@ -142,7 +166,21 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
+    const oldFilter = await ctx.db.get(id);
+    if (!oldFilter) {
+      throw new Error("Không tìm thấy bộ lọc");
+    }
+    const previousStorageIds = [oldFilter.iconStorageId];
+
     await ctx.db.patch(id, updates);
+
+    const nextIconStorageId = updates.iconStorageId !== undefined ? updates.iconStorageId : oldFilter.iconStorageId;
+    await syncOwnerFilesAndCleanup(
+      ctx,
+      { ownerField: "iconStorageId", ownerId: id, ownerTable: "resourceFilters", purpose: "filter-icon" },
+      [nextIconStorageId],
+      { previousStorageIds }
+    );
     return null;
   },
   returns: v.null(),
@@ -171,6 +209,27 @@ export const remove = mutation({
 
     // Delete filter
     await ctx.db.delete(args.id);
+
+    // Clean up file references for deleted filter values
+    for (const val of values) {
+      if (val.iconStorageId) {
+        await removeOwnerFilesAndCleanup(
+          ctx,
+          { ownerId: val._id, ownerTable: "resourceFilterValues" },
+          { previousStorageIds: [val.iconStorageId] }
+        );
+      }
+    }
+
+    // Clean up file reference for deleted filter
+    if (filter.iconStorageId) {
+      await removeOwnerFilesAndCleanup(
+        ctx,
+        { ownerId: args.id, ownerTable: "resourceFilters" },
+        { previousStorageIds: [filter.iconStorageId] }
+      );
+    }
+
     return null;
   },
   returns: v.null(),
@@ -278,6 +337,14 @@ export const createValue = mutation({
       order: nextOrder,
     });
 
+    if (valueData.iconStorageId) {
+      await syncOwnerFilesAndCleanup(
+        ctx,
+        { ownerField: "iconStorageId", ownerId: valueId, ownerTable: "resourceFilterValues", purpose: "filter-icon" },
+        [valueData.iconStorageId]
+      );
+    }
+
     if (copyToPartner) {
       const parentFilter = await ctx.db.get(valueData.filterId);
       if (parentFilter) {
@@ -302,7 +369,7 @@ export const createValue = mutation({
                 .then(res => res.sort((a, b) => b.order - a.order)[0]);
               partnerNextOrder = partnerLastValue ? partnerLastValue.order + 1 : 0;
             }
-            await ctx.db.insert("courseFilterValues", {
+            const partnerValueId = await ctx.db.insert("courseFilterValues", {
               filterId: partnerFilter._id,
               name: valueData.name,
               slug: valueData.slug,
@@ -311,6 +378,13 @@ export const createValue = mutation({
               icon: valueData.icon,
               iconStorageId: valueData.iconStorageId,
             });
+            if (valueData.iconStorageId) {
+              await syncOwnerFilesAndCleanup(
+                ctx,
+                { ownerField: "iconStorageId", ownerId: partnerValueId, ownerTable: "courseFilterValues", purpose: "filter-icon" },
+                [valueData.iconStorageId]
+              );
+            }
           }
         }
       }
@@ -400,7 +474,21 @@ export const updateValue = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
+    const oldVal = await ctx.db.get(id);
+    if (!oldVal) {
+      throw new Error("Không tìm thấy giá trị bộ lọc");
+    }
+    const previousStorageIds = [oldVal.iconStorageId];
+
     await ctx.db.patch(id, updates);
+
+    const nextIconStorageId = updates.iconStorageId !== undefined ? updates.iconStorageId : oldVal.iconStorageId;
+    await syncOwnerFilesAndCleanup(
+      ctx,
+      { ownerField: "iconStorageId", ownerId: id, ownerTable: "resourceFilterValues", purpose: "filter-icon" },
+      [nextIconStorageId],
+      { previousStorageIds }
+    );
     return null;
   },
   returns: v.null(),
@@ -429,6 +517,9 @@ export const reorderValue = mutation({
 export const removeValue = mutation({
   args: { id: v.id("resourceFilterValues") },
   handler: async (ctx, args) => {
+    const val = await ctx.db.get(args.id);
+    if (!val) return null;
+
     // Cascade delete assignments
     const assignments = await ctx.db
       .query("resourceFilterAssignments")
@@ -437,6 +528,14 @@ export const removeValue = mutation({
     await Promise.all(assignments.map((a) => ctx.db.delete(a._id)));
 
     await ctx.db.delete(args.id);
+
+    if (val.iconStorageId) {
+      await removeOwnerFilesAndCleanup(
+        ctx,
+        { ownerId: args.id, ownerTable: "resourceFilterValues" },
+        { previousStorageIds: [val.iconStorageId] }
+      );
+    }
     return null;
   },
   returns: v.null(),
@@ -543,6 +642,14 @@ export const copyCourseFiltersToResources = mutation({
         });
         targetFilter = await ctx.db.get(targetFilterId);
         filtersCreated++;
+
+        if (courseFilter.iconStorageId) {
+          await syncOwnerFilesAndCleanup(
+            ctx,
+            { ownerField: "iconStorageId", ownerId: targetFilterId, ownerTable: "resourceFilters", purpose: "filter-icon" },
+            [courseFilter.iconStorageId]
+          );
+        }
       }
       if (!targetFilter) {
         continue;
@@ -561,7 +668,7 @@ export const copyCourseFiltersToResources = mutation({
         if (existingSlugs.has(sourceValue.slug)) {
           continue;
         }
-        await ctx.db.insert("resourceFilterValues", {
+        const valueId = await ctx.db.insert("resourceFilterValues", {
           active: sourceValue.active,
           filterId: targetFilter._id,
           icon: sourceValue.icon,
@@ -571,6 +678,14 @@ export const copyCourseFiltersToResources = mutation({
           slug: sourceValue.slug,
         });
         valuesCreated++;
+
+        if (sourceValue.iconStorageId) {
+          await syncOwnerFilesAndCleanup(
+            ctx,
+            { ownerField: "iconStorageId", ownerId: valueId, ownerTable: "resourceFilterValues", purpose: "filter-icon" },
+            [sourceValue.iconStorageId]
+          );
+        }
       }
     }
 
@@ -606,6 +721,14 @@ export const copyResourceFiltersToCourses = mutation({
         });
         targetFilter = await ctx.db.get(targetFilterId);
         filtersCreated++;
+
+        if (resourceFilter.iconStorageId) {
+          await syncOwnerFilesAndCleanup(
+            ctx,
+            { ownerField: "iconStorageId", ownerId: targetFilterId, ownerTable: "courseFilters", purpose: "filter-icon" },
+            [resourceFilter.iconStorageId]
+          );
+        }
       }
       if (!targetFilter) {
         continue;
@@ -624,7 +747,7 @@ export const copyResourceFiltersToCourses = mutation({
         if (existingSlugs.has(sourceValue.slug)) {
           continue;
         }
-        await ctx.db.insert("courseFilterValues", {
+        const valueId = await ctx.db.insert("courseFilterValues", {
           active: sourceValue.active,
           filterId: targetFilter._id,
           icon: sourceValue.icon,
@@ -634,6 +757,14 @@ export const copyResourceFiltersToCourses = mutation({
           slug: sourceValue.slug,
         });
         valuesCreated++;
+
+        if (sourceValue.iconStorageId) {
+          await syncOwnerFilesAndCleanup(
+            ctx,
+            { ownerField: "iconStorageId", ownerId: valueId, ownerTable: "courseFilterValues", purpose: "filter-icon" },
+            [sourceValue.iconStorageId]
+          );
+        }
       }
     }
 
