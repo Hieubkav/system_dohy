@@ -351,12 +351,14 @@ export function ProductGrid({
             <Link
               key={product._id}
               href={getDetailHref(product)}
-              className={`group ${radiusClass} overflow-hidden border transition-all duration-300 flex flex-col h-full hover:border-[var(--card-hover-border)] hover:shadow-lg hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-1`}
+              className={`group ${radiusClass} overflow-hidden border transition-all duration-300 flex flex-col h-full hover:border-[var(--card-hover-border)] hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-1`}
               style={{
                 backgroundColor: tokens.cardBackground,
-                borderColor: premiumStyle ? `${tokens.primary}25` : tokens.cardBorder,
+                borderColor: premiumStyle ? `${tokens.primary}3d` : tokens.cardBorder,
                 '--card-hover-border': tokens.primary,
-                '--card-hover-shadow': premiumStyle ? `${tokens.primary}2b` : `${tokens.primary}15`,
+                '--card-hover-shadow': premiumStyle 
+                  ? `0 0 30px 2px ${tokens.primary}50, 0 0 12px 0px ${tokens.primary}30` 
+                  : (isDark ? '0 12px 30px -8px rgba(0,0,0,0.5)' : '0 12px 30px -8px rgba(0,0,0,0.12)'),
                 ...(premiumStyle ? {
                   transitionDuration: '500ms',
                   transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
@@ -529,12 +531,14 @@ export function ProductList({
             <Link
               key={product._id}
               href={getDetailHref(product)}
-              className={`group flex flex-col sm:flex-row gap-4 ${radiusClass} overflow-hidden border transition-all duration-300 p-4 hover:border-[var(--card-hover-border)] hover:shadow-lg hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-0.5`}
+              className={`group flex flex-col sm:flex-row gap-4 ${radiusClass} overflow-hidden border transition-all duration-300 p-4 hover:border-[var(--card-hover-border)] hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-0.5`}
               style={{
                 backgroundColor: tokens.cardBackground,
-                borderColor: premiumStyle ? `${tokens.primary}25` : tokens.cardBorder,
+                borderColor: premiumStyle ? `${tokens.primary}3d` : tokens.cardBorder,
                 '--card-hover-border': tokens.primary,
-                '--card-hover-shadow': premiumStyle ? `${tokens.primary}2b` : `${tokens.primary}10`,
+                '--card-hover-shadow': premiumStyle 
+                  ? `0 0 30px 2px ${tokens.primary}50, 0 0 12px 0px ${tokens.primary}30` 
+                  : (isDark ? '0 12px 30px -8px rgba(0,0,0,0.5)' : '0 12px 30px -8px rgba(0,0,0,0.1)'),
                 ...(premiumStyle ? {
                   transitionDuration: '500ms',
                   transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'

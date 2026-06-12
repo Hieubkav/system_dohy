@@ -60,12 +60,14 @@ export function StorefrontCard({
     return (
       <Link
         href={href}
-        className={`group overflow-hidden border transition-all duration-300 flex flex-col h-full hover:border-[var(--card-hover-border)] hover:shadow-lg hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-1 ${radiusClass}`}
+        className={`group overflow-hidden border transition-all duration-300 flex flex-col h-full hover:border-[var(--card-hover-border)] hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-1 ${radiusClass}`}
         style={{
           backgroundColor: isDark ? '#161617' : '#ffffff',
-          borderColor: premiumStyle ? `${brandColor}25` : (isDark ? '#27272a' : '#e2e8f0'),
+          borderColor: premiumStyle ? `${brandColor}3d` : (isDark ? '#27272a' : '#e2e8f0'),
           '--card-hover-border': brandColor,
-          '--card-hover-shadow': premiumStyle ? `${brandColor}2b` : `${brandColor}15`,
+          '--card-hover-shadow': premiumStyle 
+            ? `0 0 30px 2px ${brandColor}50, 0 0 12px 0px ${brandColor}30` 
+            : (isDark ? '0 12px 30px -8px rgba(0,0,0,0.5)' : '0 12px 30px -8px rgba(0,0,0,0.12)'),
           ...(premiumStyle ? {
             transitionDuration: '500ms',
             transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
@@ -141,12 +143,14 @@ export function StorefrontCard({
   return (
     <Link
       href={href}
-      className={`group flex flex-col sm:flex-row gap-4 border transition-all duration-300 p-4 hover:border-[var(--card-hover-border)] hover:shadow-lg hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-0.5 ${radiusClass}`}
+      className={`group flex flex-col sm:flex-row gap-4 border transition-all duration-300 p-4 hover:border-[var(--card-hover-border)] hover:shadow-[var(--card-hover-shadow)] hover:-translate-y-0.5 ${radiusClass}`}
       style={{
         backgroundColor: isDark ? '#161617' : '#ffffff',
-        borderColor: premiumStyle ? `${brandColor}25` : (isDark ? '#27272a' : '#e2e8f0'),
+        borderColor: premiumStyle ? `${brandColor}3d` : (isDark ? '#27272a' : '#e2e8f0'),
         '--card-hover-border': brandColor,
-        '--card-hover-shadow': premiumStyle ? `${brandColor}2b` : `${brandColor}10`,
+        '--card-hover-shadow': premiumStyle 
+          ? `0 0 30px 2px ${brandColor}50, 0 0 12px 0px ${brandColor}30` 
+          : (isDark ? '0 12px 30px -8px rgba(0,0,0,0.5)' : '0 12px 30px -8px rgba(0,0,0,0.1)'),
         ...(premiumStyle ? {
           transitionDuration: '500ms',
           transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)'
