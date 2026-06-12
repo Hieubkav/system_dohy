@@ -101,6 +101,7 @@ interface SpeedDialSectionSharedProps {
   onPreviewStyleChange?: (style: SpeedDialStyle) => void;
   enableShadow?: boolean;
   isDark?: boolean;
+  enableGlassmorphism?: boolean;
 }
 
 /** Icon dùng PNG logo (fill full nút, không cần bg color) */
@@ -297,6 +298,7 @@ const renderSidebar = ({
   showBackToTop,
   onBackToTop,
   enableShadow,
+  glassStyle,
 }: {
   actions: SpeedDialRenderableAction[];
   isRight: boolean;
@@ -308,6 +310,7 @@ const renderSidebar = ({
   showBackToTop: boolean;
   onBackToTop: () => void;
   enableShadow: boolean;
+  glassStyle?: React.CSSProperties;
 }) => {
   const wrapperClass = context === 'site'
     ? `fixed top-1/2 -translate-y-1/2 z-50 ${isRight ? 'right-[2px] md:right-0' : 'left-0'}`
@@ -353,6 +356,7 @@ const renderSidebar = ({
             style={{
               backgroundColor: tokens.neutralSurface,
               borderColor: tokens.neutralBorder,
+              ...glassStyle,
             }}
           >
             {actions.map((action) => {
@@ -393,6 +397,7 @@ const renderPills = ({
   showBackToTop,
   onBackToTop,
   enableShadow,
+  glassStyle,
 }: {
   actions: SpeedDialRenderableAction[];
   isRight: boolean;
@@ -404,6 +409,7 @@ const renderPills = ({
   showBackToTop: boolean;
   onBackToTop: () => void;
   enableShadow: boolean;
+  glassStyle?: React.CSSProperties;
 }) => {
   /* Layout 3: card trắng popup + toggle cam + back-to-top (giống dola-construction) */
   const isPrev = context === 'preview';
@@ -431,7 +437,7 @@ const renderPills = ({
       {isOpen && (
         <div
           className={`${shadowClass(enableShadow, 'shadow-xl')} border overflow-hidden ${isPrev ? 'rounded-lg w-[160px]' : 'rounded-2xl w-[280px]'}`}
-          style={{ backgroundColor: tokens.neutralSurface, borderColor: tokens.neutralBorder }}
+          style={{ backgroundColor: tokens.neutralSurface, borderColor: tokens.neutralBorder, ...glassStyle }}
         >
           {actions.map((action, idx) => {
             const bg = resolveActionBgColor(action.bgColor, tokens, 'pills');
@@ -515,6 +521,7 @@ const renderStack = ({
   showBackToTop,
   onBackToTop,
   enableShadow,
+  glassStyle,
 }: {
   actions: SpeedDialRenderableAction[];
   isRight: boolean;
@@ -526,6 +533,7 @@ const renderStack = ({
   showBackToTop: boolean;
   onBackToTop: () => void;
   enableShadow: boolean;
+  glassStyle?: React.CSSProperties;
 }) => {
   const siteRight = isRight ? 'right-[2px] md:right-0' : 'left-0';
   const previewRight = isRight ? (showBackToTop ? 'right-3' : 'right-1') : (showBackToTop ? 'left-3' : 'left-1');
@@ -556,6 +564,7 @@ const renderStack = ({
           style={{
             backgroundColor: tokens.neutralSurface,
             borderColor: tokens.neutralBorder,
+            ...glassStyle,
           }}
         >
           <div className="flex flex-col gap-2">
@@ -860,6 +869,7 @@ const renderMinimal = ({
   showBackToTop,
   onBackToTop,
   enableShadow,
+  glassStyle,
 }: {
   actions: SpeedDialRenderableAction[];
   isRight: boolean;
@@ -871,6 +881,7 @@ const renderMinimal = ({
   showBackToTop: boolean;
   onBackToTop: () => void;
   enableShadow: boolean;
+  glassStyle?: React.CSSProperties;
 }) => {
   /* Layout 6: bean-spa style — toggle tròn + pulse, popup card trắng */
   const isPrev = context === 'preview';
@@ -901,7 +912,7 @@ const renderMinimal = ({
       {isOpen && (
         <div
           className={`mb-2 border ${shadowClass(enableShadow, 'shadow-xl')} overflow-hidden ${isPrev ? 'rounded-md w-[140px]' : 'rounded-lg w-[280px]'}`}
-          style={{ backgroundColor: tokens.neutralSurface, borderColor: tokens.neutralBorder, boxShadow: enableShadow ? '0 0 10px rgba(0,0,0,0.2)' : undefined }}
+          style={{ backgroundColor: tokens.neutralSurface, borderColor: tokens.neutralBorder, boxShadow: enableShadow ? '0 0 10px rgba(0,0,0,0.2)' : undefined, ...glassStyle }}
         >
           <div
             className={`flex items-center justify-between ${isPrev ? 'px-2 py-1.5' : 'px-4 py-3'}`}
@@ -991,6 +1002,8 @@ const SpeedDialSectionContent = ({
   showBackToTop,
   onBackToTop,
   enableShadow,
+  enableGlassmorphism,
+  isDark,
   previewDevice,
 }: {
   actions: SpeedDialRenderableAction[];
@@ -1004,9 +1017,27 @@ const SpeedDialSectionContent = ({
   showBackToTop: boolean;
   onBackToTop: () => void;
   enableShadow: boolean;
+  enableGlassmorphism?: boolean;
+  isDark?: boolean;
   previewDevice: PreviewDevice;
 }) => {
   const isRight = position !== 'bottom-left';
+
+  // Glassmorphism styles cho popup container
+  const glassBg = isDark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.78)';
+  const glassBorder = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.07)';
+  const glassBoxShadow = isDark
+    ? '0 10px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05)'
+    : '0 10px 30px rgba(0, 0, 0, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.5)';
+  const glassStyle: React.CSSProperties = enableGlassmorphism
+    ? {
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        backgroundColor: glassBg,
+        borderColor: glassBorder,
+        boxShadow: glassBoxShadow,
+      }
+    : {};
 
   if (actions.length === 0) {
     return context === 'preview' ? renderPageMock(tokens) : null;
@@ -1015,11 +1046,11 @@ const SpeedDialSectionContent = ({
   const floating = (
     <>
       {style === 'fab' && renderFab({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow })}
-      {style === 'sidebar' && renderSidebar({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow })}
-      {style === 'pills' && renderPills({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow })}
-      {style === 'stack' && renderStack({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow })}
+      {style === 'sidebar' && renderSidebar({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, glassStyle })}
+      {style === 'pills' && renderPills({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, glassStyle })}
+      {style === 'stack' && renderStack({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, glassStyle })}
       {style === 'dock' && renderDock({ actions, isRight, tokens, context, groupLabel, previewDevice, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow })}
-      {style === 'minimal' && renderMinimal({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow })}
+      {style === 'minimal' && renderMinimal({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, glassStyle })}
       {style === 'builder-bar' && renderBuilderBar({ actions, isRight, tokens, context, groupLabel, previewDevice, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow })}
     </>
   );
@@ -1053,6 +1084,7 @@ export function SpeedDialSectionShared({
   onPreviewStyleChange,
   enableShadow = true,
   isDark,
+  enableGlassmorphism = false,
 }: SpeedDialSectionSharedProps) {
   const selectedStyle = previewStyle ?? style;
   const normalizedActions = React.useMemo(() => normalizeSpeedDialActions(actions), [actions]);
@@ -1103,6 +1135,8 @@ export function SpeedDialSectionShared({
         showBackToTop={showBackToTop}
         onBackToTop={handleBackToTop}
         enableShadow={enableShadow}
+        enableGlassmorphism={enableGlassmorphism}
+        isDark={isDark}
         previewDevice={previewDevice}
       />
     );
@@ -1131,6 +1165,8 @@ export function SpeedDialSectionShared({
           showBackToTop={showBackToTop}
           onBackToTop={handleBackToTop}
           enableShadow={enableShadow}
+          enableGlassmorphism={enableGlassmorphism}
+          isDark={isDark}
           previewDevice={previewDevice}
         />
       </BrowserFrame>

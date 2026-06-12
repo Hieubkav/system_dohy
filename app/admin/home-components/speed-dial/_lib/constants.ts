@@ -32,4 +32,5 @@ export const DEFAULT_SPEED_DIAL_CONFIG: SpeedDialConfig = {
   defaultOpen: true,
   showOnAllPages: false,
   enableShadow: true,
+  enableGlassmorphism: false,
 };

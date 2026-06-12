@@ -433,6 +433,8 @@ interface SpeedDialFormProps {
   onShowOnAllPagesChange: (value: boolean) => void;
   enableShadow: boolean;
   onEnableShadowChange: (value: boolean) => void;
+  enableGlassmorphism?: boolean;
+  onEnableGlassmorphismChange?: (value: boolean) => void;
   defaultActionColor: string;
   defaultExpanded?: boolean;
 }
@@ -448,6 +450,8 @@ export function SpeedDialForm({
   onShowOnAllPagesChange,
   enableShadow,
   onEnableShadowChange,
+  enableGlassmorphism = false,
+  onEnableGlassmorphismChange,
   defaultActionColor,
   defaultExpanded = true,
 }: SpeedDialFormProps) {
@@ -630,6 +634,17 @@ export function SpeedDialForm({
                   <div className={cn('w-4 h-4 bg-white rounded-full transition-transform shadow', enableShadow ? 'translate-x-2' : '-translate-x-2')} />
                 </button>
                 <Label className="text-xs">Đổ bóng</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onEnableGlassmorphismChange?.(!enableGlassmorphism)}
+                  className={cn('inline-flex items-center justify-center rounded-full w-10 h-5 transition-colors cursor-pointer', enableGlassmorphism ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600')}
+                  aria-pressed={enableGlassmorphism}
+                >
+                  <div className={cn('w-4 h-4 bg-white rounded-full transition-transform shadow', enableGlassmorphism ? 'translate-x-2' : '-translate-x-2')} />
+                </button>
+                <Label className="text-xs">Nền mờ (Glassmorphism)</Label>
               </div>
             </div>
           </div>

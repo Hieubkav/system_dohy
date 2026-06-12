@@ -437,6 +437,8 @@ function PostsContent() {
         radiusClass={radiusClass}
         isDark={isDark}
         darkModePremiumBorder={listConfig.darkModePremiumBorder}
+        showDetailButton={listConfig.showDetailButton}
+        detailButtonText={listConfig.detailButtonText}
       />
     );
   };
@@ -475,6 +477,8 @@ function PostsContent() {
         radiusClass={radiusClass}
         isDark={isDark}
         darkModePremiumBorder={listConfig.darkModePremiumBorder}
+        showDetailButton={listConfig.showDetailButton}
+        detailButtonText={listConfig.detailButtonText}
       />
     );
   };

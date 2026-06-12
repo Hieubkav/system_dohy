@@ -573,6 +573,8 @@ function CoursesContent() {
         radiusClass={cardRadiusClass}
         isDark={isDark}
         darkModePremiumBorder={config.darkModePremiumBorder}
+        showDetailButton={config.showDetailButton}
+        detailButtonText={config.detailButtonText}
       />
     );
   };
@@ -634,6 +636,8 @@ function CoursesContent() {
         radiusClass={cardRadiusClass}
         isDark={isDark}
         darkModePremiumBorder={config.darkModePremiumBorder}
+        showDetailButton={config.showDetailButton}
+        detailButtonText={config.detailButtonText}
       />
     );
   };

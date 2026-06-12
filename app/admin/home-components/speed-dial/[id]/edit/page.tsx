@@ -89,6 +89,7 @@ const toSnapshot = (payload: {
   defaultOpen: boolean;
   showOnAllPages: boolean;
   enableShadow: boolean;
+  enableGlassmorphism: boolean;
   actions: SpeedDialAction[];
 }) => JSON.stringify({
   ...payload,
@@ -134,6 +135,7 @@ export default function SpeedDialEditPage({
   const [defaultOpen, setDefaultOpen] = useState<boolean>(DEFAULT_SPEED_DIAL_CONFIG.defaultOpen);
   const [showOnAllPages, setShowOnAllPages] = useState<boolean>(DEFAULT_SPEED_DIAL_CONFIG.showOnAllPages);
   const [enableShadow, setEnableShadow] = useState<boolean>(DEFAULT_SPEED_DIAL_CONFIG.enableShadow);
+  const [enableGlassmorphism, setEnableGlassmorphism] = useState<boolean>(DEFAULT_SPEED_DIAL_CONFIG.enableGlassmorphism ?? false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialSnapshot, setInitialSnapshot] = useState<string | null>(null);
 
@@ -152,6 +154,7 @@ export default function SpeedDialEditPage({
     const normalizedDefaultOpen = normalizeBoolean((rawConfig as Record<string, unknown>).defaultOpen, DEFAULT_SPEED_DIAL_CONFIG.defaultOpen);
     const normalizedShowOnAllPages = normalizeBoolean((rawConfig as Record<string, unknown>).showOnAllPages, DEFAULT_SPEED_DIAL_CONFIG.showOnAllPages);
     const normalizedEnableShadow = normalizeBoolean((rawConfig as Record<string, unknown>).enableShadow, DEFAULT_SPEED_DIAL_CONFIG.enableShadow);
+    const normalizedEnableGlassmorphism = normalizeBoolean((rawConfig as Record<string, unknown>).enableGlassmorphism, DEFAULT_SPEED_DIAL_CONFIG.enableGlassmorphism ?? false);
 
     setTitle(component.title);
     setActive(component.active);
@@ -161,6 +164,7 @@ export default function SpeedDialEditPage({
     setDefaultOpen(normalizedDefaultOpen);
     setShowOnAllPages(normalizedShowOnAllPages);
     setEnableShadow(normalizedEnableShadow);
+    setEnableGlassmorphism(normalizedEnableGlassmorphism);
 
     setInitialSnapshot(toSnapshot({
       title: component.title,
@@ -170,6 +174,7 @@ export default function SpeedDialEditPage({
       defaultOpen: normalizedDefaultOpen,
       showOnAllPages: normalizedShowOnAllPages,
       enableShadow: normalizedEnableShadow,
+      enableGlassmorphism: normalizedEnableGlassmorphism,
       actions: normalizedActions,
     }));
   }, [component, id, router]);
@@ -182,6 +187,7 @@ export default function SpeedDialEditPage({
     defaultOpen,
     showOnAllPages,
     enableShadow,
+    enableGlassmorphism,
     actions,
   });
   const resolvedCustomSecondary = resolveSecondaryByMode(customState.mode, customState.primary, customState.secondary);
@@ -214,6 +220,7 @@ export default function SpeedDialEditPage({
         defaultOpen,
         showOnAllPages,
         enableShadow,
+        enableGlassmorphism,
       };
 
       if (onSnapshotSave) {
@@ -245,6 +252,7 @@ export default function SpeedDialEditPage({
         defaultOpen,
         showOnAllPages,
         enableShadow,
+        enableGlassmorphism,
         actions,
       }));
       if (enableTypeOverrides && showCustomBlock) {
@@ -318,6 +326,8 @@ export default function SpeedDialEditPage({
           onShowOnAllPagesChange={setShowOnAllPages}
           enableShadow={enableShadow}
           onEnableShadowChange={setEnableShadow}
+          enableGlassmorphism={enableGlassmorphism}
+          onEnableGlassmorphismChange={setEnableGlassmorphism}
           defaultActionColor={effectiveColors.secondary}
           defaultExpanded={false}
         />
@@ -365,6 +375,7 @@ export default function SpeedDialEditPage({
               onStyleChange={setStyle}
               defaultOpen={defaultOpen}
               enableShadow={enableShadow}
+              enableGlassmorphism={enableGlassmorphism}
             />
           </div>
         </div>

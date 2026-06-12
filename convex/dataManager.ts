@@ -207,7 +207,7 @@ const DATA_CONTRACTS: DataContract[] = [
   },
   {
     label: "Homepage snapshots",
-    optional: ["address", "brandMode", "brandName", "brandPrimary", "brandSecondary", "category", "componentTypes", "logo", "phone", "publicEnabled", "sectionTitles", "slug"],
+    optional: ["address", "brandMode", "brandName", "brandPrimary", "brandSecondary", "category", "componentCount", "componentTypes", "logo", "phone", "publicEnabled", "sectionTitles", "slug", "tagline", "thumbnails"],
     required: ["createdAt", "label", "version"],
     table: "homeComponentSnapshots",
   },

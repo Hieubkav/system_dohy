@@ -184,6 +184,8 @@ export default function ExperiencesPage() {
   const [localCartButtonsLayout, setLocalCartButtonsLayout] = useState<'stack' | 'grid-2'>('stack');
   const [localDarkMode, setLocalDarkMode] = useState<'light' | 'dark' | 'system'>('light');
   const [localDarkModePremiumBorder, setLocalDarkModePremiumBorder] = useState<Record<string, boolean>>({});
+  const [localShowDetailButton, setLocalShowDetailButton] = useState<Record<string, boolean>>({});
+  const [localDetailButtonText, setLocalDetailButtonText] = useState<Record<string, string>>({});
   const [isInitialized, setIsInitialized] = useState(false);
 
   const isLoaded = postsSetting !== undefined &&
@@ -230,6 +232,22 @@ export default function ExperiencesPage() {
         projects: (projectsSetting?.value as any)?.darkModePremiumBorder ?? false,
         products: (productsSetting?.value as any)?.darkModePremiumBorder ?? false,
       });
+      setLocalShowDetailButton({
+        posts: (postsSetting?.value as any)?.showDetailButton ?? false,
+        resources: (resourcesSetting?.value as any)?.showDetailButton ?? false,
+        courses: (coursesSetting?.value as any)?.showDetailButton ?? false,
+        services: (servicesSetting?.value as any)?.showDetailButton ?? false,
+        projects: (projectsSetting?.value as any)?.showDetailButton ?? false,
+        products: (productsSetting?.value as any)?.showDetailButton ?? false,
+      });
+      setLocalDetailButtonText({
+        posts: (postsSetting?.value as any)?.detailButtonText ?? 'Đọc ngay',
+        resources: (resourcesSetting?.value as any)?.detailButtonText ?? 'Xem chi tiết',
+        courses: (coursesSetting?.value as any)?.detailButtonText ?? 'Vào học ngay',
+        services: (servicesSetting?.value as any)?.detailButtonText ?? 'Xem dịch vụ',
+        projects: (projectsSetting?.value as any)?.detailButtonText ?? 'Xem dự án',
+        products: (productsSetting?.value as any)?.detailButtonText ?? 'Xem sản phẩm',
+      });
       setIsInitialized(true);
     }
   }, [isLoaded, isInitialized, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
@@ -262,9 +280,21 @@ export default function ExperiencesPage() {
       localDarkModePremiumBorder.services !== ((servicesSetting?.value as any)?.darkModePremiumBorder ?? false) ||
       localDarkModePremiumBorder.projects !== ((projectsSetting?.value as any)?.darkModePremiumBorder ?? false) ||
       localDarkModePremiumBorder.products !== ((productsSetting?.value as any)?.darkModePremiumBorder ?? false) ||
+      localShowDetailButton.posts !== ((postsSetting?.value as any)?.showDetailButton ?? false) ||
+      localShowDetailButton.resources !== ((resourcesSetting?.value as any)?.showDetailButton ?? false) ||
+      localShowDetailButton.courses !== ((coursesSetting?.value as any)?.showDetailButton ?? false) ||
+      localShowDetailButton.services !== ((servicesSetting?.value as any)?.showDetailButton ?? false) ||
+      localShowDetailButton.projects !== ((projectsSetting?.value as any)?.showDetailButton ?? false) ||
+      localShowDetailButton.products !== ((productsSetting?.value as any)?.showDetailButton ?? false) ||
+      localDetailButtonText.posts !== ((postsSetting?.value as any)?.detailButtonText ?? 'Đọc ngay') ||
+      localDetailButtonText.resources !== ((resourcesSetting?.value as any)?.detailButtonText ?? 'Xem chi tiết') ||
+      localDetailButtonText.courses !== ((coursesSetting?.value as any)?.detailButtonText ?? 'Vào học ngay') ||
+      localDetailButtonText.services !== ((servicesSetting?.value as any)?.detailButtonText ?? 'Xem dịch vụ') ||
+      localDetailButtonText.projects !== ((projectsSetting?.value as any)?.detailButtonText ?? 'Xem dự án') ||
+      localDetailButtonText.products !== ((productsSetting?.value as any)?.detailButtonText ?? 'Xem sản phẩm') ||
       localDarkMode !== ((darkModeSetting?.value as any) ?? 'light')
     );
-  }, [localLayouts, localGridColumns, localCornerRadius, localCartButtonsLayout, localDarkMode, localDarkModePremiumBorder, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
+  }, [localLayouts, localGridColumns, localCornerRadius, localCartButtonsLayout, localDarkMode, localDarkModePremiumBorder, localShowDetailButton, localDetailButtonText, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
 
   const [isSaving, setIsSaving] = useState(false);
   const handleSaveAll = async () => {
@@ -279,7 +309,9 @@ export default function ExperiencesPage() {
             layoutStyle: localLayouts.posts,
             gridColumns: localGridColumns.posts,
             cornerRadius: localCornerRadius.posts,
-            darkModePremiumBorder: localDarkModePremiumBorder.posts
+            darkModePremiumBorder: localDarkModePremiumBorder.posts,
+            showDetailButton: localShowDetailButton.posts,
+            detailButtonText: localDetailButtonText.posts,
           }
         },
         {
@@ -290,7 +322,9 @@ export default function ExperiencesPage() {
             layoutStyle: localLayouts.resources,
             gridColumns: localGridColumns.resources,
             cornerRadius: localCornerRadius.resources,
-            darkModePremiumBorder: localDarkModePremiumBorder.resources
+            darkModePremiumBorder: localDarkModePremiumBorder.resources,
+            showDetailButton: localShowDetailButton.resources,
+            detailButtonText: localDetailButtonText.resources,
           }
         },
         {
@@ -301,7 +335,9 @@ export default function ExperiencesPage() {
             layoutStyle: localLayouts.courses,
             gridColumns: localGridColumns.courses,
             cornerRadius: localCornerRadius.courses,
-            darkModePremiumBorder: localDarkModePremiumBorder.courses
+            darkModePremiumBorder: localDarkModePremiumBorder.courses,
+            showDetailButton: localShowDetailButton.courses,
+            detailButtonText: localDetailButtonText.courses,
           }
         },
         {
@@ -312,7 +348,9 @@ export default function ExperiencesPage() {
             layoutStyle: localLayouts.services,
             gridColumns: localGridColumns.services,
             cornerRadius: localCornerRadius.services,
-            darkModePremiumBorder: localDarkModePremiumBorder.services
+            darkModePremiumBorder: localDarkModePremiumBorder.services,
+            showDetailButton: localShowDetailButton.services,
+            detailButtonText: localDetailButtonText.services,
           }
         },
         {
@@ -323,7 +361,9 @@ export default function ExperiencesPage() {
             layoutStyle: localLayouts.projects,
             gridColumns: localGridColumns.projects,
             cornerRadius: localCornerRadius.projects,
-            darkModePremiumBorder: localDarkModePremiumBorder.projects
+            darkModePremiumBorder: localDarkModePremiumBorder.projects,
+            showDetailButton: localShowDetailButton.projects,
+            detailButtonText: localDetailButtonText.projects,
           }
         },
         {
@@ -335,7 +375,9 @@ export default function ExperiencesPage() {
             gridColumns: localGridColumns.products,
             cornerRadius: localCornerRadius.products,
             cartButtonsLayout: localCartButtonsLayout,
-            darkModePremiumBorder: localDarkModePremiumBorder.products
+            darkModePremiumBorder: localDarkModePremiumBorder.products,
+            showDetailButton: localShowDetailButton.products,
+            detailButtonText: localDetailButtonText.products,
           }
         },
         {
@@ -390,6 +432,30 @@ export default function ExperiencesPage() {
       products: radius,
     });
     toast.success(`Đã thay đổi tạm thời tất cả bo góc thành: ${radius === 'none' ? 'BỎ BO GÓC' : radius === 'sm' ? 'BO ÍT' : 'BO NHIỀU'}. Nhớ bấm Lưu để áp dụng thực tế!`);
+  };
+
+  const handleApplyAllPremiumDark = (value: boolean) => {
+    setLocalDarkModePremiumBorder({
+      posts: value,
+      resources: value,
+      courses: value,
+      services: value,
+      projects: value,
+      products: value,
+    });
+    toast.success(`Đã ${value ? 'bật' : 'tắt'} Premium Dark Mode cho tất cả danh sách. Nhớ bấm Lưu!`);
+  };
+
+  const handleApplyAllDetailButton = (value: boolean) => {
+    setLocalShowDetailButton({
+      posts: value,
+      resources: value,
+      courses: value,
+      services: value,
+      projects: value,
+      products: value,
+    });
+    toast.success(`Đã ${value ? 'bật' : 'tắt'} nút xem chi tiết cho tất cả danh sách. Nhớ bấm Lưu!`);
   };
 
   // Debounce
@@ -736,7 +802,7 @@ export default function ExperiencesPage() {
               </div>
 
               {/* Quick Corner Radius */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-200/40 dark:border-zinc-800/40">
                 <div>
                   <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                     <span className="w-1.5 h-4 rounded-full bg-cyan-500 inline-block" />
@@ -770,6 +836,72 @@ export default function ExperiencesPage() {
                     className="text-xs font-semibold hover:border-cyan-500/5 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all"
                   >
                     Bo góc nhiều (lg)
+                  </Button>
+                </div>
+              </div>
+
+              {/* Quick Premium Dark Mode */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-200/40 dark:border-zinc-800/40">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <span className="w-1.5 h-4 rounded-full bg-cyan-500 inline-block" />
+                    Đồng bộ nhanh Premium Dark Mode
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-lg">
+                    Bật/tắt hiệu ứng viền và hover Premium Dark Mode đồng loạt cho tất cả danh sách.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2.5 items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAllPremiumDark(true)}
+                    className="text-xs font-semibold hover:border-cyan-500/50 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
+                  >
+                    <Eye size={13} />
+                    Bật tất cả
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAllPremiumDark(false)}
+                    className="text-xs font-semibold hover:border-slate-400/50 hover:bg-slate-100 hover:text-slate-600 transition-all gap-1.5"
+                  >
+                    <X size={13} />
+                    Tắt tất cả
+                  </Button>
+                </div>
+              </div>
+
+              {/* Quick Detail Button */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                    <span className="w-1.5 h-4 rounded-full bg-cyan-500 inline-block" />
+                    Đồng bộ nhanh Nút xem chi tiết
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-lg">
+                    Bật/tắt nút gradient xem chi tiết (kiểu "Vào học ngay", "Xem sản phẩm",...) cho tất cả danh sách.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2.5 items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAllDetailButton(true)}
+                    className="text-xs font-semibold hover:border-cyan-500/50 hover:bg-cyan-500/5 hover:text-cyan-600 transition-all gap-1.5"
+                  >
+                    <Eye size={13} />
+                    Bật tất cả
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleApplyAllDetailButton(false)}
+                    className="text-xs font-semibold hover:border-slate-400/50 hover:bg-slate-100 hover:text-slate-600 transition-all gap-1.5"
+                  >
+                    <X size={13} />
+                    Tắt tất cả
                   </Button>
                 </div>
               </div>
@@ -880,7 +1012,7 @@ export default function ExperiencesPage() {
 
                         {/* Premium Dark Mode (Hover & Viền) */}
                         <div className="flex flex-col gap-1">
-                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Premium Dark Mode</span>
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Premium Dark</span>
                           <div className="flex items-center h-9">
                             <button
                               type="button"
@@ -897,6 +1029,50 @@ export default function ExperiencesPage() {
                             </button>
                           </div>
                         </div>
+
+                        {/* Nút xem chi tiết */}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Nút chi tiết</span>
+                          <div className="flex items-center h-9">
+                            <button
+                              type="button"
+                              onClick={() => setLocalShowDetailButton(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                localShowDetailButton[item.id] ? 'bg-amber-500' : 'bg-slate-200 dark:bg-slate-800'
+                              }`}
+                            >
+                              <span
+                                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                  localShowDetailButton[item.id] ? 'translate-x-4' : 'translate-x-0'
+                                }`}
+                              />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Text nút chi tiết (chỉ hiện khi bật) */}
+                        {localShowDetailButton[item.id] && (
+                          <div className="flex flex-col gap-1 animate-in fade-in slide-in-from-left-2 duration-200">
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Text nút</span>
+                            <div className="relative h-9 w-32">
+                              <input
+                                type="text"
+                                maxLength={20}
+                                value={localDetailButtonText[item.id] ?? ''}
+                                onChange={(e) => setLocalDetailButtonText(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                className="h-9 w-full rounded-lg border border-amber-400/60 bg-amber-50 dark:bg-amber-950/30 px-2.5 text-xs font-semibold text-amber-800 dark:text-amber-300 focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20 outline-none transition-all"
+                                placeholder="VD: Vào học ngay"
+                              />
+                            </div>
+                            {/* Preview nút gradient */}
+                            <div
+                              className="mt-0.5 flex items-center justify-center rounded-full px-3 py-1 text-[10px] font-black text-slate-900 shadow-sm"
+                              style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%)', minWidth: '80px' }}
+                            >
+                              {localDetailButtonText[item.id] || 'Xem chi tiết'}
+                            </div>
+                          </div>
+                        )}
 
                         {/* Column Selector */}
                         <div className="flex flex-col gap-1">

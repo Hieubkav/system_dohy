@@ -20,6 +20,8 @@ type PostsListConfig = {
   hideEmptyCategories: boolean;
   postsPerPage: number;
   darkModePremiumBorder?: boolean;
+  showDetailButton?: boolean;
+  detailButtonText?: string;
 };
 
 type SearchFilterConfig = {
@@ -94,6 +96,8 @@ export function usePostsListConfig(): PostsListConfig {
       hideEmptyCategories?: boolean;
       postsPerPage?: number;
       darkModePremiumBorder?: boolean;
+      showDetailButton?: boolean;
+      detailButtonText?: string;
     } | undefined;
     const rawStyle = raw?.layoutStyle;
     const layoutStyle: PostsListConfig['layoutStyle'] = rawStyle === 'sidebar'
@@ -109,6 +113,8 @@ export function usePostsListConfig(): PostsListConfig {
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
       postsPerPage: raw?.postsPerPage ?? 12,
       darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
+      showDetailButton: raw?.showDetailButton ?? false,
+      detailButtonText: raw?.detailButtonText ?? 'Đọc ngay',
     };
   }, [experienceSetting?.value]);
 }
@@ -216,6 +222,8 @@ type ProductsListConfig = {
   priceFilterMode: 'disabled' | 'custom' | 'smart_dropdown' | 'slider';
   isLoading: boolean;
   darkModePremiumBorder?: boolean;
+  showDetailButton?: boolean;
+  detailButtonText?: string;
 };
 
 export function useProductsListConfig(): ProductsListConfig {
@@ -243,6 +251,8 @@ export function useProductsListConfig(): ProductsListConfig {
       cartButtonsLayout?: 'stack' | 'grid-2';
       priceFilterMode?: 'disabled' | 'custom' | 'smart_dropdown' | 'slider';
       darkModePremiumBorder?: boolean;
+      showDetailButton?: boolean;
+      detailButtonText?: string;
     } | undefined;
 
     const layoutStyle: ProductsListConfig['layoutStyle'] = raw?.layoutStyle ?? 'grid';
@@ -274,6 +284,8 @@ export function useProductsListConfig(): ProductsListConfig {
       priceFilterMode: raw?.priceFilterMode ?? 'custom',
       isLoading,
       darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
+      showDetailButton: raw?.showDetailButton ?? false,
+      detailButtonText: raw?.detailButtonText ?? 'Xem sản phẩm',
     };
   }, [experienceSetting, cartAvailable, ordersEnabled, wishlistModule, promotionsModule]);
 }
@@ -325,6 +337,8 @@ type ServicesListConfig = {
   hideEmptyCategories: boolean;
   postsPerPage: number;
   darkModePremiumBorder?: boolean;
+  showDetailButton?: boolean;
+  detailButtonText?: string;
 };
 
 export function useServicesListConfig(): ServicesListConfig {
@@ -342,6 +356,8 @@ export function useServicesListConfig(): ServicesListConfig {
       hideEmptyCategories?: boolean;
       postsPerPage?: number;
       darkModePremiumBorder?: boolean;
+      showDetailButton?: boolean;
+      detailButtonText?: string;
     } | undefined;
 
     const rawStyle = raw?.layoutStyle;
@@ -359,6 +375,8 @@ export function useServicesListConfig(): ServicesListConfig {
       hideEmptyCategories: raw?.hideEmptyCategories ?? true,
       postsPerPage: layoutConfig?.postsPerPage ?? raw?.postsPerPage ?? 12,
       darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
+      showDetailButton: raw?.showDetailButton ?? false,
+      detailButtonText: raw?.detailButtonText ?? 'Xem dịch vụ',
     };
   }, [experienceSetting?.value]);
 }
@@ -375,6 +393,8 @@ type ProjectsListConfig = {
   showClientName: boolean;
   showIntroVideo: boolean;
   darkModePremiumBorder?: boolean;
+  showDetailButton?: boolean;
+  detailButtonText?: string;
 };
 
 export function useProjectsListConfig(): ProjectsListConfig {
@@ -393,6 +413,8 @@ export function useProjectsListConfig(): ProjectsListConfig {
       showClientName?: boolean;
       showIntroVideo?: boolean;
       darkModePremiumBorder?: boolean;
+      showDetailButton?: boolean;
+      detailButtonText?: string;
     } | undefined;
     const rawStyle = raw?.layoutStyle;
     const layoutStyle: ProjectsListConfig['layoutStyle'] = rawStyle === 'sidebar'
@@ -410,6 +432,8 @@ export function useProjectsListConfig(): ProjectsListConfig {
       showClientName: raw?.showClientName ?? true,
       showIntroVideo: raw?.showIntroVideo ?? true,
       darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
+      showDetailButton: raw?.showDetailButton ?? false,
+      detailButtonText: raw?.detailButtonText ?? 'Xem dự án',
     };
   }, [experienceSetting?.value]);
 }
@@ -450,6 +474,8 @@ type CoursesListConfig = {
   postsPerPage: number;
   cornerRadius: 'none' | 'sm' | 'lg';
   darkModePremiumBorder?: boolean;
+  showDetailButton?: boolean;
+  detailButtonText?: string;
 };
 
 const normalizeCoursesListLayoutStyle = (value?: string): CoursesListConfig['layoutStyle'] => {
@@ -474,6 +500,8 @@ export function useCoursesListConfig(): CoursesListConfig {
       postsPerPage?: number;
       cornerRadius?: 'none' | 'sm' | 'lg';
       darkModePremiumBorder?: boolean;
+      showDetailButton?: boolean;
+      detailButtonText?: string;
     } | undefined;
     const layoutStyle = normalizeCoursesListLayoutStyle(raw?.layoutStyle);
     const layoutConfig = raw?.layouts?.[layoutStyle];
@@ -488,6 +516,8 @@ export function useCoursesListConfig(): CoursesListConfig {
       postsPerPage: layoutConfig?.postsPerPage ?? raw?.postsPerPage ?? 12,
       cornerRadius: raw?.cornerRadius ?? 'lg',
       darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
+      showDetailButton: raw?.showDetailButton ?? false,
+      detailButtonText: raw?.detailButtonText ?? 'Vào học ngay',
     };
   }, [experienceSetting?.value]);
 }
@@ -528,6 +558,8 @@ type ResourcesListConfig = {
   postsPerPage: number;
   cornerRadius: 'none' | 'sm' | 'lg';
   darkModePremiumBorder?: boolean;
+  showDetailButton?: boolean;
+  detailButtonText?: string;
 };
 
 const normalizeResourcesListLayoutStyle = (value?: string): ResourcesListConfig['layoutStyle'] => {
@@ -552,6 +584,8 @@ export function useResourcesListConfig(): ResourcesListConfig {
       postsPerPage?: number;
       cornerRadius?: 'none' | 'sm' | 'lg';
       darkModePremiumBorder?: boolean;
+      showDetailButton?: boolean;
+      detailButtonText?: string;
     } | undefined;
     const layoutStyle = normalizeResourcesListLayoutStyle(raw?.layoutStyle);
     const layoutConfig = raw?.layouts?.[layoutStyle];
@@ -566,6 +600,8 @@ export function useResourcesListConfig(): ResourcesListConfig {
       postsPerPage: layoutConfig?.postsPerPage ?? raw?.postsPerPage ?? 12,
       cornerRadius: raw?.cornerRadius ?? 'lg',
       darkModePremiumBorder: raw?.darkModePremiumBorder ?? false,
+      showDetailButton: raw?.showDetailButton ?? false,
+      detailButtonText: raw?.detailButtonText ?? 'Xem chi tiết',
     };
   }, [experienceSetting?.value]);
 }

@@ -42,6 +42,7 @@ export type HeaderMenuConfig = {
   wishlist: { show: boolean };
   megaLevel1Color?: 'default' | 'primary' | 'secondary';
   showDarkModeToggle?: boolean;
+  enableGlassmorphism?: boolean;
 };
 
 type MenuItem = {
@@ -124,8 +125,18 @@ export function HeaderMenuPreview({
   }, []);
 
   const tokens = useMemo<MenuColors>(
-    () => getMenuColors(brandColor, secondaryColor, colorMode, isDark),
-    [brandColor, secondaryColor, colorMode, isDark]
+    () => {
+      const baseTokens = getMenuColors(brandColor, secondaryColor, colorMode, isDark);
+      if (config.enableGlassmorphism) {
+        return {
+          ...baseTokens,
+          dropdownBg: isDark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.75)',
+          dropdownBorder: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+        };
+      }
+      return baseTokens;
+    },
+    [brandColor, secondaryColor, colorMode, isDark, config.enableGlassmorphism]
   );
   const layerColors = useMemo(
     () => resolveMenuLayerColors(config.layerColors, tokens, colorMode),
@@ -2025,7 +2036,22 @@ export function HeaderMenuPreview({
   };
 
   return (
-    <div className="border rounded-lg overflow-hidden" style={{ borderColor: tokens.border }}>
+    <div className={cn("border rounded-lg overflow-hidden", config.enableGlassmorphism && "glass-enabled-menu")} style={{ borderColor: tokens.border }}>
+      {config.enableGlassmorphism && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          .glass-enabled-menu div.absolute.border,
+          .glass-enabled-menu div.absolute div.border,
+          .glass-enabled-menu div.absolute div.rounded-xl,
+          .glass-enabled-menu div.absolute div.rounded-lg {
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            box-shadow: ${isDark 
+              ? '0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)' 
+              : '0 10px 30px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
+            } !important;
+          }
+        `}} />
+      )}
       {resolvedStyle === 'classic' && renderClassicStyle()}
       {resolvedStyle === 'topbar' && renderTopbarStyle()}
       {resolvedStyle === 'allbirds' && renderAllbirdsStyle()}

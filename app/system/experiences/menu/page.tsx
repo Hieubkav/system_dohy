@@ -57,6 +57,7 @@ const DEFAULT_CONFIG: HeaderMenuConfig = {
   },
   wishlist: { show: true },
   showDarkModeToggle: false,
+  enableGlassmorphism: false,
 };
 
 const LAYOUT_STYLES: LayoutOption<HeaderLayoutStyle>[] = [
@@ -273,6 +274,10 @@ export default function HeaderMenuExperiencePage() {
 
   const updateShowDarkModeToggle = (value: boolean) => {
     setConfig(prev => ({ ...prev, showDarkModeToggle: value }));
+  };
+
+  const updateEnableGlassmorphism = (value: boolean) => {
+    setConfig(prev => ({ ...prev, enableGlassmorphism: value }));
   };
 
   const updateBorderRadiusStyle = (value: NonNullable<HeaderMenuConfig['borderRadiusStyle']>) => {
@@ -662,6 +667,12 @@ export default function HeaderMenuExperiencePage() {
               label="Nút Dark Mode ở site thực"
               checked={config.showDarkModeToggle ?? false}
               onChange={updateShowDarkModeToggle}
+              accentColor={resolvedBrandColor}
+            />
+            <ToggleRow
+              label="Bật nền Glassmorphism (macOS style)"
+              checked={config.enableGlassmorphism ?? false}
+              onChange={updateEnableGlassmorphism}
               accentColor={resolvedBrandColor}
             />
             <div className="py-2 px-2.5 bg-slate-100/50 dark:bg-slate-800/40 rounded-lg border border-slate-200/25 dark:border-slate-700/30 mt-1 flex items-center justify-between gap-2 text-xs">

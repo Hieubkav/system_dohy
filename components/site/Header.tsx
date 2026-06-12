@@ -97,6 +97,7 @@ interface HeaderConfig {
   wishlist?: { show?: boolean };
   login?: { show?: boolean; text?: string };
   showDarkModeToggle?: boolean;
+  enableGlassmorphism?: boolean;
 }
 
 const DEFAULT_CONFIG: HeaderConfig = {
@@ -130,6 +131,7 @@ const DEFAULT_CONFIG: HeaderConfig = {
   },
   wishlist: { show: true },
   showDarkModeToggle: false,
+  enableGlassmorphism: false,
 };
 
 const DEFAULT_LINKS = {
@@ -379,8 +381,18 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
   const logoContainerSize = Math.round(logoSize + Math.max(10, logoSize * 0.28));
 
   const tokens = useMemo<MenuColors>(
-    () => getMenuColors(brandColors.primary, brandColors.secondary, brandColors.mode, siteSettings.isDark),
-    [brandColors.primary, brandColors.secondary, brandColors.mode, siteSettings.isDark]
+    () => {
+      const baseTokens = getMenuColors(brandColors.primary, brandColors.secondary, brandColors.mode, siteSettings.isDark);
+      if (config.enableGlassmorphism) {
+        return {
+          ...baseTokens,
+          dropdownBg: siteSettings.isDark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.75)',
+          dropdownBorder: siteSettings.isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+        };
+      }
+      return baseTokens;
+    },
+    [brandColors.primary, brandColors.secondary, brandColors.mode, siteSettings.isDark, config.enableGlassmorphism]
   );
   const layerColors = useMemo(
     () => resolveMenuLayerColors(config.layerColors, tokens, brandColors.mode),
@@ -2504,7 +2516,22 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
 
   // Allbirds Style
   return (
-    <header className={cn(classicPositionClass)} style={{ backgroundColor: layerColors.navbar.bg, ...classicSeparatorStyle }}>
+    <header className={cn(classicPositionClass, config.enableGlassmorphism && "glass-enabled-menu")} style={{ backgroundColor: layerColors.navbar.bg, ...classicSeparatorStyle }}>
+      {config.enableGlassmorphism && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          .glass-enabled-menu div.absolute.border,
+          .glass-enabled-menu div.absolute div.border,
+          .glass-enabled-menu div.absolute div.rounded-xl,
+          .glass-enabled-menu div.absolute div.rounded-lg {
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            box-shadow: ${siteSettings.isDark 
+              ? '0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)' 
+              : '0 10px 30px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
+            } !important;
+          }
+        `}} />
+      )}
         {topbarConfig.show !== false && (
           <div className="px-4 py-2 text-xs" style={{ backgroundColor: layerColors.topnav.bg, color: layerColors.topnav.text }}>
             <div className="max-w-7xl tv:max-w-[1600px] mx-auto flex items-center justify-between gap-4 min-w-0">
