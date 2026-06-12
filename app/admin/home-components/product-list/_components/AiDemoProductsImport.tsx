@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { AdminImage as Image } from '@/app/admin/components/AdminImage';
+import { AiDirectGeneratePanel } from '@/app/admin/components/AiDirectGenerateButton';
 import { Bot, Check, Copy, FileText, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Label, cn } from '../../../components/ui';
@@ -256,6 +257,12 @@ export function AiDemoProductsImport({
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label>Dán kết quả AI</Label>
+                <AiDirectGeneratePanel
+                  prompt={AI_PRODUCTS_PROMPT}
+                  sessionId="admin-demo-products-import"
+                  onGenerated={setRawInput}
+                  placeholder="Ví dụ: Tạo 8 sản phẩm demo cho shop phụ kiện tủ bếp, có giá VNĐ, tag hot/sale và mô tả ngắn."
+                />
                 <textarea
                   className="min-h-64 w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   placeholder={SAMPLE_JSON}
@@ -532,6 +539,12 @@ function GenericAiDemoImport<T extends { id: string | number }>({
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label>Dán kết quả AI</Label>
+                <AiDirectGeneratePanel
+                  prompt={prompt}
+                  sessionId={`admin-demo-${config.rootKey}-import`}
+                  onGenerated={setRawInput}
+                  placeholder={`Ví dụ: Tạo 6 ${config.itemLabel} demo phù hợp website nội thất/phụ kiện tủ bếp, nội dung tự nhiên và có ảnh URL nếu có.`}
+                />
                 <textarea className="min-h-64 w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" placeholder={sample} value={rawInput} onChange={(event) => setRawInput(event.target.value)} />
               </div>
               {rawInput.trim().length > 0 && (
@@ -1300,6 +1313,12 @@ export function AiDemoCategoryProductsImport({
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label>Dán kết quả AI</Label>
+                <AiDirectGeneratePanel
+                  prompt={CATEGORY_PRODUCTS_PROMPT}
+                  sessionId="admin-category-products-import"
+                  onGenerated={setRawInput}
+                  placeholder="Ví dụ: Tạo 4 section danh mục cho shop phụ kiện tủ bếp, mỗi section có 4 sản phẩm phù hợp và giá VNĐ."
+                />
                 <textarea className="min-h-64 w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" placeholder={CATEGORY_PRODUCTS_SAMPLE} value={rawInput} onChange={(event) => setRawInput(event.target.value)} />
               </div>
               {rawInput.trim().length > 0 && (

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { AiDirectGeneratePanel } from '@/app/admin/components/AiDirectGenerateButton';
 import { Bot, Check, Copy, FileText, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Label, cn } from '../../../components/ui';
@@ -71,6 +72,12 @@ export function AiVideoImport({ onApply }: { buttonClassName?: string; onApply: 
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label>Dán kết quả AI</Label>
+                <AiDirectGeneratePanel
+                  prompt={AI_VIDEO_PROMPT}
+                  sessionId="admin-video-import"
+                  onGenerated={setRawInput}
+                  placeholder="Ví dụ: Tạo section video giới thiệu Dohy Studio, dùng video YouTube hiện có, CTA Xem khóa học."
+                />
                 <textarea className="min-h-64 w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-xs dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" placeholder={SAMPLE} value={rawInput} onChange={(e) => setRawInput(e.target.value)} />
               </div>
               {rawInput.trim().length > 0 && (

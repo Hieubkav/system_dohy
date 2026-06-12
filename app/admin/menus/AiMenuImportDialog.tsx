@@ -14,6 +14,7 @@ import {
   Label,
   cn,
 } from '../components/ui';
+import { AiDirectGeneratePanel } from '../components/AiDirectGenerateButton';
 import { parseAiMenuInput, type AiMenuLine } from './_ai-menu-parser';
 
 /* ────────────────────────────────────────────────────────────
@@ -151,6 +152,12 @@ export function AiMenuImportDialog({
           <div className="space-y-3">
             <div className="space-y-2">
               <Label>Dán kết quả AI</Label>
+              <AiDirectGeneratePanel
+                prompt={MENU_MEGA_PROMPT}
+                sessionId="admin-menu-import"
+                onGenerated={setRawInput}
+                placeholder="Ví dụ: Website bán phụ kiện tủ bếp, cần menu gồm Trang chủ, Sản phẩm, Dịch vụ, Dự án, Bài viết, Liên hệ."
+              />
               <textarea
                 className="min-h-64 w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 placeholder={SAMPLE_JSON}

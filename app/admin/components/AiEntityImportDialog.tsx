@@ -5,6 +5,7 @@ import { Bot, Check, Copy, FileText, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { AiDirectGeneratePanel } from './AiDirectGenerateButton';
 import {
   Button,
   Dialog,
@@ -1015,6 +1016,20 @@ export function AiEntityImportDialog({
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label>Dán kết quả AI</Label>
+                <AiDirectGeneratePanel
+                  prompt={prompt}
+                  sessionId={`admin-entity-import:${kind}`}
+                  onGenerated={setRawInput}
+                  placeholder={
+                    kind === 'post'
+                      ? 'Ví dụ: Viết bài “Cách chọn phụ kiện tủ bếp bền đẹp”, nhắm keyword phụ kiện tủ bếp, giọng tư vấn chuyên gia, có checklist chọn mua.'
+                      : kind === 'product'
+                        ? 'Ví dụ: Tạo sản phẩm “Giá kệ góc liên hoàn inox 304”, nêu chất liệu, công dụng, đối tượng phù hợp, giá tham khảo nếu có.'
+                        : kind === 'service'
+                          ? 'Ví dụ: Tạo dịch vụ “Tư vấn thiết kế tủ bếp”, nêu vấn đề khách gặp, quy trình, đầu ra, CTA liên hệ.'
+                          : 'Ví dụ: Tạo khóa học “Next.js thực chiến”, nêu đối tượng học, lộ trình, kết quả đạt được và giá nếu có.'
+                  }
+                />
                 <textarea
                   className="min-h-64 w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   placeholder={sample}

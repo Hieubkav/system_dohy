@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import { Bot, Check, Copy, FileText, X, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Label, Input, cn } from '../../components/ui';
+import { AiDirectGeneratePanel } from '../../components/AiDirectGenerateButton';
 import type { FaqItem } from '../../home-components/faq/_types';
 import { useTypeAiImportEnabled } from '../../home-components/_shared/hooks/useTypeAiImportEnabled';
 
@@ -282,6 +283,12 @@ Schema JSON bắt buộc:
                 <Label className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                   2. Dán kết quả từ AI
                 </Label>
+                <AiDirectGeneratePanel
+                  prompt={prompt}
+                  sessionId="admin-category-content-import"
+                  onGenerated={setRawInput}
+                  placeholder="Ví dụ: Danh mục Giày chạy bộ, nổi bật chính hãng, đổi trả 7 ngày, khách cần chọn đúng size và độ êm."
+                />
                 <textarea
                   className="min-h-[260px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   placeholder="Dán mã JSON nhận được từ chatbot AI vào đây..."

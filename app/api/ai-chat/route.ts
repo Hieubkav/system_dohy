@@ -15,6 +15,8 @@ const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-lite';
 const DEFAULT_CHATJPT_MODEL = '@cf/openai/gpt-oss-120b';
 const DEFAULT_SYSTEM_PROMPT =
   'Bạn là trợ lý AI của website. Trả lời bằng tiếng Việt, ngắn gọn, lịch sự, ưu tiên dựa trên dữ liệu site được cung cấp và gợi ý link phù hợp khi có.';
+const AI_IMPORT_SYSTEM_PROMPT =
+  'Bạn là AI import JSON cho VietAdmin. Yêu cầu cụ thể của admin trong user message là source of truth bắt buộc: title, heading, chủ đề và nội dung phải bám trực tiếp yêu cầu đó, không được tự đổi sang chủ đề khác. Chỉ trả về JSON hợp lệ đúng schema người dùng đưa, không markdown fence, không giải thích ngoài JSON, không tự thêm field ngoài schema.';
 const CHATJPT_API_ENDPOINT = (process.env.CHATJPT_ENDPOINT || 'https://chatjpt.rina.work/api/chat').trim();
 
 const GREETING_ONLY_QUERIES = new Set([
@@ -72,6 +74,7 @@ type ChatMessage = {
 type ChatjptAnswerArgs = {
   assistantContext: string;
   message: string;
+  mode?: 'ai-import' | 'chat';
   model: string;
   sourcePath?: string;
   suggestions: SearchItem[];
@@ -391,6 +394,10 @@ async function readSuggestions(
 }
 
 function buildChatjptUserContent(args: ChatjptAnswerArgs) {
+  if (args.mode === 'ai-import') {
+    return args.message;
+  }
+
   return [
     args.assistantContext,
     `Câu hỏi khách: ${args.message}`,
@@ -520,6 +527,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const stream = wantsSse(request, body);
     const message = String(body?.message ?? '').trim();
+    const mode = body?.mode === 'ai-import' ? 'ai-import' as const : 'chat' as const;
     const sessionId = typeof body?.sessionId === 'string' ? body.sessionId : undefined;
     const sourcePath = typeof body?.sourcePath === 'string' ? body.sourcePath : undefined;
 
@@ -540,7 +548,7 @@ export async function POST(request: Request) {
           }
 
           await consumeAiRateLimit(client, sessionId, sourcePath);
-          const suggestions = await readSuggestions(client, message, assistantContext.searchScope);
+          const suggestions = mode === 'ai-import' ? [] : await readSuggestions(client, message, assistantContext.searchScope);
           send('meta', {
             model: config.model,
             provider: config.provider,
@@ -549,10 +557,11 @@ export async function POST(request: Request) {
           const chatjptArgs = {
             assistantContext: assistantContext.prompt,
             message,
+            mode,
             model: config.model,
             sourcePath,
             suggestions,
-            systemPrompt: config.systemPrompt,
+            systemPrompt: mode === 'ai-import' ? AI_IMPORT_SYSTEM_PROMPT : config.systemPrompt,
           };
 
           try {
@@ -591,14 +600,15 @@ export async function POST(request: Request) {
       }
 
       await consumeAiRateLimit(client, sessionId, sourcePath);
-      const suggestions = await readSuggestions(client, message, assistantContext.searchScope);
+      const suggestions = mode === 'ai-import' ? [] : await readSuggestions(client, message, assistantContext.searchScope);
       const answer = await generateChatjptAnswer({
         assistantContext: assistantContext.prompt,
         message,
+        mode,
         model: config.model,
         sourcePath,
         suggestions,
-        systemPrompt: config.systemPrompt,
+        systemPrompt: mode === 'ai-import' ? AI_IMPORT_SYSTEM_PROMPT : config.systemPrompt,
       });
 
       return NextResponse.json({

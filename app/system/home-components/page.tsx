@@ -328,6 +328,23 @@ export default function SystemHomeComponentsPage() {
     }
   };
 
+  const handleAllAiImport = async (enabled: boolean) => {
+    const allTypes = componentTypes.map((type) => type.value);
+    const next = allTypes.reduce<Record<string, AiImportOverride>>((acc, type) => {
+      if (CUSTOM_SUPPORTED_TYPES.has(type)) {
+        acc[type] = { enabled };
+      }
+      return acc;
+    }, {});
+    setTypeAiImportOverrides((prev) => ({ ...prev, ...next }));
+    try {
+      await bulkSetTypeAiImportOverride({ enabled, types: allTypes });
+      toast.success(enabled ? 'Đã bật Import AI cho toàn bộ component.' : 'Đã tắt Import AI cho toàn bộ component.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật Import AI toàn bộ.');
+    }
+  };
+
   if (config === undefined) {
     return (
       <div className="flex items-center justify-center h-64 text-slate-500">Đang tải...</div>
@@ -495,6 +512,14 @@ export default function SystemHomeComponentsPage() {
             </Button>
             <Button variant="outline" size="sm" onClick={() => handleBulkAiImport(false)} disabled={selectedTypes.length === 0}>
               Tắt AI đã chọn
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleAllAiImport(true)}
+              className="text-emerald-700 border-emerald-200 hover:bg-emerald-50 dark:text-emerald-300 dark:border-emerald-900/70 dark:hover:bg-emerald-950/30"
+            >
+              Bật toàn bộ AI
             </Button>
             <span className="text-xs text-slate-500">Đã chọn {selectedTypes.length} mục</span>
             <span className="text-xs text-slate-500">

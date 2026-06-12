@@ -8,6 +8,7 @@ import { api } from '@/convex/_generated/api';
 import { Bot, Check, Copy, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminMutationErrorMessage } from '@/app/admin/lib/mutation-error';
+import { AiDirectGeneratePanel } from '../../components/AiDirectGenerateButton';
 import {
   Button,
   Card,
@@ -205,6 +206,12 @@ Chỉ trả về JSON đúng schema:
                   JSON mẫu
                 </Button>
               </div>
+              <AiDirectGeneratePanel
+                prompt={prompt}
+                sessionId="admin-attribute-terms-create-import"
+                onGenerated={setRawJson}
+                placeholder="Ví dụ: Tạo 12 giá trị cho nhóm Dung tích, gồm 375ml, 750ml, 1500ml và mô tả ngắn."
+              />
               <textarea
                 value={rawJson}
                 onChange={(event) => setRawJson(event.target.value)}

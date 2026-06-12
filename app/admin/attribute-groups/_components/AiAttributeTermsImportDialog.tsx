@@ -14,6 +14,7 @@ import {
   Label,
   cn,
 } from '../../components/ui';
+import { AiDirectGeneratePanel } from '../../components/AiDirectGenerateButton';
 
 export type PendingAttributeTerm = {
   name: string;
@@ -191,6 +192,12 @@ Chỉ trả về JSON đúng schema:
                   JSON mẫu
                 </Button>
               </div>
+              <AiDirectGeneratePanel
+                prompt={prompt}
+                sessionId="admin-attribute-terms-import"
+                onGenerated={setRawJson}
+                placeholder="Ví dụ: Tạo 12 giá trị cho nhóm Giống nho, ưu tiên các giống phổ biến, mô tả ngắn dễ hiểu."
+              />
               <textarea
                 value={rawJson}
                 onChange={(event) => setRawJson(event.target.value)}

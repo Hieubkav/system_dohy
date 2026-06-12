@@ -14,6 +14,7 @@ import {
   Label,
   cn,
 } from '../../components/ui';
+import { AiDirectGeneratePanel } from '../../components/AiDirectGenerateButton';
 
 export type AiSeoImportPayload = {
   seo_title?: string;
@@ -193,6 +194,12 @@ export function AiSeoImportDialog({
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label>Dán kết quả AI</Label>
+                <AiDirectGeneratePanel
+                  prompt={prompt}
+                  sessionId="admin-seo-import"
+                  onGenerated={setRawInput}
+                  placeholder="Ví dụ: Website Dohy Studio chuyên đào tạo 3D, tài nguyên miễn phí và dịch vụ thiết kế, cần meta homepage có intent tư vấn/học tập."
+                />
                 <textarea
                   className="min-h-64 w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   placeholder={SAMPLE_JSON}

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { AiDirectGeneratePanel } from '@/app/admin/components/AiDirectGenerateButton';
 import { Bot, Check, ChevronDown, Copy, Database, FileText, GripVertical, Image, ImagePlus, Layers2, Plus, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Card, CardContent, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label, cn } from '../../../components/ui';
@@ -272,6 +273,12 @@ function FullAiImportButton({
             </div>
             <div className="space-y-3">
               <Label>Dán JSON AI trả về</Label>
+              <AiDirectGeneratePanel
+                prompt={AI_FULL_PROMPT}
+                sessionId="admin-homepage-category-hero-import"
+                onGenerated={setRawInput}
+                placeholder="Ví dụ: Tạo hero danh mục cho website bán phụ kiện tủ bếp, nhóm sản phẩm theo công năng, 3 banner và menu sidebar rõ ràng."
+              />
               <textarea
                 value={rawInput}
                 onChange={(event) => setRawInput(event.target.value)}

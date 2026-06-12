@@ -8,6 +8,7 @@ import { api } from '@/convex/_generated/api';
 import { getEmailConfigurationStatus } from '@/lib/email-config-status';
 import { SafeMarkdown } from '@/components/common/SafeMarkdown';
 import { readAiChatStream, streamChatjptFromBrowser } from '@/lib/ai-chat-client';
+import { HOME_COMPONENT_TYPE_VALUES } from '@/lib/home-components/componentTypes';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SYSTEM_TOKEN_KEY = 'system_auth_token';
@@ -96,6 +97,7 @@ export default function IntegrationsPage() {
   const [systemToken, setSystemToken] = useState('');
   const aiConfig = useQuery(api.systemIntegrations.getAiConfig, systemToken ? { token: systemToken } : 'skip');
   const saveAiConfig = useMutation(api.systemIntegrations.saveAiConfig);
+  const bulkSetTypeAiImportOverride = useMutation(api.homeComponentSystemConfig.bulkSetTypeAiImportOverride);
 
   const brandName = typeof settings?.site_name === 'string' ? settings.site_name.trim() : 'YourBrand';
 
@@ -124,6 +126,7 @@ export default function IntegrationsPage() {
   const [clearAiKey, setClearAiKey] = useState(false);
   const [isSavingAi, setIsSavingAi] = useState(false);
   const [isTestingAi, setIsTestingAi] = useState(false);
+  const [isEnablingAiImports, setIsEnablingAiImports] = useState(false);
   const [aiTestMessage, setAiTestMessage] = useState('Tư vấn giúp tôi nội dung nổi bật trên website.');
   const [aiTestResponse, setAiTestResponse] = useState('');
 
@@ -358,6 +361,30 @@ export default function IntegrationsPage() {
       toast.error(error instanceof Error ? error.message : 'Gửi thử AI thất bại.');
     } finally {
       setIsTestingAi(false);
+    }
+  };
+
+  const handleEnableAllAiImports = async () => {
+    if (hasAiChanges) {
+      toast.error('Vui lòng lưu cấu hình AI trước khi bật Import AI.');
+      return;
+    }
+    if (!aiForm.enabled || aiForm.provider !== 'chatjpt') {
+      toast.error('Cần bật ChatJPT trước khi bật Import AI hàng loạt.');
+      return;
+    }
+
+    setIsEnablingAiImports(true);
+    try {
+      await bulkSetTypeAiImportOverride({
+        enabled: true,
+        types: HOME_COMPONENT_TYPE_VALUES,
+      });
+      toast.success('Đã bật Import AI cho toàn bộ Home Components.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể bật Import AI hàng loạt.');
+    } finally {
+      setIsEnablingAiImports(false);
     }
   };
 
@@ -908,7 +935,8 @@ export default function IntegrationsPage() {
                 ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-100'
                 : 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100'
             }`}>
-              <div className="flex items-start gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-3">
                 {aiForm.enabled && (aiForm.provider === 'chatjpt' || aiConfig.hasApiKey) ? (
                   <CheckCircle2 size={20} className="mt-0.5 shrink-0" />
                 ) : (
@@ -922,6 +950,16 @@ export default function IntegrationsPage() {
                     Cấu hình chatbot sử dụng {aiForm.provider === 'chatjpt' ? 'J2TEAM ChatJPT' : 'Gemini AI'}. Dữ liệu được xử lý qua server riêng tư.
                   </p>
                 </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleEnableAllAiImports}
+                  disabled={isEnablingAiImports || hasAiChanges || !aiForm.enabled || aiForm.provider !== 'chatjpt'}
+                  className="inline-flex min-h-9 items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-white/70 px-3 py-2 text-xs font-bold text-emerald-700 shadow-sm transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-900/60 dark:bg-slate-950/40 dark:text-emerald-200 dark:hover:bg-slate-950"
+                >
+                  {isEnablingAiImports ? <Loader2 size={14} className="animate-spin" /> : <Bot size={14} />}
+                  Bật toàn bộ Import AI
+                </button>
               </div>
             </div>
 
