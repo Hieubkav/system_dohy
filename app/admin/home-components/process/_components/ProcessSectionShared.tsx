@@ -8,7 +8,7 @@ import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
 import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
 import { SectionHeader } from '../../_shared/components/SectionHeader';
 import { deviceWidths, type PreviewDevice } from '../../_shared/hooks/usePreviewDevice';
-import { getProcessColors, getAPCATextColor, type ProcessColorTokens } from '../_lib/colors';
+import { getProcessColors, type ProcessColorTokens } from '../_lib/colors';
 import {
   DEFAULT_PROCESS_CORNER_RADIUS,
   DEFAULT_PROCESS_SPACING,
@@ -175,7 +175,7 @@ const renderHorizontal = ({
   const lineMarginTop = isSite ? -40 : (isMobile ? -32 : -40);
 
   return (
-    <div className={containerClass} style={{ backgroundColor: tokens.neutralBackground }}>
+    <div className={containerClass} style={{ backgroundColor: 'transparent' }}>
       {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
 
       <div className="relative">
@@ -273,7 +273,7 @@ const RenderStepper = ({
 
 
   return (
-    <div className={getSectionPadding(context, previewDevice, spacing)} style={{ backgroundColor: tokens.neutralBackground }}>
+    <div className={getSectionPadding(context, previewDevice, spacing)} style={{ backgroundColor: 'transparent' }}>
       {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
 
       <div className={cn('mx-auto', previewDevice === 'mobile' ? 'max-w-sm' : 'max-w-2xl')}>
@@ -420,7 +420,7 @@ const renderCards = ({
     : (isMobile ? 'text-xs' : 'text-sm');
 
   return (
-    <div className={getSectionPadding(context, previewDevice, spacing)} style={{ backgroundColor: tokens.neutralBackground }}>
+    <div className={getSectionPadding(context, previewDevice, spacing)} style={{ backgroundColor: 'transparent' }}>
       {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
 
       <div className={gridClass}>
@@ -567,7 +567,7 @@ const renderAccordion = ({
   const resolvedText = isSite ? siteCircleText : circleTextSize;
 
   return (
-    <div className={getSectionPadding(context, previewDevice, spacing)} style={{ backgroundColor: tokens.neutralBackground }}>
+    <div className={getSectionPadding(context, previewDevice, spacing)} style={{ backgroundColor: 'transparent' }}>
       {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
 
       {/* Desktop Layout - Zigzag wave */}
@@ -762,7 +762,7 @@ const renderMinimal = ({
     : (isCompact ? 'text-[10px]' : 'text-xs');
 
   return (
-    <div className={outerPadding} style={{ backgroundColor: tokens.neutralBackground }}>
+    <div className={outerPadding} style={{ backgroundColor: 'transparent' }}>
       {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
       <div className="relative mx-auto w-full max-w-[1360px]">
         {/* Dark Background Band */}
@@ -866,7 +866,7 @@ const renderGrid = ({
   const remainingCount = steps.length - visibleSteps.length;
 
   return (
-    <div className={getSectionPadding(context, previewDevice, spacing)} style={{ backgroundColor: tokens.neutralBackground }}>
+    <div className={getSectionPadding(context, previewDevice, spacing)} style={{ backgroundColor: 'transparent' }}>
       {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
 
       <div className={cn(
@@ -942,7 +942,7 @@ const renderCompactMinimal = ({
   const itemOffset = isSite ? 'md:translate-y-10' : 'translate-y-0 md:translate-y-10';
 
   return (
-    <div className={cn(getSectionPadding(context, previewDevice, spacing), 'overflow-hidden')} style={{ backgroundColor: tokens.neutralSurface }}>
+    <div className={cn(getSectionPadding(context, previewDevice, spacing), 'overflow-hidden')} style={{ backgroundColor: 'transparent' }}>
       {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
 
       <div className="mx-auto max-w-7xl">
@@ -1037,7 +1037,6 @@ const renderAlternating = ({
   const isSite = context === 'site';
   const isMobile = previewDevice === 'mobile';
   const isTablet = previewDevice === 'tablet';
-  const sectionBackground = tokens.neutralSurface;
   const sectionText = tokens.mutedText;
   const cardBackground = tokens.neutralSurface;
   const cardText = tokens.bodyText;
@@ -1054,7 +1053,7 @@ const renderAlternating = ({
   const itemHeightClass = isMobile ? 'min-h-[250px]' : 'min-h-[320px]';
 
   return (
-    <div className={cn('relative z-[1] overflow-hidden', outerPadding)} style={{ backgroundColor: sectionBackground }}>
+    <div className={cn('relative z-[1] overflow-hidden', outerPadding)} style={{ backgroundColor: 'transparent' }}>
       {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
 
       <div className={trackClass}>
@@ -1257,14 +1256,10 @@ const RenderCircular = ({
   const primaryColor = tokens.primary;
 
   // Xác định độ tương phản: Nếu màu chính là màu sáng (ví dụ màu vàng, cần chữ tối #0f172a), 
-  // hệ thống sẽ tự động dùng màu nền tối (đen/xám đậm) để tạo tương phản cao cực kỳ bắt mắt.
-  const isPrimaryLight = getAPCATextColor(primaryColor, 16, 700) === '#0f172a';
-
-  const bgCol = isPrimaryLight ? '#090d16' : tokens.neutralBackground;
-  const surfaceCol = isPrimaryLight ? '#121824' : tokens.neutralSurface;
-  const borderCol = isPrimaryLight ? '#1e293b' : tokens.neutralBorder;
-  const textCol = isPrimaryLight ? '#ffffff' : tokens.bodyText;
-  const mutedTextCol = isPrimaryLight ? '#94a3b8' : tokens.mutedText;
+  const surfaceCol = tokens.neutralSurface;
+  const borderCol = tokens.neutralBorder;
+  const textCol = tokens.bodyText;
+  const mutedTextCol = tokens.mutedText;
 
   // Lấy nhãn nút CTA từ circularCtaText, nếu không có mới fallback về text mặc định
   const ctaText = circularCtaText || "BẮT ĐẦU DỰ ÁN";
@@ -1272,7 +1267,6 @@ const RenderCircular = ({
   return (
     <div 
       className={cn(getSectionPadding(context, previewDevice, spacing), "w-full py-16 px-4 md:px-8 transition-colors duration-300")}
-      style={{ backgroundColor: bgCol }}
     >
       <div className="mx-auto max-w-[1140px] tv:max-w-[1536px]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 tv:gap-24 items-center">
@@ -1356,7 +1350,7 @@ const RenderCircular = ({
                       style={{ 
                         left: coords.left, 
                         top: coords.top,
-                        borderColor: isActive ? primaryColor : (isPrimaryLight ? `${primaryColor}66` : borderCol),
+                        borderColor: isActive ? primaryColor : borderCol,
                         color: isActive ? tokens.stepDotText : textCol,
                         backgroundColor: isActive ? primaryColor : surfaceCol,
                         boxShadow: isActive ? `0 8px 24px ${primaryColor}30` : 'none',
