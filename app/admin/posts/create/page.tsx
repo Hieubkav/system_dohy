@@ -73,6 +73,7 @@ export default function PostCreatePage() {
   const [generatorBudgetMin, setGeneratorBudgetMin] = useState('');
   const [generatorBudgetMax, setGeneratorBudgetMax] = useState('');
   const [generatorKeyword, setGeneratorKeyword] = useState('');
+  const [generatorSecondaryKeyword, setGeneratorSecondaryKeyword] = useState('');
   const [generatorCompareProductAId, setGeneratorCompareProductAId] = useState<Id<'products'> | ''>('');
   const [generatorCompareProductBId, setGeneratorCompareProductBId] = useState<Id<'products'> | ''>('');
   const [generatorSelectedProductIds, setGeneratorSelectedProductIds] = useState<Array<Id<'products'> | ''>>([]);
@@ -143,6 +144,7 @@ export default function PostCreatePage() {
     const activeFields = new Set<GeneratorFieldKey>(templateFieldSpec.required);
     if (!activeFields.has('keyword')) {
       setGeneratorKeyword('');
+      setGeneratorSecondaryKeyword('');
     }
     if (!activeFields.has('budgetMin')) {
       setGeneratorBudgetMin('');
@@ -211,6 +213,10 @@ export default function PostCreatePage() {
   };
 
   const handleGeneratePreview = () => {
+    const generatorKeywords = [generatorKeyword, generatorSecondaryKeyword]
+      .map((keyword) => keyword.trim().replaceAll(/\s+/g, ' '))
+      .filter(Boolean)
+      .slice(0, 2);
     if (isFieldActive('keyword') && !generatorKeyword.trim()) {
       toast.error('Vui lòng nhập nhu cầu/keyword');
       return;
@@ -286,8 +292,11 @@ export default function PostCreatePage() {
       nextRequest.budgetMax = Number.isFinite(budgetMax) ? budgetMax : undefined;
     }
     if (isFieldActive('keyword')) {
-      nextRequest.keyword = generatorKeyword.trim() || undefined;
-      nextRequest.useCase = generatorKeyword.trim() || undefined;
+      const [primaryKeyword, secondaryKeyword] = generatorKeywords;
+      nextRequest.keyword = primaryKeyword;
+      nextRequest.secondaryKeyword = secondaryKeyword;
+      nextRequest.keywords = generatorKeywords.length > 0 ? generatorKeywords : undefined;
+      nextRequest.useCase = generatorKeywords.join(' và ') || undefined;
     }
     if (isFieldActive('categoryId')) {
       nextRequest.categoryId = generatorProductCategoryId || undefined;
@@ -530,13 +539,27 @@ export default function PostCreatePage() {
                     </div>
                   )}
                   {requiredFieldSet.has('keyword') && (
-                    <div className="space-y-2">
-                      <Label>Nhu cầu / Keyword</Label>
-                      <Input
-                        value={generatorKeyword}
-                        onChange={(e) =>{  setGeneratorKeyword(e.target.value); }}
-                        placeholder="VD: chăm sóc tóc, gaming, tiết kiệm"
-                      />
+                    <div className="space-y-2 md:col-span-2">
+                      <Label>Nhu cầu / Keywords</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label className="text-xs text-slate-500">Từ khóa chính</Label>
+                          <Input
+                            value={generatorKeyword}
+                            onChange={(e) =>{  setGeneratorKeyword(e.target.value); }}
+                            placeholder="VD: chăm sóc tóc, gaming"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs text-slate-500">Từ khóa phụ</Label>
+                          <Input
+                            value={generatorSecondaryKeyword}
+                            onChange={(e) =>{  setGeneratorSecondaryKeyword(e.target.value); }}
+                            placeholder="VD: tiết kiệm, cho người mới"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-500">Có thể nhập 1 hoặc 2 từ khóa. Khi nhập 2 từ khóa, bài viết sẽ dùng cả hai làm nhu cầu chính.</p>
                     </div>
                   )}
                   {requiredFieldSet.has('categoryId') && (

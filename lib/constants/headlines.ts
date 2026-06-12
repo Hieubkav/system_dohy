@@ -1,4 +1,5 @@
 export const HEADLINE_REPLACE_TOKEN = '__REPLACE__';
+export const HEADLINE_SECONDARY_REPLACE_TOKEN = '__REPLACE_2__';
 
 export const HEADLINE_TEMPLATES = [
   '10 câu hỏi sẽ khiến cho __REPLACE__ của bạn xấu hổ',
@@ -45,10 +46,32 @@ export const HEADLINE_TEMPLATES = [
   'Những câu hỏi cần tự hỏi trước khi __REPLACE__',
 ] as const;
 
+export const HEADLINE_DUAL_KEYWORD_TEMPLATES = [
+  'So sánh __REPLACE__ và __REPLACE_2__: đâu là lựa chọn đáng cân nhắc?',
+  'Làm sao kết hợp __REPLACE__ với __REPLACE_2__ để đạt hiệu quả tốt hơn?',
+  '7 cách tận dụng __REPLACE__ và __REPLACE_2__ mà nhiều người bỏ qua',
+  '__REPLACE__ hay __REPLACE_2__ quan trọng hơn? Đây là cách nhìn đúng',
+  'Checklist __REPLACE__ và __REPLACE_2__ giúp bạn quyết định nhanh hơn',
+  'Đừng chọn __REPLACE__ nếu bạn chưa hiểu rõ __REPLACE_2__',
+  'Cách biến __REPLACE__ và __REPLACE_2__ thành lợi thế thực sự',
+  'Những sai lầm thường gặp khi kết hợp __REPLACE__ với __REPLACE_2__',
+  'Hướng dẫn __REPLACE__ theo góc nhìn __REPLACE_2__ cho người mới',
+  'Vì sao __REPLACE__ và __REPLACE_2__ nên được xem cùng nhau?',
+  'Top mẹo giúp __REPLACE__ hiệu quả hơn nhờ __REPLACE_2__',
+  'Trước khi bắt đầu __REPLACE__, hãy kiểm tra __REPLACE_2__',
+] as const;
+
 const DEFAULT_HEADLINE_LIMIT = 8;
 const MAX_HEADLINE_LIMIT = 12;
 
 const normalizeKeyword = (keyword: string) => keyword.trim().replaceAll(/\s+/g, ' ');
+
+const normalizeKeywords = (keywords: string | string[]) => (
+  Array.isArray(keywords) ? keywords : [keywords]
+)
+  .map(normalizeKeyword)
+  .filter(Boolean)
+  .slice(0, 2);
 
 const shuffleTemplates = (templates: readonly string[]) => {
   const items = [...templates];
@@ -59,21 +82,33 @@ const shuffleTemplates = (templates: readonly string[]) => {
   return items;
 };
 
-export function generateHeadlines(keyword: string, limit = DEFAULT_HEADLINE_LIMIT): string[] {
-  const normalizedKeyword = normalizeKeyword(keyword);
-  if (!normalizedKeyword) {
+export function generateHeadlines(keywords: string | string[], limit = DEFAULT_HEADLINE_LIMIT): string[] {
+  const normalizedKeywords = normalizeKeywords(keywords);
+  const [primaryKeyword, secondaryKeyword] = normalizedKeywords;
+  if (!primaryKeyword) {
     return [];
   }
+  const topicPhrase = secondaryKeyword ? `${primaryKeyword} và ${secondaryKeyword}` : primaryKeyword;
+  const templates = secondaryKeyword
+    ? [...HEADLINE_DUAL_KEYWORD_TEMPLATES, ...HEADLINE_TEMPLATES]
+    : [...HEADLINE_TEMPLATES];
 
   const safeLimit = Math.min(
     Math.max(1, Math.floor(Number.isFinite(limit) ? limit : DEFAULT_HEADLINE_LIMIT)),
     MAX_HEADLINE_LIMIT,
-    HEADLINE_TEMPLATES.length,
+    templates.length,
   );
   const seen = new Set<string>();
 
-  return shuffleTemplates(HEADLINE_TEMPLATES)
-    .map((template) => template.replaceAll(HEADLINE_REPLACE_TOKEN, normalizedKeyword))
+  return shuffleTemplates(templates)
+    .map((template) => {
+      const primaryReplacement = template.includes(HEADLINE_SECONDARY_REPLACE_TOKEN)
+        ? primaryKeyword
+        : topicPhrase;
+      return template
+        .replaceAll(HEADLINE_REPLACE_TOKEN, primaryReplacement)
+        .replaceAll(HEADLINE_SECONDARY_REPLACE_TOKEN, secondaryKeyword ?? topicPhrase);
+    })
     .filter((headline) => {
       if (seen.has(headline)) {
         return false;

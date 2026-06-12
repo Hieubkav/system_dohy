@@ -31,7 +31,8 @@ export function HeadlineGeneratorWidget({
   onSelect,
 }: HeadlineGeneratorWidgetProps) {
   const [open, setOpen] = useState(false);
-  const [keyword, setKeyword] = useState('');
+  const [primaryKeyword, setPrimaryKeyword] = useState('');
+  const [secondaryKeyword, setSecondaryKeyword] = useState('');
   const [headlines, setHeadlines] = useState<string[]>([]);
   const [copiedHeadline, setCopiedHeadline] = useState<string | null>(null);
 
@@ -47,19 +48,25 @@ export function HeadlineGeneratorWidget({
   }, [open]);
 
   const openDialog = () => {
-    setKeyword(currentTitle.trim());
+    setPrimaryKeyword(currentTitle.trim());
+    setSecondaryKeyword('');
     setOpen(true);
   };
 
   const handleGenerate = () => {
-    const nextKeyword = keyword.trim() || currentTitle.trim();
-    if (!nextKeyword) {
-      toast.error('Vui lòng nhập từ khóa để tạo tiêu đề');
+    const nextPrimaryKeyword = primaryKeyword.trim() || currentTitle.trim();
+    const nextSecondaryKeyword = secondaryKeyword.trim();
+    if (!nextPrimaryKeyword) {
+      toast.error('Vui lòng nhập từ khóa chính để tạo tiêu đề');
       return;
     }
 
-    setKeyword(nextKeyword);
-    setHeadlines(generateHeadlines(nextKeyword, HEADLINE_LIMIT));
+    setPrimaryKeyword(nextPrimaryKeyword);
+    setSecondaryKeyword(nextSecondaryKeyword);
+    setHeadlines(generateHeadlines(
+      nextSecondaryKeyword ? [nextPrimaryKeyword, nextSecondaryKeyword] : nextPrimaryKeyword,
+      HEADLINE_LIMIT,
+    ));
   };
 
   const applyHeadline = (headline: string) => {
@@ -104,26 +111,45 @@ export function HeadlineGeneratorWidget({
           <DialogHeader>
             <DialogTitle>Bộ tạo tiêu đề thu hút</DialogTitle>
             <DialogDescription>
-              Nhập từ khóa chính để tạo nhanh các tiêu đề tiếng Việt có khả năng tăng CTR.
+              Nhập tối đa 2 từ khóa để tạo nhanh các tiêu đề tiếng Việt có khả năng tăng CTR.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="headline-keyword">Từ khóa / chủ đề chính</Label>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input
-                  id="headline-keyword"
-                  value={keyword}
-                  onChange={(event) => setKeyword(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') {
-                      event.preventDefault();
-                      handleGenerate();
-                    }
-                  }}
-                  placeholder="VD: chăm sóc tóc, phụ kiện tủ bếp, thiết kế website"
-                />
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="headline-primary-keyword">Từ khóa / chủ đề chính</Label>
+                  <Input
+                    id="headline-primary-keyword"
+                    value={primaryKeyword}
+                    onChange={(event) => setPrimaryKeyword(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleGenerate();
+                      }
+                    }}
+                    placeholder="VD: chăm sóc tóc, phụ kiện tủ bếp"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="headline-secondary-keyword">Từ khóa phụ</Label>
+                  <Input
+                    id="headline-secondary-keyword"
+                    value={secondaryKeyword}
+                    onChange={(event) => setSecondaryKeyword(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        handleGenerate();
+                      }
+                    }}
+                    placeholder="VD: dầu gội, tối ưu chi phí"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
                 <Button type="button" variant="accent" className="gap-2" onClick={handleGenerate}>
                   <Sparkles size={16} />
                   Tạo tiêu đề gợi ý

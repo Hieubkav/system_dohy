@@ -15,6 +15,7 @@ import {
   syncOwnerFilesAndCleanup,
 } from "./lib/fileService";
 import { generateArticlePayload } from "../lib/posts/generator/assembler";
+import { getGeneratorKeywordPhrase, getGeneratorKeywords } from "../lib/posts/generator/keywords";
 import { getMacroTemplate } from "../lib/posts/generator/macro-templates";
 import type { GeneratorProduct, GeneratorSettings, GeneratorRequest } from "../lib/posts/generator/types";
 import {
@@ -962,6 +963,8 @@ const generatorRequestValidator = v.object({
   budgetMin: v.optional(v.number()),
   budgetMax: v.optional(v.number()),
   keyword: v.optional(v.string()),
+  secondaryKeyword: v.optional(v.string()),
+  keywords: v.optional(v.array(v.string())),
   compareSlugs: v.optional(v.array(v.string())),
   selectedProductSlugs: v.optional(v.array(v.string())),
   categoryId: v.optional(v.string()),
@@ -1159,15 +1162,26 @@ const fetchProductsForRequest = async (
   }
 
   if (template.productStrategy === "use_case" || template.productStrategy === "value_popular") {
-    const keyword = request.useCase ?? request.keyword;
-    if (template.productStrategy === "use_case" && !keyword?.trim()) {
+    const keywordPhrase = getGeneratorKeywordPhrase(request);
+    const keywords = getGeneratorKeywords(request);
+    const searchTerms = keywords.length > 0 ? keywords : keywordPhrase ? [keywordPhrase] : [];
+    if (template.productStrategy === "use_case" && searchTerms.length === 0) {
       throw new Error("Cần nhập nhu cầu/keyword");
     }
-    if (keyword?.trim()) {
-      return ctx.db
-        .query("products")
-        .withSearchIndex("search_name", (q) => q.search("name", keyword.toLowerCase()).eq("status", "Active"))
-        .take(limit);
+    if (searchTerms.length > 0) {
+      const batches = await Promise.all(searchTerms.map((term) =>
+        ctx.db
+          .query("products")
+          .withSearchIndex("search_name", (q) => q.search("name", term.toLowerCase()).eq("status", "Active"))
+          .take(limit)
+      ));
+      const uniqueProducts = new Map<Doc<"products">["_id"], Doc<"products">>();
+      batches.flat().forEach((product) => {
+        if (!uniqueProducts.has(product._id)) {
+          uniqueProducts.set(product._id, product);
+        }
+      });
+      return Array.from(uniqueProducts.values()).slice(0, limit);
     }
   }
 
