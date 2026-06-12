@@ -1274,7 +1274,7 @@ const RenderCircular = ({
       className={cn(getSectionPadding(context, previewDevice, spacing), "w-full py-16 px-4 md:px-8 transition-colors duration-300")}
       style={{ backgroundColor: bgCol }}
     >
-      <div className="mx-auto max-w-[1140px] tv:max-w-[1600px]">
+      <div className="mx-auto max-w-[1140px] tv:max-w-[1536px]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 tv:gap-24 items-center">
           
           <div className="text-center lg:text-left space-y-6">

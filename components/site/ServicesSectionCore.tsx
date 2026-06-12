@@ -280,7 +280,7 @@ export const ServicesSectionCore = ({
 
     return (
       <section className="px-4">
-        <div className="mx-auto max-w-7xl tv:max-w-[1600px] space-y-2">
+        <div className="mx-auto max-w-7xl tv:max-w-[1536px] space-y-2">
           {renderSectionHeader()}
           <div className={cn('overflow-hidden', compactRadiusClassName)} style={{ backgroundColor: background }}>
             <div className={`${stripGridClassName} divide-y md:divide-y-0`} style={{ borderColor: divider }}>
@@ -345,7 +345,7 @@ export const ServicesSectionCore = ({
     return (
       <section>
         <div style={{ backgroundColor: stripBg }}>
-          <div className="mx-auto max-w-7xl tv:max-w-[1600px] px-4">
+          <div className="mx-auto max-w-7xl tv:max-w-[1536px] px-4">
             <div className={`${stripGridClassName} gap-y-5`}>
               {displayFeaturedItems.map((item, idx) => {
                 if (stackedLayout) {
@@ -401,7 +401,7 @@ export const ServicesSectionCore = ({
   if (style === 'bigNumber') {
     return (
       <section className="px-4">
-        <div className="mx-auto max-w-7xl tv:max-w-[1600px] space-y-2">
+        <div className="mx-auto max-w-7xl tv:max-w-[1536px] space-y-2">
           {renderSectionHeader()}
           <div className={cn('overflow-hidden border', cornerRadius === 'lg' ? 'rounded-[32px]' : radiusClassName)} style={{ borderColor: colors.cardBorder, backgroundColor: colors.cardBackground }}>
             <div className={`${stripGridClassName} divide-y md:divide-y-0`} style={{ borderColor: colors.neutralBorder }}>
@@ -458,7 +458,7 @@ export const ServicesSectionCore = ({
   if (style === 'cards') {
     return (
       <section className="px-4">
-        <div className="mx-auto max-w-7xl tv:max-w-[1600px] space-y-2">
+        <div className="mx-auto max-w-7xl tv:max-w-[1536px] space-y-2">
           {renderSectionHeader()}
           <div className={cardsGridClassName}>
             {displayFeaturedItems.map((item, idx) => (
@@ -513,7 +513,7 @@ export const ServicesSectionCore = ({
 
     return (
       <section className="px-4">
-        <div className="mx-auto max-w-7xl tv:max-w-[1600px] space-y-2">
+        <div className="mx-auto max-w-7xl tv:max-w-[1536px] space-y-2">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               {renderSectionHeader()}
@@ -768,7 +768,7 @@ export const ServicesSectionCore = ({
 
   return (
     <section className="px-4">
-      <div className="mx-auto max-w-7xl tv:max-w-[1600px] space-y-2">
+      <div className="mx-auto max-w-7xl tv:max-w-[1536px] space-y-2">
         {renderSectionHeader()}
         <div className={cardsGridClassName}>
           {displayFeaturedItems.map((item, idx) => {

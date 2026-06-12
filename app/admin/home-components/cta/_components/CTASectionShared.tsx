@@ -55,7 +55,7 @@ const getRadiusClassNames = (value: CTAConfig['cornerRadius']) => {
 };
 
 const getContainerWidthClassName = (value: CTAConfig['containerWidth']) => (
-  normalizeCTAContainerWidth(value) === 'full' ? 'w-full' : 'mx-auto max-w-7xl tv:max-w-[1600px]'
+  normalizeCTAContainerWidth(value) === 'full' ? 'w-full' : 'mx-auto max-w-7xl tv:max-w-[1536px]'
 );
 
 const getSpacingClassName = (style: CTAStyle, spacing?: SectionSpacing) => {
@@ -161,7 +161,7 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
       <section className={cn('px-4', spacingClassName, sectionClass)}>
         <div
           className={cn(
-            'mx-auto max-w-7xl tv:max-w-[1600px] border transition-all duration-200',
+            'mx-auto max-w-7xl tv:max-w-[1536px] border transition-all duration-200',
             radiusClassNames.card,
             'flex flex-col items-center justify-between gap-5 px-6 py-8 sm:px-8 sm:py-10 md:flex-row md:gap-8 @max-md/preview:flex-col @max-md/preview:gap-5 @max-md/preview:px-6 @max-md/preview:py-8',
           )}
@@ -298,7 +298,7 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
       <section className={cn('px-4', spacingClassName, sectionClass)}>
         <div
           className={cn(
-            'mx-auto max-w-7xl tv:max-w-[1600px] border transition-all duration-200',
+            'mx-auto max-w-7xl tv:max-w-[1536px] border transition-all duration-200',
             radiusClassNames.card,
             'px-6 py-8 sm:px-8 sm:py-10 text-center',
           )}
@@ -359,7 +359,7 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
     <section className={cn('px-4', spacingClassName, sectionClass)}>
       <div
         className={cn(
-          'mx-auto max-w-7xl tv:max-w-[1600px] border transition-all duration-200',
+          'mx-auto max-w-7xl tv:max-w-[1536px] border transition-all duration-200',
           radiusClassNames.card,
           'flex flex-col items-center justify-between gap-4 px-6 py-8 sm:gap-5 sm:px-8 sm:py-10 md:flex-row md:gap-8 @max-md/preview:flex-col @max-md/preview:gap-4 @max-md/preview:px-6 @max-md/preview:py-8',
         )}

@@ -117,7 +117,7 @@ const getSectionInlinePadding = (context: ContactSectionContext, currentDevice: 
 };
 
 const getRootContainerClass = (context: ContactSectionContext, currentDevice: PreviewDevice) => {
-  if (context === 'site') {return 'max-w-6xl tv:max-w-[1600px] mx-auto';}
+  if (context === 'site') {return 'max-w-6xl tv:max-w-[1536px] mx-auto';}
   if (currentDevice === 'mobile') {return 'w-full';}
   if (currentDevice === 'tablet') {return 'max-w-3xl mx-auto';}
   return 'max-w-5xl mx-auto';

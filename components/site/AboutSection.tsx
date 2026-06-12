@@ -48,7 +48,7 @@ export function AboutSection({ config, brandColor, secondary, mode, title, isDar
 
   return (
     <section className={cn(getSectionSpacingClassName(spacing), "px-3", isDark && "dark")}>
-      <div className="mx-auto max-w-7xl tv:max-w-[1600px]">
+      <div className="mx-auto max-w-7xl tv:max-w-[1536px]">
         <SectionHeader
           title={title}
           subtitle={headerConfig.subtitle}
