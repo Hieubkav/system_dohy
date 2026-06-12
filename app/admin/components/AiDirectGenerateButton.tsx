@@ -64,7 +64,6 @@ export function AiDirectGenerateButton({
 
     const appendOutput = (text: string) => {
       output += text;
-      onGenerated(output);
     };
 
     try {
