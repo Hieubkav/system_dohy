@@ -164,7 +164,14 @@ export const getServicesListColors = (
     badgeBg: secondarySoft,
     badgeText: ensureAPCATextColor(getAPCATextColor(secondarySoft, 12, 600), secondarySoft, 12, 600),
     badgeBorder: secondarySoft,
-    priceColor: resolvedSecondary,
+    priceColor: ensureAPCATextColor(
+      isDark && getAPCALc(resolvedSecondary, neutralSurface) < 45
+        ? (getAPCALc(primary, neutralSurface) >= 45 ? primary : '#ffffff')
+        : resolvedSecondary,
+      neutralSurface,
+      14,
+      700
+    ),
     filterRing: primary,
     filterIcon: primary,
     filterActiveBg: primarySoft,

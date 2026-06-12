@@ -226,7 +226,14 @@ export const getProductsListColors = (
     categoryBadgeBg: secondaryTint,
     categoryBadgeText: ensureAPCATextColor(secondaryResolved, secondaryTint, 12, 600),
     categoryBadgeBorder: secondaryTint,
-    priceColor: ensureAPCATextColor(secondaryResolved, neutralSurface, 16, 700),
+    priceColor: ensureAPCATextColor(
+      isDark && getAPCALc(secondaryResolved, neutralSurface) < 45
+        ? (getAPCALc(primary, neutralSurface) >= 45 ? primary : '#ffffff')
+        : secondaryResolved,
+      neutralSurface,
+      16,
+      700
+    ),
     priceOriginalText: ensureAPCATextColor(neutralSoft, neutralSurface, 12, 500),
     ratingStarActive: secondaryResolved,
     ratingStarInactive: neutralBorder,

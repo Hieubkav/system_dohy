@@ -33,6 +33,20 @@ const resolveCourseContent = (course: CourseContentSource) => {
   return course.content ? withFormatMarker('richtext', course.content) : '';
 };
 
+const isColorDark = (hex?: string) => {
+  if (!hex) return true;
+  const color = hex.startsWith('#') ? hex : `#${hex}`;
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  const fullHex = color.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+  if (!result) return false;
+  const r = parseInt(result[1], 16);
+  const g = parseInt(result[2], 16);
+  const b = parseInt(result[3], 16);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq < 120;
+};
+
 type CourseDetailPageProps = {
   params: Promise<{ slug: string }>;
 };
@@ -68,8 +82,11 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
     if (colorMode === 'single' || !secondaryColor) {
       return brandColor + 'dd';
     }
+    if (isDark && isColorDark(secondaryColor)) {
+      return isColorDark(brandColor) ? '#ffffff' : brandColor;
+    }
     return secondaryColor;
-  }, [brandColor, secondaryColor, colorMode]);
+  }, [brandColor, secondaryColor, colorMode, isDark]);
 
   const cornerRadius = config.cornerRadius ?? 'lg';
   const radiusClass = getRadiusClass(cornerRadius);

@@ -23,6 +23,20 @@ const formatPrice = (pricingType: string, price?: number) => {
   return new Intl.NumberFormat('vi-VN', { currency: 'VND', style: 'currency' }).format(price);
 };
 
+const isColorDark = (hex?: string) => {
+  if (!hex) return true;
+  const color = hex.startsWith('#') ? hex : `#${hex}`;
+  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+  const fullHex = color.replace(shorthandRegex, (_, r, g, b) => r + r + g + g + b + b);
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+  if (!result) return false;
+  const r = parseInt(result[1], 16);
+  const g = parseInt(result[2], 16);
+  const b = parseInt(result[3], 16);
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq < 120;
+};
+
 const getRadiusClass = (radius?: 'none' | 'sm' | 'lg', type: 'card' | 'input' | 'panel' = 'card') => {
   if (radius === 'none') return 'rounded-none';
   if (radius === 'sm') {
@@ -514,6 +528,11 @@ function CoursesContent() {
     const hasLearningAccess = Boolean(progress?.hasAccess);
     const progressPercent = progress?.progressPercent ?? 0;
     const cardRadiusClass = getRadiusClass(config.cornerRadius);
+    const priceColor = isDark
+      ? (isColorDark(brandColors.secondary)
+          ? (isColorDark(brandColors.primary) ? '#ffffff' : brandColors.primary)
+          : brandColors.secondary)
+      : (brandColors.secondary || brandColors.primary);
 
     return (
       <StorefrontCard
@@ -545,7 +564,7 @@ function CoursesContent() {
         }
         rightDetails={
           showPrice ? (
-            <div className="text-sm font-bold w-full" style={{ color: brandColors.secondary || brandColors.primary }}>
+            <div className="text-sm font-bold w-full" style={{ color: priceColor }}>
               {formatPrice(course.pricingType, course.priceAmount)}
             </div>
           ) : undefined
@@ -571,6 +590,11 @@ function CoursesContent() {
     const hasLearningAccess = Boolean(progress?.hasAccess);
     const progressPercent = progress?.progressPercent ?? 0;
     const cardRadiusClass = getRadiusClass(config.cornerRadius);
+    const priceColor = isDark
+      ? (isColorDark(brandColors.secondary)
+          ? (isColorDark(brandColors.primary) ? '#ffffff' : brandColors.primary)
+          : brandColors.secondary)
+      : (brandColors.secondary || brandColors.primary);
 
     return (
       <StorefrontCard
@@ -601,7 +625,7 @@ function CoursesContent() {
             {hasLearningAccess ? (
               <span className="text-xs font-semibold" style={{ color: brandColors.primary }}>Tiến độ: {progressPercent}%</span>
             ) : showPrice ? (
-              <span className="text-sm font-bold" style={{ color: brandColors.secondary || brandColors.primary }}>{formatPrice(course.pricingType, course.priceAmount)}</span>
+              <span className="text-sm font-bold" style={{ color: priceColor }}>{formatPrice(course.pricingType, course.priceAmount)}</span>
             ) : null}
           </div>
         }
