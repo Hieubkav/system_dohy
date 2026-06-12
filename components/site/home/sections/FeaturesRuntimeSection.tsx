@@ -20,8 +20,8 @@ export function FeaturesRuntimeSection({ config, brandColor, secondary, mode, ti
 
   return (
     <section className={isFullwidthCarousel ? 'py-0 w-full overflow-hidden' : 'py-8 px-3'}>
-      <div className={isFullwidthCarousel ? 'w-full' : 'mx-auto max-w-7xl'}>
-        <div className={isFullwidthCarousel ? 'mx-auto max-w-7xl px-3 pt-8' : undefined}>
+      <div className={isFullwidthCarousel ? 'w-full' : 'mx-auto max-w-7xl tv:max-w-[1600px]'}>
+        <div className={isFullwidthCarousel ? 'mx-auto max-w-7xl tv:max-w-[1600px] px-3 pt-8' : undefined}>
         <SectionHeader
           title={title}
           subtitle={headerConfig.subtitle}

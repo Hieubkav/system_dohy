@@ -36,7 +36,7 @@ export function BenefitsRuntimeSection({ config, brandColor, secondary, mode, ti
 
   return (
     <section className={`${sectionSpacingClassName} px-3`}>
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
         <SectionHeader
           title={title}
           subtitle={headerConfig.subtitle}

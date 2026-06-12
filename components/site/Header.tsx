@@ -819,7 +819,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
   if (menuData === undefined) {
     return (
       <header style={{ backgroundColor: tokens.surface }}>
-        <div className="max-w-7xl mx-auto px-4" style={{ paddingTop: headerSpacingY, paddingBottom: headerSpacingY }}>
+        <div className="max-w-7xl tv:max-w-[1600px] mx-auto px-4" style={{ paddingTop: headerSpacingY, paddingBottom: headerSpacingY }}>
           <div className="h-8 w-32 animate-pulse rounded" style={{ backgroundColor: tokens.placeholderBg }}></div>
         </div>
       </header>
@@ -1139,7 +1139,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
       <header className={cn(classicPositionClass)} style={{ ...classicBackgroundStyle, ...classicSeparatorStyle }}>
         {topbarConfig.show !== false && (
           <div className="px-4 py-2 text-xs" style={{ backgroundColor: layerColors.topnav.bg, color: layerColors.topnav.text }}>
-            <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 min-w-0">
+            <div className="max-w-7xl tv:max-w-[1600px] mx-auto flex items-center justify-between gap-4 min-w-0">
               <div className="flex items-center gap-4">
                 {showTopbarHotline && (
                   <a href={`tel:${topbarConfig.hotline}`} className="flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
@@ -1183,7 +1183,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
         <div
           style={{ backgroundColor: layerColors.navbar.bg, paddingTop: headerSpacingY, paddingBottom: headerSpacingY }}
         >
-          <div className="max-w-7xl mx-auto px-4 lg:px-6">
+          <div className="max-w-7xl tv:max-w-[1600px] mx-auto px-4 lg:px-6">
             <div ref={headerRowRef} className="flex items-center gap-4">
             {/* Logo */}
             <Link ref={brandBlockRef} href="/" className="flex items-center gap-3 flex-shrink-0">
@@ -1650,7 +1650,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
         {/* Topbar */}
         {topbarConfig.show !== false && (
           <div className="px-4 py-2 text-xs" style={{ backgroundColor: layerColors.topnav.bg, color: layerColors.topnav.text }}>
-            <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 min-w-0">
+            <div className="max-w-7xl tv:max-w-[1600px] mx-auto flex items-center justify-between gap-4 min-w-0">
               <div className="flex items-center gap-4">
                 {showTopbarHotline && (
                   <a href={`tel:${topbarConfig.hotline}`} className="flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
@@ -1694,7 +1694,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
           className="px-4 border-b"
           style={{ borderColor: tokens.border, backgroundColor: layerColors.navbar.bg, paddingTop: headerSpacingY, paddingBottom: headerSpacingY }}
         >
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="max-w-7xl tv:max-w-[1600px] mx-auto flex items-center justify-between gap-4">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 flex-shrink-0">
               <div style={logoWrapStyle}>
@@ -1815,7 +1815,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
 
         {/* Navigation Bar */}
         <div className="hidden lg:block px-4 py-2 border-b" style={{ backgroundColor: layerColors.menu.bg, borderColor: layerColors.menu.border }}>
-          <nav className="max-w-7xl mx-auto flex items-center gap-1">
+          <nav className="max-w-7xl tv:max-w-[1600px] mx-auto flex items-center gap-1">
             {menuTree.map((item) => (
               <div
                 key={item._id}
@@ -2507,7 +2507,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
     <header className={cn(classicPositionClass)} style={{ backgroundColor: layerColors.navbar.bg, ...classicSeparatorStyle }}>
         {topbarConfig.show !== false && (
           <div className="px-4 py-2 text-xs" style={{ backgroundColor: layerColors.topnav.bg, color: layerColors.topnav.text }}>
-            <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 min-w-0">
+            <div className="max-w-7xl tv:max-w-[1600px] mx-auto flex items-center justify-between gap-4 min-w-0">
               <div className="flex items-center gap-4">
                 {showTopbarHotline && (
                   <a href={`tel:${topbarConfig.hotline}`} className="flex items-center gap-1" style={{ color: layerColors.topnav.text }}>
@@ -2549,7 +2549,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
           <div className="h-0.5" style={{ backgroundColor: tokens.accentLine }} />
         )}
         <div
-          className="max-w-7xl mx-auto px-4 lg:px-6 border-b"
+          className="max-w-7xl tv:max-w-[1600px] mx-auto px-4 lg:px-6 border-b"
           style={{ borderColor: tokens.border, paddingTop: headerSpacingY, paddingBottom: headerSpacingY }}
         >
           <div className="flex items-center justify-between gap-6">

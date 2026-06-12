@@ -1274,19 +1274,19 @@ const RenderCircular = ({
       className={cn(getSectionPadding(context, previewDevice, spacing), "w-full py-16 px-4 md:px-8 transition-colors duration-300")}
       style={{ backgroundColor: bgCol }}
     >
-      <div className="mx-auto max-w-[1140px]">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className="mx-auto max-w-[1140px] tv:max-w-[1600px]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 tv:gap-24 items-center">
           
           <div className="text-center lg:text-left space-y-6">
             <h2 
-              className="text-4xl sm:text-5xl lg:text-[61px] font-light leading-tight tracking-wide uppercase font-sans"
+              className="text-4xl sm:text-5xl lg:text-[61px] tv:text-8xl font-light leading-tight tracking-wide uppercase font-sans"
               style={{ color: textCol }}
             >
               {sectionTitle || "CÁCH CHÚNG TÔI LÀM VIỆC"}
             </h2>
             {subtitleText && (
               <p 
-                className="text-lg sm:text-xl font-light leading-relaxed max-w-lg mx-auto lg:mx-0"
+                className="text-lg sm:text-xl tv:text-2xl font-light leading-relaxed max-w-lg tv:max-w-2xl mx-auto lg:mx-0"
                 style={{ color: mutedTextCol }}
               >
                 {subtitleText}
@@ -1296,7 +1296,7 @@ const RenderCircular = ({
               <a
                 href={circularCtaLink || "#contact"}
                 target="_self"
-                className="inline-flex items-center justify-center px-8 py-4 border font-medium tracking-wide text-sm rounded-lg uppercase transition-all duration-300 hover:bg-opacity-10"
+                className="inline-flex items-center justify-center px-8 tv:px-12 py-4 tv:py-6 border font-medium tracking-wide text-sm tv:text-lg rounded-lg uppercase transition-all duration-300 hover:bg-opacity-10"
                 style={{ 
                   color: primaryColor, 
                   borderColor: primaryColor,
@@ -1318,8 +1318,8 @@ const RenderCircular = ({
 
           <div className="flex justify-center items-center py-8 lg:py-0 overflow-visible">
             {/* Wrapper có kích thước vừa vặn chứa toàn bộ vòng tròn 500px + 2 nút lồi 55px (tổng cộng 610px) */}
-            <div className="w-[315px] h-[315px] sm:w-[425px] sm:h-[425px] md:w-[480px] md:h-[480px] lg:w-[490px] lg:h-[490px] xl:w-[610px] xl:h-[610px] flex items-center justify-center overflow-visible relative">
-              <div className="w-[500px] h-[500px] shrink-0 scale-[0.52] sm:scale-[0.70] md:scale-[0.79] lg:scale-[0.80] xl:scale-100 origin-center absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-transform">
+            <div className="w-[315px] h-[315px] sm:w-[425px] sm:h-[425px] md:w-[480px] md:h-[480px] lg:w-[490px] lg:h-[490px] xl:w-[610px] xl:h-[610px] tv:w-[750px] tv:h-[750px] flex items-center justify-center overflow-visible relative">
+              <div className="w-[500px] h-[500px] shrink-0 scale-[0.52] sm:scale-[0.70] md:scale-[0.79] lg:scale-[0.80] xl:scale-100 tv:scale-[1.25] origin-center absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-transform">
                 
                 <div 
                   className="absolute inset-0 rounded-full border flex flex-col items-center justify-center p-12 text-center transition-all duration-500"
@@ -1336,10 +1336,10 @@ const RenderCircular = ({
                       <path d="m9 12 2 2 4-4"></path>
                     </svg>
                   </div>
-                  <h3 className="text-xl sm:text-2xl font-medium tracking-wide uppercase mb-3" style={{ color: primaryColor }}>
+                  <h3 className="text-xl sm:text-2xl tv:text-4xl font-medium tracking-wide uppercase mb-3" style={{ color: primaryColor }}>
                     {activeStep.title || `BƯỚC ${activeIndex + 1}`}
                   </h3>
-                  <p className="text-sm font-light leading-relaxed max-w-xs" style={{ color: textCol }}>
+                  <p className="text-sm tv:text-lg font-light leading-relaxed max-w-xs tv:max-w-md" style={{ color: textCol }}>
                     {activeStep.description || "Mô tả bước này..."}
                   </p>
                 </div>

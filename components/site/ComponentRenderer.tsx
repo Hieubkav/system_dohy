@@ -655,7 +655,7 @@ function HeroSection({
   if (style === 'builderCoffee') {
     return (
       <section className="relative w-full overflow-hidden bg-white pb-[50px]">
-        <div className="mx-auto w-full max-w-7xl px-3">
+        <div className="mx-auto w-full max-w-7xl tv:max-w-[1600px] px-3">
           <div className="mt-5 flex flex-wrap -mx-3">
             <div className="grid w-full max-w-full grid-cols-3 gap-[10px] px-3">
               <div className="col-span-3 overflow-hidden">
@@ -718,7 +718,7 @@ function HeroSection({
     const bentoPlaceholders = ['#f1f5f9', '#e2e8f0', '#f1f5f9', '#e2e8f0'];
     return (
       <section className="relative w-full bg-slate-900 overflow-hidden p-2 md:p-4">
-        <div className="mx-auto w-full max-w-7xl">
+        <div className="mx-auto w-full max-w-7xl tv:max-w-[1600px]">
           {/* Mobile: slider-like carousel */}
           <div className="relative aspect-[16/9] max-h-[400px] overflow-hidden md:hidden" ref={heroEmblaRef}>
             <div className="flex h-full">
@@ -801,7 +801,7 @@ function HeroSection({
     const triplePlaceholders = ['#f1f5f9', '#e2e8f0', '#f1f5f9'];
     return (
       <section className="relative w-full bg-slate-900 overflow-hidden p-2 md:p-4">
-        <div className="mx-auto w-full max-w-7xl">
+        <div className="mx-auto w-full max-w-7xl tv:max-w-[1600px]">
           <div className="relative aspect-[16/9] max-h-[400px] overflow-hidden md:hidden" ref={heroEmblaRef}>
             <div className="flex h-full">
               {tripleSlides.map((slide, idx) => (
@@ -857,7 +857,7 @@ function HeroSection({
     const triplePlaceholders = ['#f1f5f9', '#e2e8f0', '#f1f5f9'];
     return (
       <section className="relative w-full bg-slate-900 overflow-hidden p-2 md:p-4">
-        <div className="mx-auto w-full max-w-7xl">
+        <div className="mx-auto w-full max-w-7xl tv:max-w-[1600px]">
           <div className="relative aspect-[16/9] max-h-[400px] overflow-hidden md:hidden" ref={heroEmblaRef}>
             <div className="flex h-full">
               {tripleSlides.map((slide, idx) => (
@@ -1058,7 +1058,7 @@ function HeroSection({
 
     return (
       <section className="relative w-full overflow-hidden" style={{ backgroundColor: conquestColors.sectionBg, color: conquestColors.sectionText }}>
-        <div className="relative mx-auto flex min-h-[520px] w-full max-w-7xl flex-col overflow-hidden px-4 pt-8 md:min-h-[560px] md:flex-row md:items-stretch md:justify-between md:px-8 md:pt-0">
+        <div className="relative mx-auto flex min-h-[520px] w-full max-w-7xl tv:max-w-[1600px] flex-col overflow-hidden px-4 pt-8 md:min-h-[560px] md:flex-row md:items-stretch md:justify-between md:px-8 md:pt-0">
           <div className="relative z-20 flex max-w-full flex-col justify-center gap-4 pb-4 text-center md:min-w-[420px] md:max-w-[540px] md:gap-6 md:py-20 md:text-left">
             {content.badge && (
               <span className="inline-flex w-fit items-center gap-2 self-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide md:self-start" style={{ backgroundColor: conquestColors.badgeBg, color: conquestColors.badgeText }}>
@@ -1725,7 +1725,7 @@ function ServicesSection({
 
   return (
     <section className={cn(getSectionSpacingClassName(spacing), 'px-3')}>
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-7xl tv:max-w-[1600px]">
         <SectionHeader
           title={title}
           subtitle={headerConfig.subtitle}
@@ -1851,7 +1851,7 @@ function BenefitsSection({
 
   return (
     <section className="py-8 px-3">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
         <SectionHeader
           title={title}
           subtitle={headerConfig.subtitle}
@@ -1951,7 +1951,7 @@ function FAQSection({
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <section className="py-8 px-3">
-        <div className="mx-auto max-w-7xl space-y-6">
+        <div className="mx-auto max-w-7xl tv:max-w-[1600px] space-y-6">
           <SectionHeader
             title={title}
             subtitle={headerConfig.subtitle}
@@ -2068,7 +2068,7 @@ function TestimonialsSection({ config, brandColor, secondary, mode, title, isDar
 
   return (
     <section className={cn(isFullBleedTestimonials ? 'py-0' : 'px-3', !isFullBleedTestimonials && sectionSpacingClassName)}>
-      <div className={isFullBleedTestimonials ? 'w-full' : 'mx-auto max-w-7xl space-y-6'}>
+      <div className={isFullBleedTestimonials ? 'w-full' : 'mx-auto max-w-7xl tv:max-w-[1600px] space-y-6'}>
         {!isFullBleedTestimonials && (
           <SectionHeader
             title={title}
@@ -2561,7 +2561,7 @@ function TrustBadgesSection({
   if (style === 'grid') {
     return (
       <section className={cn(sectionSpacingClassName, 'px-3 bg-white')}>
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-7xl tv:max-w-[1600px]">
           {sharedHeader}
           <div className={cn("grid gap-3 md:gap-4", responsiveGridClassName)}>
             {visibleItems.map((item, idx) => (
@@ -2598,7 +2598,7 @@ function TrustBadgesSection({
   if (style === 'cards') {
     return (
       <section className={cn(sectionSpacingClassName, 'px-3 bg-slate-50')}>
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-7xl tv:max-w-[1600px]">
           {sharedHeader}
           <div className="relative">
             {visibleItems.length > 1 && (
@@ -2668,7 +2668,7 @@ function TrustBadgesSection({
     const compactStack = desktopColumns === 4;
     return (
       <section className={cn('overflow-hidden bg-slate-50 px-3', sectionSpacingClassName)}>
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-7xl tv:max-w-[1600px]">
           {sharedHeader}
           <div className={cn('grid items-stretch', compactStack ? 'gap-3 md:grid-cols-[0.46fr_1.9fr]' : 'gap-4 md:grid-cols-[0.82fr_1.35fr]')}>
             <div className={cn('flex h-full flex-col border bg-white shadow-sm', compactStack ? 'p-3' : 'p-4 md:p-5', radiusClassName)} style={{ borderColor: renderConfig.showBorder ? colors.neutralBorder : 'transparent', boxShadow: '0 18px 45px rgba(15, 23, 42, 0.06)' }}>
@@ -2725,7 +2725,7 @@ function TrustBadgesSection({
   if (style === 'wall') {
     return (
       <section className={cn(sectionSpacingClassName, 'px-3')} style={{ backgroundColor: colors.neutralBackground }}>
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-7xl tv:max-w-[1600px]">
           {sharedHeader}
           <div className={cn("grid gap-4 md:gap-5", responsiveGridClassName)}>
             {visibleItems.map((item, idx) => (
@@ -2766,7 +2766,7 @@ function TrustBadgesSection({
 
     return (
       <section className={cn(sectionSpacingClassName, 'px-3 bg-white')}>
-        <div className="mx-auto max-w-7xl">
+        <div className="mx-auto max-w-7xl tv:max-w-[1600px]">
           <div className="flex items-center justify-between">
             {sharedHeader}
             {showArrowsDesktop && (
@@ -2833,7 +2833,7 @@ function TrustBadgesSection({
     <section className={cn('relative overflow-hidden bg-slate-50 px-3', sectionSpacingClassName)}>
       <div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-white/70 blur-2xl" />
       <div className="pointer-events-none absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-white/70 blur-2xl" />
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-7xl tv:max-w-[1600px]">
         {sharedHeader}
         <div className="relative grid items-center gap-6 md:grid-cols-[0.9fr_1.15fr] md:gap-10">
           <div className="relative mx-auto flex aspect-square w-full max-w-[380px] items-center justify-center">
@@ -3253,7 +3253,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type, isDa
 
     return (
       <div className="pt-4 pb-8">
-        <div className="w-full max-w-7xl mx-auto relative overflow-hidden py-4 md:py-4 rounded-2xl">
+        <div className="w-full max-w-7xl tv:max-w-[1600px] mx-auto relative overflow-hidden py-4 md:py-4 rounded-2xl">
           <div
             className="pointer-events-none absolute inset-y-0 left-0 w-16 md:w-20 z-10"
             style={{ background: `linear-gradient(to right, ${colors.neutralBackground} 0%, transparent 100%)` }}
@@ -3409,7 +3409,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type, isDa
       <section className={cn('w-full', sectionSpacingClassName)} style={{ backgroundColor: 'transparent' }}>
         <div className={cn(
           'mx-auto px-3',
-          galleryFullWidth ? 'max-w-none' : 'max-w-7xl',
+          galleryFullWidth ? 'max-w-none' : 'max-w-7xl tv:max-w-[1600px]',
         )}>
           <SectionHeader
             title={title}
@@ -3460,7 +3460,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type, isDa
     const darkHeader = forceDarkHeader || Boolean(isDark);
     return (
       <section className={cn('w-full px-3', isDark ? '' : bgClass, getPartnersSectionSpacingClassName(partnersSpacing, 'siteOuter'))} style={isDark ? { backgroundColor: colors.neutralBackground } : undefined}>
-        <div className="mx-auto w-full max-w-7xl">
+        <div className="mx-auto w-full max-w-7xl tv:max-w-[1600px]">
           {!partnersHeaderConfig.hideHeader && (
             <SectionHeader
               title={title}
@@ -3610,7 +3610,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type, isDa
     return (
       <div className="w-full" style={{ backgroundColor: isDark ? colors.neutralBackground : '#ffffff' }}>
         {!partnersHeaderConfig.hideHeader && (
-          <div className={cn('mx-auto w-full max-w-7xl px-4 sm:px-6', partnersSpacing === 'none' ? 'pt-0' : partnersSpacing === 'compact' ? 'pt-4 md:pt-6' : 'pt-8 md:pt-12')}>
+          <div className={cn('mx-auto w-full max-w-7xl tv:max-w-[1600px] px-4 sm:px-6', partnersSpacing === 'none' ? 'pt-0' : partnersSpacing === 'compact' ? 'pt-4 md:pt-6' : 'pt-8 md:pt-12')}>
             <SectionHeader
               title={title}
               subtitle={partnersHeaderConfig.subtitle}
@@ -3628,7 +3628,7 @@ function GallerySection({ config, brandColor, secondary, mode, title, type, isDa
           </div>
         )}
         <div className={cn('w-full bg-gradient-to-r from-zinc-950 via-zinc-900/90 to-zinc-950 border-t border-b border-zinc-800/80 z-20', getPartnersSectionSpacingClassName(partnersSpacing, 'glassLogoCloud', true))}>
-          <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+          <div className="mx-auto w-full max-w-7xl tv:max-w-[1600px] px-4 sm:px-6">
             <PartnersGlassLogoCloudShared
               items={normalizedItems}
               brandColor={brandColor}
@@ -4196,7 +4196,7 @@ function CategoryProductsSection({
         <div className={cn('space-y-10 md:space-y-16', sectionSpacingClassName)}>
           {resolvedSections.map((section, idx) => (
             <section key={idx} className="px-4">
-              <div className="max-w-7xl mx-auto">
+              <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl md:text-2xl font-bold" style={{ color: colors.heading }}>{section.category.name}</h2>
                   {showViewAll && (
@@ -4262,7 +4262,7 @@ function CategoryProductsSection({
 
       return (
         <section>
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
             <div className="flex items-center justify-between px-4 mb-4">
               <h2 className="text-xl md:text-2xl font-bold" style={{ color: colors.heading }}>{section.category.name}</h2>
               <div className="flex items-center gap-2">
@@ -4394,7 +4394,7 @@ function CategoryProductsSection({
         <div className={cn('space-y-10 md:space-y-16', sectionSpacingClassName)}>
           {resolvedSections.map((section, idx) => (
             <section key={idx} className="px-4">
-              <div className="max-w-7xl mx-auto">
+              <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
                 <div 
                   className={cn('overflow-hidden', cardRadiusClassName)}
                   style={{ border: `1px solid ${colors.cardBorder}` }}
@@ -4463,7 +4463,7 @@ function CategoryProductsSection({
           
           return (
             <section key={idx} className="px-4">
-              <div className="max-w-7xl mx-auto">
+              <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
                 {/* Header với accent line */}
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
@@ -4636,7 +4636,7 @@ function CategoryProductsSection({
           
           return (
             <section key={sectionIdx} className="px-4">
-              <div className="max-w-7xl mx-auto">
+              <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
                 {/* Editorial Header */}
                 <div className="flex items-end justify-between mb-6 pb-4 border-b-2" style={{ borderColor: colors.neutralBorder }}>
                   <div>
@@ -4998,7 +4998,7 @@ function CategoryProductsSection({
     <div className={cn('space-y-10 md:space-y-16', sectionSpacingClassName)}>
       {resolvedSections.map((section, idx) => (
         <section key={idx}>
-          <div className="max-w-7xl mx-auto px-4">
+          <div className="max-w-7xl tv:max-w-[1600px] mx-auto px-4">
             {/* Header */}
             <div className="flex items-end justify-between mb-8">
               <div>
@@ -5629,7 +5629,7 @@ function _CountdownSection({ config, brandColor, secondary, title }: { config: R
         role="banner"
         aria-label="Khuyến mãi có thời hạn"
       >
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
             <div className="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-center md:text-left">
               {discountText && (

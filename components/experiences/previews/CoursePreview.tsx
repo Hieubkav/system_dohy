@@ -1021,9 +1021,9 @@ export function LessonDetailPreview({
   const radiusClass = getRadiusClass(cornerRadius);
   const smallRadiusClass = getSmallRadiusClass(cornerRadius);
   const containerClass = isFocus
-    ? 'max-w-7xl gap-6 px-5 py-7'
+    ? 'max-w-7xl tv:max-w-[1600px] gap-6 px-5 py-7'
     : isCompact
-      ? 'max-w-7xl gap-5 px-5 py-6'
+      ? 'max-w-7xl tv:max-w-[1600px] gap-5 px-5 py-6'
       : 'max-w-6xl gap-5 px-4 py-6';
   const directionClass = isMobile || isCompact ? 'flex-col' : isFocus ? 'flex-row' : 'flex-row-reverse';
   const sidebarWidthClass = isCompact ? 'w-full' : isFocus ? 'w-[280px]' : 'w-[300px]';

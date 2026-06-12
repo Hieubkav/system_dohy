@@ -42,16 +42,16 @@ interface MarqueeSectionSharedProps {
 
 // ── Scale system ─────────────────────────────────────────────────
 const scaleConfig: Record<MarqueeScale, { fontSize: string; py: string; gap: string; strokeWidth: string }> = {
-  1: { fontSize: 'text-sm md:text-base', py: 'py-2.5 md:py-3', gap: 'gap-5 md:gap-8', strokeWidth: '1px' },
-  2: { fontSize: 'text-base md:text-xl', py: 'py-4 md:py-5', gap: 'gap-6 md:gap-10', strokeWidth: '1.5px' },
-  3: { fontSize: 'text-xl md:text-2xl', py: 'py-5 md:py-7', gap: 'gap-8 md:gap-12', strokeWidth: '2px' },
-  4: { fontSize: 'text-2xl md:text-3xl', py: 'py-6 md:py-9', gap: 'gap-10 md:gap-14', strokeWidth: '2.5px' },
-  5: { fontSize: 'text-3xl md:text-4xl', py: 'py-8 md:py-12', gap: 'gap-12 md:gap-16', strokeWidth: '3px' },
-  6: { fontSize: 'text-4xl md:text-5xl', py: 'py-10 md:py-14', gap: 'gap-14 md:gap-18', strokeWidth: '3.5px' },
-  7: { fontSize: 'text-4xl md:text-6xl', py: 'py-12 md:py-16', gap: 'gap-16 md:gap-20', strokeWidth: '4px' },
-  8: { fontSize: 'text-5xl md:text-7xl', py: 'py-14 md:py-20', gap: 'gap-18 md:gap-24', strokeWidth: '4.5px' },
-  9: { fontSize: 'text-6xl md:text-8xl', py: 'py-16 md:py-24', gap: 'gap-20 md:gap-28', strokeWidth: '5px' },
-  10: { fontSize: 'text-7xl md:text-9xl', py: 'py-20 md:py-28', gap: 'gap-24 md:gap-32', strokeWidth: '6px' },
+  1: { fontSize: 'text-sm md:text-base tv:text-xl', py: 'py-2.5 md:py-3 tv:py-6', gap: 'gap-5 md:gap-8 tv:gap-12', strokeWidth: '1px' },
+  2: { fontSize: 'text-base md:text-xl tv:text-2xl', py: 'py-4 md:py-5 tv:py-8', gap: 'gap-6 md:gap-10 tv:gap-14', strokeWidth: '1.5px' },
+  3: { fontSize: 'text-xl md:text-2xl tv:text-3xl', py: 'py-5 md:py-7 tv:py-10', gap: 'gap-8 md:gap-12 tv:gap-16', strokeWidth: '2px' },
+  4: { fontSize: 'text-2xl md:text-3xl tv:text-4xl', py: 'py-6 md:py-9 tv:py-12', gap: 'gap-10 md:gap-14 tv:gap-20', strokeWidth: '2.5px' },
+  5: { fontSize: 'text-3xl md:text-4xl tv:text-5xl', py: 'py-8 md:py-12 tv:py-16', gap: 'gap-12 md:gap-16 tv:gap-24', strokeWidth: '3px' },
+  6: { fontSize: 'text-4xl md:text-5xl tv:text-6xl', py: 'py-10 md:py-14 tv:py-20', gap: 'gap-14 md:gap-18 tv:gap-28', strokeWidth: '3.5px' },
+  7: { fontSize: 'text-4xl md:text-6xl tv:text-7xl', py: 'py-12 md:py-16 tv:py-24', gap: 'gap-16 md:gap-20 tv:gap-32', strokeWidth: '4px' },
+  8: { fontSize: 'text-5xl md:text-7xl tv:text-8xl', py: 'py-14 md:py-20 tv:py-28', gap: 'gap-18 md:gap-24 tv:gap-36', strokeWidth: '4.5px' },
+  9: { fontSize: 'text-6xl md:text-8xl tv:text-9xl', py: 'py-16 md:py-24 tv:py-32', gap: 'gap-20 md:gap-28 tv:gap-40', strokeWidth: '5px' },
+  10: { fontSize: 'text-7xl md:text-9xl tv:text-[10rem]', py: 'py-20 md:py-28 tv:py-40', gap: 'gap-24 md:gap-32 tv:gap-48', strokeWidth: '6px' },
 };
 
 // ── Text style renderer ──────────────────────────────────────────
@@ -108,9 +108,10 @@ const buildSegments = (items: MarqueeItem[]) => {
   const baseItems = items.filter((item) => item.text.trim().length > 0);
   if (baseItems.length === 0) { return []; }
 
-  // Always repeat 4 times for seamless infinite loop
+  // Tự động lặp lại nhiều lần nếu số lượng item ít để đảm bảo phủ hết chiều rộng TV Mode
+  const repeatCount = baseItems.length < 3 ? 16 : baseItems.length < 6 ? 10 : 6;
   const result: Array<{ text: string; separator: string; textStyle: MarqueeTextStyle }> = [];
-  for (let r = 0; r < 4; r++) {
+  for (let r = 0; r < repeatCount; r++) {
     for (const item of baseItems) {
       result.push({
         text: item.text,
@@ -375,7 +376,7 @@ export function MarqueeSectionShared(props: MarqueeSectionSharedProps) {
     >
       <div className="space-y-4 md:space-y-6">
         {hasHeaderContent && (
-          <div className="max-w-7xl mx-auto px-4">
+          <div className="max-w-7xl tv:max-w-[1600px] mx-auto px-4">
             <SectionHeader
               title={title}
               subtitle={subtitle}

@@ -26,7 +26,7 @@ export function ClientsRuntimeSection({ config, brandColor, secondary, mode, tit
 
   return (
     <section className={`${getSectionSpacingClassName(spacing)} px-3`} style={{ backgroundColor: tokens.neutralBackground }}>
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-7xl tv:max-w-[1600px]">
         <SectionHeader
           title={title}
           subtitle={headerConfig.subtitle}

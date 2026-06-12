@@ -225,7 +225,7 @@ export function AboutSectionShared({
 
   const renderClassic = () => (
     <section className={cn('py-8', sectionXClass)}>
-      <div className={cn('max-w-7xl mx-auto overflow-hidden border relative font-[family-name:var(--font-be-vietnam-pro)]', cornerRadiusClass)} style={{ backgroundColor: adaptColorForDarkMode('#f9f7f4', isDark, 'bg'), borderColor: tokens.neutralBorder }}>
+      <div className={cn('max-w-7xl tv:max-w-[1600px] mx-auto overflow-hidden border relative font-[family-name:var(--font-be-vietnam-pro)]', cornerRadiusClass)} style={{ backgroundColor: adaptColorForDarkMode('#f9f7f4', isDark, 'bg'), borderColor: tokens.neutralBorder }}>
         <div className="absolute top-0 right-0 w-48 h-48 -translate-y-8 translate-x-8 opacity-[0.03] pointer-events-none">
           <svg viewBox="0 0 100 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
             <path d="M50 0 C70 0 100 20 100 50 C100 80 80 100 50 100 C20 100 0 70 0 50 C0 20 30 0 50 0 Z" />
@@ -329,7 +329,7 @@ export function AboutSectionShared({
 
   const renderBento = () => (
     <section className="py-8 px-0">
-      <div className={cn('max-w-7xl mx-auto w-full overflow-hidden flex relative', flexRowReverseClass, cornerRadiusClass)} style={{ backgroundColor: adaptColorForDarkMode('#f9fafb', isDark, 'bg') }}>
+      <div className={cn('max-w-7xl tv:max-w-[1600px] mx-auto w-full overflow-hidden flex relative', flexRowReverseClass, cornerRadiusClass)} style={{ backgroundColor: adaptColorForDarkMode('#f9fafb', isDark, 'bg') }}>
         <div className={cn('w-full p-4 flex flex-col justify-center z-10 backdrop-blur-md', isDark ? 'bg-zinc-900/80 text-zinc-100' : 'bg-white/80 text-gray-900', !isNarrowPreview && 'lg:w-3/5 md:p-8 xl:p-10 lg:bg-transparent lg:backdrop-blur-none')}>
           <div className="flex items-center gap-2 font-semibold text-sm mb-3" style={{ color: tokens.primary }}>
             <span className="w-6 h-px bg-current"></span>
@@ -427,7 +427,7 @@ export function AboutSectionShared({
 
   const renderMinimal = () => (
     <section className="py-8 px-0">
-      <div className={cn('max-w-7xl mx-auto w-full flex gap-4 p-3 relative overflow-hidden border', flexRowClass, !isNarrowPreview && 'lg:gap-8 lg:p-8', cornerRadiusClass)} style={{ backgroundColor: adaptColorForDarkMode('#fdfaf6', isDark, 'bg'), borderColor: tokens.neutralBorder }}>
+      <div className={cn('max-w-7xl tv:max-w-[1600px] mx-auto w-full flex gap-4 p-3 relative overflow-hidden border', flexRowClass, !isNarrowPreview && 'lg:gap-8 lg:p-8', cornerRadiusClass)} style={{ backgroundColor: adaptColorForDarkMode('#fdfaf6', isDark, 'bg'), borderColor: tokens.neutralBorder }}>
         <div className="absolute inset-0 z-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #d1d5db 1px, transparent 0)', backgroundSize: '16px 16px' }}></div>
         <div className={cn(halfWidthClass, 'relative z-10 grid grid-cols-2 gap-3 shrink-0')}>
           <div className={cn('w-full min-h-[220px] overflow-hidden shadow-md', !isNarrowPreview && 'lg:min-h-[320px]', cornerRadiusSoftClass)}>
@@ -492,7 +492,7 @@ export function AboutSectionShared({
 
   const renderSplit = () => (
     <section className="py-8 px-0">
-      <div className={cn('max-w-7xl mx-auto w-full overflow-hidden flex relative items-center shadow-sm border', flexRowClass, cornerRadiusClass)} style={{ backgroundColor: adaptColorForDarkMode('#fafafa', isDark, 'bg'), borderColor: tokens.neutralBorder }}>
+      <div className={cn('max-w-7xl tv:max-w-[1600px] mx-auto w-full overflow-hidden flex relative items-center shadow-sm border', flexRowClass, cornerRadiusClass)} style={{ backgroundColor: adaptColorForDarkMode('#fafafa', isDark, 'bg'), borderColor: tokens.neutralBorder }}>
         <div className="absolute inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden" style={{ opacity: 0.03 }}>
           <svg viewBox="0 0 24 24" fill="currentColor" className={cn('w-[150%] h-auto -rotate-12 scale-150', !isNarrowPreview && 'lg:w-[100%]')}>
             <path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z" />
@@ -553,7 +553,7 @@ export function AboutSectionShared({
 
   const renderTimeline = () => (
     <section className="py-8 px-0">
-      <div className={cn('max-w-7xl mx-auto w-full flex gap-4 relative overflow-hidden py-2 border shadow-sm', flexRowClass, !isNarrowPreview && 'lg:gap-6 lg:overflow-visible', cornerRadiusClass)} style={{ backgroundColor: adaptColorForDarkMode('#ffffff', isDark, 'bg'), borderColor: tokens.neutralBorder }}>
+      <div className={cn('max-w-7xl tv:max-w-[1600px] mx-auto w-full flex gap-4 relative overflow-hidden py-2 border shadow-sm', flexRowClass, !isNarrowPreview && 'lg:gap-6 lg:overflow-visible', cornerRadiusClass)} style={{ backgroundColor: adaptColorForDarkMode('#ffffff', isDark, 'bg'), borderColor: tokens.neutralBorder }}>
         <div className={cn('w-full flex flex-col justify-center pt-3 pl-3 pr-3 relative z-10', !isNarrowPreview && 'lg:w-[55%] lg:py-4 lg:pl-8 xl:pl-10 lg:pr-0')}>
           <div className="inline-block mb-2 self-start">
             <span className="font-extrabold tracking-[0.1em] text-[10px] uppercase pb-0.5 border-b-2" style={{ color: tokens.primary, borderBottomColor: tokens.primary }}>
@@ -634,7 +634,7 @@ export function AboutSectionShared({
 
   const renderShowcase = () => (
     <section className="py-8 px-0">
-      <div className={cn('max-w-7xl mx-auto w-full overflow-hidden relative flex shadow-sm border', flexRowClass, cornerRadiusClass)} style={{ backgroundColor: adaptColorForDarkMode('#ffffff', isDark, 'bg'), borderColor: tokens.neutralBorder }}>
+      <div className={cn('max-w-7xl tv:max-w-[1600px] mx-auto w-full overflow-hidden relative flex shadow-sm border', flexRowClass, cornerRadiusClass)} style={{ backgroundColor: adaptColorForDarkMode('#ffffff', isDark, 'bg'), borderColor: tokens.neutralBorder }}>
         <div className={cn('absolute top-0 left-0 w-[150%] flex overflow-hidden pointer-events-none select-none z-0 -ml-8', !isNarrowPreview && 'lg:w-full lg:ml-0')}>
           <span 
             className={cn('text-[120px] font-black tracking-tighter leading-none uppercase', !isNarrowPreview && 'lg:text-[220px] xl:text-[260px]')}
@@ -700,7 +700,7 @@ export function AboutSectionShared({
     <section className="py-8 px-0">
       <div
         className={cn(
-          'max-w-7xl mx-auto w-full overflow-hidden border shadow-sm',
+          'max-w-7xl tv:max-w-[1600px] mx-auto w-full overflow-hidden border shadow-sm',
           'grid grid-cols-1 gap-4 p-4',
           !isNarrowPreview && 'lg:grid-cols-[0.95fr_2.1fr] lg:gap-5 md:p-5 lg:p-6',
           cornerRadiusClass,
@@ -814,7 +814,7 @@ export function AboutSectionShared({
 
   const renderSolarFeature = () => (
     <section className="py-8 px-0 font-[family-name:var(--font-be-vietnam-pro)]">
-      <div className={cn('mx-auto flex max-w-7xl flex-col items-center gap-7', !isNarrowPreview && 'lg:flex-row lg:gap-0')}>
+      <div className={cn('mx-auto flex max-w-7xl tv:max-w-[1600px] flex-col items-center gap-7', !isNarrowPreview && 'lg:flex-row lg:gap-0')}>
         <div className={cn('relative order-1 w-full px-2.5', !isNarrowPreview && 'lg:w-1/2')}>
           <div className="relative mx-auto text-center">
             <div className={cn('mx-auto mt-2 w-full max-w-[557px] overflow-hidden', !isNarrowPreview && 'lg:mt-[30px]', cornerRadiusClass)}>
@@ -891,8 +891,8 @@ export function AboutSectionShared({
           borderColor: isDarkTheme ? '#27272a' : '#e4e4e7',
         }}
       >
-        <div className="max-w-7xl mx-auto">
-          <div className={cn('grid gap-6 items-center', gridTwoColClass)}>
+        <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
+          <div className={cn('grid gap-6 tv:gap-16 items-center', gridTwoColClass)}>
             {/* Cột hình ảnh */}
             <div className="w-full flex justify-center">
               <div className={cn('relative w-full overflow-hidden shadow-sm aspect-video md:aspect-[16/10] border', cornerRadiusSoftClass)} style={{ borderColor: isDarkTheme ? '#27272a' : '#e4e4e7' }}>
@@ -920,7 +920,7 @@ export function AboutSectionShared({
               ) : null}
 
               <h2 
-                className={cn('font-bold tracking-tight mb-3 text-xl md:text-2xl lg:text-3xl')}
+                className={cn('font-bold tracking-tight mb-3 text-xl md:text-2xl lg:text-3xl tv:text-5xl')}
                 style={{ color: isDarkTheme ? '#f4f4f5' : '#09090b' }}
               >
                 {resolvedHeading}{' '}
@@ -931,7 +931,7 @@ export function AboutSectionShared({
 
               {resolvedDescription ? (
                 <p 
-                  className="text-xs leading-relaxed mb-5 text-justify"
+                  className="text-xs tv:text-lg leading-relaxed mb-5 text-justify"
                   style={{ color: isDarkTheme ? '#a1a1aa' : '#71717a' }}
                 >
                   {resolvedDescription}
@@ -939,11 +939,11 @@ export function AboutSectionShared({
               ) : null}
 
               {visibleFeatures.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="grid grid-cols-2 gap-3 tv:gap-5 mb-6 tv:mb-8">
                   {visibleFeatures.slice(0, 4).map((feature) => (
                     <div 
                       key={feature.title} 
-                      className={cn('flex items-center gap-2 p-2 border transition-colors duration-200 rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.03)]')}
+                      className={cn('flex items-center gap-2 tv:gap-4 p-2 tv:p-3 border transition-colors duration-200 rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.03)]')}
                       style={{
                         backgroundColor: isDarkTheme ? 'rgba(24, 24, 27, 0.4)' : '#ffffff',
                         borderColor: isDarkTheme ? '#27272a' : '#e4e4e7',
@@ -953,7 +953,7 @@ export function AboutSectionShared({
                         {renderFeatureMedia(feature, 'w-3.5 h-3.5 stroke-[2.5]')}
                       </div>
                       <span 
-                        className="font-semibold text-xs leading-tight"
+                        className="font-semibold text-xs tv:text-base leading-tight"
                         style={{ color: isDarkTheme ? '#e4e4e7' : '#27272a' }}
                       >
                         {feature.title}
@@ -970,7 +970,7 @@ export function AboutSectionShared({
                   text={resolvedButtonText}
                   withArrow
                   className={cn(
-                    'self-start inline-flex items-center gap-1.5 px-5 py-2.5 shadow-sm font-semibold text-xs uppercase tracking-wider transition-all duration-200 group rounded-sm border',
+                    'self-start inline-flex items-center gap-1.5 px-5 tv:px-7 py-2.5 tv:py-4 shadow-sm font-semibold text-xs tv:text-sm uppercase tracking-wider transition-all duration-200 group rounded-sm border',
                   )}
                   style={{ 
                     backgroundColor: isDarkTheme ? '#18181b' : '#ffffff', 

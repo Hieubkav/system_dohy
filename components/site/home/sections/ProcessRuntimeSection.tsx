@@ -34,7 +34,7 @@ export function ProcessRuntimeSection({ config, brandColor, secondary, mode, tit
 
   return (
     <section className="px-3">
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-7xl tv:max-w-[1600px]">
         <ProcessSectionShared
           steps={steps}
           sectionTitle={title || ''}

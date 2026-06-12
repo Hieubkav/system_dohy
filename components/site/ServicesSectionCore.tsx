@@ -52,8 +52,8 @@ const getServiceKey = (item: ServiceItem, index: number) => {
   return `${item.mediaType}-${item.icon}-${item.image}-${item.title}-${item.description}-${index}`;
 };
 
-const serviceTitleClassName = 'text-[13px] font-bold uppercase leading-tight tracking-wide';
-const serviceBodyClassName = 'mt-0.5 text-[12px] leading-4';
+const serviceTitleClassName = 'text-[13px] font-bold uppercase leading-tight tracking-wide tv:text-lg tv:tracking-widest';
+const serviceBodyClassName = 'mt-0.5 text-[12px] leading-4 tv:text-[15px] tv:leading-6 tv:mt-2';
 const serviceTitleFontStyle = { fontFamily: 'var(--font-active), var(--font-be-vietnam-pro), sans-serif' } as React.CSSProperties;
 const serviceBodyFontStyle = { fontFamily: 'var(--font-active), var(--font-be-vietnam-pro), sans-serif' } as React.CSSProperties;
 
@@ -227,8 +227,8 @@ export const ServicesSectionCore = ({
 
     return (
       <div className={`space-y-2 ${headerAlignClassName}`}>
-        {shouldShowTitle ? <h2 className="text-2xl font-bold tracking-tight md:text-3xl" style={{ color: colors.heading }}>{sectionTitle}</h2> : null}
-        {shouldShowSubtitle ? <p className="text-sm font-medium" style={{ color: colors.subheading }}>{sectionSubtitle}</p> : null}
+        {shouldShowTitle ? <h2 className="text-2xl font-bold tracking-tight md:text-3xl tv:text-5xl" style={{ color: colors.heading }}>{sectionTitle}</h2> : null}
+        {shouldShowSubtitle ? <p className="text-sm font-medium tv:text-xl" style={{ color: colors.subheading }}>{sectionSubtitle}</p> : null}
       </div>
     );
   };
@@ -238,16 +238,16 @@ export const ServicesSectionCore = ({
     ? (device === 'mobile'
       ? (desktopColumns === 4 ? 'grid grid-cols-2 gap-4' : 'grid grid-cols-1 gap-4')
       : device === 'tablet'
-        ? (desktopColumns === 4 ? 'grid grid-cols-2 gap-4' : 'grid grid-cols-3 gap-4')
-        : (desktopColumns === 4 ? 'grid grid-cols-4 gap-4' : 'grid grid-cols-3 gap-4'))
-    : (desktopColumns === 4 ? 'grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4' : 'grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-3');
+        ? (desktopColumns === 4 ? 'grid grid-cols-2 gap-4 tv:gap-8' : 'grid grid-cols-3 gap-4 tv:gap-8')
+        : (desktopColumns === 4 ? 'grid grid-cols-4 gap-4 tv:gap-8' : 'grid grid-cols-3 gap-4 tv:gap-8'))
+    : (desktopColumns === 4 ? 'grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-4 tv:gap-8' : 'grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-3 tv:gap-8');
   const stripGridClassName = isPreview
     ? (device === 'mobile'
-      ? (desktopColumns === 4 ? 'grid grid-cols-2' : 'grid grid-cols-1')
+      ? (desktopColumns === 4 ? 'grid grid-cols-2 tv:gap-8' : 'grid grid-cols-1 tv:gap-8')
       : device === 'tablet'
-        ? (desktopColumns === 4 ? 'grid grid-cols-2' : 'grid grid-cols-3')
-        : (desktopColumns === 4 ? 'grid grid-cols-4' : 'grid grid-cols-3'))
-    : (desktopColumns === 4 ? 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4' : 'grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3');
+        ? (desktopColumns === 4 ? 'grid grid-cols-2 tv:gap-8' : 'grid grid-cols-3 tv:gap-8')
+        : (desktopColumns === 4 ? 'grid grid-cols-4 tv:gap-8' : 'grid grid-cols-3 tv:gap-8'))
+    : (desktopColumns === 4 ? 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 tv:gap-8' : 'grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 tv:gap-8');
 
   const visibleForRuntime = items.slice(0, 6);
   const displayFeaturedItems = isPreview ? visibleForPreview : visibleForRuntime;
@@ -280,7 +280,7 @@ export const ServicesSectionCore = ({
 
     return (
       <section className="px-4">
-        <div className="mx-auto max-w-7xl space-y-2">
+        <div className="mx-auto max-w-7xl tv:max-w-[1600px] space-y-2">
           {renderSectionHeader()}
           <div className={cn('overflow-hidden', compactRadiusClassName)} style={{ backgroundColor: background }}>
             <div className={`${stripGridClassName} divide-y md:divide-y-0`} style={{ borderColor: divider }}>
@@ -345,7 +345,7 @@ export const ServicesSectionCore = ({
     return (
       <section>
         <div style={{ backgroundColor: stripBg }}>
-          <div className="mx-auto max-w-7xl px-4">
+          <div className="mx-auto max-w-7xl tv:max-w-[1600px] px-4">
             <div className={`${stripGridClassName} gap-y-5`}>
               {displayFeaturedItems.map((item, idx) => {
                 if (stackedLayout) {
@@ -401,7 +401,7 @@ export const ServicesSectionCore = ({
   if (style === 'bigNumber') {
     return (
       <section className="px-4">
-        <div className="mx-auto max-w-7xl space-y-2">
+        <div className="mx-auto max-w-7xl tv:max-w-[1600px] space-y-2">
           {renderSectionHeader()}
           <div className={cn('overflow-hidden border', cornerRadius === 'lg' ? 'rounded-[32px]' : radiusClassName)} style={{ borderColor: colors.cardBorder, backgroundColor: colors.cardBackground }}>
             <div className={`${stripGridClassName} divide-y md:divide-y-0`} style={{ borderColor: colors.neutralBorder }}>
@@ -458,7 +458,7 @@ export const ServicesSectionCore = ({
   if (style === 'cards') {
     return (
       <section className="px-4">
-        <div className="mx-auto max-w-7xl space-y-2">
+        <div className="mx-auto max-w-7xl tv:max-w-[1600px] space-y-2">
           {renderSectionHeader()}
           <div className={cardsGridClassName}>
             {displayFeaturedItems.map((item, idx) => (
@@ -513,7 +513,7 @@ export const ServicesSectionCore = ({
 
     return (
       <section className="px-4">
-        <div className="mx-auto max-w-7xl space-y-2">
+        <div className="mx-auto max-w-7xl tv:max-w-[1600px] space-y-2">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
               {renderSectionHeader()}
@@ -768,7 +768,7 @@ export const ServicesSectionCore = ({
 
   return (
     <section className="px-4">
-      <div className="mx-auto max-w-7xl space-y-2">
+      <div className="mx-auto max-w-7xl tv:max-w-[1600px] space-y-2">
         {renderSectionHeader()}
         <div className={cardsGridClassName}>
           {displayFeaturedItems.map((item, idx) => {

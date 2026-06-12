@@ -368,7 +368,7 @@ export function VideoSectionShared({
   if (style === 'split') {
     return (
       <ContainerTag className={sectionClassName} style={{ backgroundColor: tokens.neutralBackground }}>
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-6xl tv:max-w-[1400px]">
           <div className={splitGridClassName}>
             <div className={surfaceWrapClassName}>
               <VideoSurface
@@ -398,7 +398,7 @@ export function VideoSectionShared({
   if (style === 'fullwidth') {
     return (
       <ContainerTag className={sectionClassName} style={{ backgroundColor: tokens.neutralBackground }}>
-        <div className="mx-auto max-w-7xl space-y-5">
+        <div className="mx-auto max-w-7xl tv:max-w-[1400px] space-y-5">
           {sharedHeader}
           <div className={surfaceWrapClassName}>
             <VideoSurface
@@ -424,7 +424,7 @@ export function VideoSectionShared({
   if (style === 'cinema') {
     return (
       <ContainerTag className={sectionClassName} style={{ backgroundColor: tokens.neutralBackground }}>
-        <div className="mx-auto max-w-6xl space-y-5">
+        <div className="mx-auto max-w-6xl tv:max-w-[1400px] space-y-5">
           {sharedHeader}
           <div className={cn('p-1', roundedClassName, surfaceWrapClassName)} style={{ backgroundColor: tokens.frameBackground }}>
             <VideoSurface
@@ -481,7 +481,7 @@ export function VideoSectionShared({
   /* ── Parallax (default) ────────────────────────────────── */
   return (
     <ContainerTag className={sectionClassName} style={{ backgroundColor: tokens.neutralBackground }}>
-      <div className="mx-auto max-w-7xl space-y-5">
+      <div className="mx-auto max-w-7xl tv:max-w-[1400px] space-y-5">
         {sharedHeader}
         <div className={cn('relative overflow-hidden shadow-lg', roundedClassName, surfaceWrapClassName)}>
           <VideoSurface

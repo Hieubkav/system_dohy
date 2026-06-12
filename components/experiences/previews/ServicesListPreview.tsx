@@ -70,7 +70,7 @@ function FullWidthPreview({ showSearch, showCategories, paginationType = 'pagina
 
   return (
     <div className="py-6 md:py-10 px-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-3xl md:text-4xl font-bold" style={{ color: tokens.headingColor }}>Dịch vụ của chúng tôi</h1>
@@ -179,7 +179,7 @@ function FullWidthPreview({ showSearch, showCategories, paginationType = 'pagina
 function SidebarPreview({ showSearch, showCategories, paginationType = 'pagination', tokens }: ServicesListPreviewProps & { tokens: ServicesListColors }) {
   return (
     <div className="py-6 md:py-10 px-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
         <div className="text-center mb-6">
           <h1 className="text-3xl md:text-4xl font-bold" style={{ color: tokens.headingColor }}>Dịch vụ của chúng tôi</h1>
         </div>
@@ -303,7 +303,7 @@ function MagazinePreview({ showCategories, paginationType = 'pagination', tokens
 
   return (
     <div className="py-6 md:py-10 px-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
         <div className="text-center mb-6">
           <h1 className="text-3xl md:text-4xl font-bold" style={{ color: tokens.headingColor }}>Dịch vụ của chúng tôi</h1>
         </div>

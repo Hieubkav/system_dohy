@@ -155,7 +155,7 @@ export function DynamicFooter() {
   const columns = getColumns(config);
   const colors = getFooterThemeColors(style, brandColor, secondary, mode as FooterBrandMode, isDark);
   const useOriginalSocialIconColors = config.useOriginalSocialIconColors !== false;
-  const maxWidthClass = getFooterMaxWidthClass(config.maxWidth);
+  const maxWidthClass = `${getFooterMaxWidthClass(config.maxWidth)} tv:max-w-[1600px]`;
   const waveMaxWidthClass = maxWidthClass === 'max-w-6xl' || maxWidthClass === 'max-w-7xl' ? 'max-w-8xl' : maxWidthClass;
   const logoBackgroundStyle = config.logoBackgroundStyle ?? 'none';
   const sectionSpacingClassName = getFooterSectionSpacingClassName(config.spacing, config.noVerticalMargin);

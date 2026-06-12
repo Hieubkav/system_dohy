@@ -117,7 +117,7 @@ const getSectionInlinePadding = (context: ContactSectionContext, currentDevice: 
 };
 
 const getRootContainerClass = (context: ContactSectionContext, currentDevice: PreviewDevice) => {
-  if (context === 'site') {return 'max-w-6xl mx-auto';}
+  if (context === 'site') {return 'max-w-6xl tv:max-w-[1600px] mx-auto';}
   if (currentDevice === 'mobile') {return 'w-full';}
   if (currentDevice === 'tablet') {return 'max-w-3xl mx-auto';}
   return 'max-w-5xl mx-auto';
@@ -522,7 +522,7 @@ const renderModern = ({
             contentWidthClass,
           )}
         >
-        <div className="max-w-md mx-auto w-full">
+        <div className="max-w-md tv:max-w-xl mx-auto w-full">
           <div
             className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide border mb-4"
             style={{
@@ -1073,24 +1073,24 @@ const renderKanban = ({
 
   return (
     <div
-      className="w-full rounded-sm border p-4 transition-colors duration-300"
+      className="w-full rounded-sm border p-4 tv:p-8 transition-colors duration-300"
       style={{
         backgroundColor: tokens.neutralBackground,
         borderColor: tokens.neutralBorder,
       }}
     >
-      <div className={cn('grid gap-4 items-stretch', gridClass)}>
-        <div className="flex flex-col space-y-3">
+      <div className={cn('grid gap-4 tv:gap-8 items-stretch', gridClass)}>
+        <div className="flex flex-col space-y-3 tv:space-y-6">
           <div className="border-b pb-1.5" style={{ borderColor: tokens.neutralBorder }}>
-            <span className="text-[10px] font-extrabold tracking-[0.15em] uppercase" style={{ color: tokens.labelText }}>
+            <span className="text-[10px] tv:text-sm font-extrabold tracking-[0.15em] uppercase" style={{ color: tokens.labelText }}>
               {info.texts.badge || 'Thông tin liên hệ'}
             </span>
           </div>
-          <div className="space-y-2 flex-1">
+          <div className="space-y-2 tv:space-y-4 flex-1">
             {contactItems.map((item) => (
               <div
                 key={item.id}
-                className="flex items-start gap-2.5 p-2.5 border rounded-sm transition-all duration-200 group border-l-[3px]"
+                className="flex items-start gap-2.5 tv:gap-4 p-2.5 tv:p-4 border rounded-sm transition-all duration-200 group border-l-[3px]"
                 style={{
                   backgroundColor: tokens.cardBackground,
                   borderTopColor: tokens.cardBorder,
@@ -1103,16 +1103,16 @@ const renderKanban = ({
                   {renderContactIcon(item.icon, 14)}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="font-bold text-[10px] uppercase tracking-wider mb-0.5" style={{ color: tokens.labelText }}>{item.label}</h4>
-                  {renderItemValue(item, kanbanTokens, isPreview, 'text-xs font-semibold leading-relaxed')}
+                  <h4 className="font-bold text-[10px] tv:text-xs uppercase tracking-wider mb-0.5" style={{ color: tokens.labelText }}>{item.label}</h4>
+                  {renderItemValue(item, kanbanTokens, isPreview, 'text-xs tv:text-base font-semibold leading-relaxed')}
                 </div>
               </div>
             ))}
           </div>
 
           {activeSocials.length > 0 && (
-            <div className="pt-3 border-t" style={{ borderColor: tokens.neutralBorder }}>
-              <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="pt-3 tv:pt-5 border-t" style={{ borderColor: tokens.neutralBorder }}>
+              <div className="flex items-center gap-1.5 tv:gap-3 flex-wrap">
                 {activeSocials.map((social, idx) => {
                   const Icon = getSocialIconComponent(social.platform);
                   const original = SOCIAL_ORIGINAL_COLORS[social.platform];
@@ -1126,7 +1126,7 @@ const renderKanban = ({
                       href={resolveSocialHref(social)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-7 h-7 rounded-sm border flex items-center justify-center transition-colors duration-200"
+                      className="w-7 h-7 tv:w-10 tv:h-10 rounded-sm border flex items-center justify-center transition-colors duration-200"
                       style={{
                         backgroundColor: bg,
                         borderColor: border,
@@ -1134,7 +1134,7 @@ const renderKanban = ({
                       }}
                       aria-label={social.platform || 'social'}
                     >
-                      <Icon size={12} />
+                      <Icon size={12} className="tv:w-5 tv:h-5" />
                     </a>
                   );
                 })}
@@ -1144,17 +1144,17 @@ const renderKanban = ({
         </div>
 
         {hasForm && (
-          <div className="flex flex-col space-y-3">
+          <div className="flex flex-col space-y-3 tv:space-y-6">
             <div className="border-b pb-1.5" style={{ borderColor: tokens.neutralBorder }}>
-              <span className="text-[10px] font-extrabold tracking-[0.15em] uppercase" style={{ color: tokens.labelText }}>
+              <span className="text-[10px] tv:text-sm font-extrabold tracking-[0.15em] uppercase" style={{ color: tokens.labelText }}>
                 {info.heading || 'Gửi yêu cầu'}
               </span>
             </div>
             <div
               className={cn(
-                "p-3 border rounded-sm flex-1",
-                " [&_input]:rounded-none [&_textarea]:rounded-none [&_button]:rounded-none [&_input]:text-xs [&_textarea]:text-xs [&_button]:text-xs",
-                " [&_input]:px-2.5 [&_textarea]:px-2.5 [&_input]:py-2 [&_textarea]:py-2 [&_button]:py-2.5",
+                "p-3 tv:p-6 border rounded-sm flex-1",
+                " [&_input]:rounded-none [&_textarea]:rounded-none [&_button]:rounded-none [&_input]:text-xs [&_textarea]:text-xs [&_button]:text-xs [&_input]:tv:text-[16px] [&_textarea]:tv:text-[16px] [&_button]:tv:text-[16px]",
+                " [&_input]:px-2.5 [&_textarea]:px-2.5 [&_input]:py-2 [&_textarea]:py-2 [&_button]:py-2.5 [&_input]:tv:py-4 [&_textarea]:tv:py-4 [&_button]:tv:py-5 [&_input]:tv:px-4 [&_textarea]:tv:px-4",
                 "hover:[&_button]:opacity-90 [&_svg]:hidden"
               )}
               style={{
@@ -1181,9 +1181,9 @@ const renderKanban = ({
         )}
 
         {hasMap && (
-          <div className="flex flex-col space-y-3">
+          <div className="flex flex-col space-y-3 tv:space-y-6">
             <div className="border-b pb-1.5" style={{ borderColor: tokens.neutralBorder }}>
-              <span className="text-[10px] font-extrabold tracking-[0.15em] uppercase" style={{ color: tokens.labelText }}>
+              <span className="text-[10px] tv:text-sm font-extrabold tracking-[0.15em] uppercase" style={{ color: tokens.labelText }}>
                 Bản đồ vị trí
               </span>
             </div>

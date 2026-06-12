@@ -114,7 +114,7 @@ export function PostsListPreview({
   if (style === 'grid') {
     return (
       <div className="py-6 md:py-10 px-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
           <div className="text-center mb-3">
             <h2 className="text-2xl md:text-3xl font-bold" style={{ color: tokens.headingColor }}>Tin tức & Bài viết</h2>
           </div>
@@ -322,7 +322,7 @@ export function PostsListPreview({
     
     return (
       <div className={`py-6 md:py-10 px-4`}>
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
           <div className="text-center mb-3">
             <h2 className="text-2xl md:text-3xl font-bold" style={{ color: tokens.headingColor }}>Tin tức & Bài viết</h2>
           </div>
@@ -449,7 +449,7 @@ export function PostsListPreview({
   if (style === 'list') {
     return (
       <div className="py-6 md:py-10 px-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
           <div className="text-center mb-3">
             <h2 className="text-2xl md:text-3xl font-bold" style={{ color: tokens.headingColor }}>Tin tức & Bài viết</h2>
           </div>
@@ -654,7 +654,7 @@ export function PostsListPreview({
   // Magazine layout
   return (
     <div className="py-6 md:py-10 px-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
         <div className="text-center mb-3">
           <h2 className="text-2xl md:text-3xl font-bold" style={{ color: tokens.headingColor }}>Tin tức & Bài viết</h2>
         </div>
@@ -1161,7 +1161,7 @@ export function ProductsListPreview({
   if (layoutStyle === 'grid') {
     return (
       <div className="py-6 md:py-10 px-4">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
           <div className="text-center mb-3">
             <h2 className="text-2xl md:text-3xl font-bold" style={{ color: tokens.headingColor }}>Sản phẩm</h2>
           </div>
@@ -1422,7 +1422,7 @@ export function ProductsListPreview({
 
   return (
     <div className="py-6 md:py-10 px-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl tv:max-w-[1600px] mx-auto">
         <div className="text-center mb-3">
           <h2 className="text-2xl md:text-3xl font-bold" style={{ color: tokens.headingColor }}>Sản phẩm</h2>
         </div>

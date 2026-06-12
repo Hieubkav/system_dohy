@@ -932,7 +932,7 @@ export function ResourceDetailPreview({
   // Layout 2: MODERN (Hiện đại - phong cách tối giản phẳng macOS)
   if (layoutStyle === 'modern') {
     return (
-      <div className="mx-auto max-w-7xl font-sans text-slate-900 bg-white">
+      <div className="mx-auto max-w-7xl tv:max-w-[1600px] font-sans text-slate-900 bg-white">
         {/* Breadcrumb quay lại đặt tự nhiên ở trên */}
         <div className="mb-5">
           <div className="inline-flex items-center gap-1.5 text-xs text-zinc-550 hover:text-zinc-900 transition-colors font-semibold">

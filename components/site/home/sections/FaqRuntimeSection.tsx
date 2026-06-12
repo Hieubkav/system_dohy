@@ -54,7 +54,7 @@ export function FaqRuntimeSection({ config, brandColor, secondary, mode, title, 
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <section className={cn(style === 'cards' ? 'px-1 sm:px-3' : 'px-3', spacingClassName)}>
-        <div className="mx-auto max-w-7xl space-y-6">
+        <div className="mx-auto max-w-7xl tv:max-w-[1400px] space-y-6">
           <SectionHeader
             title={title}
             subtitle={headerConfig.subtitle}

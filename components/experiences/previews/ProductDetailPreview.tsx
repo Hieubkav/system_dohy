@@ -754,7 +754,7 @@ export function ProductDetailPreview({
   const contentWidthClass = contentWidth === 'narrow'
     ? 'max-w-4xl'
     : contentWidth === 'wide'
-      ? 'max-w-7xl'
+      ? 'max-w-7xl tv:max-w-[1600px]'
       : 'max-w-6xl';
   const imageFrame = getProductImageFrameConfig(imageAspectRatio, layoutStyle);
   const mainImageFrameStyle: React.CSSProperties = { aspectRatio: imageFrame.frameAspectRatio };
