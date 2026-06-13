@@ -7,14 +7,7 @@ import { CartProvider } from '@/lib/cart';
 import { useSnapshotDemoContext } from './SnapshotDemoProvider';
 import type { SnapshotMenuItem } from './snapshot-demo-types';
 import type { Id } from '@/convex/_generated/dataModel';
-
-const resolveSnapshotTheme = (mode: unknown): 'light' | 'dark' => {
-  if (mode === 'dark') {return 'dark';}
-  if (mode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
-  return 'light';
-};
+import { useSnapshotDocumentTheme, useSnapshotTheme } from './snapshot-theme';
 
 /**
  * Lightweight shell for /demo/[slug] route.
@@ -23,16 +16,8 @@ const resolveSnapshotTheme = (mode: unknown): 'light' | 'dark' => {
 export function DemoSiteShell({ children }: { children: React.ReactNode }) {
   const ctx = useSnapshotDemoContext();
   const snapshotThemeMode = ctx?.getSiteSettings().site_dark_mode ?? 'light';
-  const [theme, setTheme] = React.useState<'light' | 'dark'>(() => resolveSnapshotTheme(snapshotThemeMode));
-
-  React.useEffect(() => {
-    setTheme(resolveSnapshotTheme(snapshotThemeMode));
-    if (snapshotThemeMode !== 'system') {return;}
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => setTheme(resolveSnapshotTheme(snapshotThemeMode));
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [snapshotThemeMode]);
+  const [theme, setTheme] = useSnapshotTheme(snapshotThemeMode);
+  useSnapshotDocumentTheme(theme);
 
   const initialHeaderData = React.useMemo<HeaderInitialData | undefined>(() => {
     if (!ctx) return undefined;

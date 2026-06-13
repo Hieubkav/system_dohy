@@ -3,14 +3,7 @@
 import React from 'react';
 import { HomeComponentRenderer } from '@/components/site/home/HomeComponentRenderer';
 import type { SnapshotDemoPayload } from './snapshot-demo-types';
-
-const resolveSnapshotTheme = (mode: unknown): 'light' | 'dark' => {
-  if (mode === 'dark') {return 'dark';}
-  if (mode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
-  return 'light';
-};
+import { useSnapshotDocumentTheme, useSnapshotTheme } from './snapshot-theme';
 
 export function SnapshotDemoHomePage({
   applyThemeBoundary = true,
@@ -23,16 +16,8 @@ export function SnapshotDemoHomePage({
     .filter((component) => component.active)
     .sort((a, b) => a.order - b.order);
   const themeMode = payload.bundle.settings.site.site_dark_mode ?? 'light';
-  const [theme, setTheme] = React.useState<'light' | 'dark'>(() => resolveSnapshotTheme(themeMode));
-
-  React.useEffect(() => {
-    setTheme(resolveSnapshotTheme(themeMode));
-    if (themeMode !== 'system') {return;}
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => setTheme(resolveSnapshotTheme(themeMode));
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [themeMode]);
+  const [theme] = useSnapshotTheme(themeMode);
+  useSnapshotDocumentTheme(theme, applyThemeBoundary);
 
   const content = (
     <>
