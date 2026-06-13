@@ -20,6 +20,7 @@ import { COMPONENT_TYPES } from '../../../create/shared';
 import type { SnapshotContactSettings, SnapshotDemoBundle, SnapshotMenuItem, SnapshotMenuPayload, SnapshotSEOSettings, SnapshotSiteSettings, SnapshotSocialSettings } from '@/components/modules/homepage/snapshot-demo-types';
 
 type HeaderLayerColorChoice = 'white' | 'primary' | 'secondary';
+type SnapshotThemeMode = NonNullable<SnapshotSiteSettings['site_dark_mode']>;
 type SnapshotHeaderSettings = NonNullable<SnapshotDemoBundle['settings']['header']>;
 
 type SnapshotComponentRow = SnapshotComponentPayload & {
@@ -43,6 +44,7 @@ const DEFAULT_SITE_SETTINGS: SnapshotSiteSettings = {
   site_brand_mode: 'dual',
   site_brand_primary: '#3b82f6',
   site_brand_secondary: '#06b6d4',
+  site_dark_mode: 'light',
   site_favicon: '',
   site_language: 'vi',
   site_logo: '',
@@ -84,6 +86,7 @@ const DEFAULT_HEADER_SETTINGS: SnapshotHeaderSettings = {
   header_style: 'classic',
   header_config: {
     logoSizeLevel: 2,
+    showDarkModeToggle: false,
     layerColors: {
       topnav: 'primary',
       navbar: 'white',
@@ -103,6 +106,12 @@ const LOGO_SIZE_OPTIONS = Array.from({ length: 30 }, (_, index) => ({
   value: index + 1,
 }));
 
+const SNAPSHOT_THEME_OPTIONS: Array<{ description: string; label: string; value: SnapshotThemeMode }> = [
+  { description: 'Luôn hiển thị giao diện sáng.', label: 'Chế độ sáng', value: 'light' },
+  { description: 'Luôn hiển thị giao diện tối.', label: 'Chế độ tối', value: 'dark' },
+  { description: 'Theo theme hệ điều hành của khách.', label: 'Theo hệ thống', value: 'system' },
+];
+
 const DEFAULT_CUSTOM_THUMBNAIL_CONFIG: NonNullable<SnapshotCustomThumbnail['config']> = {
   backgroundColor: '#f8fafc',
   objectFit: 'cover',
@@ -119,6 +128,10 @@ const normalizeLogoSizeLevel = (value: unknown) => {
   if (!Number.isFinite(numeric)) {return 2;}
   return Math.min(30, Math.max(1, Math.round(numeric)));
 };
+
+const normalizeSnapshotThemeMode = (value: unknown): SnapshotThemeMode => (
+  value === 'dark' || value === 'system' ? value : 'light'
+);
 
 const normalizeSnapshotHeaderSettings = (header?: SnapshotHeaderSettings | null): SnapshotHeaderSettings => {
   const rawConfig = (header?.header_config ?? {}) as Record<string, unknown>;
@@ -320,7 +333,11 @@ function SnapshotHomeComponentsPage({ snapshotId }: { snapshotId: string }) {
       headerItems: normalizeMenuPayload(bundle.menus?.header, 'header').items,
       label: snapshot.label,
       seo: { ...DEFAULT_SEO_SETTINGS, ...settings.seo },
-      site: { ...DEFAULT_SITE_SETTINGS, ...settings.site },
+      site: {
+        ...DEFAULT_SITE_SETTINGS,
+        ...settings.site,
+        site_dark_mode: normalizeSnapshotThemeMode(settings.site?.site_dark_mode),
+      },
       social: { ...DEFAULT_SOCIAL_SETTINGS, ...settings.social },
     });
     setLoadedMetaSnapshotId(snapshot._id);
@@ -373,7 +390,10 @@ function SnapshotHomeComponentsPage({ snapshotId }: { snapshotId: string }) {
       ...footerMenu,
       items: metaDraft.footerItems.map((item, order) => ({ ...item, menuId: footerMenu.menu._id, order })),
     };
-    const nextSite = metaDraft.site;
+    const nextSite: SnapshotSiteSettings = {
+      ...metaDraft.site,
+      site_dark_mode: normalizeSnapshotThemeMode(metaDraft.site.site_dark_mode),
+    };
     const currentHeader = normalizeSnapshotHeaderSettings(bundle.settings?.header);
     const draftHeader = normalizeSnapshotHeaderSettings(metaDraft.header);
     const nextHeader: SnapshotHeaderSettings = {
@@ -631,6 +651,7 @@ function SnapshotHomeComponentsPage({ snapshotId }: { snapshotId: string }) {
   const topnavColor = normalizeHeaderLayerChoice(headerLayerColors.topnav, 'primary');
   const navbarColor = normalizeHeaderLayerChoice(headerLayerColors.navbar, 'white');
   const menuColor = normalizeHeaderLayerChoice(headerLayerColors.menu, 'secondary');
+  const showSnapshotDarkModeToggle = Boolean(headerConfig.showDarkModeToggle);
 
   return (
     <div className="space-y-4">
@@ -711,6 +732,51 @@ function SnapshotHomeComponentsPage({ snapshotId }: { snapshotId: string }) {
                     ))}
                   </select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Chế độ sáng/tối của snapshot</Label>
+                  <select
+                    value={metaDraft.site.site_dark_mode ?? 'light'}
+                    onChange={(event) => setMetaDraft({
+                      ...metaDraft,
+                      site: {
+                        ...metaDraft.site,
+                        site_dark_mode: normalizeSnapshotThemeMode(event.target.value),
+                      },
+                    })}
+                    className="h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  >
+                    {SNAPSHOT_THEME_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] leading-4 text-slate-400">
+                    {SNAPSHOT_THEME_OPTIONS.find((option) => option.value === (metaDraft.site.site_dark_mode ?? 'light'))?.description}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => patchHeaderConfig({ showDarkModeToggle: !showSnapshotDarkModeToggle })}
+                  className={cn(
+                    'flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-sm transition-colors',
+                    showSnapshotDarkModeToggle
+                      ? 'border-cyan-500 bg-cyan-500/10 text-cyan-700 dark:text-cyan-300'
+                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
+                  )}
+                >
+                  <span>
+                    <span className="block font-semibold">Nút Dark/Light trong snapshot</span>
+                    <span className="block text-[11px] opacity-75">Chỉ ảnh hưởng demo snapshot, không sửa site thật.</span>
+                  </span>
+                  <span className={cn('h-5 w-9 rounded-full p-0.5 transition-colors', showSnapshotDarkModeToggle ? 'bg-cyan-500' : 'bg-slate-300 dark:bg-slate-600')}>
+                    <span className={cn('block h-4 w-4 rounded-full bg-white transition-transform', showSnapshotDarkModeToggle && 'translate-x-4')} />
+                  </span>
+                </button>
+                <Link
+                  href={`/system/experiences?tab=dark_mode&snapshotId=${snapshotId}`}
+                  className="inline-flex text-xs font-medium text-cyan-600 hover:underline dark:text-cyan-400"
+                >
+                  Sửa nhanh trong tab Chế độ tối →
+                </Link>
                 <div className="space-y-2">
                   <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Phối màu header</div>
                   {([

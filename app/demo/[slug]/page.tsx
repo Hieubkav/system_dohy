@@ -84,6 +84,7 @@ export default async function PublicDemoPage({
       <SnapshotDemoProvider bundle={enrichedBundle}>
         <DemoSiteShell>
           <SnapshotDemoHomePage
+            applyThemeBoundary={false}
             payload={{
               bundle,
               components: snapshot.components,

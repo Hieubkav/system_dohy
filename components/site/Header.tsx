@@ -205,27 +205,42 @@ const HeaderSearchAutocomplete = dynamic(
   { ssr: false, loading: () => null }
 );
 
-function DarkModeToggle({ tokens, variant: _variant = 'desktop' }: { tokens: any; variant?: 'desktop' | 'mobile' }) {
+function DarkModeToggle({
+  isDark: controlledDark,
+  onThemeToggle,
+  tokens,
+  variant: _variant = 'desktop',
+}: {
+  isDark?: boolean;
+  onThemeToggle?: (isDark: boolean) => void;
+  tokens: any;
+  variant?: 'desktop' | 'mobile';
+}) {
   const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(Boolean(controlledDark));
   const setSetting = useMutation(api.settings.set);
 
   useEffect(() => {
     setMounted(true);
-    setIsDark(document.documentElement.classList.contains('dark'));
+    setIsDark(controlledDark ?? document.documentElement.classList.contains('dark'));
 
     const handleThemeChange = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
+      setIsDark(controlledDark ?? document.documentElement.classList.contains('dark'));
     };
     window.addEventListener('site-theme-change', handleThemeChange);
     return () => {
       window.removeEventListener('site-theme-change', handleThemeChange);
     };
-  }, []);
+  }, [controlledDark]);
 
   const toggleTheme = () => {
     const nextDark = !isDark;
     const nextValue = nextDark ? 'dark' : 'light';
+    if (onThemeToggle) {
+      setIsDark(nextDark);
+      onThemeToggle(nextDark);
+      return;
+    }
     // Optimistic UI: apply theme ngay lập tức
     const root = document.documentElement;
     root.classList.toggle('dark', nextDark);
@@ -260,9 +275,20 @@ function DarkModeToggle({ tokens, variant: _variant = 'desktop' }: { tokens: any
   );
 }
 
-export function Header({ initialData, staticMode }: { initialData?: HeaderInitialData; staticMode?: boolean }) {
+export function Header({
+  initialData,
+  onStaticThemeChange,
+  staticMode,
+  staticTheme,
+}: {
+  initialData?: HeaderInitialData;
+  onStaticThemeChange?: (theme: 'light' | 'dark') => void;
+  staticMode?: boolean;
+  staticTheme?: 'light' | 'dark';
+}) {
   const brandColors = useBrandColors();
   const siteSettings = useSiteSettings();
+  const effectiveIsDark = staticTheme ? staticTheme === 'dark' : siteSettings.isDark;
   const menuDataQuery = useQuery(api.menus.getFullMenu, staticMode ? 'skip' : { location: 'header' });
   const headerStyleSetting = useQuery(api.settings.getByKey, staticMode ? 'skip' : { key: 'header_style' });
   const headerConfigSetting = useQuery(api.settings.getByKey, staticMode ? 'skip' : { key: 'header_config' });
@@ -336,6 +362,9 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
   const showCart = Boolean(config.cart?.show && (commerceCapabilities?.cartAvailable ?? (cartEnabled && ordersEnabled)));
   const showWishlist = Boolean(config.wishlist?.show && wishlistEnabled);
   const ctaHref = config.cta?.url?.trim() || DEFAULT_LINKS.cta;
+  const handleStaticThemeToggle = useCallback((nextDark: boolean) => {
+    onStaticThemeChange?.(nextDark ? 'dark' : 'light');
+  }, [onStaticThemeChange]);
   
   const resolvedSiteName = siteSettings.isLoading
     ? (initialData?.site?.site_name ?? 'Website')
@@ -382,17 +411,17 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
 
   const tokens = useMemo<MenuColors>(
     () => {
-      const baseTokens = getMenuColors(brandColors.primary, brandColors.secondary, brandColors.mode, siteSettings.isDark);
+      const baseTokens = getMenuColors(brandColors.primary, brandColors.secondary, brandColors.mode, effectiveIsDark);
       if (config.enableGlassmorphism) {
         return {
           ...baseTokens,
-          dropdownBg: siteSettings.isDark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.75)',
-          dropdownBorder: siteSettings.isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+          dropdownBg: effectiveIsDark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(255, 255, 255, 0.75)',
+          dropdownBorder: effectiveIsDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
         };
       }
       return baseTokens;
     },
-    [brandColors.primary, brandColors.secondary, brandColors.mode, siteSettings.isDark, config.enableGlassmorphism]
+    [brandColors.primary, brandColors.secondary, brandColors.mode, effectiveIsDark, config.enableGlassmorphism]
   );
   const layerColors = useMemo(
     () => resolveMenuLayerColors(config.layerColors, tokens, brandColors.mode),
@@ -413,12 +442,12 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
   const logoBackgroundStyles: Record<LogoBackgroundStyle, React.CSSProperties> = {
     none: {},
     border: {
-      backgroundColor: siteSettings.isDark ? 'rgba(15, 23, 42, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+      backgroundColor: effectiveIsDark ? 'rgba(15, 23, 42, 0.6)' : 'rgba(255, 255, 255, 0.6)',
       border: `1px solid ${tokens.borderStrong}`,
-      boxShadow: siteSettings.isDark ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(15, 23, 42, 0.08)',
+      boxShadow: effectiveIsDark ? '0 2px 8px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(15, 23, 42, 0.08)',
     },
     outline: {
-      backgroundColor: siteSettings.isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.2)',
+      backgroundColor: effectiveIsDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.2)',
       border: `1px solid ${tokens.borderStrong}`,
     },
     hairline: {
@@ -428,27 +457,27 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
     inset: {
       backgroundColor: tokens.surfaceAlt,
       border: `1px solid ${tokens.border}`,
-      boxShadow: siteSettings.isDark ? 'inset 0 1px 0 rgba(255, 255, 255, 0.05)' : 'inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+      boxShadow: effectiveIsDark ? 'inset 0 1px 0 rgba(255, 255, 255, 0.05)' : 'inset 0 1px 0 rgba(255, 255, 255, 0.8)',
     },
     pill: {
-      backgroundColor: siteSettings.isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.12)',
+      backgroundColor: effectiveIsDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.12)',
       border: `1px solid ${tokens.border}`,
     },
     shadow: {
-      backgroundColor: siteSettings.isDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.88)',
-      boxShadow: siteSettings.isDark ? '0 10px 30px rgba(0, 0, 0, 0.4)' : '0 10px 30px rgba(15, 23, 42, 0.16)',
-      border: siteSettings.isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(148, 163, 184, 0.2)',
+      backgroundColor: effectiveIsDark ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.88)',
+      boxShadow: effectiveIsDark ? '0 10px 30px rgba(0, 0, 0, 0.4)' : '0 10px 30px rgba(15, 23, 42, 0.16)',
+      border: effectiveIsDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(148, 163, 184, 0.2)',
       backdropFilter: 'blur(10px)',
     },
     soft: {
       backgroundColor: tokens.surfaceAlt,
       border: `1px solid ${tokens.border}`,
-      boxShadow: siteSettings.isDark ? 'inset 0 1px 0 rgba(255, 255, 255, 0.05)' : 'inset 0 1px 0 rgba(255, 255, 255, 0.7)',
+      boxShadow: effectiveIsDark ? 'inset 0 1px 0 rgba(255, 255, 255, 0.05)' : 'inset 0 1px 0 rgba(255, 255, 255, 0.7)',
     },
     solid: {
       backgroundColor: tokens.textPrimary,
       border: `1px solid ${tokens.textPrimary}`,
-      boxShadow: siteSettings.isDark ? '0 12px 28px rgba(0, 0, 0, 0.4)' : '0 12px 28px rgba(15, 23, 42, 0.18)',
+      boxShadow: effectiveIsDark ? '0 12px 28px rgba(0, 0, 0, 0.4)' : '0 12px 28px rgba(15, 23, 42, 0.18)',
     },
   };
   const hasBackgroundFrame = logoBackgroundStyle !== 'none';
@@ -1572,7 +1601,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                 </div>
               )}
               {config.showDarkModeToggle && (
-                <DarkModeToggle tokens={navbarActionTokens} />
+                <DarkModeToggle isDark={staticMode ? effectiveIsDark : undefined} onThemeToggle={staticMode ? handleStaticThemeToggle : undefined} tokens={navbarActionTokens} />
               )}
               {showCart && (
                 <CartIcon variant="mobile" className="hidden lg:flex" tokens={navbarActionTokens} />
@@ -1598,7 +1627,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                 </button>
               )}
               {config.showDarkModeToggle && (
-                <DarkModeToggle tokens={navbarActionTokens} variant="mobile" />
+                <DarkModeToggle isDark={staticMode ? effectiveIsDark : undefined} onThemeToggle={staticMode ? handleStaticThemeToggle : undefined} tokens={navbarActionTokens} variant="mobile" />
               )}
               {showCart && (
                 <CartIcon variant="mobile" tokens={navbarActionTokens} />
@@ -1762,7 +1791,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                   </button>
                 )}
                 {config.showDarkModeToggle && (
-                  <DarkModeToggle tokens={navbarActionTokens} variant="mobile" />
+                  <DarkModeToggle isDark={staticMode ? effectiveIsDark : undefined} onThemeToggle={staticMode ? handleStaticThemeToggle : undefined} tokens={navbarActionTokens} variant="mobile" />
                 )}
                 {showCart && (
                   <CartIcon variant="mobile" tokens={navbarActionTokens} />
@@ -1783,7 +1812,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                   </Link>
                 )}
                 {config.showDarkModeToggle && (
-                  <DarkModeToggle tokens={navbarActionTokens} />
+                  <DarkModeToggle isDark={staticMode ? effectiveIsDark : undefined} onThemeToggle={staticMode ? handleStaticThemeToggle : undefined} tokens={navbarActionTokens} />
                 )}
                 {showCart && (
                   <CartIcon tokens={navbarActionTokens} />
@@ -2376,7 +2405,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
 
           {/* Dark Mode */}
           {config.showDarkModeToggle && (
-            <DarkModeToggle tokens={{ ...navbarActionTokens, iconButtonText: '#ffffff' }} />
+            <DarkModeToggle isDark={staticMode ? effectiveIsDark : undefined} onThemeToggle={staticMode ? handleStaticThemeToggle : undefined} tokens={{ ...navbarActionTokens, iconButtonText: '#ffffff' }} />
           )}
 
           {/* Cart */}
@@ -2407,7 +2436,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
             </button>
           )}
           {config.showDarkModeToggle && (
-            <DarkModeToggle tokens={{ ...navbarActionTokens, iconButtonText: '#ffffff' }} variant="mobile" />
+            <DarkModeToggle isDark={staticMode ? effectiveIsDark : undefined} onThemeToggle={staticMode ? handleStaticThemeToggle : undefined} tokens={{ ...navbarActionTokens, iconButtonText: '#ffffff' }} variant="mobile" />
           )}
           {showCart && (
             <CartIcon variant="mobile" tokens={{ ...navbarActionTokens, iconButtonText: '#ffffff' }} />
@@ -2525,7 +2554,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
           .glass-enabled-menu div.absolute div.rounded-lg {
             backdrop-filter: blur(20px) !important;
             -webkit-backdrop-filter: blur(20px) !important;
-            box-shadow: ${siteSettings.isDark 
+            box-shadow: ${effectiveIsDark
               ? '0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)' 
               : '0 10px 30px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.4)'
             } !important;
@@ -2873,7 +2902,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                   </Link>
                 )}
                 {config.showDarkModeToggle && (
-                  <DarkModeToggle tokens={navbarActionTokens} />
+                  <DarkModeToggle isDark={staticMode ? effectiveIsDark : undefined} onThemeToggle={staticMode ? handleStaticThemeToggle : undefined} tokens={navbarActionTokens} />
                 )}
                 {showCart && (
                   <CartIcon variant="mobile" tokens={navbarActionTokens} />
@@ -2890,7 +2919,7 @@ export function Header({ initialData, staticMode }: { initialData?: HeaderInitia
                   </button>
                 )}
                 {config.showDarkModeToggle && (
-                  <DarkModeToggle tokens={navbarActionTokens} variant="mobile" />
+                  <DarkModeToggle isDark={staticMode ? effectiveIsDark : undefined} onThemeToggle={staticMode ? handleStaticThemeToggle : undefined} tokens={navbarActionTokens} variant="mobile" />
                 )}
                 {showCart && (
                   <CartIcon variant="mobile" tokens={navbarActionTokens} />

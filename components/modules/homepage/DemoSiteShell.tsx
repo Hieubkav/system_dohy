@@ -8,12 +8,31 @@ import { useSnapshotDemoContext } from './SnapshotDemoProvider';
 import type { SnapshotMenuItem } from './snapshot-demo-types';
 import type { Id } from '@/convex/_generated/dataModel';
 
+const resolveSnapshotTheme = (mode: unknown): 'light' | 'dark' => {
+  if (mode === 'dark') {return 'dark';}
+  if (mode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    return 'dark';
+  }
+  return 'light';
+};
+
 /**
  * Lightweight shell for /demo/[slug] route.
  * Renders Header from snapshot bundle data only — no DB queries.
  */
 export function DemoSiteShell({ children }: { children: React.ReactNode }) {
   const ctx = useSnapshotDemoContext();
+  const snapshotThemeMode = ctx?.getSiteSettings().site_dark_mode ?? 'light';
+  const [theme, setTheme] = React.useState<'light' | 'dark'>(() => resolveSnapshotTheme(snapshotThemeMode));
+
+  React.useEffect(() => {
+    setTheme(resolveSnapshotTheme(snapshotThemeMode));
+    if (snapshotThemeMode !== 'system') {return;}
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => setTheme(resolveSnapshotTheme(snapshotThemeMode));
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [snapshotThemeMode]);
 
   const initialHeaderData = React.useMemo<HeaderInitialData | undefined>(() => {
     if (!ctx) return undefined;
@@ -63,9 +82,14 @@ export function DemoSiteShell({ children }: { children: React.ReactNode }) {
   return (
     <CustomerAuthProvider>
       <CartProvider>
-        <div data-theme="light" style={{ colorScheme: 'light' }}>
+        <div className={theme === 'dark' ? 'dark' : undefined} data-snapshot-demo-root data-theme={theme} style={{ colorScheme: theme }}>
           <div className="min-h-screen flex flex-col">
-            <Header initialData={initialHeaderData} staticMode />
+            <Header
+              initialData={initialHeaderData}
+              onStaticThemeChange={setTheme}
+              staticMode
+              staticTheme={theme}
+            />
             <main className="flex-1 overflow-x-hidden">
               {children}
             </main>

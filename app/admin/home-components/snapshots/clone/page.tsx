@@ -53,6 +53,7 @@ const DEFAULT_SITE_SETTINGS: SnapshotSiteSettings = {
   site_brand_mode: 'dual',
   site_brand_primary: '#9b2c3b',
   site_brand_secondary: '#ecaa4d',
+  site_dark_mode: 'light',
   site_favicon: '',
   site_language: 'vi',
   site_logo: '',

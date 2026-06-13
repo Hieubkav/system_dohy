@@ -74,6 +74,7 @@ const SNAPSHOT_REQUIRED_SETTINGS_KEYS = {
     'site_brand_mode',
     'site_timezone',
     'site_language',
+    'site_dark_mode',
   ],
   social: [
     'social_facebook',
@@ -1524,6 +1525,11 @@ export const preflightHomepageSnapshot = mutation({
   returns: v.any(),
 });
 
+const uploadedMediaMapValidator = v.optional(v.record(v.string(), v.object({
+  url: v.string(),
+  storageId: v.optional(v.union(v.string(), v.null())),
+})));
+
 type UploadedMediaMap = Record<string, { url: string; storageId?: string | null }>;
 
 const isStorageIdKey = (key: string) => key === 'storageId' || key.endsWith('StorageId');
@@ -1588,6 +1594,40 @@ const buildMediaReplacementMap = (
     map[media.originalUrl] = replacement;
   }
   return map;
+};
+
+const rewriteSnapshotPayloadMedia = (
+  payload: HomepageSnapshotPayload,
+  mediaReplacementMap: UploadedMediaMap,
+): HomepageSnapshotPayload => {
+  const rewrite = (value: unknown) => replaceMediaUrls(value, mediaReplacementMap);
+  const homepage: HomepageSnapshotPayload['homepage'] = {
+    ...payload.homepage,
+    components: payload.homepage.components.map((component) => ({
+      ...component,
+      config: rewrite(component.config),
+      mediaRefs: [],
+    })),
+    dependencies: rewrite(payload.homepage.dependencies) as SnapshotDependencyCapture,
+    systemStyle: rewrite(payload.homepage.systemStyle) as SnapshotSystemStylePayload,
+  };
+  if (payload.homepage.demoBundle !== undefined) {
+    homepage.demoBundle = rewrite(payload.homepage.demoBundle) as Record<string, unknown>;
+  }
+
+  const nextPayload: HomepageSnapshotPayload = {
+    ...payload,
+    homepage,
+    index: {
+      mediaIndex: [],
+    },
+  };
+  if (payload.gallery?.customThumbnail) {
+    nextPayload.gallery = { customThumbnail: rewrite(payload.gallery.customThumbnail) as SnapshotCustomThumbnail };
+  } else {
+    delete nextPayload.gallery;
+  }
+  return normalizeHomepageSnapshotPayload(nextPayload);
 };
 
 const upsertSnapshotSetting = async (ctx: any, group: string, key: string, value: unknown) => {
@@ -1944,14 +1984,65 @@ export const exportSavedHomepageSnapshotZip = action({
   returns: snapshotZipActionReturn,
 });
 
+export const saveImportedHomepageSnapshot = mutation({
+  args: {
+    category: v.optional(v.string()),
+    label: v.optional(v.string()),
+    payload: v.any(),
+    uploadedMediaMap: uploadedMediaMapValidator,
+  },
+  handler: async (ctx, args) => {
+    const payload = normalizeHomepageSnapshotPayload(args.payload as HomepageSnapshotPayload);
+    const report = buildReport(payload);
+    if (report.summary.blocking > 0) {
+      return { saved: false, snapshotId: null, report };
+    }
+
+    const mediaReplacementMap = buildMediaReplacementMap(payload, args.uploadedMediaMap ?? {});
+    const nextPayload = rewriteSnapshotPayloadMedia(payload, mediaReplacementMap);
+    const label = args.label?.trim()
+      || nextPayload.manifest.snapshotLabel?.trim()
+      || `Snapshot nhập ${new Date().toISOString().slice(0, 10)}`;
+
+    let baseSlug = slugify(label);
+    if (!baseSlug) baseSlug = `snapshot-${Date.now()}`;
+    let slug = baseSlug;
+    let suffix = 1;
+    while (await ctx.db.query('homeComponentSnapshots').withIndex('by_slug', (q) => q.eq('slug', slug)).unique()) {
+      slug = `${baseSlug}-${suffix++}`;
+    }
+
+    const now = Date.now();
+    const snapshotId = await ctx.db.insert('homeComponentSnapshots', {
+      category: args.category || 'other',
+      createdAt: now,
+      label,
+      payloadUpdatedAt: now,
+      publicEnabled: false,
+      slug,
+      ...buildSnapshotSummary(nextPayload),
+      version: HOMEPAGE_SNAPSHOT_VERSION,
+    });
+    await ctx.db.insert('homeComponentSnapshotPayloads', {
+      snapshotId,
+      payload: nextPayload,
+    });
+
+    const customThumbnail = normalizeSnapshotCustomThumbnail(nextPayload.gallery?.customThumbnail);
+    if (customThumbnail) {
+      await syncSnapshotCustomThumbnailFiles(ctx, snapshotId, undefined, customThumbnail);
+    }
+
+    return { saved: true, snapshotId, report };
+  },
+  returns: v.any(),
+});
+
 export const importHomepageSnapshot = mutation({
   args: {
     payload: v.any(),
     mode: v.optional(v.union(v.literal('append'), v.literal('replace_all'))),
-    uploadedMediaMap: v.optional(v.record(v.string(), v.object({
-      url: v.string(),
-      storageId: v.optional(v.union(v.string(), v.null())),
-    }))),
+    uploadedMediaMap: uploadedMediaMapValidator,
   },
   handler: async (ctx, args) => {
     const payload = normalizeHomepageSnapshotPayload(args.payload as HomepageSnapshotPayload);

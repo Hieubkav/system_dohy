@@ -37,6 +37,9 @@ import {
 } from 'lucide-react';
 import { Button, Card, CardContent, Input } from '@/app/admin/components/ui';
 import { api } from '@/convex/_generated/api';
+import type { Id } from '@/convex/_generated/dataModel';
+import type { HomepageSnapshotPayload } from '@/lib/homepage-snapshot/types';
+import type { SnapshotDemoBundle } from '@/components/modules/homepage/snapshot-demo-types';
 import { useI18n } from '../i18n/context';
 import { toast } from 'sonner';
 
@@ -147,9 +150,51 @@ const GROUP_HOVER_COLOR: Record<string, string> = {
   ui:       'hover:border-rose-500/60 group-hover:text-rose-600 dark:group-hover:text-rose-400',
 };
 
+type DarkModeValue = 'light' | 'dark' | 'system';
+
+const normalizeDarkModeValue = (value: unknown): DarkModeValue => (
+  value === 'dark' || value === 'system' ? value : 'light'
+);
+
+const getSnapshotDarkModeValue = (payload?: HomepageSnapshotPayload | null): DarkModeValue => {
+  const bundle = (payload?.homepage.demoBundle ?? {}) as Partial<SnapshotDemoBundle>;
+  return normalizeDarkModeValue(bundle.settings?.site?.site_dark_mode);
+};
+
+const withSnapshotDarkMode = (
+  payload: HomepageSnapshotPayload,
+  darkMode: DarkModeValue,
+): HomepageSnapshotPayload => {
+  const bundle = (payload.homepage.demoBundle ?? {}) as Partial<SnapshotDemoBundle>;
+  return {
+    ...payload,
+    homepage: {
+      ...payload.homepage,
+      demoBundle: {
+        ...bundle,
+        componentData: bundle.componentData ?? {},
+        integrity: bundle.integrity ?? { level: 'partial', requiredMissing: [], warnings: [] },
+        menus: bundle.menus ?? {},
+        settings: {
+          ...bundle.settings,
+          contact: bundle.settings?.contact ?? {},
+          routing: bundle.settings?.routing ?? { ia_route_mode: 'unified' },
+          site: {
+            ...bundle.settings?.site,
+            site_dark_mode: darkMode,
+          },
+          social: bundle.settings?.social ?? {},
+        },
+        systemStyle: bundle.systemStyle ?? payload.homepage.systemStyle ?? null,
+      },
+    },
+  };
+};
+
 export default function ExperiencesPage() {
   const { t } = useI18n();
   const [activeMainTab, setActiveMainTab] = useState<'hub' | 'layout_config' | 'dark_mode'>('hub');
+  const [snapshotId, setSnapshotId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -158,6 +203,7 @@ export default function ExperiencesPage() {
       if (tab === 'layout_config' || tab === 'dark_mode') {
         setActiveMainTab(tab);
       }
+      setSnapshotId(params.get('snapshotId'));
     }
   }, []);
 
@@ -175,8 +221,13 @@ export default function ExperiencesPage() {
   const projectsSetting = useQuery(api.settings.getByKey, { key: 'projects_list_ui' });
   const productsSetting = useQuery(api.settings.getByKey, { key: 'products_list_ui' });
   const darkModeSetting = useQuery(api.settings.getByKey, { key: 'site_dark_mode' });
+  const snapshot = useQuery(
+    api.homepageSnapshots.getHomepageSnapshotById,
+    snapshotId ? { snapshotId: snapshotId as Id<'homeComponentSnapshots'> } : 'skip'
+  );
 
   const setMultipleSettings = useMutation(api.settings.setMultiple);
+  const updateSnapshot = useMutation(api.homepageSnapshots.updateHomepageSnapshot);
 
   const [localLayouts, setLocalLayouts] = useState<Record<string, 'grid' | 'sidebar' | 'list'>>({});
   const [localGridColumns, setLocalGridColumns] = useState<Record<string, number>>({});
@@ -187,6 +238,9 @@ export default function ExperiencesPage() {
   const [localShowDetailButton, setLocalShowDetailButton] = useState<Record<string, boolean>>({});
   const [localDetailButtonText, setLocalDetailButtonText] = useState<Record<string, string>>({});
   const [isInitialized, setIsInitialized] = useState(false);
+  const snapshotPayload = snapshot?.payload as HomepageSnapshotPayload | undefined;
+  const snapshotDarkMode = getSnapshotDarkModeValue(snapshotPayload);
+  const isSnapshotDarkModeEditing = Boolean(snapshotId);
 
   const isLoaded = postsSetting !== undefined &&
     resourcesSetting !== undefined &&
@@ -194,7 +248,8 @@ export default function ExperiencesPage() {
     servicesSetting !== undefined &&
     projectsSetting !== undefined &&
     productsSetting !== undefined &&
-    darkModeSetting !== undefined;
+    darkModeSetting !== undefined &&
+    (!isSnapshotDarkModeEditing || snapshot !== undefined);
 
   useEffect(() => {
     if (isLoaded && !isInitialized) {
@@ -223,7 +278,7 @@ export default function ExperiencesPage() {
         products: (productsSetting?.value as any)?.cornerRadius ?? 'lg',
       });
       setLocalCartButtonsLayout((productsSetting?.value as any)?.cartButtonsLayout ?? 'stack');
-      setLocalDarkMode((darkModeSetting?.value as any) ?? 'light');
+      setLocalDarkMode(isSnapshotDarkModeEditing ? snapshotDarkMode : normalizeDarkModeValue(darkModeSetting?.value));
       setLocalDarkModePremiumBorder({
         posts: (postsSetting?.value as any)?.darkModePremiumBorder ?? false,
         resources: (resourcesSetting?.value as any)?.darkModePremiumBorder ?? false,
@@ -250,7 +305,7 @@ export default function ExperiencesPage() {
       });
       setIsInitialized(true);
     }
-  }, [isLoaded, isInitialized, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
+  }, [isLoaded, isInitialized, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting, isSnapshotDarkModeEditing, snapshotDarkMode]);
 
   const hasChanges = React.useMemo(() => {
     if (!isLoaded) return false;
@@ -292,14 +347,29 @@ export default function ExperiencesPage() {
       localDetailButtonText.services !== ((servicesSetting?.value as any)?.detailButtonText ?? 'Xem dịch vụ') ||
       localDetailButtonText.projects !== ((projectsSetting?.value as any)?.detailButtonText ?? 'Xem dự án') ||
       localDetailButtonText.products !== ((productsSetting?.value as any)?.detailButtonText ?? 'Xem sản phẩm') ||
-      localDarkMode !== ((darkModeSetting?.value as any) ?? 'light')
+      localDarkMode !== (isSnapshotDarkModeEditing ? snapshotDarkMode : normalizeDarkModeValue(darkModeSetting?.value))
     );
-  }, [localLayouts, localGridColumns, localCornerRadius, localCartButtonsLayout, localDarkMode, localDarkModePremiumBorder, localShowDetailButton, localDetailButtonText, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting]);
+  }, [localLayouts, localGridColumns, localCornerRadius, localCartButtonsLayout, localDarkMode, localDarkModePremiumBorder, localShowDetailButton, localDetailButtonText, isLoaded, postsSetting, resourcesSetting, coursesSetting, servicesSetting, projectsSetting, productsSetting, darkModeSetting, isSnapshotDarkModeEditing, snapshotDarkMode]);
 
   const [isSaving, setIsSaving] = useState(false);
   const handleSaveAll = async () => {
     setIsSaving(true);
     try {
+      if (isSnapshotDarkModeEditing && activeMainTab === 'dark_mode') {
+        if (!snapshot || !snapshotPayload) {
+          toast.error('Không tìm thấy snapshot để cập nhật');
+          return;
+        }
+        await updateSnapshot({
+          label: snapshot.label,
+          payload: withSnapshotDarkMode(snapshotPayload, localDarkMode),
+          snapshotId: snapshotId as Id<'homeComponentSnapshots'>,
+        });
+        toast.success('Đã cập nhật chế độ tối cho snapshot');
+        setIsInitialized(false);
+        return;
+      }
+
       const settings = [
         {
           group: 'experience',
@@ -1110,12 +1180,44 @@ export default function ExperiencesPage() {
         </div>
       ) : (
         <div className="space-y-6 animate-in fade-in duration-200 max-w-4xl mx-auto">
+          {isSnapshotDarkModeEditing ? (
+            <Card className="border border-cyan-200 bg-cyan-50/70 dark:border-cyan-900/60 dark:bg-cyan-950/20">
+              <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm font-bold text-cyan-800 dark:text-cyan-200">
+                    Đang sửa chế độ tối cho snapshot
+                  </div>
+                  <p className="text-xs text-cyan-700/80 dark:text-cyan-300/80">
+                    {snapshot === undefined
+                      ? 'Đang tải snapshot...'
+                      : snapshot === null
+                        ? 'Snapshot không tồn tại hoặc đã bị xóa.'
+                        : `${snapshot.label} · thay đổi chỉ lưu trong snapshot, không đụng site thật.`}
+                  </p>
+                </div>
+                {snapshotId ? (
+                  <Link
+                    href={`/admin/home-components/snapshots/${snapshotId}/home-components`}
+                    className="text-xs font-bold text-cyan-700 hover:underline dark:text-cyan-300"
+                  >
+                    Quay lại snapshot →
+                  </Link>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
           {/* Dark Mode configuration */}
           <Card className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-hidden rounded-xl">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
               <div>
-                <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">Thiết lập giao diện hiển thị</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Lựa chọn chế độ hiển thị mặc định cho khách truy cập trang web public</p>
+                <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">
+                  {isSnapshotDarkModeEditing ? 'Thiết lập giao diện snapshot' : 'Thiết lập giao diện hiển thị'}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {isSnapshotDarkModeEditing
+                    ? 'Lựa chọn chế độ hiển thị mặc định cho bản demo snapshot.'
+                    : 'Lựa chọn chế độ hiển thị mặc định cho khách truy cập trang web public'}
+                </p>
               </div>
               <Button
                 size="sm"
@@ -1128,7 +1230,7 @@ export default function ExperiencesPage() {
                 }`}
               >
                 {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                <span>{hasChanges ? 'Lưu cấu hình' : 'Đã lưu cấu hình'}</span>
+                <span>{hasChanges ? (isSnapshotDarkModeEditing ? 'Lưu snapshot' : 'Lưu cấu hình') : (isSnapshotDarkModeEditing ? 'Đã lưu snapshot' : 'Đã lưu cấu hình')}</span>
               </Button>
             </div>
 

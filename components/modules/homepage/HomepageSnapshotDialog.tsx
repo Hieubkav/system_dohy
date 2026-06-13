@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { AlertTriangle, ChevronDown, Download, Edit3, ExternalLink, Eye, EyeOff, FileUp, Globe, Loader2, PackageCheck, Search, ShieldCheck, Tag, Trash2, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -31,9 +32,11 @@ type HomepageSnapshotDialogProps = {
 };
 
 export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotDialogProps) {
+  const router = useRouter();
   const savedSnapshots = useQuery(api.homepageSnapshots.listHomepageSnapshots) ?? [];
   const preflightSnapshot = useMutation(api.homepageSnapshots.preflightHomepageSnapshot);
   const importSnapshot = useMutation(api.homepageSnapshots.importHomepageSnapshot);
+  const saveImportedSnapshot = useMutation(api.homepageSnapshots.saveImportedHomepageSnapshot);
   const saveCurrentSnapshot = useMutation(api.homepageSnapshots.saveCurrentHomepageSnapshot);
   const applySnapshot = useMutation(api.homepageSnapshots.applyHomepageSnapshot);
   const removeSnapshot = useMutation(api.homepageSnapshots.removeHomepageSnapshot);
@@ -56,6 +59,7 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingSavedId, setIsExportingSavedId] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [importMode, setImportMode] = useState<'replace' | 'snapshot' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isApplyingId, setIsApplyingId] = useState<string | null>(null);
   const [profileLabel, setProfileLabel] = useState('');
@@ -179,7 +183,42 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     }
   };
 
-  const handleImport = async () => {
+  const uploadImportedMedia = async () => {
+    if (!parsedBundle) {return {};}
+    const uploadedMediaMap: Record<string, { url: string; storageId?: string | null }> = {};
+    const mediaIndexByPath = new Map(parsedBundle.payload.index.mediaIndex.map((item) => [item.logicalPath, item]));
+    for (const media of parsedBundle.mediaFiles) {
+      const uploadUrl = await generateUploadUrl({});
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': media.file.type || 'application/octet-stream' },
+        body: media.file,
+      });
+      if (!response.ok) {
+        throw new Error(`Upload media thất bại: ${media.logicalPath}`);
+      }
+      const body = await response.json() as { storageId: string };
+      const saved = await saveImage({
+        storageId: body.storageId as Id<'_storage'>,
+        filename: media.file.name,
+        folder: media.logicalPath.split('/').slice(0, -1).join('/'),
+        mimeType: media.file.type || 'application/octet-stream',
+        size: media.file.size,
+      });
+      const uploaded = {
+        url: saved.url ?? media.logicalPath,
+        storageId: body.storageId,
+      };
+      uploadedMediaMap[media.logicalPath] = uploaded;
+      const originalUrl = mediaIndexByPath.get(media.logicalPath)?.originalUrl;
+      if (originalUrl) {
+        uploadedMediaMap[originalUrl] = uploaded;
+      }
+    }
+    return uploadedMediaMap;
+  };
+
+  const handleImport = async (mode: 'replace' | 'snapshot') => {
     if (!parsedBundle || !report) {
       toast.error('Cần chọn snapshot hợp lệ trước');
       return;
@@ -190,36 +229,34 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     }
 
     setIsImporting(true);
+    setImportMode(mode);
     try {
-      const uploadedMediaMap: Record<string, { url: string; storageId?: string | null }> = {};
-      const mediaIndexByPath = new Map(parsedBundle.payload.index.mediaIndex.map((item) => [item.logicalPath, item]));
-      for (const media of parsedBundle.mediaFiles) {
-        const uploadUrl = await generateUploadUrl({});
-        const response = await fetch(uploadUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': media.file.type || 'application/octet-stream' },
-          body: media.file,
-        });
-        if (!response.ok) {
-          throw new Error(`Upload media thất bại: ${media.logicalPath}`);
+      const uploadedMediaMap = await uploadImportedMedia();
+
+      if (mode === 'snapshot') {
+        const fallbackLabel = parsedBundle.payload.manifest.snapshotLabel?.trim()
+          || parsedBundle.fileName.replace(/\.zip$/i, '')
+          || `Snapshot ${savedSnapshots.length + 1}`;
+        const result = await saveImportedSnapshot({
+          category: profileCategory,
+          label: profileLabel.trim() || fallbackLabel,
+          payload: parsedBundle.payload,
+          uploadedMediaMap,
+        }) as { report: HomepageSnapshotImportReport; saved: boolean; snapshotId: Id<'homeComponentSnapshots'> | null };
+
+        setReport(result.report);
+        if (!result.saved || !result.snapshotId) {
+          toast.error('Import snapshot bị chặn');
+          return;
         }
-        const body = await response.json() as { storageId: string };
-        const saved = await saveImage({
-          storageId: body.storageId as Id<'_storage'>,
-          filename: media.file.name,
-          folder: media.logicalPath.split('/').slice(0, -1).join('/'),
-          mimeType: media.file.type || 'application/octet-stream',
-          size: media.file.size,
-        });
-        const uploaded = {
-          url: saved.url ?? media.logicalPath,
-          storageId: body.storageId,
-        };
-        uploadedMediaMap[media.logicalPath] = uploaded;
-        const originalUrl = mediaIndexByPath.get(media.logicalPath)?.originalUrl;
-        if (originalUrl) {
-          uploadedMediaMap[originalUrl] = uploaded;
+        const cleanup = await cleanupImportedBinOrphans({});
+        toast.success('Đã nhập thành snapshot mới, không thay thế site thật');
+        if (cleanup.deleted > 0) {
+          toast.success(`Đã dọn ${cleanup.deleted} file .bin dư`);
         }
+        onOpenChange(false);
+        router.push(`/admin/home-components/snapshots/${result.snapshotId}/home-components`);
+        return;
       }
 
       const result = await importSnapshot({
@@ -243,6 +280,7 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
       toast.error(error instanceof Error ? error.message : 'Import snapshot thất bại');
     } finally {
       setIsImporting(false);
+      setImportMode(null);
     }
   };
 
@@ -531,6 +569,9 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
           {/* ── Section 3: Nhập từ ZIP ── */}
           <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 space-y-3">
             <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Nhập từ file ZIP</div>
+            <div className="text-xs text-slate-500">
+              Có thể nhập thành snapshot mới để lưu vào kho giao diện mà không thay thế trang chủ hiện tại.
+            </div>
             <label className="inline-flex">
               <input type="file" accept=".zip,application/zip" className="hidden" onChange={(event) => { void handleFileChange(event); }} />
               <Button
@@ -605,8 +646,16 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Đóng</Button>
-          <Button onClick={() => { void handleImport(); }} disabled={!parsedBundle || !report || isImporting || report.summary.blocking > 0}>
-            {isImporting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+          <Button
+            variant="outline"
+            onClick={() => { void handleImport('snapshot'); }}
+            disabled={!parsedBundle || !report || isImporting || report.summary.blocking > 0}
+          >
+            {importMode === 'snapshot' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+            Nhập thành snapshot mới
+          </Button>
+          <Button onClick={() => { void handleImport('replace'); }} disabled={!parsedBundle || !report || isImporting || report.summary.blocking > 0}>
+            {importMode === 'replace' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
             Nhập và thay thế
           </Button>
         </DialogFooter>

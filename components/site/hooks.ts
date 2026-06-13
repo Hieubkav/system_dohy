@@ -90,24 +90,32 @@ export function useSiteSettings() {
   useEffect(() => {
     if (isLoading) return;
 
-    const checkDark = () => {
-      if (typeof window !== 'undefined') {
-        return document.documentElement.classList.contains('dark');
+    const resolveCurrentDark = () => {
+      const mode = settingsMap.site_dark_mode;
+      if (snapshotSite) {
+        return mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
       }
-      return settingsMap.site_dark_mode === 'dark';
+      return document.documentElement.classList.contains('dark');
     };
 
-    setIsDark(checkDark());
+    setIsDark(resolveCurrentDark());
 
     const handleThemeChange = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
+      setIsDark(resolveCurrentDark());
     };
 
     window.addEventListener('site-theme-change', handleThemeChange);
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    if (settingsMap.site_dark_mode === 'system') {
+      mediaQuery.addEventListener('change', handleThemeChange);
+    }
     return () => {
       window.removeEventListener('site-theme-change', handleThemeChange);
+      if (settingsMap.site_dark_mode === 'system') {
+        mediaQuery.removeEventListener('change', handleThemeChange);
+      }
     };
-  }, [isLoading, settingsMap.site_dark_mode]);
+  }, [isLoading, settingsMap.site_dark_mode, snapshotSite]);
   
   if (isLoading) {
     return { 
