@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useConvex, useMutation, useQuery } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { AlertTriangle, ChevronDown, Download, Edit3, ExternalLink, Eye, EyeOff, FileUp, Globe, Loader2, PackageCheck, Search, ShieldCheck, Tag, Trash2, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -19,12 +19,10 @@ import {
   Input,
 } from '@/app/admin/components/ui';
 import {
-  createHomepageSnapshotZip,
   parseHomepageSnapshotFile,
 } from '@/lib/homepage-snapshot/client';
 import type {
   HomepageSnapshotImportReport,
-  HomepageSnapshotPayload,
 } from '@/lib/homepage-snapshot/types';
 
 type HomepageSnapshotDialogProps = {
@@ -33,14 +31,14 @@ type HomepageSnapshotDialogProps = {
 };
 
 export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotDialogProps) {
-  const convex = useConvex();
-  const captureSnapshot = useQuery(api.homepageSnapshots.captureHomepageSnapshot, { label: 'Tạo nhanh snapshot' }) as HomepageSnapshotPayload | undefined;
   const savedSnapshots = useQuery(api.homepageSnapshots.listHomepageSnapshots) ?? [];
   const preflightSnapshot = useMutation(api.homepageSnapshots.preflightHomepageSnapshot);
   const importSnapshot = useMutation(api.homepageSnapshots.importHomepageSnapshot);
-  const saveSnapshot = useMutation(api.homepageSnapshots.saveHomepageSnapshot);
+  const saveCurrentSnapshot = useMutation(api.homepageSnapshots.saveCurrentHomepageSnapshot);
   const applySnapshot = useMutation(api.homepageSnapshots.applyHomepageSnapshot);
   const removeSnapshot = useMutation(api.homepageSnapshots.removeHomepageSnapshot);
+  const exportCurrentSnapshotZip = useAction(api.homepageSnapshots.exportCurrentHomepageSnapshotZip);
+  const exportSavedSnapshotZip = useAction(api.homepageSnapshots.exportSavedHomepageSnapshotZip);
   const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
   const saveImage = useMutation(api.storage.saveImage);
   const cleanupImportedBinOrphans = useMutation(api.storage.cleanupImportedBinOrphans);
@@ -95,27 +93,14 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     });
   }, [savedSnapshots, snapshotQuery, categoryFilter]);
 
-  const downloadBlob = (blob: Blob, fileName: string) => {
-    const url = URL.createObjectURL(blob);
+  const downloadUrl = (url: string, fileName: string) => {
     const link = document.createElement('a');
     link.href = url;
     link.download = fileName;
+    link.rel = 'noopener';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  const toSnapshotFileName = (label?: string) => {
-    const safeLabel = (label ?? '')
-      .normalize('NFD')
-      .replaceAll(/[\u0300-\u036f]/g, '')
-      .replaceAll(/[đĐ]/g, 'd')
-      .toLowerCase()
-      .replaceAll(/[^a-z0-9]+/g, '-')
-      .replaceAll(/-+/g, '-')
-      .replace(/^-|-$/g, '');
-    return `homepage-snapshot-${safeLabel || new Date().toISOString().slice(0, 10)}.zip`;
   };
 
   const showExportResultToast = (mediaCount: number, warningCount: number) => {
@@ -127,15 +112,13 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
   };
 
   const handleExport = async () => {
-    if (!captureSnapshot) {
-      toast.error('Snapshot chưa sẵn sàng');
-      return;
-    }
     setIsExporting(true);
     try {
-      const result = await createHomepageSnapshotZip(captureSnapshot);
-      downloadBlob(result.blob, toSnapshotFileName(captureSnapshot.manifest.snapshotLabel));
-      showExportResultToast(result.mediaCount, result.warnings.length);
+      const result = await exportCurrentSnapshotZip({
+        label: profileLabel.trim() || 'Tạo nhanh snapshot',
+      });
+      downloadUrl(result.url, result.fileName);
+      showExportResultToast(result.mediaCount, result.warningCount);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Export snapshot thất bại');
     } finally {
@@ -146,16 +129,11 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
   const handleExportSavedProfile = async (snapshotId: string, fallbackLabel: string) => {
     setIsExportingSavedId(snapshotId);
     try {
-      const snapshot = await convex.query(api.homepageSnapshots.getHomepageSnapshotById, {
+      const result = await exportSavedSnapshotZip({
         snapshotId: snapshotId as Id<'homeComponentSnapshots'>,
-      }) as { label?: string; payload?: HomepageSnapshotPayload | null } | null;
-      if (!snapshot?.payload) {
-        toast.error('Không tìm thấy payload snapshot để tải ZIP');
-        return;
-      }
-      const result = await createHomepageSnapshotZip(snapshot.payload);
-      downloadBlob(result.blob, toSnapshotFileName(snapshot.label ?? fallbackLabel));
-      showExportResultToast(result.mediaCount, result.warnings.length);
+      });
+      downloadUrl(result.url, result.fileName || fallbackLabel);
+      showExportResultToast(result.mediaCount, result.warningCount);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Không thể tải snapshot ZIP');
     } finally {
@@ -164,16 +142,11 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
   };
 
   const handleSaveProfile = async () => {
-    if (!captureSnapshot) {
-      toast.error('Snapshot chưa sẵn sàng');
-      return;
-    }
     setIsSaving(true);
     try {
-      await saveSnapshot({
+      await saveCurrentSnapshot({
         category: profileCategory,
         label: profileLabel.trim() || `zip ${savedSnapshots.length + 1}`,
-        payload: captureSnapshot,
       });
       setProfileLabel('');
       setProfileCategory('Khác');
@@ -337,18 +310,15 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
           <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 space-y-3">
             <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Ảnh chụp hiện tại</div>
             <div className="text-xs text-slate-500">
-              {captureSnapshot
-                ? `${captureSnapshot.manifest.componentCount} thành phần · ${captureSnapshot.index.mediaIndex.length} tệp media`
-                : 'Đang chuẩn bị dữ liệu...'}
+              Chỉ đọc dữ liệu khi bấm tải/lưu để giảm DB bandwidth. ZIP sẽ tự đính kèm media và phụ thuộc.
             </div>
-            {captureSnapshot?.homepage.demoBundle ? (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Badge variant="success">Tự chứa dữ liệu</Badge>
-                <Badge variant="info">Đính kèm media</Badge>
-              </div>
-            ) : null}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Badge variant="success">Tự chứa dữ liệu</Badge>
+              <Badge variant="info">Đính kèm media</Badge>
+              <Badge variant="outline">Tải qua cache ZIP</Badge>
+            </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="accent" size="sm" onClick={() => { void handleExport(); }} disabled={isExporting || !captureSnapshot}>
+              <Button variant="accent" size="sm" onClick={() => { void handleExport(); }} disabled={isExporting}>
                 {isExporting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
                 Tải ZIP
               </Button>
@@ -371,7 +341,7 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
                   </select>
                   <Tag className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
                 </div>
-                <Button variant="outline" size="sm" onClick={() => { void handleSaveProfile(); }} disabled={isSaving || !captureSnapshot}>
+                <Button variant="outline" size="sm" onClick={() => { void handleSaveProfile(); }} disabled={isSaving}>
                   {isSaving ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
                   Lưu
                 </Button>

@@ -785,6 +785,15 @@ export default defineSchema({
     tagline: v.optional(v.string()),
     thumbnails: v.optional(v.array(v.string())),
     version: v.string(),
+    payloadUpdatedAt: v.optional(v.number()),
+    zipBuiltAt: v.optional(v.number()),
+    zipBuilderVersion: v.optional(v.string()),
+    zipByteSize: v.optional(v.number()),
+    zipFileName: v.optional(v.string()),
+    zipMediaCount: v.optional(v.number()),
+    zipPayloadHash: v.optional(v.string()),
+    zipStorageId: v.optional(v.id("_storage")),
+    zipWarningCount: v.optional(v.number()),
   })
     .index("by_createdAt", ["createdAt"])
     .index("by_slug", ["slug"])

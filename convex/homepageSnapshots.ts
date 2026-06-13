@@ -1,7 +1,8 @@
 import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { action, internalMutation, internalQuery, mutation, query } from './_generated/server';
+import { internal } from './_generated/api';
 import { slugify, getMimeFromExtension } from '../lib/image/uploadNaming';
-import type { Doc } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import {
   HOMEPAGE_SNAPSHOT_VERSION,
   HOMEPAGE_SNAPSHOT_VERSION_V2,
@@ -15,6 +16,9 @@ import {
 import type { ContactSettings, SEOSettings, SiteSettings, SocialSettings } from '../lib/get-settings';
 
 const REPLACE_ALL_MODE = 'replace_all';
+const SNAPSHOT_ZIP_BUILDER_VERSION = 'homepage-snapshot-zip.2026-06-13.v1';
+const SNAPSHOT_MEDIA_FETCH_CONCURRENCY = 6;
+const SNAPSHOT_MEDIA_FETCH_TIMEOUT_MS = 20_000;
 
 const loadSnapshotPayload = async (
   ctx: any,
@@ -628,87 +632,93 @@ const buildSnapshotDemoConfigs = async (
   return { configOverrides, settings: settingsBundle, modules: moduleBundle, menus: { footer: footerMenu, header: headerMenu } };
 };
 
+const buildHomepageSnapshotPayload = async (
+  ctx: any,
+  label?: string,
+): Promise<HomepageSnapshotPayload> => {
+  const components = [...await ctx.db.query('homeComponents').take(5000)].sort((a, b) => a.order - b.order || a._creationTime - b._creationTime);
+  const dependencies = await buildDependencyCapture(ctx, components);
+  const systemStyle = await buildSystemStyle(ctx);
+  const demoResult = await buildSnapshotDemoConfigs(ctx, components);
+  const mediaIndexMap = new Map<string, { logicalPath: string; originalUrl: string; mimeType: string; sourceType: string; usedBy: string[] }>();
+
+  const componentPayloads = components.map((component) => {
+    const componentKey = `homeComponent:${component.type}:${slugify(component.title)}:${component.order}`;
+    const baseConfig = demoResult.configOverrides.get(component._id as string)
+      ?? (component.config ?? {}) as Record<string, unknown>;
+    const finalConfig = rewriteConfigWithFallback(component.type, baseConfig, dependencies);
+
+    const urls = new Set<string>();
+    collectMediaUrls(finalConfig, urls);
+    const mediaRefs = Array.from(urls).map((url, index) => {
+      const ext = getExtensionFromUrl(url);
+      const logicalPath = `snapshot-bundles/homepage/${slugify(component.type)}-${slugify(component.title)}-${component.order}-${index + 1}.${ext}`;
+      const existing = mediaIndexMap.get(logicalPath);
+      if (existing) {
+        existing.usedBy.push(componentKey);
+      } else {
+        mediaIndexMap.set(logicalPath, {
+          logicalPath,
+          originalUrl: url,
+          mimeType: getMimeFromExtension(ext) ?? 'application/octet-stream',
+          sourceType: component.type,
+          usedBy: [componentKey],
+        });
+      }
+      return logicalPath;
+    });
+
+    return {
+      componentKey,
+      type: component.type,
+      title: component.title,
+      order: component.order,
+      active: component.active,
+      config: finalConfig,
+      mediaRefs,
+      fallbackUsed: ['Blog', 'ProductList', 'ProductGrid', 'ServiceList', 'ProductCategories', 'CategoryProducts', 'HomepageCategoryHero'].includes(component.type),
+    };
+  });
+
+  const payload: HomepageSnapshotPayload = {
+    manifest: {
+      snapshotVersion: HOMEPAGE_SNAPSHOT_VERSION,
+      exportedAt: new Date().toISOString(),
+      sourceCoreVersion: 'system-vietadmin-nextjs',
+      snapshotLabel: label?.trim() || `Homepage Snapshot ${new Date().toISOString().slice(0, 10)}`,
+      componentCount: componentPayloads.length,
+      capabilities: {
+        supportsZip: true,
+        supportsStaticFallback: true,
+        supportsAppendImport: true,
+      },
+    },
+    homepage: {
+      components: componentPayloads,
+      componentOrder: componentPayloads.map((item) => item.componentKey),
+      dependencies,
+      demoBundle: {
+        componentData: {},
+        integrity: { level: 'config-embedded', requiredMissing: [], warnings: [] },
+        menus: demoResult.menus,
+        modules: demoResult.modules,
+        settings: demoResult.settings,
+      },
+      systemStyle,
+    },
+    index: {
+      mediaIndex: Array.from(mediaIndexMap.values()),
+    },
+  };
+  return normalizeHomepageSnapshotPayload(payload);
+};
+
 export const captureHomepageSnapshot = query({
   args: {
     label: v.optional(v.string()),
   },
   handler: async (ctx, args): Promise<HomepageSnapshotPayload> => {
-    const components = [...await ctx.db.query('homeComponents').take(5000)].sort((a, b) => a.order - b.order || a._creationTime - b._creationTime);
-    const dependencies = await buildDependencyCapture(ctx, components);
-    const systemStyle = await buildSystemStyle(ctx);
-    const demoResult = await buildSnapshotDemoConfigs(ctx, components);
-    const mediaIndexMap = new Map<string, { logicalPath: string; originalUrl: string; mimeType: string; sourceType: string; usedBy: string[] }>();
-
-    const componentPayloads = components.map((component) => {
-      const componentKey = `homeComponent:${component.type}:${slugify(component.title)}:${component.order}`;
-      // Use overridden config (with embedded demo data) if available, otherwise original
-      const baseConfig = demoResult.configOverrides.get(component._id as string)
-        ?? (component.config ?? {}) as Record<string, unknown>;
-      const finalConfig = rewriteConfigWithFallback(component.type, baseConfig, dependencies);
-
-      const urls = new Set<string>();
-      collectMediaUrls(finalConfig, urls);
-      const mediaRefs = Array.from(urls).map((url, index) => {
-        const ext = getExtensionFromUrl(url);
-        const logicalPath = `snapshot-bundles/homepage/${slugify(component.type)}-${slugify(component.title)}-${component.order}-${index + 1}.${ext}`;
-        const existing = mediaIndexMap.get(logicalPath);
-        if (existing) {
-          existing.usedBy.push(componentKey);
-        } else {
-          mediaIndexMap.set(logicalPath, {
-            logicalPath,
-            originalUrl: url,
-            mimeType: getMimeFromExtension(ext) ?? 'application/octet-stream',
-            sourceType: component.type,
-            usedBy: [componentKey],
-          });
-        }
-        return logicalPath;
-      });
-
-      return {
-        componentKey,
-        type: component.type,
-        title: component.title,
-        order: component.order,
-        active: component.active,
-        config: finalConfig,
-        mediaRefs,
-        fallbackUsed: ['Blog', 'ProductList', 'ProductGrid', 'ServiceList', 'ProductCategories', 'CategoryProducts', 'HomepageCategoryHero'].includes(component.type),
-      };
-    });
-
-    const payload: HomepageSnapshotPayload = {
-      manifest: {
-        snapshotVersion: HOMEPAGE_SNAPSHOT_VERSION,
-        exportedAt: new Date().toISOString(),
-        sourceCoreVersion: 'system-vietadmin-nextjs',
-        snapshotLabel: args.label?.trim() || `Homepage Snapshot ${new Date().toISOString().slice(0, 10)}`,
-        componentCount: componentPayloads.length,
-        capabilities: {
-          supportsZip: true,
-          supportsStaticFallback: true,
-          supportsAppendImport: true,
-        },
-      },
-      homepage: {
-        components: componentPayloads,
-        componentOrder: componentPayloads.map((item) => item.componentKey),
-        dependencies,
-        demoBundle: {
-          componentData: {},
-          integrity: { level: 'config-embedded', requiredMissing: [], warnings: [] },
-          menus: demoResult.menus,
-          modules: demoResult.modules,
-          settings: demoResult.settings,
-        },
-        systemStyle,
-      },
-      index: {
-        mediaIndex: Array.from(mediaIndexMap.values()),
-      },
-    };
-    return normalizeHomepageSnapshotPayload(payload);
+    return buildHomepageSnapshotPayload(ctx, args.label);
   },
   returns: v.any(),
 });
@@ -734,12 +744,47 @@ export const saveHomepageSnapshot = mutation({
       category: args.category || 'other',
       createdAt: Date.now(),
       label: args.label,
+      payloadUpdatedAt: Date.now(),
       publicEnabled: false,
       slug,
       ...buildSnapshotSummary(payload),
       version: HOMEPAGE_SNAPSHOT_VERSION,
     });
     // Lưu payload vào bảng riêng — tránh đọc toàn document khi list metadata
+    await ctx.db.insert('homeComponentSnapshotPayloads', {
+      snapshotId,
+      payload,
+    });
+    return snapshotId;
+  },
+  returns: v.id('homeComponentSnapshots'),
+});
+
+export const saveCurrentHomepageSnapshot = mutation({
+  args: {
+    category: v.optional(v.string()),
+    label: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const payload = await buildHomepageSnapshotPayload(ctx, args.label);
+    let baseSlug = slugify(args.label);
+    if (!baseSlug) baseSlug = `snapshot-${Date.now()}`;
+    let slug = baseSlug;
+    let suffix = 1;
+    while (await ctx.db.query('homeComponentSnapshots').withIndex('by_slug', (q) => q.eq('slug', slug)).unique()) {
+      slug = `${baseSlug}-${suffix++}`;
+    }
+    const now = Date.now();
+    const snapshotId = await ctx.db.insert('homeComponentSnapshots', {
+      category: args.category || 'other',
+      createdAt: now,
+      label: args.label,
+      payloadUpdatedAt: now,
+      publicEnabled: false,
+      slug,
+      ...buildSnapshotSummary(payload),
+      version: HOMEPAGE_SNAPSHOT_VERSION,
+    });
     await ctx.db.insert('homeComponentSnapshotPayloads', {
       snapshotId,
       payload,
@@ -774,6 +819,78 @@ export const listHomepageSnapshots = query({
     slug: v.string(),
     publicEnabled: v.boolean(),
   })),
+});
+
+export const captureHomepageSnapshotForZip = internalQuery({
+  args: {
+    label: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<HomepageSnapshotPayload> => {
+    return buildHomepageSnapshotPayload(ctx, args.label);
+  },
+  returns: v.any(),
+});
+
+export const getHomepageSnapshotZipCache = internalQuery({
+  args: { snapshotId: v.id('homeComponentSnapshots') },
+  handler: async (ctx, args) => {
+    const snapshot = await ctx.db.get(args.snapshotId);
+    if (!snapshot) {return null;}
+    return {
+      label: snapshot.label,
+      payloadUpdatedAt: snapshot.payloadUpdatedAt ?? snapshot.createdAt,
+      zipBuiltAt: snapshot.zipBuiltAt ?? 0,
+      zipBuilderVersion: snapshot.zipBuilderVersion ?? '',
+      zipFileName: snapshot.zipFileName ?? '',
+      zipMediaCount: snapshot.zipMediaCount ?? 0,
+      zipStorageId: snapshot.zipStorageId ?? null,
+      zipWarningCount: snapshot.zipWarningCount ?? 0,
+    };
+  },
+  returns: v.any(),
+});
+
+export const getHomepageSnapshotZipInput = internalQuery({
+  args: { snapshotId: v.id('homeComponentSnapshots') },
+  handler: async (ctx, args) => {
+    const snapshot = await ctx.db.get(args.snapshotId);
+    if (!snapshot) {return null;}
+    const payload = await loadSnapshotPayload(ctx, args.snapshotId as string) as HomepageSnapshotPayload | null;
+    return {
+      label: snapshot.label,
+      payload: payload ? normalizeHomepageSnapshotPayload(payload) : null,
+      payloadUpdatedAt: snapshot.payloadUpdatedAt ?? snapshot.createdAt,
+    };
+  },
+  returns: v.any(),
+});
+
+export const markHomepageSnapshotZipReady = internalMutation({
+  args: {
+    builderVersion: v.string(),
+    byteSize: v.number(),
+    builtAt: v.number(),
+    fileName: v.string(),
+    mediaCount: v.number(),
+    payloadHash: v.string(),
+    snapshotId: v.id('homeComponentSnapshots'),
+    storageId: v.id('_storage'),
+    warningCount: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.snapshotId, {
+      zipBuiltAt: args.builtAt,
+      zipBuilderVersion: args.builderVersion,
+      zipByteSize: args.byteSize,
+      zipFileName: args.fileName,
+      zipMediaCount: args.mediaCount,
+      zipPayloadHash: args.payloadHash,
+      zipStorageId: args.storageId,
+      zipWarningCount: args.warningCount,
+    });
+    return null;
+  },
+  returns: v.null(),
 });
 
 export const listHomepageSnapshotsWithPayload = query({
@@ -999,6 +1116,7 @@ export const getHomepageSnapshotById = query({
     componentTypes: v.optional(v.array(v.string())),
     logo: v.optional(v.string()),
     payload: v.any(),
+    payloadUpdatedAt: v.optional(v.number()),
     phone: v.optional(v.string()),
     publicEnabled: v.optional(v.boolean()),
     sectionTitles: v.optional(v.array(v.string())),
@@ -1006,6 +1124,14 @@ export const getHomepageSnapshotById = query({
     tagline: v.optional(v.string()),
     thumbnails: v.optional(v.array(v.string())),
     version: v.string(),
+    zipBuiltAt: v.optional(v.number()),
+    zipBuilderVersion: v.optional(v.string()),
+    zipByteSize: v.optional(v.number()),
+    zipFileName: v.optional(v.string()),
+    zipMediaCount: v.optional(v.number()),
+    zipPayloadHash: v.optional(v.string()),
+    zipStorageId: v.optional(v.id('_storage')),
+    zipWarningCount: v.optional(v.number()),
   }), v.null()),
 });
 
@@ -1107,6 +1233,7 @@ export const updateHomepageSnapshot = mutation({
     // Cập nhật metadata (không có payload)
     await ctx.db.patch(args.snapshotId, {
       label: args.label.trim() || snapshot.label,
+      payloadUpdatedAt: Date.now(),
       ...buildSnapshotSummary(nextPayload),
     });
 
@@ -1385,6 +1512,260 @@ const restoreSnapshotSettings = async (
     await upsertSnapshotSetting(ctx, 'ia', 'ia_route_mode', snapshotRouting.ia_route_mode);
   }
 };
+
+type SnapshotZipWarning = {
+  logicalPath: string;
+  message: string;
+  sourceUrl: string;
+};
+
+type SnapshotZipBuildResult = {
+  blob: Blob;
+  mediaCount: number;
+  warnings: SnapshotZipWarning[];
+};
+
+const toJsonFile = (value: unknown) => JSON.stringify(value, null, 2);
+
+const stableStringify = (value: unknown): string => {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(',')}]`;
+  }
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`).join(',')}}`;
+};
+
+const sha256 = async (value: string) => {
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(hash)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
+};
+
+const toSnapshotFileName = (label?: string) => {
+  const safeLabel = (label ?? '')
+    .normalize('NFD')
+    .replaceAll(/[\u0300-\u036f]/g, '')
+    .replaceAll(/[đĐ]/g, 'd')
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replaceAll(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return `homepage-snapshot-${safeLabel || new Date().toISOString().slice(0, 10)}.zip`;
+};
+
+const safeZipPath = (path: string, fallback: string) => {
+  const safe = path
+    .replaceAll('\\', '/')
+    .split('/')
+    .filter((part) => part && part !== '..' && !part.includes(':'))
+    .join('/');
+  return safe || fallback;
+};
+
+const snapshotJsonFiles = (payload: HomepageSnapshotPayload) => ({
+  'manifest.json': toJsonFile(payload.manifest),
+  'homepage/components.json': toJsonFile(payload.homepage.components),
+  'homepage/component-order.json': toJsonFile(payload.homepage.componentOrder),
+  'homepage/dependencies.json': toJsonFile(payload.homepage.dependencies),
+  'homepage/system-style.json': toJsonFile(payload.homepage.systemStyle),
+  'homepage/demo-bundle.json': toJsonFile(payload.homepage.demoBundle ?? null),
+  'index/media.index.json': toJsonFile(payload.index.mediaIndex),
+  'reports/import-preview.json': toJsonFile({
+    summary: { blocking: 0, warnings: 0 },
+    errors: [],
+    warnings: [],
+  } satisfies HomepageSnapshotImportReport),
+});
+
+const fetchMediaBlob = async (url: string) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), SNAPSHOT_MEDIA_FETCH_TIMEOUT_MS);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) {
+      throw new Error(`Fetch media thất bại: ${response.status}`);
+    }
+    const blob = await response.blob();
+    return {
+      blob,
+      mimeType: response.headers.get('Content-Type') || blob.type || 'application/octet-stream',
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const buildHomepageSnapshotZipBlob = async (payload: HomepageSnapshotPayload): Promise<SnapshotZipBuildResult> => {
+  const normalizedPayload = normalizeHomepageSnapshotPayload(payload);
+  const JSZipModule = await import('jszip');
+  const JSZip = JSZipModule.default;
+  const zip = new JSZip();
+
+  Object.entries(snapshotJsonFiles(normalizedPayload)).forEach(([path, content]) => zip.file(path, content));
+
+  const exportWarnings: SnapshotZipWarning[] = [];
+  const mediaEntries = normalizedPayload.index.mediaIndex;
+  for (let i = 0; i < mediaEntries.length; i += SNAPSHOT_MEDIA_FETCH_CONCURRENCY) {
+    const batch = mediaEntries.slice(i, i + SNAPSHOT_MEDIA_FETCH_CONCURRENCY);
+    await Promise.all(batch.map(async (media, batchIndex) => {
+      const position = i + batchIndex;
+      const logicalPath = safeZipPath(media.logicalPath, `snapshot-bundles/homepage/media-${position + 1}.bin`);
+      try {
+        const file = await fetchMediaBlob(media.originalUrl);
+        zip.file(logicalPath, file.blob, {
+          binary: true,
+          date: new Date(normalizedPayload.manifest.exportedAt),
+        });
+        media.mimeType = file.mimeType;
+        media.logicalPath = logicalPath;
+      } catch (error) {
+        exportWarnings.push({
+          logicalPath,
+          message: error instanceof Error ? error.message : 'Không tải được media',
+          sourceUrl: media.originalUrl,
+        });
+      }
+    }));
+  }
+
+  zip.file('index/media.index.json', toJsonFile(normalizedPayload.index.mediaIndex));
+  zip.file('reports/export-warnings.json', toJsonFile(exportWarnings));
+  return {
+    blob: await zip.generateAsync({
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 },
+      type: 'blob',
+    }),
+    mediaCount: mediaEntries.length,
+    warnings: exportWarnings,
+  };
+};
+
+const snapshotZipActionReturn = v.object({
+  cached: v.boolean(),
+  fileName: v.string(),
+  mediaCount: v.number(),
+  url: v.string(),
+  warningCount: v.number(),
+});
+
+export const exportCurrentHomepageSnapshotZip = action({
+  args: {
+    label: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<{
+    cached: boolean;
+    fileName: string;
+    mediaCount: number;
+    url: string;
+    warningCount: number;
+  }> => {
+    const payload: HomepageSnapshotPayload = await ctx.runQuery(internal.homepageSnapshots.captureHomepageSnapshotForZip, {
+      label: args.label,
+    });
+    const fileName = toSnapshotFileName(payload.manifest.snapshotLabel);
+    const result = await buildHomepageSnapshotZipBlob(payload);
+    const storageId = await ctx.storage.store(result.blob);
+    const url = await ctx.storage.getUrl(storageId);
+    if (!url) {
+      throw new Error('Không tạo được URL tải snapshot ZIP');
+    }
+    return {
+      cached: false,
+      fileName,
+      mediaCount: result.mediaCount,
+      url,
+      warningCount: result.warnings.length,
+    };
+  },
+  returns: snapshotZipActionReturn,
+});
+
+export const exportSavedHomepageSnapshotZip = action({
+  args: {
+    snapshotId: v.id('homeComponentSnapshots'),
+  },
+  handler: async (ctx, args): Promise<{
+    cached: boolean;
+    fileName: string;
+    mediaCount: number;
+    url: string;
+    warningCount: number;
+  }> => {
+    const cache = await ctx.runQuery(internal.homepageSnapshots.getHomepageSnapshotZipCache, {
+      snapshotId: args.snapshotId,
+    }) as {
+      label: string;
+      payloadUpdatedAt: number;
+      zipBuiltAt: number;
+      zipBuilderVersion: string;
+      zipFileName: string;
+      zipMediaCount: number;
+      zipStorageId: Id<'_storage'> | null;
+      zipWarningCount: number;
+    } | null;
+    if (!cache) {
+      throw new Error('Snapshot không tồn tại');
+    }
+
+    if (
+      cache.zipStorageId
+      && cache.zipBuilderVersion === SNAPSHOT_ZIP_BUILDER_VERSION
+      && cache.zipBuiltAt >= cache.payloadUpdatedAt
+    ) {
+      const cachedUrl = await ctx.storage.getUrl(cache.zipStorageId);
+      if (cachedUrl) {
+        return {
+          cached: true,
+          fileName: cache.zipFileName || toSnapshotFileName(cache.label),
+          mediaCount: cache.zipMediaCount,
+          url: cachedUrl,
+          warningCount: cache.zipWarningCount,
+        };
+      }
+    }
+
+    const input = await ctx.runQuery(internal.homepageSnapshots.getHomepageSnapshotZipInput, {
+      snapshotId: args.snapshotId,
+    }) as { label: string; payload: HomepageSnapshotPayload | null } | null;
+    if (!input?.payload) {
+      throw new Error('Payload snapshot không tìm thấy');
+    }
+
+    const payload = normalizeHomepageSnapshotPayload(input.payload);
+    const payloadHash = await sha256(stableStringify(payload));
+    const fileName = toSnapshotFileName(input.label || payload.manifest.snapshotLabel);
+    const result = await buildHomepageSnapshotZipBlob(payload);
+    const storageId = await ctx.storage.store(result.blob);
+    const url = await ctx.storage.getUrl(storageId);
+    if (!url) {
+      throw new Error('Không tạo được URL tải snapshot ZIP');
+    }
+
+    await ctx.runMutation(internal.homepageSnapshots.markHomepageSnapshotZipReady, {
+      builderVersion: SNAPSHOT_ZIP_BUILDER_VERSION,
+      builtAt: Date.now(),
+      byteSize: result.blob.size,
+      fileName,
+      mediaCount: result.mediaCount,
+      payloadHash,
+      snapshotId: args.snapshotId,
+      storageId,
+      warningCount: result.warnings.length,
+    });
+
+    return {
+      cached: false,
+      fileName,
+      mediaCount: result.mediaCount,
+      url,
+      warningCount: result.warnings.length,
+    };
+  },
+  returns: snapshotZipActionReturn,
+});
 
 export const importHomepageSnapshot = mutation({
   args: {
