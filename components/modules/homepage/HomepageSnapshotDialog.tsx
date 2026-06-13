@@ -109,7 +109,7 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
 
   const showExportResultToast = (mediaCount: number, warningCount: number) => {
     if (warningCount > 0) {
-      toast.warning(`Đã tạo ZIP nhưng ${warningCount}/${mediaCount} media tải lỗi. Xem reports/export-warnings.json trong ZIP.`);
+      toast.warning(`Đã tạo ZIP nhưng ${warningCount}/${mediaCount} media tải lỗi. Import sẽ bị chặn cho tới khi export đủ media.`);
       return;
     }
     toast.success(`Đã export snapshot ZIP${mediaCount > 0 ? ` kèm ${mediaCount} media` : ''}`);
@@ -172,7 +172,7 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
       const nextReport = await preflightSnapshot({ payload: parsed.payload }) as HomepageSnapshotImportReport;
       setReport(nextReport);
       if (parsed.missingMediaPaths.length > 0) {
-        toast.warning(`ZIP thiếu ${parsed.missingMediaPaths.length} tệp media. Import vẫn chạy nhưng có thể phải dùng URL gốc.`);
+        toast.error(`ZIP thiếu ${parsed.missingMediaPaths.length} tệp media. Import sẽ bị chặn để tránh lỗi ảnh, hãy export lại ZIP mới.`);
       } else {
         toast.success(`Đã tải snapshot: ${parsed.fileName}`);
       }
@@ -225,6 +225,10 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     }
     if (report.summary.blocking > 0) {
       toast.error('Snapshot đang có lỗi blocking');
+      return;
+    }
+    if (parsedBundle.missingMediaPaths.length > 0) {
+      toast.error(`ZIP thiếu ${parsedBundle.missingMediaPaths.length} tệp media. Hãy export lại snapshot trước khi import.`);
       return;
     }
 

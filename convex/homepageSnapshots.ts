@@ -2,7 +2,7 @@ import { v } from 'convex/values';
 import { action, internalMutation, internalQuery, mutation, query } from './_generated/server';
 import type { MutationCtx } from './_generated/server';
 import { internal } from './_generated/api';
-import { slugify, getMimeFromExtension } from '../lib/image/uploadNaming';
+import { slugify, getExtensionFromMime, getMimeFromExtension } from '../lib/image/uploadNaming';
 import type { Doc, Id } from './_generated/dataModel';
 import {
   HOMEPAGE_SNAPSHOT_VERSION,
@@ -23,9 +23,11 @@ import {
 } from './lib/fileService';
 
 const REPLACE_ALL_MODE = 'replace_all';
-const SNAPSHOT_ZIP_BUILDER_VERSION = 'homepage-snapshot-zip.2026-06-13.v3';
+const SNAPSHOT_ZIP_BUILDER_VERSION = 'homepage-snapshot-zip.2026-06-14.v4';
 const SNAPSHOT_MEDIA_FETCH_CONCURRENCY = 6;
 const SNAPSHOT_MEDIA_FETCH_TIMEOUT_MS = 60_000;
+const DATA_MEDIA_URL_RE = /^data:(image|video)\/([a-z0-9.+-]+)[;,]/i;
+const NEXT_IMAGE_PATH_RE = /(?:^https?:\/\/[^/]+)?\/_next\/image(?:\?|$)/i;
 
 const snapshotThumbnailConfigValidator = v.object({
   backgroundColor: v.optional(v.string()),
@@ -95,9 +97,23 @@ const SNAPSHOT_REQUIRED_SETTINGS_KEYS = {
   ],
 } as const;
 
+const extractNextImageSource = (value?: string) => {
+  if (!value || !NEXT_IMAGE_PATH_RE.test(value)) {return undefined;}
+  try {
+    const parsed = new URL(value, 'https://snapshot.local');
+    if (parsed.pathname !== '/_next/image') {return undefined;}
+    return parsed.searchParams.get('url')?.trim() || undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 const getExtensionFromUrl = (value?: string) => {
   if (!value) {return 'bin';}
-  const clean = value.split('?')[0]?.split('#')[0] ?? value;
+  const dataExt = value.match(DATA_MEDIA_URL_RE)?.[2];
+  if (dataExt) {return dataExt.toLowerCase().replace('jpeg', 'jpg').replace('svg+xml', 'svg');}
+  const source = extractNextImageSource(value) ?? value;
+  const clean = source.split('?')[0]?.split('#')[0] ?? source;
   const last = clean.split('/').pop() ?? '';
   const ext = last.includes('.') ? last.split('.').pop() : undefined;
   return ext?.toLowerCase() ?? 'bin';
@@ -204,6 +220,7 @@ const syncSnapshotCustomThumbnailFiles = async (
 
 const MEDIA_EXTENSION_RE = /\.(avif|bmp|gif|ico|jpe?g|m4v|mov|mp4|ogg|png|svg|webm|webp)([?#].*)?$/i;
 const STORAGE_URL_RE = /\/api\/storage\/|\/storage\/|convex\.cloud\/api\/storage\//i;
+const PUBLIC_MEDIA_PATH_RE = /^\/(?!\/)(?:api\/storage|storage|seed_mau|images|uploads|media|assets|_next\/image)(?:[/?#]|$)/i;
 const MEDIA_FIELD_KEYS = new Set([
   'avatar',
   'avatarUrl',
@@ -254,18 +271,31 @@ const MEDIA_FIELD_KEYS = new Set([
 ]);
 
 const isHttpUrl = (value: string) => /^https?:\/\//.test(value);
+const isRelativeUrl = (value: string) => value.startsWith('/') && !value.startsWith('//');
+const isDataMediaUrl = (value: string) => DATA_MEDIA_URL_RE.test(value);
 
 const isLikelyMediaUrl = (value: string, keyPath: string[] = [], logicalPath?: string) => {
-  if (!isHttpUrl(value)) {return false;}
-  if (MEDIA_EXTENSION_RE.test(value) || STORAGE_URL_RE.test(value)) {return true;}
+  const trimmed = value.trim();
+  if (!trimmed) {return false;}
+  const nextImageSource = extractNextImageSource(trimmed);
+  const source = nextImageSource ?? trimmed;
+  if (!isHttpUrl(source) && !isRelativeUrl(source) && !isDataMediaUrl(source)) {return false;}
+  if (
+    MEDIA_EXTENSION_RE.test(source)
+    || STORAGE_URL_RE.test(source)
+    || PUBLIC_MEDIA_PATH_RE.test(source)
+    || NEXT_IMAGE_PATH_RE.test(trimmed)
+    || isDataMediaUrl(source)
+  ) {return true;}
   if (logicalPath && MEDIA_EXTENSION_RE.test(logicalPath)) {return true;}
   return keyPath.some((key) => MEDIA_FIELD_KEYS.has(key));
 };
 
 const collectMediaUrls = (value: unknown, acc: Set<string>, keyPath: string[] = []) => {
   if (typeof value === 'string') {
-    if (isLikelyMediaUrl(value, keyPath)) {
-      acc.add(value);
+    const trimmed = value.trim();
+    if (isLikelyMediaUrl(trimmed, keyPath)) {
+      acc.add(trimmed);
     }
     return;
   }
@@ -292,9 +322,10 @@ const normalizeHomepageSnapshotPayload = (payload: HomepageSnapshotPayload): Hom
   const customThumbnail = normalizeSnapshotCustomThumbnail(payload.gallery?.customThumbnail);
 
   const pushEntry = (entry: SnapshotMediaEntry) => {
-    if (!entry.originalUrl || !entry.logicalPath || !isLikelyMediaUrl(entry.originalUrl, [], entry.logicalPath)) {return;}
+    const originalUrl = entry.originalUrl?.trim();
+    if (!originalUrl || !entry.logicalPath || !isLikelyMediaUrl(originalUrl, [], entry.logicalPath)) {return;}
 
-    const existing = byOriginalUrl.get(entry.originalUrl);
+    const existing = byOriginalUrl.get(originalUrl);
     if (existing) {
       existing.usedBy = Array.from(new Set([...(existing.usedBy ?? []), ...(entry.usedBy ?? [])]));
       return;
@@ -313,8 +344,8 @@ const normalizeHomepageSnapshotPayload = (payload: HomepageSnapshotPayload): Hom
 
     const next: SnapshotMediaEntry = {
       logicalPath,
-      originalUrl: entry.originalUrl,
-      mimeType: entry.mimeType || getMimeFromExtension(getExtensionFromUrl(entry.originalUrl)) || 'application/octet-stream',
+      originalUrl,
+      mimeType: entry.mimeType || getMimeFromExtension(getExtensionFromUrl(originalUrl)) || 'application/octet-stream',
       sourceType: entry.sourceType || 'homepage',
       usedBy: Array.from(new Set(entry.usedBy ?? [])),
     };
@@ -1816,17 +1847,61 @@ const snapshotJsonFiles = (payload: HomepageSnapshotPayload) => ({
   } satisfies HomepageSnapshotImportReport),
 });
 
-const fetchMediaData = async (url: string) => {
+const normalizeBaseUrl = (value: unknown) => {
+  const raw = typeof value === 'string' ? value.trim() : '';
+  if (!raw) {return undefined;}
+  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const parsed = new URL(withProtocol);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {return undefined;}
+    return parsed.origin;
+  } catch {
+    return undefined;
+  }
+};
+
+const getSnapshotMediaBaseUrl = (payload: HomepageSnapshotPayload) => {
+  const demoBundle = payload.homepage.demoBundle as Record<string, unknown> | undefined;
+  const settings = demoBundle?.settings as Record<string, unknown> | undefined;
+  const site = settings?.site as Record<string, unknown> | undefined;
+  const siteUrl = normalizeBaseUrl(site?.site_url);
+  if (siteUrl) {return siteUrl;}
+
+  const envSiteUrl = typeof process !== 'undefined'
+    ? process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || process.env.VERCEL_URL
+    : undefined;
+  const vercelUrl = typeof process !== 'undefined' ? process.env.VERCEL_URL : undefined;
+  if (envSiteUrl === vercelUrl && envSiteUrl && !/^https?:\/\//i.test(envSiteUrl)) {
+    return normalizeBaseUrl(`https://${envSiteUrl}`);
+  }
+  return normalizeBaseUrl(envSiteUrl);
+};
+
+const resolveMediaFetchUrl = (url: string, baseUrl?: string) => {
+  const trimmed = url.trim();
+  const source = extractNextImageSource(trimmed) ?? trimmed;
+  if (isHttpUrl(source) || isDataMediaUrl(source)) {return source;}
+  if (isRelativeUrl(source) && baseUrl) {
+    return new URL(source, baseUrl).toString();
+  }
+  if (isRelativeUrl(source)) {
+    throw new Error('Media dùng URL tương đối nhưng snapshot không có site_url để export ZIP');
+  }
+  return source;
+};
+
+const fetchMediaData = async (url: string, baseUrl?: string) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), SNAPSHOT_MEDIA_FETCH_TIMEOUT_MS);
   try {
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await fetch(resolveMediaFetchUrl(url, baseUrl), { signal: controller.signal });
     if (!response.ok) {
       throw new Error(`Fetch media thất bại: ${response.status}`);
     }
+    const contentType = response.headers.get('Content-Type')?.split(';')[0]?.trim() || 'application/octet-stream';
     return {
       data: await response.arrayBuffer(),
-      mimeType: response.headers.get('Content-Type') || 'application/octet-stream',
+      mimeType: contentType,
     };
   } finally {
     clearTimeout(timeout);
@@ -1843,19 +1918,24 @@ const buildHomepageSnapshotZipBlob = async (payload: HomepageSnapshotPayload): P
 
   const exportWarnings: SnapshotZipWarning[] = [];
   const mediaEntries = normalizedPayload.index.mediaIndex;
+  const mediaBaseUrl = getSnapshotMediaBaseUrl(normalizedPayload);
   for (let i = 0; i < mediaEntries.length; i += SNAPSHOT_MEDIA_FETCH_CONCURRENCY) {
     const batch = mediaEntries.slice(i, i + SNAPSHOT_MEDIA_FETCH_CONCURRENCY);
     await Promise.all(batch.map(async (media, batchIndex) => {
       const position = i + batchIndex;
       const logicalPath = safeZipPath(media.logicalPath, `snapshot-bundles/homepage/media-${position + 1}.bin`);
       try {
-        const file = await fetchMediaData(media.originalUrl);
-        zip.file(logicalPath, file.data, {
+        const file = await fetchMediaData(media.originalUrl, mediaBaseUrl);
+        const ext = getExtensionFromMime(file.mimeType);
+        const zipPath = logicalPath.endsWith('.bin') && ext !== 'bin'
+          ? logicalPath.replace(/\.bin$/i, `.${ext}`)
+          : logicalPath;
+        zip.file(zipPath, file.data, {
           binary: true,
           date: new Date(normalizedPayload.manifest.exportedAt),
         });
         media.mimeType = file.mimeType;
-        media.logicalPath = logicalPath;
+        media.logicalPath = zipPath;
       } catch (error) {
         exportWarnings.push({
           logicalPath,
