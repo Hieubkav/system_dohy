@@ -776,6 +776,18 @@ export default defineSchema({
     componentCount: v.optional(v.number()),
     componentTypes: v.optional(v.array(v.string())),
     createdAt: v.number(),
+    customThumbnail: v.optional(v.object({
+      alt: v.optional(v.string()),
+      config: v.optional(v.object({
+        backgroundColor: v.optional(v.string()),
+        objectFit: v.optional(v.union(v.literal("cover"), v.literal("contain"))),
+        positionX: v.optional(v.number()),
+        positionY: v.optional(v.number()),
+      })),
+      storageId: v.optional(v.union(v.string(), v.null())),
+      updatedAt: v.optional(v.number()),
+      url: v.string(),
+    })),
     label: v.string(),
     logo: v.optional(v.string()),
     phone: v.optional(v.string()),

@@ -207,7 +207,7 @@ const DATA_CONTRACTS: DataContract[] = [
   },
   {
     label: "Homepage snapshots",
-    optional: ["address", "brandMode", "brandName", "brandPrimary", "brandSecondary", "category", "componentCount", "componentTypes", "logo", "phone", "publicEnabled", "sectionTitles", "slug", "tagline", "thumbnails"],
+    optional: ["address", "brandMode", "brandName", "brandPrimary", "brandSecondary", "category", "componentCount", "componentTypes", "customThumbnail", "logo", "payloadUpdatedAt", "phone", "publicEnabled", "sectionTitles", "slug", "tagline", "thumbnails", "zipBuiltAt", "zipBuilderVersion", "zipByteSize", "zipFileName", "zipMediaCount", "zipPayloadHash", "zipStorageId", "zipWarningCount"],
     required: ["createdAt", "label", "version"],
     table: "homeComponentSnapshots",
   },

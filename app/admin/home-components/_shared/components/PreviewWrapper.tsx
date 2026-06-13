@@ -60,14 +60,7 @@ const injectPreviewDark = (children: React.ReactNode, isDark: boolean): React.Re
       return React.cloneElement(child, { isDark } as any);
     }
 
-    const childProps = child.props as { children?: React.ReactNode };
-    if (!childProps.children) {
-      return child;
-    }
-
-    return React.cloneElement(child, {
-      children: injectPreviewDark(childProps.children, isDark),
-    } as any);
+    return child;
   })
 );
 

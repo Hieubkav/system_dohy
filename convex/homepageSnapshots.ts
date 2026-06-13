@@ -1,11 +1,13 @@
 import { v } from 'convex/values';
 import { action, internalMutation, internalQuery, mutation, query } from './_generated/server';
+import type { MutationCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import { slugify, getMimeFromExtension } from '../lib/image/uploadNaming';
 import type { Doc, Id } from './_generated/dataModel';
 import {
   HOMEPAGE_SNAPSHOT_VERSION,
   HOMEPAGE_SNAPSHOT_VERSION_V2,
+  type SnapshotCustomThumbnail,
   type HomepageSnapshotImportReport,
   type HomepageSnapshotPayload,
   type SnapshotDependencyCapture,
@@ -14,11 +16,31 @@ import {
   type SnapshotSystemStylePayload,
 } from '../lib/homepage-snapshot/types';
 import type { ContactSettings, SEOSettings, SiteSettings, SocialSettings } from '../lib/get-settings';
+import {
+  removeOwnerFilesAndCleanup,
+  resolveStorageIdsFromLegacyUrls,
+  syncOwnerFilesAndCleanup,
+} from './lib/fileService';
 
 const REPLACE_ALL_MODE = 'replace_all';
-const SNAPSHOT_ZIP_BUILDER_VERSION = 'homepage-snapshot-zip.2026-06-13.v2';
+const SNAPSHOT_ZIP_BUILDER_VERSION = 'homepage-snapshot-zip.2026-06-13.v3';
 const SNAPSHOT_MEDIA_FETCH_CONCURRENCY = 6;
 const SNAPSHOT_MEDIA_FETCH_TIMEOUT_MS = 20_000;
+
+const snapshotThumbnailConfigValidator = v.object({
+  backgroundColor: v.optional(v.string()),
+  objectFit: v.optional(v.union(v.literal('cover'), v.literal('contain'))),
+  positionX: v.optional(v.number()),
+  positionY: v.optional(v.number()),
+});
+
+const snapshotCustomThumbnailValidator = v.object({
+  alt: v.optional(v.string()),
+  config: v.optional(snapshotThumbnailConfigValidator),
+  storageId: v.optional(v.union(v.string(), v.null())),
+  updatedAt: v.optional(v.number()),
+  url: v.string(),
+});
 
 const loadSnapshotPayload = async (
   ctx: any,
@@ -81,6 +103,103 @@ const getExtensionFromUrl = (value?: string) => {
 };
 
 type SnapshotMediaEntry = HomepageSnapshotPayload['index']['mediaIndex'][number];
+
+const clampPercentage = (value: unknown, fallback: number) => {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numeric)) {return fallback;}
+  return Math.min(100, Math.max(0, Math.round(numeric)));
+};
+
+const normalizeSnapshotCustomThumbnail = (value: unknown): SnapshotCustomThumbnail | undefined => {
+  if (!value || typeof value !== 'object') {return undefined;}
+  const raw = value as Record<string, unknown>;
+  const url = typeof raw.url === 'string' ? raw.url.trim() : '';
+  if (!url) {return undefined;}
+
+  const rawConfig = (raw.config ?? {}) as Record<string, unknown>;
+  const objectFit = rawConfig.objectFit === 'contain' ? 'contain' : 'cover';
+  const backgroundColor = typeof rawConfig.backgroundColor === 'string' && rawConfig.backgroundColor.trim()
+    ? rawConfig.backgroundColor.trim()
+    : '#f8fafc';
+  const thumbnail: SnapshotCustomThumbnail = {
+    config: {
+      backgroundColor,
+      objectFit,
+      positionX: clampPercentage(rawConfig.positionX, 50),
+      positionY: clampPercentage(rawConfig.positionY, 50),
+    },
+    url,
+  };
+
+  if (typeof raw.alt === 'string' && raw.alt.trim()) {
+    thumbnail.alt = raw.alt.trim();
+  }
+  if (typeof raw.storageId === 'string' && raw.storageId.trim()) {
+    thumbnail.storageId = raw.storageId.trim();
+  } else if (raw.storageId === null) {
+    thumbnail.storageId = null;
+  }
+  if (typeof raw.updatedAt === 'number' && Number.isFinite(raw.updatedAt)) {
+    thumbnail.updatedAt = raw.updatedAt;
+  }
+  return thumbnail;
+};
+
+const withSnapshotCustomThumbnail = (
+  payload: HomepageSnapshotPayload,
+  customThumbnail = normalizeSnapshotCustomThumbnail(payload.gallery?.customThumbnail),
+): HomepageSnapshotPayload => {
+  if (customThumbnail) {
+    return {
+      ...payload,
+      gallery: { customThumbnail },
+    };
+  }
+  const nextPayload = { ...payload };
+  delete nextPayload.gallery;
+  return nextPayload;
+};
+
+const buildEffectiveSnapshotThumbnails = (
+  thumbnails: string[],
+  customThumbnail?: SnapshotCustomThumbnail,
+) => {
+  if (!customThumbnail?.url) {return thumbnails.slice(0, 6);}
+  return [
+    customThumbnail.url,
+    ...thumbnails.filter((thumbnail) => thumbnail !== customThumbnail.url),
+  ].slice(0, 6);
+};
+
+const collectSnapshotThumbnailStorageIds = async (
+  ctx: MutationCtx,
+  customThumbnail?: SnapshotCustomThumbnail,
+) => {
+  if (!customThumbnail) {return [];}
+  if (customThumbnail.storageId) {return [customThumbnail.storageId];}
+  return resolveStorageIdsFromLegacyUrls(ctx, [customThumbnail.url], {
+    folder: 'snapshot-thumbnails',
+    limit: 200,
+  });
+};
+
+const syncSnapshotCustomThumbnailFiles = async (
+  ctx: MutationCtx,
+  snapshotId: Id<'homeComponentSnapshots'>,
+  previousThumbnail?: SnapshotCustomThumbnail,
+  nextThumbnail?: SnapshotCustomThumbnail,
+) => {
+  const previousStorageIds = await collectSnapshotThumbnailStorageIds(ctx, previousThumbnail);
+  const nextStorageIds = await collectSnapshotThumbnailStorageIds(ctx, nextThumbnail);
+  await syncOwnerFilesAndCleanup(ctx, {
+    ownerField: 'customThumbnail',
+    ownerId: snapshotId,
+    ownerTable: 'homeComponentSnapshots',
+    purpose: 'snapshot-gallery-thumbnail',
+  }, nextStorageIds, {
+    previousStorageIds,
+  });
+};
 
 const MEDIA_EXTENSION_RE = /\.(avif|bmp|gif|ico|jpe?g|m4v|mov|mp4|ogg|png|svg|webm|webp)([?#].*)?$/i;
 const STORAGE_URL_RE = /\/api\/storage\/|\/storage\/|convex\.cloud\/api\/storage\//i;
@@ -149,6 +268,7 @@ const normalizeHomepageSnapshotPayload = (payload: HomepageSnapshotPayload): Hom
   const mediaEntries: SnapshotMediaEntry[] = [];
   const byOriginalUrl = new Map<string, SnapshotMediaEntry>();
   const byLogicalPath = new Set<string>();
+  const customThumbnail = normalizeSnapshotCustomThumbnail(payload.gallery?.customThumbnail);
 
   const pushEntry = (entry: SnapshotMediaEntry) => {
     if (!entry.originalUrl || !entry.logicalPath || !isLikelyMediaUrl(entry.originalUrl, [], entry.logicalPath)) {return;}
@@ -216,8 +336,9 @@ const normalizeHomepageSnapshotPayload = (payload: HomepageSnapshotPayload): Hom
 
   addUrls(payload.homepage.dependencies, 'dependencies', 'homepage-dependencies', 'homepage:dependencies');
   addUrls(payload.homepage.demoBundle, 'demo-bundle', 'homepage-demo-bundle', 'homepage:demoBundle');
+  addUrls(customThumbnail ? { thumbnail: customThumbnail.url } : undefined, 'snapshot-thumbnail', 'gallery-custom-thumbnail', 'homepage:customThumbnail');
 
-  return {
+  return withSnapshotCustomThumbnail({
     ...payload,
     homepage: {
       ...payload.homepage,
@@ -226,7 +347,7 @@ const normalizeHomepageSnapshotPayload = (payload: HomepageSnapshotPayload): Hom
     index: {
       mediaIndex: mediaEntries,
     },
-  };
+  }, customThumbnail);
 };
 
 const toStaticPost = (post: Doc<'posts'>): SnapshotStaticItem => ({
@@ -755,6 +876,10 @@ export const saveHomepageSnapshot = mutation({
       snapshotId,
       payload,
     });
+    const customThumbnail = normalizeSnapshotCustomThumbnail(payload.gallery?.customThumbnail);
+    if (customThumbnail) {
+      await syncSnapshotCustomThumbnailFiles(ctx, snapshotId, undefined, customThumbnail);
+    }
     return snapshotId;
   },
   returns: v.id('homeComponentSnapshots'),
@@ -856,9 +981,10 @@ export const getHomepageSnapshotZipInput = internalQuery({
     const snapshot = await ctx.db.get(args.snapshotId);
     if (!snapshot) {return null;}
     const payload = await loadSnapshotPayload(ctx, args.snapshotId as string) as HomepageSnapshotPayload | null;
+    const customThumbnail = normalizeSnapshotCustomThumbnail(snapshot.customThumbnail);
     return {
       label: snapshot.label,
-      payload: payload ? normalizeHomepageSnapshotPayload(payload) : null,
+      payload: payload ? normalizeHomepageSnapshotPayload(withSnapshotCustomThumbnail(payload, customThumbnail)) : null,
       payloadUpdatedAt: snapshot.payloadUpdatedAt ?? snapshot.createdAt,
     };
   },
@@ -1028,6 +1154,8 @@ function buildSnapshotSummary(payload: HomepageSnapshotPayload) {
   const components = payload.homepage.components ?? [];
   const logo = site.site_logo || '';
   const activeSections = components.filter((component) => component.active);
+  const customThumbnail = normalizeSnapshotCustomThumbnail(payload.gallery?.customThumbnail);
+  const autoThumbnails = extractSnapshotThumbnails(components, logo);
   return {
     address: contact.contact_address || '',
     brandMode: site.site_brand_mode || 'dual',
@@ -1040,7 +1168,8 @@ function buildSnapshotSummary(payload: HomepageSnapshotPayload) {
     phone: contact.contact_phone || '',
     sectionTitles: activeSections.map((component) => component.title).filter(Boolean).slice(0, 6),
     tagline: site.site_tagline || '',
-    thumbnails: extractSnapshotThumbnails(components, logo),
+    ...(customThumbnail ? { customThumbnail } : {}),
+    thumbnails: buildEffectiveSnapshotThumbnails(autoThumbnails, customThumbnail),
   };
 }
 
@@ -1052,42 +1181,47 @@ export const listPublicSnapshots = query({
       .withIndex('by_publicEnabled_and_createdAt', (q) => q.eq('publicEnabled', true))
       .order('desc')
       .take(100);
-    return rows.map((row) => ({
-      _id: row._id,
-      category: row.category || 'other',
-      createdAt: row.createdAt,
-      label: row.label,
-      slug: row.slug ?? '',
-      brandName: row.brandName ?? '',
-      tagline: row.tagline ?? '',
-      logo: row.logo ?? '',
-      brandPrimary: row.brandPrimary ?? '#3b82f6',
-      brandSecondary: row.brandSecondary ?? '',
-      brandMode: row.brandMode ?? 'dual',
-      phone: row.phone ?? '',
-      address: row.address ?? '',
-      componentCount: row.componentCount ?? 0,
-      componentTypes: row.componentTypes ?? [],
-      sectionTitles: row.sectionTitles ?? [],
-      thumbnails: row.thumbnails ?? [],
-    }));
+    return rows.map((row) => {
+      const customThumbnail = normalizeSnapshotCustomThumbnail(row.customThumbnail);
+      return {
+        _id: row._id,
+        address: row.address ?? '',
+        brandMode: row.brandMode ?? 'dual',
+        brandName: row.brandName ?? '',
+        brandPrimary: row.brandPrimary ?? '#3b82f6',
+        brandSecondary: row.brandSecondary ?? '',
+        category: row.category || 'other',
+        componentCount: row.componentCount ?? 0,
+        componentTypes: row.componentTypes ?? [],
+        createdAt: row.createdAt,
+        customThumbnail: customThumbnail ?? null,
+        label: row.label,
+        logo: row.logo ?? '',
+        phone: row.phone ?? '',
+        sectionTitles: row.sectionTitles ?? [],
+        slug: row.slug ?? '',
+        tagline: row.tagline ?? '',
+        thumbnails: buildEffectiveSnapshotThumbnails(row.thumbnails ?? [], customThumbnail),
+      };
+    });
   },
   returns: v.array(v.object({
     _id: v.id('homeComponentSnapshots'),
-    category: v.string(),
-    createdAt: v.number(),
-    label: v.string(),
-    slug: v.string(),
+    address: v.string(),
+    brandMode: v.string(),
     brandName: v.string(),
-    tagline: v.string(),
-    logo: v.string(),
     brandPrimary: v.string(),
     brandSecondary: v.string(),
-    brandMode: v.string(),
-    phone: v.string(),
-    address: v.string(),
+    category: v.string(),
     componentCount: v.number(),
     componentTypes: v.array(v.string()),
+    createdAt: v.number(),
+    customThumbnail: v.union(snapshotCustomThumbnailValidator, v.null()),
+    label: v.string(),
+    slug: v.string(),
+    tagline: v.string(),
+    logo: v.string(),
+    phone: v.string(),
     sectionTitles: v.array(v.string()),
     thumbnails: v.array(v.string()),
   })),
@@ -1099,7 +1233,12 @@ export const getHomepageSnapshotById = query({
     const snapshot = await ctx.db.get(args.snapshotId);
     if (!snapshot) return null;
     const payload = await loadSnapshotPayload(ctx, args.snapshotId as string) as HomepageSnapshotPayload | null;
-    return { ...snapshot, payload: payload ? normalizeHomepageSnapshotPayload(payload) : null };
+    const customThumbnail = normalizeSnapshotCustomThumbnail(snapshot.customThumbnail);
+    return {
+      ...snapshot,
+      ...(customThumbnail ? { customThumbnail } : {}),
+      payload: payload ? normalizeHomepageSnapshotPayload(withSnapshotCustomThumbnail(payload, customThumbnail)) : null,
+    };
   },
   returns: v.union(v.object({
     _id: v.id('homeComponentSnapshots'),
@@ -1114,6 +1253,7 @@ export const getHomepageSnapshotById = query({
     brandSecondary: v.optional(v.string()),
     componentCount: v.optional(v.number()),
     componentTypes: v.optional(v.array(v.string())),
+    customThumbnail: v.optional(snapshotCustomThumbnailValidator),
     logo: v.optional(v.string()),
     payload: v.any(),
     payloadUpdatedAt: v.optional(v.number()),
@@ -1176,12 +1316,21 @@ export const getHomepageSnapshotDemoById = query({
 export const removeHomepageSnapshot = mutation({
   args: { snapshotId: v.id('homeComponentSnapshots') },
   handler: async (ctx, args) => {
+    const snapshot = await ctx.db.get(args.snapshotId);
+    const customThumbnail = normalizeSnapshotCustomThumbnail(snapshot?.customThumbnail);
+    const previousStorageIds = await collectSnapshotThumbnailStorageIds(ctx, customThumbnail);
     // Xóa payload row trước để không còn orphan
     const payloadRow = await ctx.db
       .query('homeComponentSnapshotPayloads')
       .withIndex('by_snapshotId', (q) => q.eq('snapshotId', args.snapshotId))
       .unique();
     if (payloadRow) await ctx.db.delete(payloadRow._id);
+    await removeOwnerFilesAndCleanup(ctx, {
+      ownerId: args.snapshotId,
+      ownerTable: 'homeComponentSnapshots',
+    }, {
+      previousStorageIds,
+    });
     await ctx.db.delete(args.snapshotId);
     return null;
   },
@@ -1229,11 +1378,14 @@ export const updateHomepageSnapshot = mutation({
     if (report.summary.blocking > 0) {
       throw new Error(report.errors[0]?.message ?? 'Snapshot không hợp lệ');
     }
+    const previousThumbnail = normalizeSnapshotCustomThumbnail(snapshot.customThumbnail);
+    const nextThumbnail = normalizeSnapshotCustomThumbnail(nextPayload.gallery?.customThumbnail);
 
     // Cập nhật metadata (không có payload)
     await ctx.db.patch(args.snapshotId, {
       label: args.label.trim() || snapshot.label,
       payloadUpdatedAt: Date.now(),
+      customThumbnail: nextThumbnail ?? undefined,
       ...buildSnapshotSummary(nextPayload),
     });
 
@@ -1247,6 +1399,7 @@ export const updateHomepageSnapshot = mutation({
     } else {
       await ctx.db.insert('homeComponentSnapshotPayloads', { snapshotId: args.snapshotId, payload: nextPayload });
     }
+    await syncSnapshotCustomThumbnailFiles(ctx, args.snapshotId, previousThumbnail, nextThumbnail);
 
     return { ok: true };
   },
@@ -1594,6 +1747,7 @@ const snapshotJsonFiles = (payload: HomepageSnapshotPayload) => ({
   'homepage/dependencies.json': toJsonFile(payload.homepage.dependencies),
   'homepage/system-style.json': toJsonFile(payload.homepage.systemStyle),
   'homepage/demo-bundle.json': toJsonFile(payload.homepage.demoBundle ?? null),
+  'gallery/thumbnail.json': toJsonFile(payload.gallery?.customThumbnail ?? null),
   'index/media.index.json': toJsonFile(payload.index.mediaIndex),
   'reports/import-preview.json': toJsonFile({
     summary: { blocking: 0, warnings: 0 },

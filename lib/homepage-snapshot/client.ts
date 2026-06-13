@@ -172,6 +172,7 @@ function normalizeSnapshotMediaIndex(payload: HomepageSnapshotPayload): Homepage
 
   addUrls(payload.homepage.dependencies, 'dependencies', 'homepage-dependencies', 'homepage:dependencies');
   addUrls(payload.homepage.demoBundle, 'demo-bundle', 'homepage-demo-bundle', 'homepage:demoBundle');
+  addUrls(payload.gallery?.customThumbnail ? { thumbnail: payload.gallery.customThumbnail.url } : undefined, 'snapshot-thumbnail', 'gallery-custom-thumbnail', 'homepage:customThumbnail');
 
   return {
     ...payload,
@@ -192,6 +193,7 @@ const splitSnapshotFiles = (payload: HomepageSnapshotPayload) => ({
   'homepage/dependencies.json': toJsonFile(payload.homepage.dependencies),
   'homepage/system-style.json': toJsonFile(payload.homepage.systemStyle),
   'homepage/demo-bundle.json': toJsonFile(payload.homepage.demoBundle ?? null),
+  'gallery/thumbnail.json': toJsonFile(payload.gallery?.customThumbnail ?? null),
   'index/media.index.json': toJsonFile(payload.index.mediaIndex),
   'reports/import-preview.json': toJsonFile({
     summary: { blocking: 0, warnings: 0 },
@@ -271,6 +273,7 @@ export async function parseHomepageSnapshotFile(file: File): Promise<ParsedSnaps
     globalFontOverride: { enabled: false, fontKey: 'system-default' },
   } as HomepageSnapshotPayload['homepage']['systemStyle']);
   const demoBundle = await parseJson(zip, 'homepage/demo-bundle.json', null as HomepageSnapshotPayload['homepage']['demoBundle'] | null);
+  const customThumbnail = await parseJson(zip, 'gallery/thumbnail.json', null as NonNullable<HomepageSnapshotPayload['gallery']>['customThumbnail'] | null);
   const mediaIndex = await parseJson(zip, 'index/media.index.json', [] as HomepageSnapshotPayload['index']['mediaIndex']);
 
   const mediaFiles: ParsedSnapshotMediaFile[] = [];
@@ -300,6 +303,7 @@ export async function parseHomepageSnapshotFile(file: File): Promise<ParsedSnaps
         systemStyle,
         demoBundle: demoBundle ?? undefined,
       },
+      ...(customThumbnail ? { gallery: { customThumbnail } } : {}),
       index: { mediaIndex },
     },
     mediaFiles,
