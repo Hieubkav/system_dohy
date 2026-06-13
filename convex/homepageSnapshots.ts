@@ -16,7 +16,7 @@ import {
 import type { ContactSettings, SEOSettings, SiteSettings, SocialSettings } from '../lib/get-settings';
 
 const REPLACE_ALL_MODE = 'replace_all';
-const SNAPSHOT_ZIP_BUILDER_VERSION = 'homepage-snapshot-zip.2026-06-13.v1';
+const SNAPSHOT_ZIP_BUILDER_VERSION = 'homepage-snapshot-zip.2026-06-13.v2';
 const SNAPSHOT_MEDIA_FETCH_CONCURRENCY = 6;
 const SNAPSHOT_MEDIA_FETCH_TIMEOUT_MS = 20_000;
 
@@ -1543,8 +1543,8 @@ const sha256 = async (value: string) => {
   return Array.from(new Uint8Array(hash)).map((byte) => byte.toString(16).padStart(2, '0')).join('');
 };
 
-const toSnapshotFileName = (label?: string) => {
-  const safeLabel = (label ?? '')
+const toFileNamePart = (value: string | undefined, fallback: string) => {
+  const safeValue = (value ?? '')
     .normalize('NFD')
     .replaceAll(/[\u0300-\u036f]/g, '')
     .replaceAll(/[đĐ]/g, 'd')
@@ -1552,7 +1552,30 @@ const toSnapshotFileName = (label?: string) => {
     .replaceAll(/[^a-z0-9]+/g, '-')
     .replaceAll(/-+/g, '-')
     .replace(/^-|-$/g, '');
-  return `homepage-snapshot-${safeLabel || new Date().toISOString().slice(0, 10)}.zip`;
+  return safeValue || fallback;
+};
+
+const formatSnapshotFileDate = (value?: string) => {
+  const parsed = value ? new Date(value) : new Date();
+  const date = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${day}-${month}-${date.getFullYear()}`;
+};
+
+const getSnapshotSiteName = (payload: HomepageSnapshotPayload) => {
+  const demoBundle = payload.homepage.demoBundle as Record<string, unknown> | undefined;
+  const settings = demoBundle?.settings as Record<string, unknown> | undefined;
+  const site = settings?.site as Record<string, unknown> | undefined;
+  const siteName = site?.site_name;
+  return typeof siteName === 'string' && siteName.trim() ? siteName.trim() : undefined;
+};
+
+const toSnapshotFileName = (payload: HomepageSnapshotPayload, fallbackLabel?: string) => {
+  const label = toFileNamePart(fallbackLabel ?? payload.manifest.snapshotLabel, 'snapshot');
+  const date = formatSnapshotFileDate(payload.manifest.exportedAt);
+  const siteName = toFileNamePart(getSnapshotSiteName(payload), 'website');
+  return `${label}-${date}-${siteName}.zip`;
 };
 
 const safeZipPath = (path: string, fallback: string) => {
@@ -1665,7 +1688,7 @@ export const exportCurrentHomepageSnapshotZip = action({
     const payload: HomepageSnapshotPayload = await ctx.runQuery(internal.homepageSnapshots.captureHomepageSnapshotForZip, {
       label: args.label,
     });
-    const fileName = toSnapshotFileName(payload.manifest.snapshotLabel);
+    const fileName = toSnapshotFileName(payload);
     const result = await buildHomepageSnapshotZipBlob(payload);
     const storageId = await ctx.storage.store(result.blob);
     const url = await ctx.storage.getUrl(storageId);
@@ -1719,7 +1742,7 @@ export const exportSavedHomepageSnapshotZip = action({
       if (cachedUrl) {
         return {
           cached: true,
-          fileName: cache.zipFileName || toSnapshotFileName(cache.label),
+          fileName: cache.zipFileName || `${toFileNamePart(cache.label, 'snapshot')}-${formatSnapshotFileDate()}-website.zip`,
           mediaCount: cache.zipMediaCount,
           url: cachedUrl,
           warningCount: cache.zipWarningCount,
@@ -1736,7 +1759,7 @@ export const exportSavedHomepageSnapshotZip = action({
 
     const payload = normalizeHomepageSnapshotPayload(input.payload);
     const payloadHash = await sha256(stableStringify(payload));
-    const fileName = toSnapshotFileName(input.label || payload.manifest.snapshotLabel);
+    const fileName = toSnapshotFileName(payload, input.label);
     const result = await buildHomepageSnapshotZipBlob(payload);
     const storageId = await ctx.storage.store(result.blob);
     const url = await ctx.storage.getUrl(storageId);
