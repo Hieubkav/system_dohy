@@ -25,7 +25,7 @@ import {
 const REPLACE_ALL_MODE = 'replace_all';
 const SNAPSHOT_ZIP_BUILDER_VERSION = 'homepage-snapshot-zip.2026-06-13.v3';
 const SNAPSHOT_MEDIA_FETCH_CONCURRENCY = 6;
-const SNAPSHOT_MEDIA_FETCH_TIMEOUT_MS = 20_000;
+const SNAPSHOT_MEDIA_FETCH_TIMEOUT_MS = 60_000;
 
 const snapshotThumbnailConfigValidator = v.object({
   backgroundColor: v.optional(v.string()),
@@ -207,28 +207,48 @@ const STORAGE_URL_RE = /\/api\/storage\/|\/storage\/|convex\.cloud\/api\/storage
 const MEDIA_FIELD_KEYS = new Set([
   'avatar',
   'avatarUrl',
+  'avatar_url',
   'backgroundImage',
   'backgroundImageUrl',
+  'background_image',
+  'backgroundVideo',
+  'backgroundVideoUrl',
+  'background_video',
   'cover',
   'coverImage',
   'desktopImage',
   'favicon',
+  'heroVideo',
+  'heroVideoUrl',
+  'hero_video',
   'iconUrl',
   'image',
   'imageUrl',
+  'image_url',
   'images',
   'logo',
   'logoUrl',
+  'logo_url',
   'mobileImage',
   'ogImage',
   'poster',
   'posterUrl',
+  'poster_url',
   'seo_og_image',
   'site_favicon',
   'site_logo',
   'src',
+  'srcVideo',
+  'src_video',
   'thumbnail',
   'thumbnailUrl',
+  'thumbnail_url',
+  'video',
+  'videoUrl',
+  'videoSrc',
+  'video_url',
+  'video_src',
+  'videoPath',
   'videoThumbnail',
   'videoThumbnailUrl',
 ]);
