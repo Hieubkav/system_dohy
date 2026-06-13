@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useMutation, useQuery } from 'convex/react';
+import { useConvex, useMutation, useQuery } from 'convex/react';
 import { AlertTriangle, ChevronDown, Download, Edit3, ExternalLink, Eye, EyeOff, FileUp, Globe, Loader2, PackageCheck, Search, ShieldCheck, Tag, Trash2, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -33,6 +33,7 @@ type HomepageSnapshotDialogProps = {
 };
 
 export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotDialogProps) {
+  const convex = useConvex();
   const captureSnapshot = useQuery(api.homepageSnapshots.captureHomepageSnapshot, { label: 'Tạo nhanh snapshot' }) as HomepageSnapshotPayload | undefined;
   const savedSnapshots = useQuery(api.homepageSnapshots.listHomepageSnapshots) ?? [];
   const preflightSnapshot = useMutation(api.homepageSnapshots.preflightHomepageSnapshot);
@@ -55,6 +56,7 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
   const getCategoryColor = (name: string) => categories.find((c) => c.name === name)?.color ?? '#6b7280';
 
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingSavedId, setIsExportingSavedId] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isApplyingId, setIsApplyingId] = useState<string | null>(null);
@@ -104,6 +106,26 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     URL.revokeObjectURL(url);
   };
 
+  const toSnapshotFileName = (label?: string) => {
+    const safeLabel = (label ?? '')
+      .normalize('NFD')
+      .replaceAll(/[\u0300-\u036f]/g, '')
+      .replaceAll(/[đĐ]/g, 'd')
+      .toLowerCase()
+      .replaceAll(/[^a-z0-9]+/g, '-')
+      .replaceAll(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+    return `homepage-snapshot-${safeLabel || new Date().toISOString().slice(0, 10)}.zip`;
+  };
+
+  const showExportResultToast = (mediaCount: number, warningCount: number) => {
+    if (warningCount > 0) {
+      toast.warning(`Đã tạo ZIP nhưng ${warningCount}/${mediaCount} media tải lỗi. Xem reports/export-warnings.json trong ZIP.`);
+      return;
+    }
+    toast.success(`Đã export snapshot ZIP${mediaCount > 0 ? ` kèm ${mediaCount} media` : ''}`);
+  };
+
   const handleExport = async () => {
     if (!captureSnapshot) {
       toast.error('Snapshot chưa sẵn sàng');
@@ -111,13 +133,33 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     }
     setIsExporting(true);
     try {
-      const zip = await createHomepageSnapshotZip(captureSnapshot);
-      downloadBlob(zip, `homepage-snapshot-${new Date().toISOString().slice(0, 10)}.zip`);
-      toast.success('Đã export snapshot ZIP');
+      const result = await createHomepageSnapshotZip(captureSnapshot);
+      downloadBlob(result.blob, toSnapshotFileName(captureSnapshot.manifest.snapshotLabel));
+      showExportResultToast(result.mediaCount, result.warnings.length);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Export snapshot thất bại');
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportSavedProfile = async (snapshotId: string, fallbackLabel: string) => {
+    setIsExportingSavedId(snapshotId);
+    try {
+      const snapshot = await convex.query(api.homepageSnapshots.getHomepageSnapshotById, {
+        snapshotId: snapshotId as Id<'homeComponentSnapshots'>,
+      }) as { label?: string; payload?: HomepageSnapshotPayload | null } | null;
+      if (!snapshot?.payload) {
+        toast.error('Không tìm thấy payload snapshot để tải ZIP');
+        return;
+      }
+      const result = await createHomepageSnapshotZip(snapshot.payload);
+      downloadBlob(result.blob, toSnapshotFileName(snapshot.label ?? fallbackLabel));
+      showExportResultToast(result.mediaCount, result.warnings.length);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể tải snapshot ZIP');
+    } finally {
+      setIsExportingSavedId(null);
     }
   };
 
@@ -152,7 +194,11 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
       setParsedBundle(parsed);
       const nextReport = await preflightSnapshot({ payload: parsed.payload }) as HomepageSnapshotImportReport;
       setReport(nextReport);
-      toast.success(`Đã tải snapshot: ${parsed.fileName}`);
+      if (parsed.missingMediaPaths.length > 0) {
+        toast.warning(`ZIP thiếu ${parsed.missingMediaPaths.length} tệp media. Import vẫn chạy nhưng có thể phải dùng URL gốc.`);
+      } else {
+        toast.success(`Đã tải snapshot: ${parsed.fileName}`);
+      }
     } catch (error) {
       setParsedBundle(null);
       setReport(null);
@@ -173,6 +219,7 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     setIsImporting(true);
     try {
       const uploadedMediaMap: Record<string, { url: string; storageId?: string | null }> = {};
+      const mediaIndexByPath = new Map(parsedBundle.payload.index.mediaIndex.map((item) => [item.logicalPath, item]));
       for (const media of parsedBundle.mediaFiles) {
         const uploadUrl = await generateUploadUrl({});
         const response = await fetch(uploadUrl, {
@@ -191,10 +238,15 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
           mimeType: media.file.type || 'application/octet-stream',
           size: media.file.size,
         });
-        uploadedMediaMap[media.logicalPath] = {
+        const uploaded = {
           url: saved.url ?? media.logicalPath,
           storageId: body.storageId,
         };
+        uploadedMediaMap[media.logicalPath] = uploaded;
+        const originalUrl = mediaIndexByPath.get(media.logicalPath)?.originalUrl;
+        if (originalUrl) {
+          uploadedMediaMap[originalUrl] = uploaded;
+        }
       }
 
       const result = await importSnapshot({
@@ -462,6 +514,17 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
                             Sửa
                           </Button>
                         </Link>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => { void handleExportSavedProfile(item._id, item.label); }}
+                          disabled={Boolean(isExportingSavedId)}
+                          title="Tải snapshot ZIP"
+                        >
+                          {isExportingSavedId === item._id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Download className="mr-1 h-3 w-3" />}
+                          Tải
+                        </Button>
                         <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => { void handleApplySavedProfile(item._id); }} disabled={isApplyingId === item._id}>
                           {isApplyingId === item._id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
                           Áp dụng

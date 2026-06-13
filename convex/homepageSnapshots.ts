@@ -76,18 +76,153 @@ const getExtensionFromUrl = (value?: string) => {
   return ext?.toLowerCase() ?? 'bin';
 };
 
-const collectUrls = (value: unknown, acc: Set<string>) => {
-  if (typeof value === 'string' && /^https?:\/\//.test(value)) {
-    acc.add(value);
+type SnapshotMediaEntry = HomepageSnapshotPayload['index']['mediaIndex'][number];
+
+const MEDIA_EXTENSION_RE = /\.(avif|bmp|gif|ico|jpe?g|m4v|mov|mp4|ogg|png|svg|webm|webp)([?#].*)?$/i;
+const STORAGE_URL_RE = /\/api\/storage\/|\/storage\/|convex\.cloud\/api\/storage\//i;
+const MEDIA_FIELD_KEYS = new Set([
+  'avatar',
+  'avatarUrl',
+  'backgroundImage',
+  'backgroundImageUrl',
+  'cover',
+  'coverImage',
+  'desktopImage',
+  'favicon',
+  'iconUrl',
+  'image',
+  'imageUrl',
+  'images',
+  'logo',
+  'logoUrl',
+  'mobileImage',
+  'ogImage',
+  'poster',
+  'posterUrl',
+  'seo_og_image',
+  'site_favicon',
+  'site_logo',
+  'src',
+  'thumbnail',
+  'thumbnailUrl',
+  'videoThumbnail',
+  'videoThumbnailUrl',
+]);
+
+const isHttpUrl = (value: string) => /^https?:\/\//.test(value);
+
+const isLikelyMediaUrl = (value: string, keyPath: string[] = [], logicalPath?: string) => {
+  if (!isHttpUrl(value)) {return false;}
+  if (MEDIA_EXTENSION_RE.test(value) || STORAGE_URL_RE.test(value)) {return true;}
+  if (logicalPath && MEDIA_EXTENSION_RE.test(logicalPath)) {return true;}
+  return keyPath.some((key) => MEDIA_FIELD_KEYS.has(key));
+};
+
+const collectMediaUrls = (value: unknown, acc: Set<string>, keyPath: string[] = []) => {
+  if (typeof value === 'string') {
+    if (isLikelyMediaUrl(value, keyPath)) {
+      acc.add(value);
+    }
     return;
   }
   if (Array.isArray(value)) {
-    value.forEach((item) => collectUrls(item, acc));
+    value.forEach((item) => collectMediaUrls(item, acc, keyPath));
     return;
   }
   if (value && typeof value === 'object') {
-    Object.values(value as Record<string, unknown>).forEach((item) => collectUrls(item, acc));
+    Object.entries(value as Record<string, unknown>).forEach(([key, item]) => {
+      collectMediaUrls(item, acc, [...keyPath, key]);
+    });
   }
+};
+
+const buildMediaLogicalPath = (sourceType: string, sourceKey: string, index: number, sourceUrl: string) => {
+  const ext = getExtensionFromUrl(sourceUrl);
+  return `snapshot-bundles/homepage/${slugify(sourceType)}-${slugify(sourceKey)}-${index + 1}.${ext}`;
+};
+
+const normalizeHomepageSnapshotPayload = (payload: HomepageSnapshotPayload): HomepageSnapshotPayload => {
+  const mediaEntries: SnapshotMediaEntry[] = [];
+  const byOriginalUrl = new Map<string, SnapshotMediaEntry>();
+  const byLogicalPath = new Set<string>();
+
+  const pushEntry = (entry: SnapshotMediaEntry) => {
+    if (!entry.originalUrl || !entry.logicalPath || !isLikelyMediaUrl(entry.originalUrl, [], entry.logicalPath)) {return;}
+
+    const existing = byOriginalUrl.get(entry.originalUrl);
+    if (existing) {
+      existing.usedBy = Array.from(new Set([...(existing.usedBy ?? []), ...(entry.usedBy ?? [])]));
+      return;
+    }
+
+    let logicalPath = entry.logicalPath;
+    if (byLogicalPath.has(logicalPath)) {
+      const ext = getExtensionFromUrl(logicalPath);
+      const base = logicalPath.replace(new RegExp(`\\.${ext}$`), '');
+      let suffix = 2;
+      while (byLogicalPath.has(`${base}-${suffix}.${ext}`)) {
+        suffix += 1;
+      }
+      logicalPath = `${base}-${suffix}.${ext}`;
+    }
+
+    const next: SnapshotMediaEntry = {
+      logicalPath,
+      originalUrl: entry.originalUrl,
+      mimeType: entry.mimeType || getMimeFromExtension(getExtensionFromUrl(entry.originalUrl)) || 'application/octet-stream',
+      sourceType: entry.sourceType || 'homepage',
+      usedBy: Array.from(new Set(entry.usedBy ?? [])),
+    };
+    mediaEntries.push(next);
+    byOriginalUrl.set(next.originalUrl, next);
+    byLogicalPath.add(next.logicalPath);
+  };
+
+  (payload.index?.mediaIndex ?? []).forEach(pushEntry);
+
+  const addUrls = (value: unknown, sourceType: string, sourceKey: string, usedBy: string) => {
+    const urls = new Set<string>();
+    collectMediaUrls(value, urls);
+    Array.from(urls).forEach((url, index) => {
+      const existing = byOriginalUrl.get(url);
+      if (existing) {
+        existing.usedBy = Array.from(new Set([...existing.usedBy, usedBy]));
+        return;
+      }
+      pushEntry({
+        logicalPath: buildMediaLogicalPath(sourceType, sourceKey, index, url),
+        originalUrl: url,
+        mimeType: getMimeFromExtension(getExtensionFromUrl(url)) || 'application/octet-stream',
+        sourceType,
+        usedBy: [usedBy],
+      });
+    });
+  };
+
+  const components = payload.homepage.components.map((component) => {
+    addUrls(component.config, component.type, `${component.title}-${component.order}`, component.componentKey);
+    const mediaRefs = mediaEntries
+      .filter((entry) => entry.usedBy.includes(component.componentKey))
+      .map((entry) => entry.logicalPath);
+    return {
+      ...component,
+      mediaRefs: Array.from(new Set([...(component.mediaRefs ?? []), ...mediaRefs])),
+    };
+  });
+
+  addUrls(payload.homepage.dependencies, 'dependencies', 'homepage-dependencies', 'homepage:dependencies');
+  addUrls(payload.homepage.demoBundle, 'demo-bundle', 'homepage-demo-bundle', 'homepage:demoBundle');
+
+  return {
+    ...payload,
+    homepage: {
+      ...payload.homepage,
+      components,
+    },
+    index: {
+      mediaIndex: mediaEntries,
+    },
+  };
 };
 
 const toStaticPost = (post: Doc<'posts'>): SnapshotStaticItem => ({
@@ -512,7 +647,7 @@ export const captureHomepageSnapshot = query({
       const finalConfig = rewriteConfigWithFallback(component.type, baseConfig, dependencies);
 
       const urls = new Set<string>();
-      collectUrls(finalConfig, urls);
+      collectMediaUrls(finalConfig, urls);
       const mediaRefs = Array.from(urls).map((url, index) => {
         const ext = getExtensionFromUrl(url);
         const logicalPath = `snapshot-bundles/homepage/${slugify(component.type)}-${slugify(component.title)}-${component.order}-${index + 1}.${ext}`;
@@ -543,7 +678,7 @@ export const captureHomepageSnapshot = query({
       };
     });
 
-    return {
+    const payload: HomepageSnapshotPayload = {
       manifest: {
         snapshotVersion: HOMEPAGE_SNAPSHOT_VERSION,
         exportedAt: new Date().toISOString(),
@@ -573,6 +708,7 @@ export const captureHomepageSnapshot = query({
         mediaIndex: Array.from(mediaIndexMap.values()),
       },
     };
+    return normalizeHomepageSnapshotPayload(payload);
   },
   returns: v.any(),
 });
@@ -584,6 +720,7 @@ export const saveHomepageSnapshot = mutation({
     payload: v.any(),
   },
   handler: async (ctx, args) => {
+    const payload = normalizeHomepageSnapshotPayload(args.payload as HomepageSnapshotPayload);
     // Generate unique slug from label
     let baseSlug = slugify(args.label);
     if (!baseSlug) baseSlug = `snapshot-${Date.now()}`;
@@ -599,13 +736,13 @@ export const saveHomepageSnapshot = mutation({
       label: args.label,
       publicEnabled: false,
       slug,
-      ...buildSnapshotSummary(args.payload as HomepageSnapshotPayload),
+      ...buildSnapshotSummary(payload),
       version: HOMEPAGE_SNAPSHOT_VERSION,
     });
     // Lưu payload vào bảng riêng — tránh đọc toàn document khi list metadata
     await ctx.db.insert('homeComponentSnapshotPayloads', {
       snapshotId,
-      payload: args.payload,
+      payload,
     });
     return snapshotId;
   },
@@ -644,7 +781,7 @@ export const listHomepageSnapshotsWithPayload = query({
   handler: async (ctx) => {
     const rows = await ctx.db.query('homeComponentSnapshots').withIndex('by_createdAt').order('desc').take(100);
     return await Promise.all(rows.map(async (row) => {
-      const payload = await loadSnapshotPayload(ctx, row._id as string);
+      const payload = await loadSnapshotPayload(ctx, row._id as string) as HomepageSnapshotPayload | null;
       return {
         _id: row._id,
         createdAt: row.createdAt,
@@ -652,7 +789,7 @@ export const listHomepageSnapshotsWithPayload = query({
         version: row.version,
         slug: row.slug ?? '',
         publicEnabled: row.publicEnabled ?? false,
-        payload,
+        payload: payload ? normalizeHomepageSnapshotPayload(payload) : null,
       };
     }));
   },
@@ -844,8 +981,8 @@ export const getHomepageSnapshotById = query({
   handler: async (ctx, args) => {
     const snapshot = await ctx.db.get(args.snapshotId);
     if (!snapshot) return null;
-    const payload = await loadSnapshotPayload(ctx, args.snapshotId as string);
-    return { ...snapshot, payload };
+    const payload = await loadSnapshotPayload(ctx, args.snapshotId as string) as HomepageSnapshotPayload | null;
+    return { ...snapshot, payload: payload ? normalizeHomepageSnapshotPayload(payload) : null };
   },
   returns: v.union(v.object({
     _id: v.id('homeComponentSnapshots'),
@@ -877,8 +1014,9 @@ export const getHomepageSnapshotDemoById = query({
   handler: async (ctx, args) => {
     const snapshot = await ctx.db.get(args.snapshotId);
     if (!snapshot) {return null;}
-    const payload = await loadSnapshotPayload(ctx, args.snapshotId as string) as HomepageSnapshotPayload | null;
-    if (!payload) {return null;}
+    const rawPayload = await loadSnapshotPayload(ctx, args.snapshotId as string) as HomepageSnapshotPayload | null;
+    if (!rawPayload) {return null;}
+    const payload = normalizeHomepageSnapshotPayload(rawPayload);
     const bundle = (payload.homepage.demoBundle ?? null) as Record<string, unknown> | null;
     return {
       bundle,
@@ -960,7 +1098,7 @@ export const updateHomepageSnapshot = mutation({
       throw new Error('Không tìm thấy snapshot');
     }
 
-    const nextPayload = args.payload as HomepageSnapshotPayload;
+    const nextPayload = normalizeHomepageSnapshotPayload(args.payload as HomepageSnapshotPayload);
     const report = buildReport(nextPayload);
     if (report.summary.blocking > 0) {
       throw new Error(report.errors[0]?.message ?? 'Snapshot không hợp lệ');
@@ -1000,7 +1138,7 @@ export const backfillHomepageSnapshotSummaries = mutation({
     for (const row of rows) {
       const payload = await loadSnapshotPayload(ctx, row._id as string) as HomepageSnapshotPayload | null;
       if (!payload) continue;
-      await ctx.db.patch(row._id, buildSnapshotSummary(payload));
+      await ctx.db.patch(row._id, buildSnapshotSummary(normalizeHomepageSnapshotPayload(payload)));
       updated += 1;
     }
     return { updated };
@@ -1013,8 +1151,9 @@ export const getHomepageSnapshotBySlug = query({
   handler: async (ctx, args) => {
     const snapshot = await ctx.db.query('homeComponentSnapshots').withIndex('by_slug', (q) => q.eq('slug', args.slug)).unique();
     if (!snapshot || !snapshot.publicEnabled) return null;
-    const payload = await loadSnapshotPayload(ctx, snapshot._id as string) as HomepageSnapshotPayload | null;
-    if (!payload) return null;
+    const rawPayload = await loadSnapshotPayload(ctx, snapshot._id as string) as HomepageSnapshotPayload | null;
+    if (!rawPayload) return null;
+    const payload = normalizeHomepageSnapshotPayload(rawPayload);
     const bundle = (payload.homepage.demoBundle ?? null) as Record<string, unknown> | null;
     return {
       bundle,
@@ -1100,12 +1239,16 @@ export const preflightHomepageSnapshot = mutation({
     payload: v.any(),
   },
   handler: async (_ctx, args) => {
-    return buildReport(args.payload as HomepageSnapshotPayload);
+    return buildReport(normalizeHomepageSnapshotPayload(args.payload as HomepageSnapshotPayload));
   },
   returns: v.any(),
 });
 
-const replaceMediaUrls = (value: unknown, uploadedMediaMap: Record<string, { url: string }>): unknown => {
+type UploadedMediaMap = Record<string, { url: string; storageId?: string | null }>;
+
+const isStorageIdKey = (key: string) => key === 'storageId' || key.endsWith('StorageId');
+
+const replaceMediaUrls = (value: unknown, uploadedMediaMap: UploadedMediaMap): unknown => {
   if (typeof value === 'string') {
     return uploadedMediaMap[value]?.url ?? value;
   }
@@ -1113,8 +1256,17 @@ const replaceMediaUrls = (value: unknown, uploadedMediaMap: Record<string, { url
     return value.map((item) => replaceMediaUrls(item, uploadedMediaMap));
   }
   if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const siblingStorageId = Object.values(record)
+      .map((item) => (typeof item === 'string' ? uploadedMediaMap[item]?.storageId : null))
+      .find((storageId): storageId is string => typeof storageId === 'string' && storageId.length > 0);
     return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([key, item]) => [key, replaceMediaUrls(item, uploadedMediaMap)]),
+      Object.entries(record).map(([key, item]) => {
+        if (siblingStorageId && isStorageIdKey(key) && typeof item === 'string') {
+          return [key, siblingStorageId];
+        }
+        return [key, replaceMediaUrls(item, uploadedMediaMap)];
+      }),
     );
   }
   return value;
@@ -1144,6 +1296,96 @@ const rebuildHomeComponentStats = async (ctx: any) => {
   );
 };
 
+const buildMediaReplacementMap = (
+  payload: HomepageSnapshotPayload,
+  uploadedMediaMap: UploadedMediaMap,
+): UploadedMediaMap => {
+  const map: UploadedMediaMap = { ...uploadedMediaMap };
+  for (const media of payload.index?.mediaIndex ?? []) {
+    const replacement = map[media.logicalPath] ?? map[media.originalUrl];
+    if (!replacement) {continue;}
+    map[media.logicalPath] = replacement;
+    map[media.originalUrl] = replacement;
+  }
+  return map;
+};
+
+const upsertSnapshotSetting = async (ctx: any, group: string, key: string, value: unknown) => {
+  const existing = await ctx.db.query('settings').withIndex('by_key', (q: any) => q.eq('key', key)).unique();
+  if (existing) {
+    await ctx.db.patch(existing._id, { group, value });
+    return;
+  }
+  await ctx.db.insert('settings', { group, key, value });
+};
+
+const IMAGE_SETTING_KEYS = new Set(['seo_og_image', 'site_favicon', 'site_logo']);
+const SETTING_STORAGE_ID_SUFFIX = '__storageId';
+
+const restoreSnapshotSettings = async (
+  ctx: any,
+  payload: HomepageSnapshotPayload,
+  mediaReplacementMap: UploadedMediaMap,
+) => {
+  const rewrite = (value: unknown) => replaceMediaUrls(value, mediaReplacementMap);
+  const style = payload.homepage.systemStyle;
+  if (style) {
+    await Promise.all([
+      upsertSnapshotSetting(ctx, 'home_components', 'create_hidden_types', style.hiddenTypes),
+      upsertSnapshotSetting(ctx, 'home_components', 'type_color_overrides', style.typeColorOverrides),
+      upsertSnapshotSetting(ctx, 'home_components', 'type_font_overrides', style.typeFontOverrides),
+      upsertSnapshotSetting(ctx, 'home_components', 'global_font_override', style.globalFontOverride),
+    ]);
+  }
+
+  const demoBundle = payload.homepage.demoBundle as Record<string, unknown> | undefined;
+  const demoBundleSettings = demoBundle?.settings as Record<string, unknown> | undefined;
+  if (!demoBundleSettings) {return;}
+
+  const restoreGroup = async (
+    group: 'contact' | 'seo' | 'site' | 'social',
+    value: unknown,
+    keys: readonly string[],
+  ) => {
+    const source = value as Record<string, unknown> | undefined;
+    if (!source) {return;}
+    await Promise.all(keys.map(async (key) => {
+      const rawValue = source[key] ?? '';
+      await upsertSnapshotSetting(ctx, group, key, rewrite(rawValue));
+      const storageId = typeof rawValue === 'string' ? mediaReplacementMap[rawValue]?.storageId : null;
+      if (storageId && IMAGE_SETTING_KEYS.has(key)) {
+        await upsertSnapshotSetting(ctx, group, `${key}${SETTING_STORAGE_ID_SUFFIX}`, storageId);
+      }
+    }));
+  };
+
+  await Promise.all([
+    restoreGroup('contact', demoBundleSettings.contact, SNAPSHOT_REQUIRED_SETTINGS_KEYS.contact),
+    restoreGroup('site', demoBundleSettings.site, SNAPSHOT_REQUIRED_SETTINGS_KEYS.site),
+    restoreGroup('social', demoBundleSettings.social, SNAPSHOT_REQUIRED_SETTINGS_KEYS.social),
+    restoreGroup('seo', demoBundleSettings.seo, SNAPSHOT_REQUIRED_SETTINGS_KEYS.seo),
+  ]);
+
+  const snapshotHeader = demoBundleSettings.header as { header_style?: string; header_config?: Record<string, unknown> } | undefined;
+  if (snapshotHeader) {
+    const headerOps: Promise<void>[] = [];
+    if (snapshotHeader.header_style != null) {
+      headerOps.push(upsertSnapshotSetting(ctx, 'site', 'header_style', snapshotHeader.header_style));
+    }
+    if (snapshotHeader.header_config != null) {
+      headerOps.push(upsertSnapshotSetting(ctx, 'site', 'header_config', rewrite(snapshotHeader.header_config)));
+    }
+    if (headerOps.length > 0) {
+      await Promise.all(headerOps);
+    }
+  }
+
+  const snapshotRouting = demoBundleSettings.routing as { ia_route_mode?: string } | undefined;
+  if (snapshotRouting?.ia_route_mode != null) {
+    await upsertSnapshotSetting(ctx, 'ia', 'ia_route_mode', snapshotRouting.ia_route_mode);
+  }
+};
+
 export const importHomepageSnapshot = mutation({
   args: {
     payload: v.any(),
@@ -1154,13 +1396,13 @@ export const importHomepageSnapshot = mutation({
     }))),
   },
   handler: async (ctx, args) => {
-    const payload = args.payload as HomepageSnapshotPayload;
+    const payload = normalizeHomepageSnapshotPayload(args.payload as HomepageSnapshotPayload);
     const report = buildReport(payload);
     if (report.summary.blocking > 0) {
       return { applied: false, created: 0, report };
     }
 
-    const uploadedMediaMap = args.uploadedMediaMap ?? {};
+    const mediaReplacementMap = buildMediaReplacementMap(payload, args.uploadedMediaMap ?? {});
     const existing = await ctx.db.query('homeComponents').take(5000);
     if (args.mode === REPLACE_ALL_MODE) {
       for (const item of existing) {
@@ -1174,7 +1416,7 @@ export const importHomepageSnapshot = mutation({
     for (const [index, component] of payload.homepage.components.entries()) {
       await ctx.db.insert('homeComponents', {
         active: component.active,
-        config: replaceMediaUrls(component.config, uploadedMediaMap),
+        config: replaceMediaUrls(component.config, mediaReplacementMap),
         order: baseOrder + index + 1,
         title: component.title,
         type: component.type,
@@ -1183,54 +1425,7 @@ export const importHomepageSnapshot = mutation({
     }
 
     await rebuildHomeComponentStats(ctx);
-
-    const style = payload.homepage.systemStyle;
-    const upsertSetting = async (key: string, value: unknown) => {
-      const existingSetting = await ctx.db.query('settings').withIndex('by_key', (q) => q.eq('key', key)).unique();
-      if (existingSetting) {
-        await ctx.db.patch(existingSetting._id, { group: 'home_components', value });
-        return;
-      }
-      await ctx.db.insert('settings', { group: 'home_components', key, value });
-    };
-
-    await Promise.all([
-      upsertSetting('create_hidden_types', style.hiddenTypes),
-      upsertSetting('type_color_overrides', style.typeColorOverrides),
-      upsertSetting('type_font_overrides', style.typeFontOverrides),
-      upsertSetting('global_font_override', style.globalFontOverride),
-    ]);
-
-    // Restore header settings (logo size, header style) from demoBundle
-    const demoBundle = payload.homepage.demoBundle as Record<string, unknown> | undefined;
-    const demoBundleSettings = demoBundle?.settings as Record<string, unknown> | undefined;
-    const snapshotHeader = demoBundleSettings?.header as { header_style?: string; header_config?: Record<string, unknown> } | undefined;
-    if (snapshotHeader) {
-      const upsertSiteSetting = async (key: string, value: unknown) => {
-        const existing = await ctx.db.query('settings').withIndex('by_key', (q) => q.eq('key', key)).unique();
-        if (existing) {
-          await ctx.db.patch(existing._id, { group: 'site', value });
-          return;
-        }
-        await ctx.db.insert('settings', { group: 'site', key, value });
-      };
-      const headerOps: Promise<void>[] = [];
-      if (snapshotHeader.header_style != null) headerOps.push(upsertSiteSetting('header_style', snapshotHeader.header_style));
-      if (snapshotHeader.header_config != null) headerOps.push(upsertSiteSetting('header_config', snapshotHeader.header_config));
-      if (headerOps.length > 0) await Promise.all(headerOps);
-    }
-    const snapshotSeo = demoBundleSettings?.seo as Record<string, unknown> | undefined;
-    if (snapshotSeo) {
-      const upsertSeoSetting = async (key: string, value: unknown) => {
-        const existing = await ctx.db.query('settings').withIndex('by_key', (q) => q.eq('key', key)).unique();
-        if (existing) {
-          await ctx.db.patch(existing._id, { group: 'seo', value });
-          return;
-        }
-        await ctx.db.insert('settings', { group: 'seo', key, value });
-      };
-      await Promise.all(SNAPSHOT_REQUIRED_SETTINGS_KEYS.seo.map((key) => upsertSeoSetting(key, snapshotSeo[key] ?? '')));
-    }
+    await restoreSnapshotSettings(ctx, payload, mediaReplacementMap);
 
     return {
       applied: true,
@@ -1251,10 +1446,11 @@ export const applyHomepageSnapshot = mutation({
     if (!snapshot) {
       throw new Error('Snapshot không tồn tại');
     }
-    const payload = await loadSnapshotPayload(ctx, args.snapshotId as string) as HomepageSnapshotPayload | null;
-    if (!payload) {
+    const rawPayload = await loadSnapshotPayload(ctx, args.snapshotId as string) as HomepageSnapshotPayload | null;
+    if (!rawPayload) {
       throw new Error('Payload snapshot không tìm thấy trong homeComponentSnapshotPayloads');
     }
+    const payload = normalizeHomepageSnapshotPayload(rawPayload);
     const report = buildReport(payload);
     if (report.summary.blocking > 0) {
       return { applied: false, created: 0, report };
@@ -1278,56 +1474,7 @@ export const applyHomepageSnapshot = mutation({
     }
 
     await rebuildHomeComponentStats(ctx);
-
-    // Restore systemStyle (fonts, colors, hidden types)
-    const style = payload.homepage.systemStyle;
-    if (style) {
-      const upsertSetting = async (key: string, value: unknown) => {
-        const existingSetting = await ctx.db.query('settings').withIndex('by_key', (q) => q.eq('key', key)).unique();
-        if (existingSetting) {
-          await ctx.db.patch(existingSetting._id, { group: 'home_components', value });
-          return;
-        }
-        await ctx.db.insert('settings', { group: 'home_components', key, value });
-      };
-      await Promise.all([
-        upsertSetting('create_hidden_types', style.hiddenTypes),
-        upsertSetting('type_color_overrides', style.typeColorOverrides),
-        upsertSetting('type_font_overrides', style.typeFontOverrides),
-        upsertSetting('global_font_override', style.globalFontOverride),
-      ]);
-    }
-
-    // Restore header settings (logo size, header style) from demoBundle
-    const demoBundle = payload.homepage.demoBundle as Record<string, unknown> | undefined;
-    const demoBundleSettings = demoBundle?.settings as Record<string, unknown> | undefined;
-    const snapshotHeader = demoBundleSettings?.header as { header_style?: string; header_config?: Record<string, unknown> } | undefined;
-    if (snapshotHeader) {
-      const upsertSiteSetting = async (key: string, value: unknown) => {
-        const existing = await ctx.db.query('settings').withIndex('by_key', (q) => q.eq('key', key)).unique();
-        if (existing) {
-          await ctx.db.patch(existing._id, { group: 'site', value });
-          return;
-        }
-        await ctx.db.insert('settings', { group: 'site', key, value });
-      };
-      const headerOps: Promise<void>[] = [];
-      if (snapshotHeader.header_style != null) headerOps.push(upsertSiteSetting('header_style', snapshotHeader.header_style));
-      if (snapshotHeader.header_config != null) headerOps.push(upsertSiteSetting('header_config', snapshotHeader.header_config));
-      if (headerOps.length > 0) await Promise.all(headerOps);
-    }
-    const snapshotSeo = demoBundleSettings?.seo as Record<string, unknown> | undefined;
-    if (snapshotSeo) {
-      const upsertSeoSetting = async (key: string, value: unknown) => {
-        const existing = await ctx.db.query('settings').withIndex('by_key', (q) => q.eq('key', key)).unique();
-        if (existing) {
-          await ctx.db.patch(existing._id, { group: 'seo', value });
-          return;
-        }
-        await ctx.db.insert('settings', { group: 'seo', key, value });
-      };
-      await Promise.all(SNAPSHOT_REQUIRED_SETTINGS_KEYS.seo.map((key) => upsertSeoSetting(key, snapshotSeo[key] ?? '')));
-    }
+    await restoreSnapshotSettings(ctx, payload, buildMediaReplacementMap(payload, {}));
 
     return { applied: true, created, report };
   },
