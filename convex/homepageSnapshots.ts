@@ -1579,7 +1579,7 @@ const snapshotJsonFiles = (payload: HomepageSnapshotPayload) => ({
   } satisfies HomepageSnapshotImportReport),
 });
 
-const fetchMediaBlob = async (url: string) => {
+const fetchMediaData = async (url: string) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), SNAPSHOT_MEDIA_FETCH_TIMEOUT_MS);
   try {
@@ -1587,10 +1587,9 @@ const fetchMediaBlob = async (url: string) => {
     if (!response.ok) {
       throw new Error(`Fetch media thất bại: ${response.status}`);
     }
-    const blob = await response.blob();
     return {
-      blob,
-      mimeType: response.headers.get('Content-Type') || blob.type || 'application/octet-stream',
+      data: await response.arrayBuffer(),
+      mimeType: response.headers.get('Content-Type') || 'application/octet-stream',
     };
   } finally {
     clearTimeout(timeout);
@@ -1613,8 +1612,8 @@ const buildHomepageSnapshotZipBlob = async (payload: HomepageSnapshotPayload): P
       const position = i + batchIndex;
       const logicalPath = safeZipPath(media.logicalPath, `snapshot-bundles/homepage/media-${position + 1}.bin`);
       try {
-        const file = await fetchMediaBlob(media.originalUrl);
-        zip.file(logicalPath, file.blob, {
+        const file = await fetchMediaData(media.originalUrl);
+        zip.file(logicalPath, file.data, {
           binary: true,
           date: new Date(normalizedPayload.manifest.exportedAt),
         });
@@ -1632,12 +1631,13 @@ const buildHomepageSnapshotZipBlob = async (payload: HomepageSnapshotPayload): P
 
   zip.file('index/media.index.json', toJsonFile(normalizedPayload.index.mediaIndex));
   zip.file('reports/export-warnings.json', toJsonFile(exportWarnings));
+  const zipBuffer = await zip.generateAsync({
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 },
+    type: 'arraybuffer',
+  });
   return {
-    blob: await zip.generateAsync({
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 },
-      type: 'blob',
-    }),
+    blob: new Blob([zipBuffer], { type: 'application/zip' }),
     mediaCount: mediaEntries.length,
     warnings: exportWarnings,
   };
