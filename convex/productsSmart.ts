@@ -735,7 +735,7 @@ export const updateProductWithVariants = mutation({
           const pCombos = pDoc.combos || [];
           const existingIndex = pCombos.findIndex((c: any) => c.syncId === combo.syncId);
 
-          let updatedCombos = [...pCombos];
+          const updatedCombos = [...pCombos];
           if (existingIndex >= 0) {
             updatedCombos[existingIndex] = comboForP;
           } else {

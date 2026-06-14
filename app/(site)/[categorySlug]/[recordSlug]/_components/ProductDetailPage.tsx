@@ -1313,6 +1313,7 @@ function ProductImageWithFallback({
   return (
     <Image
       {...props}
+      alt={typeof props.alt === 'string' ? props.alt : placeholderLabel}
       src={currentSrc}
       onError={() => {
         setCurrentSrc(currentSrc !== normalizedFallback ? normalizedFallback : null);

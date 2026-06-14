@@ -101,8 +101,8 @@ export function ImportExportModal() {
   const generateSupportMessage = () => {
     if (compatibilityIssues.length === 0) return "";
     const issuesList = compatibilityIssues.map((issue) => {
-      let keyName = issue.key;
-      let expectedVal = issue.expected === "VARIANT_LEVEL" ? "variant" : String(issue.expected);
+      const keyName = issue.key;
+      const expectedVal = issue.expected === "VARIANT_LEVEL" ? "variant" : String(issue.expected);
       return `- ${issue.label} (${keyName} = ${expectedVal})`;
     }).join("\n");
     return `Nhờ kỹ thuật cấu hình lại module Sản phẩm (Products) để import file Excel Sapo:\n${issuesList}`;

@@ -745,7 +745,7 @@ export const countPublished = query({
           const builder = q.search("title", searchLower).eq("status", "Published");
           return args.categoryId ? builder.eq("categoryId", args.categoryId) : builder;
         });
-      let courses = await searchQuery.take(1000);
+      const courses = await searchQuery.take(1000);
       const ranked = rankByFuzzyMatches(
         courses,
         args.search,

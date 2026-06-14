@@ -319,7 +319,7 @@ export function QuickRoutePickerModal({
       if (mod) parts.push(mod.label);
     }
     return parts;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [step, selectedType, selectedModule, title]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
@@ -381,7 +381,7 @@ export function QuickRoutePickerModal({
             onChange={setSearch}
             placeholder={searchPlaceholder}
             className="h-9 text-sm"
-            // eslint-disable-next-line jsx-a11y/no-autofocus
+
             autoFocus
           />
         </div>

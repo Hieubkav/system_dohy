@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAction, useMutation, useQuery } from 'convex/react';
-import { AlertTriangle, ChevronDown, Download, Edit3, ExternalLink, Eye, EyeOff, FileUp, Globe, Loader2, PackageCheck, Search, ShieldCheck, Tag, Trash2, Wand2 } from 'lucide-react';
+import { AlertTriangle, ChevronDown, Download, Edit3, ExternalLink, Eye, EyeOff, FileUp, Globe, Loader2, PackageCheck, Search, Share2, ShieldCheck, Tag, Trash2, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Id } from '@/convex/_generated/dataModel';
 import { api } from '@/convex/_generated/api';
@@ -58,7 +58,10 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
 
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingSavedId, setIsExportingSavedId] = useState<string | null>(null);
+  const [isSharingCurrent, setIsSharingCurrent] = useState(false);
+  const [isSharingSavedId, setIsSharingSavedId] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [isImportingUrl, setIsImportingUrl] = useState(false);
   const [importMode, setImportMode] = useState<'replace' | 'snapshot' | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isApplyingId, setIsApplyingId] = useState<string | null>(null);
@@ -70,6 +73,7 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
   const [parsedBundle, setParsedBundle] = useState<Awaited<ReturnType<typeof parseHomepageSnapshotFile>> | null>(null);
   const [report, setReport] = useState<HomepageSnapshotImportReport | null>(null);
   const [snapshotQuery, setSnapshotQuery] = useState('');
+  const [snapshotImportUrl, setSnapshotImportUrl] = useState('');
   useEffect(() => {
     if (!open) return;
     void ensureDefaultCategory({});
@@ -107,12 +111,44 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     document.body.removeChild(link);
   };
 
+  const copyText = async (value: string) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(value);
+      return;
+    }
+    const textarea = document.createElement('textarea');
+    textarea.value = value;
+    textarea.setAttribute('readonly', 'true');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+  };
+
+  const getResponseFileName = (response: Response) => {
+    const disposition = response.headers.get('Content-Disposition') ?? '';
+    const match = disposition.match(/filename="?([^";]+)"?/i);
+    const fileName = match?.[1]?.trim() || 'snapshot-import.zip';
+    return fileName.toLowerCase().endsWith('.zip') ? fileName : `${fileName}.zip`;
+  };
+
   const showExportResultToast = (mediaCount: number, warningCount: number) => {
     if (warningCount > 0) {
       toast.warning(`Đã tạo ZIP nhưng ${warningCount}/${mediaCount} media tải lỗi. Import sẽ bị chặn cho tới khi export đủ media.`);
       return;
     }
     toast.success(`Đã export snapshot ZIP${mediaCount > 0 ? ` kèm ${mediaCount} media` : ''}`);
+  };
+
+  const copySnapshotShareUrl = async (url: string, mediaCount: number, warningCount: number) => {
+    if (warningCount > 0) {
+      showExportResultToast(mediaCount, warningCount);
+      return;
+    }
+    await copyText(url);
+    toast.success(`Đã copy link share snapshot${mediaCount > 0 ? ` kèm ${mediaCount} media` : ''}`);
   };
 
   const handleExport = async () => {
@@ -130,6 +166,20 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     }
   };
 
+  const handleShareCurrentSnapshot = async () => {
+    setIsSharingCurrent(true);
+    try {
+      const result = await exportCurrentSnapshotZip({
+        label: profileLabel.trim() || 'Tạo nhanh snapshot',
+      });
+      await copySnapshotShareUrl(result.url, result.mediaCount, result.warningCount);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể tạo link share snapshot');
+    } finally {
+      setIsSharingCurrent(false);
+    }
+  };
+
   const handleExportSavedProfile = async (snapshotId: string, fallbackLabel: string) => {
     setIsExportingSavedId(snapshotId);
     try {
@@ -142,6 +192,20 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
       toast.error(error instanceof Error ? error.message : 'Không thể tải snapshot ZIP');
     } finally {
       setIsExportingSavedId(null);
+    }
+  };
+
+  const handleShareSavedProfile = async (snapshotId: string) => {
+    setIsSharingSavedId(snapshotId);
+    try {
+      const result = await exportSavedSnapshotZip({
+        snapshotId: snapshotId as Id<'homeComponentSnapshots'>,
+      });
+      await copySnapshotShareUrl(result.url, result.mediaCount, result.warningCount);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể tạo link share snapshot');
+    } finally {
+      setIsSharingSavedId(null);
     }
   };
 
@@ -162,24 +226,59 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     }
   };
 
+  const loadSnapshotFile = async (file: File, successMessage?: string) => {
+    const parsed = await parseHomepageSnapshotFile(file);
+    setParsedBundle(parsed);
+    const nextReport = await preflightSnapshot({ payload: parsed.payload }) as HomepageSnapshotImportReport;
+    setReport(nextReport);
+    if (parsed.missingMediaPaths.length > 0) {
+      toast.error(`ZIP thiếu ${parsed.missingMediaPaths.length} tệp media. Import sẽ bị chặn để tránh lỗi ảnh, hãy export lại ZIP mới.`);
+    } else {
+      toast.success(successMessage ?? `Đã tải snapshot: ${parsed.fileName}`);
+    }
+  };
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) {return;}
     try {
-      const parsed = await parseHomepageSnapshotFile(file);
-      setParsedBundle(parsed);
-      const nextReport = await preflightSnapshot({ payload: parsed.payload }) as HomepageSnapshotImportReport;
-      setReport(nextReport);
-      if (parsed.missingMediaPaths.length > 0) {
-        toast.error(`ZIP thiếu ${parsed.missingMediaPaths.length} tệp media. Import sẽ bị chặn để tránh lỗi ảnh, hãy export lại ZIP mới.`);
-      } else {
-        toast.success(`Đã tải snapshot: ${parsed.fileName}`);
-      }
+      await loadSnapshotFile(file);
     } catch (error) {
       setParsedBundle(null);
       setReport(null);
       toast.error(error instanceof Error ? error.message : 'File snapshot không hợp lệ');
+    }
+  };
+
+  const handleImportFromUrl = async () => {
+    const url = snapshotImportUrl.trim();
+    if (!url) {
+      toast.error('Cần dán link share snapshot trước');
+      return;
+    }
+    setIsImportingUrl(true);
+    try {
+      const response = await fetch('/api/homepage-snapshot/import-url', {
+        body: JSON.stringify({ url }),
+        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(body?.error || 'Không tải được snapshot từ link');
+      }
+      const blob = await response.blob();
+      const file = new File([blob], getResponseFileName(response), {
+        type: 'application/zip',
+      });
+      await loadSnapshotFile(file, `Đã tải snapshot từ link: ${file.name}`);
+    } catch (error) {
+      setParsedBundle(null);
+      setReport(null);
+      toast.error(error instanceof Error ? error.message : 'Không tải được snapshot từ link');
+    } finally {
+      setIsImportingUrl(false);
     }
   };
 
@@ -364,6 +463,10 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
                 {isExporting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Download className="mr-1.5 h-3.5 w-3.5" />}
                 Tải ZIP
               </Button>
+              <Button variant="outline" size="sm" onClick={() => { void handleShareCurrentSnapshot(); }} disabled={isSharingCurrent}>
+                {isSharingCurrent ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Share2 className="mr-1.5 h-3.5 w-3.5" />}
+                Copy link
+              </Button>
               <div className="flex flex-1 min-w-[200px] gap-2 flex-wrap">
                 <input
                   value={profileLabel}
@@ -537,6 +640,17 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
                           {isExportingSavedId === item._id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Download className="mr-1 h-3 w-3" />}
                           Tải
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => { void handleShareSavedProfile(item._id); }}
+                          disabled={Boolean(isSharingSavedId)}
+                          title="Copy link share snapshot"
+                        >
+                          {isSharingSavedId === item._id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Share2 className="mr-1 h-3 w-3" />}
+                          Share
+                        </Button>
                         <Button variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={() => { void handleApplySavedProfile(item._id); }} disabled={isApplyingId === item._id}>
                           {isApplyingId === item._id ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
                           Áp dụng
@@ -570,11 +684,31 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
             </div>
           )}
 
-          {/* ── Section 3: Nhập từ ZIP ── */}
+          {/* ── Section 3: Nhập từ link hoặc ZIP ── */}
           <div className="rounded-lg border border-slate-200 dark:border-slate-800 p-4 space-y-3">
-            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Nhập từ file ZIP</div>
+            <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">Nhập từ link hoặc file ZIP</div>
             <div className="text-xs text-slate-500">
-              Có thể nhập thành snapshot mới để lưu vào kho giao diện mà không thay thế trang chủ hiện tại.
+              Dán link share để hệ thống tự tải ZIP, hoặc chọn file ZIP thủ công.
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                value={snapshotImportUrl}
+                onChange={(event) => setSnapshotImportUrl(event.target.value)}
+                onKeyDown={(event) => { if (event.key === 'Enter') void handleImportFromUrl(); }}
+                placeholder="Dán link share snapshot..."
+                className="text-sm"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => { void handleImportFromUrl(); }}
+                disabled={isImportingUrl || !snapshotImportUrl.trim()}
+                className="sm:w-auto"
+              >
+                {isImportingUrl ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Share2 className="mr-1.5 h-3.5 w-3.5" />}
+                Nhập link
+              </Button>
             </div>
             <label className="inline-flex">
               <input type="file" accept=".zip,application/zip" className="hidden" onChange={(event) => { void handleFileChange(event); }} />
@@ -653,12 +787,12 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
           <Button
             variant="outline"
             onClick={() => { void handleImport('snapshot'); }}
-            disabled={!parsedBundle || !report || isImporting || report.summary.blocking > 0}
+            disabled={!parsedBundle || !report || isImporting || report.summary.blocking > 0 || parsedBundle.missingMediaPaths.length > 0}
           >
             {importMode === 'snapshot' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
             Nhập thành snapshot mới
           </Button>
-          <Button onClick={() => { void handleImport('replace'); }} disabled={!parsedBundle || !report || isImporting || report.summary.blocking > 0}>
+          <Button onClick={() => { void handleImport('replace'); }} disabled={!parsedBundle || !report || isImporting || report.summary.blocking > 0 || parsedBundle.missingMediaPaths.length > 0}>
             {importMode === 'replace' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
             Nhập và thay thế
           </Button>

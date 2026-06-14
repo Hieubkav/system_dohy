@@ -201,7 +201,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
           className={`mb-4 flex aspect-video items-center justify-center overflow-hidden bg-slate-100 dark:bg-[#2c2c2e] relative ${smallRadiusClass} ${hasPromoVideo ? 'cursor-pointer group/thumb' : ''}`}
         >
           {course.thumbnail ? (
-            // eslint-disable-next-line @next/next/no-img-element
+
             <img src={course.thumbnail} alt={course.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
           ) : (
             <>
@@ -314,7 +314,7 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
                     }`}
                   >
                     {filter.icon && (
-                      // eslint-disable-next-line @next/next/no-img-element
+
                       <img src={filter.icon} alt={filter.name} className="h-4.5 w-4.5 object-contain shrink-0" />
                     )}
                     <span>{filter.name}</span>

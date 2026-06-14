@@ -939,7 +939,7 @@ export default function HeaderMenuExperiencePage() {
                   <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1">Social icons</p>
                   <p className="text-[11px] leading-5 text-slate-400">
                     Social icons (YouTube, TikTok, Facebook, Instagram) lấy URL từ Settings → Social Media.
-                    Chỉnh sửa tại <a href="/system/settings" className="text-cyan-600 hover:underline">System Settings</a>.
+                    Chỉnh sửa tại <Link href="/system/settings" className="text-cyan-600 hover:underline">System Settings</Link>.
                   </p>
                 </div>
               </div>

@@ -85,7 +85,7 @@ function CustomDropdown({
       >
         <span className="flex items-center gap-2 truncate">
           {selectedOption?.icon ? (
-            // eslint-disable-next-line @next/next/no-img-element
+
             <img src={selectedOption.icon} alt={selectedOption.label} className="h-4 w-4 object-contain shrink-0" />
           ) : (
             icon

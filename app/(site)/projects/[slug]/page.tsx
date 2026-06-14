@@ -122,7 +122,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
           {project.thumbnail && (
             <div className="mt-10 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src={project.thumbnail} alt={project.title} className="h-full w-full object-cover" />
             </div>
           )}
@@ -161,7 +161,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
             <div className="grid gap-4 md:grid-cols-2">
               {galleryImages.map((image, index) => (
                 <div key={`${image}-${index}`} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-900">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  { }
                   <img src={image} alt={`${project.title} ${index + 1}`} className="h-full w-full object-cover" />
                 </div>
               ))}
@@ -188,7 +188,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                 >
                   <div className="aspect-video bg-slate-100 dark:bg-slate-800">
                     {item.thumbnail && (
-                      // eslint-disable-next-line @next/next/no-img-element
+
                       <img src={item.thumbnail} alt={item.title} className="h-full w-full object-cover" />
                     )}
                   </div>

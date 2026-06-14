@@ -171,16 +171,16 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
           : 'Liên hệ mua';
 
   const CtaCard = ({ isModernLayout }: { isModernLayout?: boolean }) => (
-    <div 
+    <div
       className={`border bg-white dark:bg-[#161617] p-4 transition-all duration-300 ${
-        isModernLayout 
-          ? 'border-zinc-200 dark:border-zinc-800 shadow-[0_1px_2px_rgba(0,0,0,0.05)] rounded-sm' 
+        isModernLayout
+          ? 'border-zinc-200 dark:border-zinc-800 shadow-[0_1px_2px_rgba(0,0,0,0.05)] rounded-sm'
           : `shadow-sm border-slate-200 dark:border-zinc-800 ${radiusClass}`
       }`}
     >
       <div className={`mb-3 flex aspect-video items-center justify-center overflow-hidden bg-slate-100 dark:bg-zinc-900 ${isModernLayout ? 'rounded-sm' : radiusClass}`}>
         {resource.thumbnail ? (
-          // eslint-disable-next-line @next/next/no-img-element
+
           <img src={resource.thumbnail} alt={resource.title} className="h-full w-full object-cover" />
         ) : (
           <FileText size={40} style={{ color: brandColor }} />
@@ -208,8 +208,8 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
         onClick={() => { void handleDownload(); }}
         disabled={isDownloading}
         className="mt-3 inline-flex w-full items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 active:scale-[0.98] disabled:opacity-60 cursor-default select-none"
-        style={{ 
-          backgroundColor: isModernLayout ? (isDark ? '#27272a' : '#27272a') : brandColor, 
+        style={{
+          backgroundColor: isModernLayout ? (isDark ? '#27272a' : '#27272a') : brandColor,
           borderRadius: isModernLayout ? '4px' : (config.cornerRadius === 'none' ? '0px' : config.cornerRadius === 'sm' ? '8px' : '12px'),
           boxShadow: undefined
         }}
@@ -237,7 +237,7 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
       <section className="space-y-3">
         <div className={`aspect-video overflow-hidden border border-slate-200 dark:border-zinc-800 bg-slate-100 dark:bg-zinc-900 transition-all duration-300 shadow-sm ${radiusClass}`}>
           {activeImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
+
             <img src={activeImage} alt={resource.title} className="h-full w-full object-cover animate-fade-in" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-slate-400 dark:text-zinc-650">
@@ -254,13 +254,13 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
                   type="button"
                   onClick={() => setActiveImage(image)}
                   className={`aspect-video overflow-hidden border transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] ${
-                    activeImage === image 
-                      ? 'border-2 ring-1' 
+                    activeImage === image
+                      ? 'border-2 ring-1'
                       : 'border-slate-200 dark:border-zinc-800 hover:border-slate-400 dark:hover:border-zinc-600'
                   } ${radiusClass}`}
                   style={activeImage === image ? { borderColor: brandColor, boxShadow: `0 0 0 1.5px ${brandColor}` } : undefined}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  { }
                   <img src={image} alt="" className="h-full w-full object-cover" />
                 </button>
               ))}
@@ -273,13 +273,13 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
                   type="button"
                   onClick={() => setActiveImage(image)}
                   className={`h-16 w-24 shrink-0 overflow-hidden border transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] ${
-                    activeImage === image 
-                      ? 'border-2 ring-1' 
+                    activeImage === image
+                      ? 'border-2 ring-1'
                       : 'border-slate-200 dark:border-zinc-800 hover:border-slate-400 dark:hover:border-zinc-600'
                   } ${radiusClass}`}
                   style={activeImage === image ? { borderColor: brandColor, boxShadow: `0 0 0 1.5px ${brandColor}` } : undefined}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  { }
                   <img src={image} alt="" className="h-full w-full object-cover" />
                 </button>
               ))}
@@ -545,7 +545,7 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
             <div className="flex items-center gap-3">
               <div className="h-12 w-16 bg-slate-200 dark:bg-zinc-800 rounded-lg overflow-hidden shrink-0 border border-slate-100 dark:border-zinc-700">
                 {resource.thumbnail ? (
-                  // eslint-disable-next-line @next/next/no-img-element
+
                   <img src={resource.thumbnail} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-slate-400 dark:text-zinc-500">

@@ -551,7 +551,7 @@ export function ImageEditorDialog({
       const imageBlob = await fetchImageAsBlob(imageUrl);
       const img = new window.Image();
       const url = URL.createObjectURL(imageBlob);
-      
+
       await new Promise((resolve, reject) => {
         img.onload = resolve;
         img.onerror = reject;
@@ -755,7 +755,7 @@ export function ImageEditorDialog({
                   onChange={(c) => setCrop(c)}
                   onComplete={(c) => setCompletedCrop(c)}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  { }
                   <img
                     ref={imgRef}
                     src={imageUrl}
@@ -778,14 +778,14 @@ export function ImageEditorDialog({
 
               <div className="flex justify-center bg-[repeating-conic-gradient(#e2e8f0_0%_25%,transparent_0%_50%)] dark:bg-[repeating-conic-gradient(#334155_0%_25%,transparent_0%_50%)] bg-[length:16px_16px] rounded-lg p-3 min-h-[200px] items-center">
                 {removedBgUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
+
                   <img
                     src={removedBgUrl}
                     alt="Ảnh đã xóa nền"
                     className="max-h-[50vh] rounded"
                   />
                 ) : (
-                  /* eslint-disable-next-line @next/next/no-img-element */
+
                   <img
                     src={imageUrl}
                     alt="Ảnh gốc"
@@ -865,8 +865,8 @@ export function ImageEditorDialog({
               </p>
 
               <div className="flex justify-center bg-slate-50 dark:bg-slate-800/30 rounded-lg p-3">
-                <div 
-                  className={cn("relative flex items-center justify-center transition-all overflow-hidden", 
+                <div
+                  className={cn("relative flex items-center justify-center transition-all overflow-hidden",
                     canvasAspect !== 'original' ? 'w-full max-w-[400px]' : '',
                     selectedBg === 'transparent' ? 'bg-[repeating-conic-gradient(#e2e8f0_0%_25%,transparent_0%_50%)] dark:bg-[repeating-conic-gradient(#334155_0%_25%,transparent_0%_50%)] bg-[length:16px_16px]' : '',
                     selectedBg === 'white' ? 'bg-white border border-slate-200 dark:border-slate-700' : '',
@@ -878,7 +878,7 @@ export function ImageEditorDialog({
                     aspectRatio: canvasAspect !== 'original' ? canvasAspect.replace(':', '/') : undefined,
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  { }
                   <img
                     src={imageUrl}
                     alt="Preview"
@@ -956,14 +956,14 @@ export function ImageEditorDialog({
 
               <div className="flex justify-center bg-[repeating-conic-gradient(#e2e8f0_0%_25%,transparent_0%_50%)] dark:bg-[repeating-conic-gradient(#334155_0%_25%,transparent_0%_50%)] bg-[length:16px_16px] rounded-lg p-3 min-h-[200px] items-center">
                 {removedBgUrl ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
+
                   <img
                     src={removedBgUrl}
                     alt="Ảnh tối ưu"
                     className="max-h-[50vh] rounded"
                   />
                 ) : (
-                  /* eslint-disable-next-line @next/next/no-img-element */
+
                   <img
                     src={imageUrl}
                     alt="Ảnh gốc"

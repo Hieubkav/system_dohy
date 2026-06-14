@@ -220,7 +220,7 @@ export function HeroRuntimeSection({ config, brandColor, secondary, mode, isDark
         <div className="absolute inset-0 bg-black/20" />
         <SiteImage src={slide.image} alt="" className="relative w-full h-full object-contain z-10" priority={options?.priority} loading={options?.loading} sizes="100vw" />
         {options?.priority && (
-          // eslint-disable-next-line @next/next/no-img-element
+
           <img src={slide.image} alt="" fetchPriority="high" decoding="async" className="absolute w-0 h-0 opacity-0" aria-hidden />
         )}
       </a>

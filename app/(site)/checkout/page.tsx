@@ -574,7 +574,7 @@ function CheckoutContent() {
     if (!current || bestFee < currentFee) {
       setShippingMethodId(best.id);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [shippingMethods, shouldCollectShipping, cart?.totalAmount, quantity, product?.price]);
 
   const selectedVariant = variants?.[0] ?? null;

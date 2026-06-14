@@ -380,7 +380,7 @@ export function CertificateCard({
             <div className="flex flex-col items-center text-center pb-0 justify-end translate-y-2">
               {currentUrl && (
                 <div className="bg-white p-1 border border-slate-200 rounded shadow-sm">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  { }
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=64x64&data=${encodeURIComponent(currentUrl)}`}
                     alt="Verification QR"

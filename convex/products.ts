@@ -1016,7 +1016,7 @@ export const listPublishedPaginated = query({
         };
       }
     } else if (args.productTypeId) {
-      let query = ctx.db
+      const query = ctx.db
         .query("products")
         .withIndex("by_type_status_effectivePrice", (q) =>
           q.eq("productTypeId", args.productTypeId!).eq("status", "Active")
@@ -1026,7 +1026,7 @@ export const listPublishedPaginated = query({
         .order(sortBy === "oldest" ? "asc" : "desc")
         .paginate(args.paginationOpts);
     } else if (sortBy === "popular") {
-      let query = ctx.db
+      const query = ctx.db
         .query("products")
         .withIndex("by_status_sales", (q) => q.eq("status", "Active"));
 
@@ -1034,7 +1034,7 @@ export const listPublishedPaginated = query({
         .order("desc")
         .paginate(args.paginationOpts);
     } else {
-      let query = ctx.db
+      const query = ctx.db
         .query("products")
         .withIndex("by_status_order", (q) => q.eq("status", "Active"));
 
@@ -1139,7 +1139,7 @@ export const listPublishedWithOffset = query({
         products = products.filter((product) => product.status === "Active" && (!args.productTypeId || product.productTypeId === args.productTypeId));
       }
     } else if (args.productTypeId) {
-      let query = ctx.db
+      const query = ctx.db
         .query("products")
         .withIndex("by_type_status_effectivePrice", (q) =>
           q.eq("productTypeId", args.productTypeId!).eq("status", "Active")
@@ -1147,13 +1147,13 @@ export const listPublishedWithOffset = query({
 
       products = await query.take(fetchLimit);
     } else if (sortBy === "popular") {
-      let query = ctx.db
+      const query = ctx.db
         .query("products")
         .withIndex("by_status_sales", (q) => q.eq("status", "Active"));
 
       products = await query.order("desc").take(fetchLimit);
     } else {
-      let query = ctx.db
+      const query = ctx.db
         .query("products")
         .withIndex("by_status_order", (q) => q.eq("status", "Active"));
 
@@ -1380,7 +1380,7 @@ export const countPublished = query({
         products = products.filter((product) => product.status === "Active" && (!args.productTypeId || product.productTypeId === args.productTypeId));
       }
     } else if (args.productTypeId) {
-      let query = ctx.db
+      const query = ctx.db
         .query("products")
         .withIndex("by_type_status_effectivePrice", (q) =>
           q.eq("productTypeId", args.productTypeId!).eq("status", "Active")
@@ -1388,7 +1388,7 @@ export const countPublished = query({
 
       products = await query.collect();
     } else {
-      let query = ctx.db
+      const query = ctx.db
         .query("products")
         .withIndex("by_status_order", (q) => q.eq("status", "Active"));
 

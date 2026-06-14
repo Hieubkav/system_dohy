@@ -239,7 +239,6 @@ async function sendTransactionalEmailInternal(
       });
 
       // Initialize Convex Resend component client
-      // @ts-ignore
       const resendClient = new Resend(components.resend, {
         apiKey: selectedAccount.apiKey,
         testMode: selectedAccount.testMode !== false, // default to testMode: true if not specified

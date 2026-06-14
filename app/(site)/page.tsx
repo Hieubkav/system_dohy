@@ -30,7 +30,7 @@ export default async function HomePage(): Promise<React.ReactElement> {
           rel="preload"
           as="image"
           href={heroImageUrl}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           fetchPriority={'high' as any}
         />
       )}
