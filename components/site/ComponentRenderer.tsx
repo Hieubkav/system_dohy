@@ -3707,7 +3707,11 @@ import { normalizeProductCategoriesCornerRadius, normalizeProductCategoriesSpaci
 
 function ProductCategoriesSection({ config, brandColor, secondary, mode, title, isDark }: { config: Record<string, unknown>; brandColor: string;
   secondary: string; mode: 'single' | 'dual'; title: string; isDark?: boolean }) {
+  const isSnapshotMode = Boolean(useSnapshotDemoContext());
   const categoriesConfig = (config.categories as { categoryId: string; customImage?: string; imageMode?: string }[]) || [];
+  const fallbackCategories = Array.isArray(config.fallbackCategories)
+    ? config.fallbackCategories as { sourceId?: string; title?: string; image?: string; slug?: string; description?: string }[]
+    : [];
   const style = (config.style as ProductCategoriesStyle) || 'image-strip';
   const showProductCount = (config.showProductCount as boolean) ?? true;
   const spacing = normalizeProductCategoriesSpacing(config.spacing, config.noVerticalMargin);
@@ -3721,9 +3725,9 @@ function ProductCategoriesSection({ config, brandColor, secondary, mode, title, 
   const colors = React.useMemo(() => adaptTokensForDarkMode(getProductCategoriesColors(brandColor, secondary, mode), isDark ?? false), [brandColor, secondary, mode, isDark]);
   const [device, setDevice] = React.useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   
-  const categoriesData = useQuery(api.productCategories.listActive);
-  const productsData = useQuery(api.products.listPublicResolved, {});
-  const categoriesWithStats = useQuery(api.productCategories.listActiveWithStats, { productLimit: 5000 });
+  const categoriesData = useQuery(api.productCategories.listActive, isSnapshotMode ? 'skip' : undefined);
+  const productsData = useQuery(api.products.listPublicResolved, isSnapshotMode ? 'skip' : {});
+  const categoriesWithStats = useQuery(api.productCategories.listActiveWithStats, isSnapshotMode ? 'skip' : { productLimit: 5000 });
   
   const categoryMap = React.useMemo(() => {
     const map: Record<string, { name: string; slug: string; image?: string; description?: string }> = {};
@@ -3755,7 +3759,10 @@ function ProductCategoriesSection({ config, brandColor, secondary, mode, title, 
     return ids;
   }, [categoriesConfig]);
 
-  const targetProductsData = useQuery(api.products.listByIds, { ids: productIdsForImages as any });
+  const targetProductsData = useQuery(
+    api.products.listByIds,
+    isSnapshotMode || productIdsForImages.length === 0 ? 'skip' : { ids: productIdsForImages as any }
+  );
 
   const productImageMap = React.useMemo(() => {
     const map: Record<string, string | undefined> = {};
@@ -3835,6 +3842,16 @@ function ProductCategoriesSection({ config, brandColor, secondary, mode, title, 
         productCount: item.productCount ?? 0,
         link: item.link,
       }))
+    : isSnapshotMode && fallbackCategories.length > 0
+      ? fallbackCategories.map((item, idx) => ({
+          id: item.sourceId ?? String(idx),
+          itemId: item.sourceId ?? idx,
+          name: item.title || `Danh mục ${idx + 1}`,
+          slug: item.slug,
+          description: item.description,
+          displayImage: item.image,
+          productCount: 0,
+        }))
     : resolvedCategories;
 
   if (finalItems.length === 0) {return null;}
