@@ -48,8 +48,14 @@ export default function CategoryProductsCreatePage() {
   const categoriesData = useQuery(api.productCategories.listActiveCategoriesWithProductCounts);
   
   const categoryIdsForQuery = useMemo(() => {
-    return sections.map(s => s.categoryId).filter(Boolean) as Id<"productCategories">[];
-  }, [sections]);
+    if (!categoriesData) {
+      return [];
+    }
+    const validIds = new Set<string>(categoriesData.map(c => c._id));
+    return sections
+      .map(s => s.categoryId)
+      .filter((id): id is Id<"productCategories"> => !!id && validIds.has(id));
+  }, [sections, categoriesData]);
 
   const productsData = useQuery(
     api.products.listProductsForCategories,

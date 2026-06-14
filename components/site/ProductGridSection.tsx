@@ -208,10 +208,17 @@ export function ProductGridSection({ config, brandColor, secondary, mode, title,
 
   // Query products based on selection mode
   // Nếu chọn theo danh mục: query các sản phẩm có category nằm trong config. categoryTabIds (hoặc activeTabId).
-  // Để tối ưu và nhất quán, storefront query tối đa 50 sản phẩm public để hiển thị.
+  const validCategoryTabIds = React.useMemo(() => {
+    if (!categories) {
+      return [];
+    }
+    const activeIds = new Set<string>(categories.map((c) => c._id));
+    return categoryTabIds.filter((id): id is Id<"productCategories"> => activeIds.has(id));
+  }, [categoryTabIds, categories]);
+
   const categoryProductsData = useQuery(
     api.products.listProductsForCategories,
-    selectionMode === 'category' && categoryTabIds.length > 0 ? { categoryIds: categoryTabIds as Id<"productCategories">[] } : 'skip'
+    selectionMode === 'category' && validCategoryTabIds.length > 0 ? { categoryIds: validCategoryTabIds } : 'skip'
   );
 
   const publicProductsData = useQuery(
