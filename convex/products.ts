@@ -813,12 +813,17 @@ export const getById = query({
 });
 
 export const listByIds = query({
-  args: { ids: v.array(v.id("products")) },
+  args: { ids: v.array(v.string()) },
   handler: async (ctx, args) => {
-    if (args.ids.length === 0) {
+    const ids = args.ids
+      .map((id) => ctx.db.normalizeId("products", id))
+      .filter((id): id is Id<"products"> => id !== null);
+
+    if (ids.length === 0) {
       return [];
     }
-    const products = await Promise.all(args.ids.map((id) => ctx.db.get(id)));
+
+    const products = await Promise.all(ids.map((id) => ctx.db.get(id)));
     const filtered = products.filter((product): product is Doc<"products"> => Boolean(product));
     const settings = await getVariantSettings(ctx);
     return resolveVariantOverrides(ctx, filtered, settings);
