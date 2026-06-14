@@ -7,7 +7,7 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ArrowLeft, Edit, Eye, Grid, GripVertical, Loader2, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit, Eye, Grid, GripVertical, Loader2, Plus, Trash2, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -216,6 +216,41 @@ const buildPayload = (payload: HomepageSnapshotPayload, components: SnapshotComp
   };
 };
 
+const QUICK_SYNC_NO_SPACING_TYPES = new Set(['Hero', 'HomepageCategoryHero']);
+
+const isRecord = (value: unknown): value is Record<string, unknown> => (
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
+const buildQuickSyncedComponent = (component: SnapshotComponentPayload): SnapshotComponentPayload => {
+  const config = isRecord(component.config) ? component.config : {};
+  const spacing = QUICK_SYNC_NO_SPACING_TYPES.has(component.type) ? 'none' : 'compact';
+  const nextConfig: Record<string, unknown> = {
+    ...config,
+    cornerRadius: 'sm',
+    descriptionAlign: 'center',
+    headerAlign: 'center',
+    noBorderRadius: false,
+    noVerticalMargin: spacing === 'none',
+    spacing,
+    subtitleAlign: 'center',
+    titleAlign: 'center',
+    titleColorPrimary: true,
+  };
+
+  if (isRecord(config.content)) {
+    nextConfig.content = {
+      ...config.content,
+      textAlign: 'center',
+    };
+  }
+
+  return {
+    ...component,
+    config: nextConfig,
+  };
+};
+
 const withSnapshotCustomThumbnail = (
   payload: HomepageSnapshotPayload,
   customThumbnail?: SnapshotCustomThumbnail,
@@ -309,6 +344,7 @@ function SnapshotHomeComponentsPage({ snapshotId }: { snapshotId: string }) {
   const updateSnapshot = useMutation(api.homepageSnapshots.updateHomepageSnapshot);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [statusLoading, setStatusLoading] = useState<'show' | 'hide' | null>(null);
+  const [isQuickSyncing, setIsQuickSyncing] = useState(false);
   const [metaDraft, setMetaDraft] = useState<SnapshotMetaDraft | null>(null);
   const [loadedMetaSnapshotId, setLoadedMetaSnapshotId] = useState<string | null>(null);
   const [isSavingMeta, setIsSavingMeta] = useState(false);
@@ -644,6 +680,24 @@ function SnapshotHomeComponentsPage({ snapshotId }: { snapshotId: string }) {
     }
   };
 
+  const handleQuickSync = async () => {
+    if (sortedComponents.length === 0) {
+      toast.error('Snapshot chưa có component để đồng bộ');
+      return;
+    }
+    setIsQuickSyncing(true);
+    try {
+      await saveComponents(
+        sortedComponents.map(buildQuickSyncedComponent),
+        'Đã đồng bộ nhanh: bo góc ít, spacing hẹp và tiêu đề căn giữa'
+      );
+    } catch {
+      toast.error('Lỗi khi đồng bộ nhanh snapshot');
+    } finally {
+      setIsQuickSyncing(false);
+    }
+  };
+
   const headerSettings = metaDraft ? normalizeSnapshotHeaderSettings(metaDraft.header) : null;
   const headerConfig = (headerSettings?.header_config ?? {}) as Record<string, unknown>;
   const headerLayerColors = (headerConfig.layerColors ?? {}) as Record<string, unknown>;
@@ -664,6 +718,10 @@ function SnapshotHomeComponentsPage({ snapshotId }: { snapshotId: string }) {
           <p className="text-sm text-slate-500 dark:text-slate-400">Quản lý các khối nội dung trong snapshot: {snapshot.label}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button className="gap-2" variant="outline" onClick={() => { void handleQuickSync(); }} disabled={isQuickSyncing || sortedComponents.length === 0}>
+            {isQuickSyncing ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+            Đồng bộ nhanh
+          </Button>
           <Link href={demoUrl} target="_blank">
             <Button className="gap-2" variant="outline">
               <Eye size={16} /> Xem thử
