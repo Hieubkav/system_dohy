@@ -136,18 +136,18 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
 
   const showExportResultToast = (mediaCount: number, warningCount: number) => {
     if (warningCount > 0) {
-      toast.warning(`Đã tạo ZIP nhưng ${warningCount}/${mediaCount} media tải lỗi. Import sẽ bị chặn cho tới khi export đủ media.`);
+      toast.warning(`Đã tạo ZIP nhưng ${warningCount}/${mediaCount} media tải lỗi. Import vẫn chạy và dùng URL gốc cho media thiếu.`);
       return;
     }
     toast.success(`Đã export snapshot ZIP${mediaCount > 0 ? ` kèm ${mediaCount} media` : ''}`);
   };
 
   const copySnapshotShareUrl = async (url: string, mediaCount: number, warningCount: number) => {
+    await copyText(url);
     if (warningCount > 0) {
-      showExportResultToast(mediaCount, warningCount);
+      toast.warning(`Đã copy link share, nhưng ${warningCount}/${mediaCount} media tải lỗi. Media thiếu sẽ dùng URL gốc khi import.`);
       return;
     }
-    await copyText(url);
     toast.success(`Đã copy link share snapshot${mediaCount > 0 ? ` kèm ${mediaCount} media` : ''}`);
   };
 
@@ -232,7 +232,7 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     const nextReport = await preflightSnapshot({ payload: parsed.payload }) as HomepageSnapshotImportReport;
     setReport(nextReport);
     if (parsed.missingMediaPaths.length > 0) {
-      toast.error(`ZIP thiếu ${parsed.missingMediaPaths.length} tệp media. Import sẽ bị chặn để tránh lỗi ảnh, hãy export lại ZIP mới.`);
+      toast.warning(`ZIP thiếu ${parsed.missingMediaPaths.length} tệp media. Import vẫn chạy và dùng URL gốc cho media thiếu.`);
     } else {
       toast.success(successMessage ?? `Đã tải snapshot: ${parsed.fileName}`);
     }
@@ -324,10 +324,6 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     }
     if (report.summary.blocking > 0) {
       toast.error('Snapshot đang có lỗi blocking');
-      return;
-    }
-    if (parsedBundle.missingMediaPaths.length > 0) {
-      toast.error(`ZIP thiếu ${parsedBundle.missingMediaPaths.length} tệp media. Hãy export lại snapshot trước khi import.`);
       return;
     }
 
@@ -787,12 +783,12 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
           <Button
             variant="outline"
             onClick={() => { void handleImport('snapshot'); }}
-            disabled={!parsedBundle || !report || isImporting || report.summary.blocking > 0 || parsedBundle.missingMediaPaths.length > 0}
+            disabled={!parsedBundle || !report || isImporting || report.summary.blocking > 0}
           >
             {importMode === 'snapshot' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
             Nhập thành snapshot mới
           </Button>
-          <Button onClick={() => { void handleImport('replace'); }} disabled={!parsedBundle || !report || isImporting || report.summary.blocking > 0 || parsedBundle.missingMediaPaths.length > 0}>
+          <Button onClick={() => { void handleImport('replace'); }} disabled={!parsedBundle || !report || isImporting || report.summary.blocking > 0}>
             {importMode === 'replace' ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
             Nhập và thay thế
           </Button>

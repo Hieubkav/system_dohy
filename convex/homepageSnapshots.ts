@@ -1043,6 +1043,38 @@ export const getHomepageSnapshotZipInput = internalQuery({
   returns: v.any(),
 });
 
+const deleteSnapshotZipStorage = async (
+  ctx: MutationCtx,
+  snapshot: Pick<Doc<'homeComponentSnapshots'>, 'zipStorageId'> | null | undefined,
+) => {
+  if (!snapshot?.zipStorageId) {return;}
+  try {
+    await ctx.storage.delete(snapshot.zipStorageId);
+  } catch {
+    // Storage file may already be gone.
+  }
+};
+
+const clearHomepageSnapshotZipCache = async (
+  ctx: MutationCtx,
+  snapshotId: Id<'homeComponentSnapshots'>,
+  snapshot?: Doc<'homeComponentSnapshots'> | null,
+) => {
+  const currentSnapshot = snapshot ?? await ctx.db.get(snapshotId);
+  if (!currentSnapshot) {return;}
+  await deleteSnapshotZipStorage(ctx, currentSnapshot);
+  await ctx.db.patch(snapshotId, {
+    zipBuiltAt: undefined,
+    zipBuilderVersion: undefined,
+    zipByteSize: undefined,
+    zipFileName: undefined,
+    zipMediaCount: undefined,
+    zipPayloadHash: undefined,
+    zipStorageId: undefined,
+    zipWarningCount: undefined,
+  });
+};
+
 export const markHomepageSnapshotZipReady = internalMutation({
   args: {
     builderVersion: v.string(),
@@ -1056,6 +1088,10 @@ export const markHomepageSnapshotZipReady = internalMutation({
     warningCount: v.number(),
   },
   handler: async (ctx, args) => {
+    const snapshot = await ctx.db.get(args.snapshotId);
+    if (snapshot?.zipStorageId && snapshot.zipStorageId !== args.storageId) {
+      await deleteSnapshotZipStorage(ctx, snapshot);
+    }
     await ctx.db.patch(args.snapshotId, {
       zipBuiltAt: args.builtAt,
       zipBuilderVersion: args.builderVersion,
@@ -1371,6 +1407,7 @@ export const removeHomepageSnapshot = mutation({
     const snapshot = await ctx.db.get(args.snapshotId);
     const customThumbnail = normalizeSnapshotCustomThumbnail(snapshot?.customThumbnail);
     const previousStorageIds = await collectSnapshotThumbnailStorageIds(ctx, customThumbnail);
+    await deleteSnapshotZipStorage(ctx, snapshot);
     // Xóa payload row trước để không còn orphan
     const payloadRow = await ctx.db
       .query('homeComponentSnapshotPayloads')
@@ -1432,6 +1469,7 @@ export const updateHomepageSnapshot = mutation({
     }
     const previousThumbnail = normalizeSnapshotCustomThumbnail(snapshot.customThumbnail);
     const nextThumbnail = normalizeSnapshotCustomThumbnail(nextPayload.gallery?.customThumbnail);
+    await clearHomepageSnapshotZipCache(ctx, args.snapshotId, snapshot);
 
     // Cập nhật metadata (không có payload)
     await ctx.db.patch(args.snapshotId, {
@@ -1439,6 +1477,14 @@ export const updateHomepageSnapshot = mutation({
       payloadUpdatedAt: Date.now(),
       customThumbnail: nextThumbnail ?? undefined,
       ...buildSnapshotSummary(nextPayload),
+      zipBuiltAt: undefined,
+      zipBuilderVersion: undefined,
+      zipByteSize: undefined,
+      zipFileName: undefined,
+      zipMediaCount: undefined,
+      zipPayloadHash: undefined,
+      zipStorageId: undefined,
+      zipWarningCount: undefined,
     });
 
     // Upsert payload trong bảng riêng
