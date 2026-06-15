@@ -2453,12 +2453,13 @@ export function Header({
           className={cn(
             pathname === '/' ? "absolute top-0 left-0 w-full" : "relative w-full",
             "z-40 transition-opacity duration-300",
-            isScrolled ? "opacity-0 pointer-events-none" : "opacity-100"
+            isScrolled ? "opacity-0 pointer-events-none" : "opacity-100",
+            "darkglass-header"
           )}
         >
           <div
             className={cn(
-              "flex items-center justify-between gap-4 w-full px-4 sm:px-6 border-b transition-all duration-300",
+              "darkglass-header-inner flex items-center justify-between gap-4 w-full px-4 sm:px-6 border-b transition-all duration-300",
               pathname === '/'
                 ? "bg-black/20 backdrop-blur-md border-white/5"
                 : "bg-zinc-950 border-zinc-900"

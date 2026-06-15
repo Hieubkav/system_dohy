@@ -230,7 +230,7 @@ export default function HomePageClient({
   });
 
   return (
-    <div style={bgStyle} className="min-h-screen transition-colors duration-300">
+    <div style={bgStyle} className="min-h-screen transition-colors duration-300 home-page-marker">
       {criticalComponents.map((component) => (
         <HomeComponentRenderer
           key={component._id}
