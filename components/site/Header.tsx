@@ -2441,7 +2441,7 @@ export function Header({
           {showCart && (
             <CartIcon variant="mobile" tokens={{ ...navbarActionTokens, iconButtonText: '#ffffff' }} />
           )}
-          {renderMobileMenuButton(true, tokens.surface)}
+          {renderMobileMenuButton(true, '#ffffff')}
         </div>
       </div>
     );
