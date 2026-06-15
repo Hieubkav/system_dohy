@@ -385,12 +385,12 @@ export function ThemeGalleryClient({ initialSnapshots }: { initialSnapshots: Pub
 
       {/* Hero */}
       <div className="bg-gradient-to-br from-indigo-50 via-white to-purple-50 border-b border-slate-100">
-        <div className="max-w-6xl mx-auto px-4 py-10 text-center">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
-            Chọn giao diện cho website
+        <div className="max-w-6xl mx-auto px-4 py-6 text-center">
+          <h1 className="text-3xl font-bold text-slate-900 mb-1">
+            Chọn giao diện website
           </h1>
           <p className="text-slate-500 max-w-lg mx-auto text-sm leading-relaxed">
-            Duyệt qua các mẫu giao diện đã được thiết kế sẵn. Bấm &quot;Xem thử&quot; để trải nghiệm trực tiếp trên trình duyệt.
+            Duyệt và xem thử trực tiếp các mẫu giao diện thiết kế sẵn.
           </p>
         </div>
       </div>
