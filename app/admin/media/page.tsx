@@ -9,8 +9,9 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { 
   Check, ChevronDown, ClipboardPaste, Copy, Edit, Eye, FileText, FileVideo, 
   FolderOpen, Grid, Image as ImageIcon, List, 
-  Loader2, Plus, RefreshCw, Search, Trash2, Upload, X
+  Loader2, Plus, RefreshCw, Search, Trash2, Upload, X, Scissors, Zap
 } from 'lucide-react';
+import { ImageEditorDialog, compressImageToWebP } from '@/app/admin/components/ImageEditorDialog';
 import { toast } from 'sonner';
 import { Badge, Button, Card, Input, cn } from '../components/ui';
 import { BulkActionBar, SelectCheckbox, generatePaginationItems } from '../components/TableUtilities';
@@ -98,6 +99,7 @@ function MediaContent() {
   const bulkRemoveOrphanMedia = useMutation(api.media.bulkRemoveOnlyOrphans);
   const resyncMediaCounters = useMutation(api.seed.syncMediaCounters);
   const recheckMediaUsage = useMutation(api.media.recheckUsageForMedia);
+  const replaceMediaFile = useMutation(api.media.replaceFile);
 
   // Check enabled features
   const enabledFeatures = useMemo(() => {
@@ -125,11 +127,14 @@ function MediaContent() {
   const [isUploading, setIsUploading] = useState(false);
   const [isResyncing, setIsResyncing] = useState(false);
   const [isCheckingUsage, setIsCheckingUsage] = useState(false);
+  const [isBulkCompressing, setIsBulkCompressing] = useState(false);
+  const [bulkCompressProgress, setBulkCompressProgress] = useState({ current: 0, total: 0, saved: 0 });
   const [usageOverrides, setUsageOverrides] = useState<Record<string, UsageCheckResult>>({});
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewMedia, setPreviewMedia] = useState<MediaItem | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  const [editingMedia, setEditingMedia] = useState<MediaItem | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -407,8 +412,134 @@ function MediaContent() {
     }
   };
 
-  // Copy URL
-  const handleCopyUrl = async (url: string | null, id: string) => {
+  // Nén hàng loạt sang WebP
+  const handleBulkCompressToWebP = async () => {
+    // Chỉ lấy ảnh không phải webp, gif, svg (những loại không thể/không nên nén WebP)
+    const targets = mediaItems.filter(m =>
+      m.mimeType.startsWith('image/')
+      && m.mimeType !== 'image/webp'
+      && m.mimeType !== 'image/gif'
+      && m.mimeType !== 'image/svg+xml'
+      && m.url
+    );
+
+    if (targets.length === 0) {
+      toast.info('Không có ảnh nào cần nén (tất cả đã là WebP, GIF hoặc SVG)');
+      return;
+    }
+
+    if (!confirm(`Sẽ nén ${targets.length} ảnh sang WebP (quality 90%). Ảnh nào nén xong lớn hơn hoặc lỗi sẽ tự động bỏ qua. Tiếp tục?`)) {return;}
+
+    setIsBulkCompressing(true);
+    setBulkCompressProgress({ current: 0, total: targets.length, saved: 0 });
+
+    let compressedCount = 0;
+    let skippedCount = 0;
+    let totalSaved = 0;
+
+    for (let i = 0; i < targets.length; i++) {
+      const media = targets[i];
+      setBulkCompressProgress({ current: i + 1, total: targets.length, saved: totalSaved });
+
+      try {
+        // Nén sang WebP (quality 90%) - tái sử dụng logic từ ImageEditorDialog
+        const result = await compressImageToWebP(media.url!, 0.9).catch(() => null);
+        const webpBlob = result?.blob ?? null;
+
+        // Bỏ qua nếu không nén được hoặc kết quả lớn hơn bản gốc
+        if (!webpBlob || webpBlob.size >= media.size) {
+          skippedCount++;
+          continue;
+        }
+
+        // Upload WebP mới
+        const uploadUrl = await generateUploadUrl();
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'image/webp' },
+          body: webpBlob,
+        });
+        if (!uploadRes.ok) { skippedCount++; continue; }
+        const { storageId } = await uploadRes.json();
+
+        // Thay thế bản ghi
+        await replaceMediaFile({
+          id: media._id,
+          storageId,
+          size: webpBlob.size,
+          mimeType: 'image/webp',
+          width: media.width,
+          height: media.height,
+        });
+
+        totalSaved += media.size - webpBlob.size;
+        compressedCount++;
+      } catch {
+        skippedCount++;
+      }
+    }
+
+    setBulkCompressProgress({ current: targets.length, total: targets.length, saved: totalSaved });
+    setIsBulkCompressing(false);
+
+    if (compressedCount > 0) {
+      toast.success(`Đã nén ${compressedCount} ảnh · Tiết kiệm ${formatBytes(totalSaved)}${skippedCount > 0 ? ` · Bỏ qua ${skippedCount} ảnh` : ''}`);
+    } else {
+      toast.info(`Không có ảnh nào được nén (${skippedCount} ảnh đã bỏ qua)`);
+    }
+  };
+
+    const getImageDimensions = (file: File): Promise<{ width: number; height: number }> => {
+      return new Promise((resolve) => {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.onload = () => {
+          resolve({ width: img.naturalWidth, height: img.naturalHeight });
+          URL.revokeObjectURL(img.src);
+        };
+        img.onerror = () => {
+          resolve({ width: 0, height: 0 });
+        };
+      });
+    };
+
+    const handleApplyEdit = async (editedFile: File) => {
+      if (!editingMedia) {return;}
+      setIsUploading(true);
+      setUploadProgress(0);
+      try {
+        const uploadUrl = await generateUploadUrl();
+        const response = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': editedFile.type },
+          body: editedFile,
+        });
+        if (!response.ok) {throw new Error('Upload file thất bại');}
+        const { storageId } = await response.json();
+
+        const dimensions = await getImageDimensions(editedFile);
+
+        await replaceMediaFile({
+          id: editingMedia._id,
+          storageId,
+          size: editedFile.size,
+          mimeType: editedFile.type,
+          width: dimensions.width || undefined,
+          height: dimensions.height || undefined,
+        });
+
+        toast.success('Đã chỉnh sửa ảnh thành công');
+        setEditingMedia(null);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Có lỗi khi chỉnh sửa ảnh');
+      } finally {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
+    };
+
+    // Copy URL
+    const handleCopyUrl = async (url: string | null, id: string) => {
     if (!url) {return;}
     try {
       await navigator.clipboard.writeText(url);
@@ -445,6 +576,18 @@ function MediaContent() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => void handleBulkCompressToWebP()}
+            disabled={isBulkCompressing || isUploading || isResyncing || isCheckingUsage}
+            title="Nén tất cả ảnh chưa phải WebP sang WebP (quality 90%). Ảnh nào nén xong lớn hơn hoặc lỗi sẽ bỏ qua tự động."
+          >
+            <Zap size={16} className={isBulkCompressing ? 'animate-pulse text-amber-500' : 'text-amber-500'} />
+            {isBulkCompressing
+              ? `Nén ${bulkCompressProgress.current}/${bulkCompressProgress.total} · Tiết kiệm ${formatBytes(bulkCompressProgress.saved)}`
+              : 'Nén WebP hàng loạt'}
+          </Button>
           <Button
             variant="outline"
             className="gap-2"
@@ -694,29 +837,53 @@ function MediaContent() {
                     {/* Hover actions */}
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                       {isImage && media.url && (
-                        <button
-                          className="p-1.5 bg-white dark:bg-slate-800 rounded shadow hover:bg-slate-50"
-                          onClick={() =>{  setPreviewMedia(media); }}
-                          title="Xem"
-                        >
-                          <Eye size={14} />
-                        </button>
+                        <>
+                          <button
+                            className="p-1.5 bg-white dark:bg-slate-800 rounded shadow hover:bg-slate-50 text-cyan-600"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              setPreviewMedia(media);
+                            }}
+                            title="Xem ảnh"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
+                            className="p-1.5 bg-white dark:bg-slate-800 rounded shadow hover:bg-slate-50 text-amber-500"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              setEditingMedia(media);
+                            }}
+                            title="Chỉnh sửa ảnh"
+                          >
+                            <Scissors size={14} />
+                          </button>
+                        </>
                       )}
                       <button
                         className="p-1.5 bg-white dark:bg-slate-800 rounded shadow hover:bg-slate-50"
-                        onClick={ async () => handleCopyUrl(media.url, media._id)}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await handleCopyUrl(media.url, media._id);
+                        }}
                         title="Copy URL"
                       >
                         {copiedId === media._id ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                       </button>
-                      <Link href={`/admin/media/${media._id}/edit`}>
+                      <Link 
+                        href={`/admin/media/${media._id}/edit`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <button className="p-1.5 bg-white dark:bg-slate-800 rounded shadow hover:bg-slate-50" title="Sửa">
                           <Edit size={14} />
                         </button>
                       </Link>
                       <button
                         className="p-1.5 bg-white dark:bg-slate-800 rounded shadow hover:bg-red-50 text-red-500"
-                        onClick={ async () => handleDelete(media._id)}
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await handleDelete(media._id);
+                        }}
                         title="Xóa"
                       >
                         <Trash2 size={14} />
@@ -818,6 +985,15 @@ function MediaContent() {
 
                     {/* Actions */}
                     <div className="flex items-center gap-2">
+                      {isImage && media.url && (
+                        <button
+                          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors text-cyan-600 hover:text-cyan-500"
+                          onClick={() => setEditingMedia(media)}
+                          title="Chỉnh sửa ảnh"
+                        >
+                          <Scissors size={16} />
+                        </button>
+                      )}
                       {media.url && (
                         <a
                           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
@@ -937,6 +1113,18 @@ function MediaContent() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
           onClick={() =>{  setPreviewMedia(null); }}
         >
+          {previewMedia.mimeType.startsWith('image/') && (
+            <button 
+              className="absolute top-4 right-16 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors text-cyan-400 hover:text-cyan-300"
+              onClick={() => {
+                setEditingMedia(previewMedia);
+                setPreviewMedia(null);
+              }}
+              title="Chỉnh sửa ảnh"
+            >
+              <Scissors size={24} />
+            </button>
+          )}
           <button 
             className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
             onClick={() =>{  setPreviewMedia(null); }}
@@ -963,6 +1151,14 @@ function MediaContent() {
             </div>
           </div>
         </div>
+      )}
+
+      {editingMedia && editingMedia.url && (
+        <ImageEditorDialog
+          imageUrl={editingMedia.url}
+          onClose={() => setEditingMedia(null)}
+          onApply={handleApplyEdit}
+        />
       )}
     </div>
   );

@@ -18,6 +18,7 @@ import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, us
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useComponentListFilter } from './_shared/hooks/useComponentListFilter';
+import { getQuickSyncedReorderedComponents, buildQuickSyncedComponent } from './_shared/lib/quickSync';
 
 export default function HomeComponentsPageWrapper() {
   return (
@@ -118,6 +119,7 @@ function HomeComponentsPage() {
   const [openWizard, setOpenWizard] = useState(false);
   const [openQuickCreate, setOpenQuickCreate] = useState(false);
   const [statusLoading, setStatusLoading] = useState<'show' | 'hide' | null>(null);
+  const [isQuickSyncing, setIsQuickSyncing] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -202,6 +204,61 @@ function HomeComponentsPage() {
       } catch {
         toast.error('Lỗi khi xóa components');
       }
+    }
+  };
+
+  const handleQuickSyncAll = async () => {
+    if (!components || components.length === 0) {
+      toast.error('Chưa có component để đồng bộ');
+      return;
+    }
+    setIsQuickSyncing(true);
+    try {
+      const reordered = getQuickSyncedReorderedComponents(components);
+      await Promise.all(
+        reordered.map(async (c) => 
+          updateMutation({
+            id: c._id as Id<"homeComponents">,
+            config: c.config,
+            order: c.order,
+          })
+        )
+      );
+      toast.success('Đã đồng bộ nhanh toàn bộ component: bo góc ít, spacing hẹp, tiêu đề căn giữa, SpeedDial kế cuối, Footer cuối cùng');
+    } catch {
+      toast.error('Lỗi khi đồng bộ nhanh components');
+    } finally {
+      setIsQuickSyncing(false);
+    }
+  };
+
+  const handleBulkQuickSync = async () => {
+    if (selectedIds.length === 0) return;
+    setStatusLoading('show');
+    try {
+      const updatedComponents = components.map(c => {
+        if (selectedIds.includes(c._id)) {
+          return buildQuickSyncedComponent(c);
+        }
+        return c;
+      });
+      const reordered = getQuickSyncedReorderedComponents(updatedComponents);
+      await Promise.all(
+        reordered.map(async (c) => {
+          const isSelected = selectedIds.includes(c._id);
+          await updateMutation({
+            id: c._id as Id<"homeComponents">,
+            order: c.order,
+            ...(isSelected ? { config: c.config } : {}),
+          });
+        })
+      );
+      setSelectedIds([]);
+      toast.success(`Đã đồng bộ nhanh ${selectedIds.length} component được chọn`);
+    } catch {
+      toast.error('Lỗi khi đồng bộ nhanh các component được chọn');
+    } finally {
+      setStatusLoading(null);
     }
   };
 
@@ -294,6 +351,15 @@ function HomeComponentsPage() {
               )}
             </div>
           )}
+          <Button
+            className="gap-2"
+            variant="outline"
+            onClick={handleQuickSyncAll}
+            disabled={isQuickSyncing || !components || components.length === 0}
+          >
+            {isQuickSyncing ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+            Đồng bộ nhanh
+          </Button>
           <Link href="/admin/home-components/create">
             <Button className="gap-2" variant="accent">
               <Plus size={16} /> Thêm Component
@@ -350,6 +416,8 @@ function HomeComponentsPage() {
         onShow={handleBulkShow}
         onHide={handleBulkHide}
         isStatusLoading={statusLoading}
+        onQuickSync={handleBulkQuickSync}
+        isQuickSyncLoading={statusLoading === 'show'}
         onDelete={handleBulkDelete}
         onClearSelection={() =>{  setSelectedIds([]); }}
       />

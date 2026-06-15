@@ -1,6 +1,7 @@
 'use client';
 
 import { HomeComponentRenderer } from '@/components/site/home/HomeComponentRenderer';
+import type { SharedSystemData } from '@/components/site/home/HomeComponentRenderer';
 import { HomePageLoading } from '@/components/site/loading/HomePageLoading';
 import { useBrandColors } from '@/components/site/hooks';
 import { useSiteSettings } from '@/components/site/hooks';
@@ -13,7 +14,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 const EMPTY_COMPONENTS_COUNT = 0;
 const LOADING_DELAY_MS = 120;
 const LOADING_MIN_DISPLAY_MS = 320;
-const MAX_CRITICAL_COMPONENTS = 3;
+const CRITICAL_COMPONENTS_COUNT = 2;
 
 export default function HomePageClient({
   initialComponents,
@@ -30,17 +31,24 @@ export default function HomePageClient({
   const loadingStartRef = useRef<number | null>(null);
   const delayTimerRef = useRef<number | null>(null);
   const deferredTriggerRef = useRef<HTMLDivElement | null>(null);
-  const [criticalCount, setCriticalCount] = useState(MAX_CRITICAL_COMPONENTS);
+
 
   const isDataReady = typeof resolvedComponents !== 'undefined';
 
+  // --- Lift system queries lên đây: 1 lần thay vì N lần (một per HomeComponentRenderer) ---
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
   const systemColors = useBrandColors();
   const { isDark } = useSiteSettings();
 
+  const sharedData: SharedSystemData = useMemo(() => ({
+    systemConfig: systemConfig ?? null,
+    systemColors,
+    isDark,
+  }), [systemConfig, systemColors, isDark]);
+
   const bgStyle = useMemo(() => {
     if (!systemConfig?.homePageBackground) {return {};}
-    const { enabled, type, customColor } = systemConfig.homePageBackground;
+    const { enabled, type, customColor } = systemConfig.homePageBackground as { enabled?: boolean; type?: string; customColor?: string };
     if (!enabled || isDark) {return {};}
     let color = '';
     switch (type) {
@@ -122,13 +130,7 @@ export default function HomePageClient({
     };
   }, [interactionReady, showDeferred]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const nextCount = window.innerWidth < 768 ? 1 : MAX_CRITICAL_COMPONENTS;
-    setCriticalCount(nextCount);
-  }, []);
+
 
   useEffect(() => {
     if (!isDataReady) {
@@ -213,15 +215,19 @@ export default function HomePageClient({
     .filter((componentItem) => {
       if (componentItem.type === 'Footer') {return false;}
       if (componentItem.type === 'Popup') {return false;}
-      if (componentItem.type !== 'SpeedDial') {return true;}
-
-      const config = componentItem.config as Record<string, unknown>;
-      return config.showOnAllPages !== true;
+      if (componentItem.type === 'SpeedDial') {return false;}
+      return true;
     })
     .sort((firstComponent, secondComponent) => firstComponent.order - secondComponent.order);
-  const criticalComponents = sortedComponents.slice(0, criticalCount);
-  const deferredComponents = showDeferred ? sortedComponents.slice(criticalCount) : [];
+  const criticalComponents = sortedComponents.slice(0, CRITICAL_COMPONENTS_COUNT);
+  const deferredComponents = showDeferred ? sortedComponents.slice(CRITICAL_COMPONENTS_COUNT) : [];
   const popupComponents = resolvedComponents.filter((componentItem) => componentItem.type === 'Popup');
+
+  const speedDialComponents = resolvedComponents.filter((componentItem) => {
+    if (componentItem.type !== 'SpeedDial' || !componentItem.active) {return false;}
+    const config = componentItem.config as Record<string, unknown>;
+    return config.showOnAllPages !== true;
+  });
 
   return (
     <div style={bgStyle} className="min-h-screen transition-colors duration-300">
@@ -236,6 +242,7 @@ export default function HomePageClient({
             title: component.title,
             type: component.type,
           }}
+          sharedData={sharedData}
         />
       ))}
       {!showDeferred && <div ref={deferredTriggerRef} className="h-px w-px" aria-hidden={true} />}
@@ -250,6 +257,7 @@ export default function HomePageClient({
               title: component.title,
               type: component.type,
             }}
+            sharedData={sharedData}
           />
         </div>
       ))}
@@ -264,6 +272,21 @@ export default function HomePageClient({
             title: component.title,
             type: component.type,
           }}
+          sharedData={sharedData}
+        />
+      ))}
+      {speedDialComponents.map((component) => (
+        <HomeComponentRenderer
+          key={component._id}
+          component={{
+            _id: component._id,
+            active: component.active,
+            config: component.config as Record<string, unknown>,
+            order: component.order,
+            title: component.title,
+            type: component.type,
+          }}
+          sharedData={sharedData}
         />
       ))}
     </div>

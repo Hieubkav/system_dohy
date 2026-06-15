@@ -1504,6 +1504,111 @@ export const updateHomepageSnapshot = mutation({
   returns: v.object({ ok: v.boolean() }),
 });
 
+const QUICK_SYNC_NO_SPACING_TYPES = new Set(['Hero', 'HomepageCategoryHero']);
+
+const isRecordObject = (value: unknown): value is Record<string, unknown> => (
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+);
+
+const quickSyncSingleComponent = (component: any): any => {
+  const config = isRecordObject(component.config) ? component.config : {};
+  const spacing = QUICK_SYNC_NO_SPACING_TYPES.has(component.type) ? 'none' : 'compact';
+  const nextConfig: Record<string, unknown> = {
+    ...config,
+    cornerRadius: 'sm',
+    descriptionAlign: 'center',
+    headerAlign: 'center',
+    noBorderRadius: false,
+    noVerticalMargin: spacing === 'none',
+    spacing,
+    subtitleAlign: 'center',
+    titleAlign: 'center',
+    titleColorPrimary: true,
+  };
+
+  if (isRecordObject(config.content)) {
+    nextConfig.content = {
+      ...config.content,
+      textAlign: 'center',
+    };
+  }
+
+  return {
+    ...component,
+    config: nextConfig,
+  };
+};
+
+const getQuickSyncedReorderedComponentsArray = (components: any[]): any[] => {
+  const synced = components.map(quickSyncSingleComponent);
+  const others = synced.filter(c => c.type !== 'SpeedDial' && c.type !== 'Footer');
+  const speedDials = synced.filter(c => c.type === 'SpeedDial');
+  const footers = synced.filter(c => c.type === 'Footer');
+
+  return [...others, ...speedDials, ...footers].map((c, index) => ({
+    ...c,
+    order: index,
+  }));
+};
+
+export const quickSyncAllSnapshots = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const snapshots = await ctx.db.query('homeComponentSnapshots').collect();
+    let count = 0;
+    for (const snapshot of snapshots) {
+      const payload = await loadSnapshotPayload(ctx, snapshot._id as string) as HomepageSnapshotPayload | null;
+      if (!payload) continue;
+
+      const normalized = normalizeHomepageSnapshotPayload(payload);
+      const components = normalized.homepage?.components ?? [];
+      const updatedComponents = getQuickSyncedReorderedComponentsArray(components);
+
+      const nextPayload: HomepageSnapshotPayload = {
+        ...normalized,
+        manifest: {
+          ...normalized.manifest,
+          componentCount: updatedComponents.length,
+        },
+        homepage: {
+          ...normalized.homepage,
+          componentOrder: updatedComponents.map((c: any) => c.componentKey),
+          components: updatedComponents,
+        },
+      };
+
+      // Upsert payload trong bảng riêng
+      const existingPayloadRow = await ctx.db
+        .query('homeComponentSnapshotPayloads')
+        .withIndex('by_snapshotId', (q) => q.eq('snapshotId', snapshot._id))
+        .unique();
+      if (existingPayloadRow) {
+        await ctx.db.patch(existingPayloadRow._id, { payload: nextPayload });
+      } else {
+        await ctx.db.insert('homeComponentSnapshotPayloads', { snapshotId: snapshot._id, payload: nextPayload });
+      }
+
+      // Patch snapshot metadata
+      await ctx.db.patch(snapshot._id, {
+        payloadUpdatedAt: Date.now(),
+        ...buildSnapshotSummary(nextPayload),
+        zipBuiltAt: undefined, // Clear cache zip
+        zipBuilderVersion: undefined,
+        zipByteSize: undefined,
+        zipFileName: undefined,
+        zipMediaCount: undefined,
+        zipPayloadHash: undefined,
+        zipStorageId: undefined,
+        zipWarningCount: undefined,
+      });
+
+      count++;
+    }
+    return { count };
+  },
+  returns: v.object({ count: v.number() }),
+});
+
 export const backfillHomepageSnapshotSummaries = mutation({
   args: { batchSize: v.optional(v.number()) },
   handler: async (ctx, args) => {

@@ -1231,7 +1231,7 @@ export function Header({
               <div style={logoWrapStyle}>
                 {logo ? (
                   <div style={logoInnerStyle}>
-                    <Image mode="logo" src={logo} alt={displayName} width={logoSize} height={logoSize} className="h-auto w-auto" />
+                    <Image mode="logo" src={logo} alt={displayName} width={logoSize} height={logoSize} style={{ width: 'auto', height: 'auto' }} />
                   </div>
                 ) : (
                   <div style={logoInnerStyle}></div>
@@ -1741,7 +1741,7 @@ export function Header({
               <div style={logoWrapStyle}>
                 {logo ? (
                   <div style={logoInnerStyle}>
-                    <Image mode="logo" src={logo} alt={displayName} width={logoSize} height={logoSize} className="h-auto w-auto" />
+                    <Image mode="logo" src={logo} alt={displayName} width={logoSize} height={logoSize} style={{ width: 'auto', height: 'auto' }} />
                   </div>
                 ) : (
                   <div style={logoInnerStyle} className="font-bold">
@@ -2613,7 +2613,7 @@ export function Header({
               <div style={logoWrapStyle}>
                 {logo ? (
                   <div style={logoInnerStyle}>
-                    <Image mode="logo" src={logo} alt={displayName} width={logoSize} height={logoSize} className="h-auto w-auto" />
+                    <Image mode="logo" src={logo} alt={displayName} width={logoSize} height={logoSize} style={{ width: 'auto', height: 'auto' }} />
                   </div>
                 ) : (
                   <div className="rounded-full" style={{ backgroundColor: tokens.allbirdsAccentDot, width: logoDotSize, height: logoDotSize }}></div>

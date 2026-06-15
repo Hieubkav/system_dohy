@@ -47,6 +47,7 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
   const cleanupImportedBinOrphans = useMutation(api.storage.cleanupImportedBinOrphans);
   const toggleSnapshotPublic = useMutation(api.homepageSnapshots.toggleSnapshotPublic);
   const updateSnapshotCategory = useMutation(api.homepageSnapshots.updateSnapshotCategory);
+  const quickSyncAllSnapshots = useMutation(api.homepageSnapshots.quickSyncAllSnapshots);
 
   const categories = useQuery(api.snapshotCategories.listSnapshotCategories) ?? [];
   const ensureDefaultCategory = useMutation(api.snapshotCategories.ensureDefaultSnapshotCategory);
@@ -74,6 +75,7 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
   const [report, setReport] = useState<HomepageSnapshotImportReport | null>(null);
   const [snapshotQuery, setSnapshotQuery] = useState('');
   const [snapshotImportUrl, setSnapshotImportUrl] = useState('');
+  const [isSyncingAllSnapshots, setIsSyncingAllSnapshots] = useState(false);
   useEffect(() => {
     if (!open) return;
     void ensureDefaultCategory({});
@@ -409,6 +411,20 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
     }
   };
 
+  const handleQuickSyncAllSnapshots = async () => {
+    if (confirm(`Bạn có chắc chắn muốn đồng bộ nhanh cho tất cả ${savedSnapshots.length} snapshot? Việc này sẽ chuẩn hóa thiết kế và sắp xếp thứ tự SpeedDial/Footer cho toàn bộ snapshot.`)) {
+      setIsSyncingAllSnapshots(true);
+      try {
+        const result = await quickSyncAllSnapshots({});
+        toast.success(`Đã đồng bộ nhanh thành công cho ${result.count} snapshots!`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Đồng bộ nhanh snapshots thất bại');
+      } finally {
+        setIsSyncingAllSnapshots(false);
+      }
+    }
+  };
+
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) return;
     try {
@@ -523,6 +539,20 @@ export function HomepageSnapshotDialog({ open, onOpenChange }: HomepageSnapshotD
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setIsManagingCategories(!isManagingCategories)}>
                     Quản lý danh mục
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                    onClick={() => { void handleQuickSyncAllSnapshots(); }}
+                    disabled={isSyncingAllSnapshots || savedSnapshots.length === 0}
+                  >
+                    {isSyncingAllSnapshots ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Wand2 className="h-3.5 w-3.5" />
+                    )}
+                    Đồng bộ nhanh tất cả ({savedSnapshots.length})
                   </Button>
                 </div>
 

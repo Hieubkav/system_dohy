@@ -17,6 +17,7 @@ import { ModuleGuard } from '../components/ModuleGuard';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { getQuickSyncedReorderedComponents, buildQuickSyncedComponent } from '../home-components/_shared/lib/quickSync';
 
 const MODULE_KEY = 'homepage';
 
@@ -62,6 +63,7 @@ function HomepageContent() {
   const deleteComponent = useMutation(api.homeComponents.remove);
   const toggleComponent = useMutation(api.homeComponents.toggle);
   const reorderComponents = useMutation(api.homeComponents.reorder);
+  const updateComponent = useMutation(api.homeComponents.update);
   
   const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ direction: 'asc', key: 'order' });
   const [searchTerm, setSearchTerm] = useState('');
@@ -69,6 +71,7 @@ function HomepageContent() {
   const [filterActive, setFilterActive] = useState('');
   const [selectedIds, setSelectedIds] = useState<Id<"homeComponents">[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isBulkSyncing, setIsBulkSyncing] = useState(false);
   const dndSensors = useAdminDndSensors();
 
   const isLoading = componentsData === undefined;
@@ -146,6 +149,36 @@ function HomepageContent() {
     }
   };
 
+  const handleBulkQuickSync = async () => {
+    if (selectedIds.length === 0) return;
+    setIsBulkSyncing(true);
+    try {
+      const updatedComponents = componentsData?.map(c => {
+        if (selectedIds.includes(c._id)) {
+          return buildQuickSyncedComponent(c);
+        }
+        return c;
+      }) ?? [];
+      const reordered = getQuickSyncedReorderedComponents(updatedComponents);
+      await Promise.all(
+        reordered.map(async (c) => {
+          const isSelected = selectedIds.includes(c._id);
+          await updateComponent({
+            id: c._id,
+            order: c.order,
+            ...(isSelected ? { config: c.config } : {}),
+          });
+        })
+      );
+      setSelectedIds([]);
+      toast.success(`Đã đồng bộ nhanh ${selectedIds.length} section được chọn`);
+    } catch {
+      toast.error('Lỗi khi đồng bộ nhanh các section được chọn');
+    } finally {
+      setIsBulkSyncing(false);
+    }
+  };
+
   // TICKET #10 FIX: Show detailed error message
   const handleToggle = async (id: Id<"homeComponents">) => {
     try {
@@ -206,6 +239,8 @@ function HomepageContent() {
       <BulkActionBar
         selectedCount={selectedIds.length}
         entityLabel="section"
+        onQuickSync={handleBulkQuickSync}
+        isQuickSyncLoading={isBulkSyncing}
         onDelete={handleBulkDelete}
         onClearSelection={() =>{  setSelectedIds([]); }}
       />

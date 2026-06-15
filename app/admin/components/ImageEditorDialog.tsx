@@ -48,7 +48,7 @@ function getExtensionFromMime(mime: string): string {
   return mime.toUpperCase();
 }
 
-async function compressImageToWebP(
+export async function compressImageToWebP(
   imageBlobOrUrl: Blob | string,
   quality = 1.0,
 ): Promise<{ blob: Blob; url: string }> {

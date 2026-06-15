@@ -40,11 +40,11 @@ Do đó, hướng giải quyết duy nhất là thực hiện phòng vệ ở cl
 
 # V. Files Impacted (Tệp bị ảnh hưởng)
 
-* **Sửa:** [page.tsx (Edit)](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/app/admin/home-components/category-products/[id]/edit/page.tsx)
+* **Sửa:** [page.tsx (Edit)](file:///E:/NextJS/study/admin-ui-aistudio/system-vietadmin-nextjs/app/admin/home-components/category-products/[id]/edit/page.tsx)
   * Lọc `categoryIdsForQuery` bằng cách đối chiếu với `categoriesData` (chỉ giữ lại các ID thực sự tồn tại trong `categoriesData`).
-* **Sửa:** [page.tsx (Create)](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/app/admin/home-components/create/category-products/page.tsx)
+* **Sửa:** [page.tsx (Create)](file:///E:/NextJS/study/admin-ui-aistudio/system-vietadmin-nextjs/app/admin/home-components/create/category-products/page.tsx)
   * Áp dụng logic lọc tương tự cho trang tạo mới component.
-* **Sửa:** [ProductGridSection.tsx](file:///e:/NextJS/job/job_from_system_vietadmin/system_dohy/components/site/ProductGridSection.tsx)
+* **Sửa:** [ProductGridSection.tsx](file:///E:/NextJS/study/admin-ui-aistudio/system-vietadmin-nextjs/components/site/ProductGridSection.tsx)
   * Lọc `categoryTabIds` trước khi truyền vào query ngoài storefront bằng cách đối chiếu với danh sách `categories` tải từ hệ thống.
 
 # VI. Execution Preview (Xem trước thực thi)
@@ -65,13 +65,13 @@ Do đó, hướng giải quyết duy nhất là thực hiện phòng vệ ở cl
 
 # VIII. Todo
 
-- [ ] Sửa logic lọc ID danh mục tại `app/admin/home-components/category-products/[id]/edit/page.tsx`
-- [ ] Sửa logic lọc ID danh mục tại `app/admin/home-components/create/category-products/page.tsx`
-- [ ] Sửa logic lọc ID danh mục tại `components/site/ProductGridSection.tsx`
+- [x] Sửa logic lọc ID danh mục tại `app/admin/home-components/category-products/[id]/edit/page.tsx`
+- [x] Sửa logic lọc ID danh mục tại `app/admin/home-components/create/category-products/page.tsx`
+- [x] Sửa logic lọc ID danh mục tại `components/site/ProductGridSection.tsx`
 
 # IX. Acceptance Criteria (Tiêu chí chấp nhận)
 
-* Không còn lỗi `ArgumentValidationError` từ Convex đối với query `listProductsForCategories` when truy cập trang chỉnh sửa component hoặc trang chủ.
+* Không còn lỗi `ArgumentValidationError` từ Convex đối với query `listProductsForCategories` khi truy cập trang chỉnh sửa component hoặc trang chủ.
 * Các category ID không hợp lệ bị loại bỏ khỏi tham số truyền vào query một cách âm thầm ở client.
 
 # X. Risk / Rollback (Rủi ro / Hoàn tác)

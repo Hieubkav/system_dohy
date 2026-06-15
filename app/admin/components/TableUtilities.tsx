@@ -5,7 +5,7 @@ import type { UniqueIdentifier } from '@dnd-kit/core';
 import { KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ArrowUpDown, ChevronDown, GripVertical, ImageOff, Loader2, SearchCheck, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { ArrowUpDown, ChevronDown, GripVertical, ImageOff, Loader2, SearchCheck, SlidersHorizontal, Trash2, Wand2 } from 'lucide-react';
 import { Button, TableHead, TableRow, cn } from './ui';
 
 export const ColumnToggle = ({ columns, visibleColumns, onToggle }: {
@@ -159,6 +159,10 @@ export const BulkActionBar = ({
   isClearBrokenMediaLoading,
   clearBrokenMediaLabel = 'Xóa ảnh lỗi',
   clearBrokenMediaLoadingLabel = 'Đang xóa ảnh lỗi...',
+  onQuickSync,
+  isQuickSyncLoading,
+  quickSyncLabel = 'Đồng bộ nhanh',
+  quickSyncLoadingLabel = 'Đang đồng bộ...',
   onDelete,
   onClearSelection,
   isLoading,
@@ -188,6 +192,10 @@ export const BulkActionBar = ({
   isClearBrokenMediaLoading?: boolean;
   clearBrokenMediaLabel?: string;
   clearBrokenMediaLoadingLabel?: string;
+  onQuickSync?: () => void;
+  isQuickSyncLoading?: boolean;
+  quickSyncLabel?: string;
+  quickSyncLoadingLabel?: string;
   onDelete: () => void;
   onClearSelection: () => void;
   isLoading?: boolean;
@@ -296,6 +304,18 @@ export const BulkActionBar = ({
           >
             {isClearBrokenMediaLoading ? <Loader2 size={14} className="animate-spin" /> : <ImageOff size={14} />}
             {isClearBrokenMediaLoading ? clearBrokenMediaLoadingLabel : `${clearBrokenMediaLabel} (${selectedCount})`}
+          </Button>
+        )}
+        {onQuickSync && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 h-8 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+            onClick={onQuickSync}
+            disabled={isLoading || Boolean(isStatusLoading) || isQuickSyncLoading}
+          >
+            {isQuickSyncLoading ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+            {isQuickSyncLoading ? quickSyncLoadingLabel : `${quickSyncLabel} (${selectedCount})`}
           </Button>
         )}
         <Button variant="destructive" size="sm" className="gap-2 h-8" onClick={onDelete} disabled={isLoading || Boolean(isStatusLoading)}>

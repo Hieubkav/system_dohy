@@ -20,22 +20,41 @@ const LegacyComponentRenderer = dynamic(
   { ssr: false, loading: () => null }
 );
 
+/** Shared system data có thể được lift lên parent để tránh N×3 subscriptions */
+export interface SharedSystemData {
+  systemConfig: {
+    typeColorOverrides: Record<string, ColorOverrideState & { systemEnabled?: boolean }> | null;
+    typeFontOverrides: Record<string, FontOverrideState & { systemEnabled?: boolean }> | null;
+    globalFontOverride: { enabled: boolean; fontKey: string } | null;
+    homePageBackground?: unknown;
+  } | null | undefined;
+  systemColors: { primary: string; secondary: string; mode: 'single' | 'dual' };
+  isDark: boolean;
+}
+
 interface HomeComponentRendererProps {
   component: HomeComponentRecord;
   snapshotComponentKey?: string;
+  /** Nếu được truyền vào, sẽ skip useQuery trong renderer — giảm N×3 subscriptions */
+  sharedData?: SharedSystemData;
 }
 
-export function HomeComponentRenderer({ component, snapshotComponentKey }: HomeComponentRendererProps) {
-  const systemColors = useBrandColors();
-  const { isDark } = useSiteSettings();
-
+export function HomeComponentRenderer({ component, snapshotComponentKey, sharedData }: HomeComponentRendererProps) {
   const snapshotCtx = useSnapshotDemoContext();
   const isSnapshotMode = Boolean(snapshotCtx);
 
+  // Chỉ subscribe khi KHÔNG được cung cấp sharedData từ bên ngoài (và không ở snapshot mode)
+  const shouldSkipQuery = sharedData !== undefined || isSnapshotMode;
+
+  // useBrandColors và useSiteSettings chỉ gọi khi cần thiết
+  const liveBrandColors = useBrandColors();
+  const { isDark: liveDark } = useSiteSettings();
+
   // In snapshot mode, use systemStyle from snapshot bundle instead of querying DB
-  const liveSystemConfig = useQuery(api.homeComponentSystemConfig.getConfig, isSnapshotMode ? 'skip' : undefined);
+  const liveSystemConfig = useQuery(api.homeComponentSystemConfig.getConfig, shouldSkipQuery ? 'skip' : undefined);
   const snapshotSystemStyle = snapshotCtx?.getSystemStyle?.() ?? null;
 
+  // Resolve systemConfig: priority → sharedData > snapshot > live query
   const systemConfig = isSnapshotMode
     ? (snapshotSystemStyle
       ? {
@@ -44,7 +63,17 @@ export function HomeComponentRenderer({ component, snapshotComponentKey }: HomeC
           globalFontOverride: (snapshotSystemStyle.globalFontOverride ?? null) as { enabled: boolean; fontKey: string } | null,
         }
       : null)
-    : liveSystemConfig;
+    : (sharedData !== undefined ? sharedData.systemConfig : liveSystemConfig);
+
+  // Resolve systemColors: priority → sharedData > snapshot fallback > live
+  const systemColors = isSnapshotMode
+    ? liveBrandColors
+    : (sharedData !== undefined ? sharedData.systemColors : liveBrandColors);
+
+  // Resolve isDark: priority → sharedData > live
+  const isDark = isSnapshotMode
+    ? liveDark
+    : (sharedData !== undefined ? sharedData.isDark : liveDark);
 
   const sectionType = component.type;
 

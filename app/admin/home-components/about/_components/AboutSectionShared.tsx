@@ -12,6 +12,7 @@ import { getAboutIconComponent } from '../_lib/iconRegistry';
 import type { AboutBrandMode, AboutCornerRadius, AboutPersistFeature, AboutPersistStat, AboutStyle } from '../_types';
 import type { AboutColorTokens } from '../_lib/colors';
 import { adaptColorForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
+import { PublicImage } from '@/components/shared/PublicImage';
 
 type AboutSectionContext = 'preview' | 'site';
 
@@ -63,11 +64,13 @@ const AboutImage = ({
   }
 
   return (
-    <img
+    <PublicImage
       src={src}
       alt={alt}
       className={className}
-      loading={imagePriority ? 'eager' : 'lazy'}
+      mode="primary"
+      priority={imagePriority}
+      fill
     />
   );
 };

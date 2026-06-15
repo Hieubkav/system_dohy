@@ -1,7 +1,12 @@
 'use client';
 
 import React from 'react';
-import { AdminImage as Image } from '@/app/admin/components/AdminImage';
+import { PublicImage as Image } from '@/components/shared/PublicImage';
+
+const getOptimizedBgUrl = (src?: string) => {
+  if (!src) {return '';}
+  return `/_next/image?url=${encodeURIComponent(src)}&w=1280&q=75`;
+};
 import { Quote, Star, ChevronRight } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -565,7 +570,7 @@ export function TestimonialsSectionShared({
     <div
       className="relative w-full overflow-hidden bg-slate-900 @container"
       style={splitBackgroundImage ? {
-        backgroundImage: `linear-gradient(90deg, rgba(15, 23, 42, ${splitOverlayAlpha}), rgba(15, 23, 42, ${Math.max(0.35, splitOverlayAlpha - 0.12)})), url("${splitBackgroundImage}")`,
+        backgroundImage: `linear-gradient(90deg, rgba(15, 23, 42, ${splitOverlayAlpha}), rgba(15, 23, 42, ${Math.max(0.35, splitOverlayAlpha - 0.12)})), url("${getOptimizedBgUrl(splitBackgroundImage)}")`,
         backgroundPosition: 'center',
         backgroundSize: 'cover',
       } : {

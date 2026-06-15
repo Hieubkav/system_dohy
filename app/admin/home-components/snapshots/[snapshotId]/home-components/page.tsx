@@ -18,6 +18,7 @@ import { ModuleGuard } from '../../../../components/ModuleGuard';
 import { SettingsImageUploader } from '../../../../components/SettingsImageUploader';
 import { COMPONENT_TYPES } from '../../../create/shared';
 import type { SnapshotContactSettings, SnapshotDemoBundle, SnapshotMenuItem, SnapshotMenuPayload, SnapshotSEOSettings, SnapshotSiteSettings, SnapshotSocialSettings } from '@/components/modules/homepage/snapshot-demo-types';
+import { getQuickSyncedReorderedComponents } from '@/app/admin/home-components/_shared/lib/quickSync';
 
 type HeaderLayerColorChoice = 'white' | 'primary' | 'secondary';
 type SnapshotThemeMode = NonNullable<SnapshotSiteSettings['site_dark_mode']>;
@@ -216,40 +217,6 @@ const buildPayload = (payload: HomepageSnapshotPayload, components: SnapshotComp
   };
 };
 
-const QUICK_SYNC_NO_SPACING_TYPES = new Set(['Hero', 'HomepageCategoryHero']);
-
-const isRecord = (value: unknown): value is Record<string, unknown> => (
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
-);
-
-const buildQuickSyncedComponent = (component: SnapshotComponentPayload): SnapshotComponentPayload => {
-  const config = isRecord(component.config) ? component.config : {};
-  const spacing = QUICK_SYNC_NO_SPACING_TYPES.has(component.type) ? 'none' : 'compact';
-  const nextConfig: Record<string, unknown> = {
-    ...config,
-    cornerRadius: 'sm',
-    descriptionAlign: 'center',
-    headerAlign: 'center',
-    noBorderRadius: false,
-    noVerticalMargin: spacing === 'none',
-    spacing,
-    subtitleAlign: 'center',
-    titleAlign: 'center',
-    titleColorPrimary: true,
-  };
-
-  if (isRecord(config.content)) {
-    nextConfig.content = {
-      ...config.content,
-      textAlign: 'center',
-    };
-  }
-
-  return {
-    ...component,
-    config: nextConfig,
-  };
-};
 
 const withSnapshotCustomThumbnail = (
   payload: HomepageSnapshotPayload,
@@ -688,7 +655,7 @@ function SnapshotHomeComponentsPage({ snapshotId }: { snapshotId: string }) {
     setIsQuickSyncing(true);
     try {
       await saveComponents(
-        sortedComponents.map(buildQuickSyncedComponent),
+        getQuickSyncedReorderedComponents(sortedComponents),
         'Đã đồng bộ nhanh: bo góc ít, spacing hẹp và tiêu đề căn giữa'
       );
     } catch {
