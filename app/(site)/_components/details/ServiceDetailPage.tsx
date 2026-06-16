@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useMutation, useQuery } from 'convex/react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import { getServiceDetailColors } from '@/components/site/services/detail/_lib/colors';
 import { ClassicStyle, MinimalStyle, ModernStyle } from '@/components/site/services/detail/ServiceDetailStyles';
 import { ArrowLeft, Briefcase } from 'lucide-react';
@@ -91,9 +91,10 @@ interface PageProps {
 export default function ServiceDetailPage({ params }: PageProps) {
   const { slug } = use(params);
   const brandColors = useBrandColors();
+  const { isDark } = useSiteSettings();
   const tokens = useMemo(
-    () => getServiceDetailColors(brandColors.primary, brandColors.secondary, brandColors.mode || 'single'),
-    [brandColors.primary, brandColors.secondary, brandColors.mode]
+    () => getServiceDetailColors(brandColors.primary, brandColors.secondary, brandColors.mode || 'single', isDark),
+    [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]
   );
   const experienceConfig = useServiceDetailExperienceConfig();
   const enabledFields = useEnabledServiceFields();

@@ -320,7 +320,7 @@ export function ClassicStyle({ service, brandColor: _brandColor, tokens, related
             {resolvedContent && (
               <RichContent
                 content={resolvedContent}
-                className="prose prose-lg max-w-none prose-headings:font-bold prose-p:leading-relaxed prose-a:no-underline hover:prose-a:underline prose-img:rounded-xl"
+                className="prose prose-lg max-w-none prose-headings:font-bold prose-p:leading-relaxed prose-a:no-underline hover:prose-a:underline prose-img:rounded-xl dark:prose-invert"
                 style={{ '--tw-prose-body': tokens.bodyText, '--tw-prose-headings': tokens.headingColor, '--tw-prose-links': tokens.linkColor, '--tw-prose-bold': tokens.bodyText } as React.CSSProperties}
               />
             )}
@@ -544,7 +544,7 @@ export function ModernStyle({ service, brandColor: _brandColor, tokens, relatedS
         {resolvedContent && (
           <RichContent
             content={resolvedContent}
-            className="prose max-w-none prose-headings:font-bold prose-p:leading-relaxed prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg"
+            className="prose max-w-none prose-headings:font-bold prose-p:leading-relaxed prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg dark:prose-invert"
             style={{ '--tw-prose-body': tokens.bodyText, '--tw-prose-headings': tokens.headingColor, '--tw-prose-links': tokens.linkColor, '--tw-prose-bold': tokens.bodyText } as React.CSSProperties}
           />
         )}
@@ -717,7 +717,7 @@ export function MinimalStyle({ service, brandColor: _brandColor, tokens, related
         {resolvedContent && (
           <RichContent
             content={resolvedContent}
-            className="prose max-w-none prose-headings:font-semibold prose-p:leading-relaxed prose-a:no-underline hover:prose-a:underline prose-img:rounded-2xl prose-blockquote:border-l-2 prose-blockquote:not-italic"
+            className="prose max-w-none prose-headings:font-semibold prose-p:leading-relaxed prose-a:no-underline hover:prose-a:underline prose-img:rounded-2xl prose-blockquote:border-l-2 prose-blockquote:not-italic dark:prose-invert"
             style={{ '--tw-prose-body': tokens.bodyText, '--tw-prose-headings': tokens.headingColor, '--tw-prose-links': tokens.linkColor, '--tw-prose-bold': tokens.bodyText, '--tw-prose-quote-borders': tokens.linkColor } as React.CSSProperties}
           />
         )}
