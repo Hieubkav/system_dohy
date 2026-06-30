@@ -437,7 +437,7 @@ export const GalleryPreview = ({
         <div className={cn('grid gap-2', device === 'mobile' ? 'grid-cols-3' : 'grid-cols-1')}>
           {sub.map((photo, idx) => (
             <div
-              key={photo.id}
+              key={photo.id || photo.url || idx}
               className={cn("aspect-square relative group cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2", roundedClass)}
               style={{ 
                 backgroundColor: colors.neutralSurface,
@@ -486,7 +486,7 @@ export const GalleryPreview = ({
       >
         {items.map((photo, idx) => (
           <div
-            key={photo.id}
+            key={photo.id || photo.url || idx}
             className={cn(
               "aspect-square relative group cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
               roundedClass,
@@ -547,7 +547,7 @@ export const GalleryPreview = ({
 
           return (
             <div
-              key={photo.id}
+              key={photo.id || photo.url || i}
               className={cn(`${colSpan} relative group cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2`, roundedClass)}
               style={{ 
                 backgroundColor: colors.neutralSurface,
@@ -598,9 +598,9 @@ export const GalleryPreview = ({
       return (
         <div className="px-4">
         <div className={cn('mx-auto flex items-center justify-center gap-3', items.length === 1 ? 'max-w-sm' : 'max-w-xl')}>
-            {items.map((photo) => (
+            {items.map((photo, idx) => (
               <div
-                key={photo.id}
+                key={photo.id || photo.url || idx}
                 className={cn("flex-1 aspect-square overflow-hidden cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2", roundedClass)}
                 style={{ 
                   backgroundColor: colors.neutralSurface,
@@ -634,9 +634,9 @@ export const GalleryPreview = ({
           'gap-3',
           device === 'mobile' ? 'columns-2' : (device === 'tablet' ? 'columns-3' : colsClass),
         )}>
-          {visibleItems.map((photo) => (
+          {visibleItems.map((photo, idx) => (
             <div
-              key={photo.id}
+              key={photo.id || photo.url || idx}
               className={cn("mb-3 aspect-square overflow-hidden cursor-pointer group relative break-inside-avoid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2", roundedClass)}
               style={{ 
                 backgroundColor: colors.neutralSurface,
@@ -804,7 +804,7 @@ export const GalleryPreview = ({
         <div className={cn('mx-auto flex items-center justify-center gap-3', items.length === 1 ? 'max-w-md' : 'max-w-2xl')}>
             {items.map((photo, idx) => (
               <div
-                key={photo.id}
+                key={photo.id || photo.url || idx}
                 className={cn('flex-1 overflow-hidden cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2', roundedClass, idx % 2 === 0 ? 'aspect-[3/4]' : 'aspect-[4/3]')}
                 style={{ 
                   backgroundColor: colors.neutralSurface,
@@ -846,7 +846,7 @@ export const GalleryPreview = ({
 
             return (
               <div
-                key={photo.id}
+                key={photo.id || photo.url || idx}
                 className={cn('mb-3 break-inside-avoid overflow-hidden cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2', roundedClass, heightClass)}
                 style={{ 
                   backgroundColor: colors.neutralSurface,
