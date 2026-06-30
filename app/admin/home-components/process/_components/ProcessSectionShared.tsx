@@ -66,6 +66,7 @@ interface ProcessSectionSharedProps {
   onSubtitleChange?: (val: string) => void;
   onBadgeTextChange?: (val: string) => void;
   onItemsChange?: (val: ProcessSharedStep[]) => void;
+  onCircularCtaTextChange?: (val: string) => void;
 }
 
 const EditableText = ({
@@ -1314,6 +1315,11 @@ const RenderCircular = ({
   spacing = DEFAULT_PROCESS_SPACING,
   circularCtaText = '',
   circularCtaLink = '',
+  visualEditActive = false,
+  handleItemTextUpdate,
+  onTitleChange,
+  onSubtitleChange,
+  onCircularCtaTextChange,
 }: {
   tokens: ProcessColorTokens;
   steps: ProcessSharedStep[];
@@ -1324,6 +1330,11 @@ const RenderCircular = ({
   spacing?: ProcessSpacing;
   circularCtaText?: string;
   circularCtaLink?: string;
+  visualEditActive?: boolean;
+  handleItemTextUpdate?: (stepIdx: number, field: string, nextText: string) => void;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onCircularCtaTextChange?: (val: string) => void;
 }) => {
   if (steps.length === 0) { return renderEmptyState(tokens); }
 
@@ -1379,14 +1390,14 @@ const RenderCircular = ({
               className="text-4xl sm:text-5xl lg:text-[61px] tv:text-8xl font-light leading-tight tracking-wide uppercase font-sans"
               style={{ color: textCol }}
             >
-              {sectionTitle || "CÁCH CHÚNG TÔI LÀM VIỆC"}
+              <EditableText active={visualEditActive} value={sectionTitle || "CÁCH CHÚNG TÔI LÀM VIỆC"} onChange={onTitleChange || (() => {})} />
             </h2>
-            {subtitleText && (
+            {(subtitleText || visualEditActive) && (
               <p 
                 className="text-lg sm:text-xl tv:text-2xl font-light leading-relaxed max-w-lg tv:max-w-2xl mx-auto lg:mx-0"
                 style={{ color: mutedTextCol }}
               >
-                {subtitleText}
+                <EditableText active={visualEditActive} value={subtitleText} onChange={onSubtitleChange || (() => {})} />
               </p>
             )}
             <div className="pt-2 flex justify-center lg:justify-start">
@@ -1408,7 +1419,7 @@ const RenderCircular = ({
                   e.currentTarget.style.color = primaryColor;
                 }}
               >
-                {ctaText}
+                <EditableText active={visualEditActive} value={ctaText} onChange={onCircularCtaTextChange || (() => {})} />
               </a>
             </div>
           </div>
@@ -1434,10 +1445,10 @@ const RenderCircular = ({
                     </svg>
                   </div>
                   <h3 className="text-xl sm:text-2xl tv:text-4xl font-medium tracking-wide uppercase mb-3" style={{ color: primaryColor }}>
-                    {activeStep.title || `BƯỚC ${activeIndex + 1}`}
+                    <EditableText active={visualEditActive} value={activeStep.title || `BƯỚC ${activeIndex + 1}`} onChange={(val) => handleItemTextUpdate?.(activeIndex, 'title', val)} />
                   </h3>
                   <p className="text-sm tv:text-lg font-light leading-relaxed max-w-xs tv:max-w-md" style={{ color: textCol }}>
-                    {activeStep.description || "Mô tả bước này..."}
+                    <EditableText active={visualEditActive} value={activeStep.description || "Mô tả bước này..."} onChange={(val) => handleItemTextUpdate?.(activeIndex, 'description', val)} />
                   </p>
                 </div>
 
@@ -1503,6 +1514,7 @@ const ProcessSectionContent = ({
   onSubtitleChange,
   onBadgeTextChange,
   onItemsChange,
+  onCircularCtaTextChange,
 }: {
   steps: ProcessSharedStep[];
   sectionTitle: string;
@@ -1521,6 +1533,7 @@ const ProcessSectionContent = ({
   onSubtitleChange?: (val: string) => void;
   onBadgeTextChange?: (val: string) => void;
   onItemsChange?: (val: ProcessSharedStep[]) => void;
+  onCircularCtaTextChange?: (val: string) => void;
 }) => {
   const handleItemTextUpdate = (stepIdx: number, field: string, nextText: string) => {
     onItemsChange?.(steps.map((step, idx) => (idx === stepIdx ? { ...step, [field]: nextText } : step)));
@@ -1583,6 +1596,11 @@ const ProcessSectionContent = ({
         spacing={spacing}
         circularCtaText={circularCtaText}
         circularCtaLink={circularCtaLink}
+        visualEditActive={visualEditActive}
+        handleItemTextUpdate={handleItemTextUpdate}
+        onTitleChange={onTitleChange}
+        onSubtitleChange={onSubtitleChange}
+        onCircularCtaTextChange={onCircularCtaTextChange}
       />
     );
   }
@@ -1629,6 +1647,7 @@ export function ProcessSectionShared({
   onSubtitleChange,
   onBadgeTextChange,
   onItemsChange,
+  onCircularCtaTextChange,
 }: ProcessSectionSharedProps) {
   const tokens = React.useMemo(() => adaptTokensForDarkMode(getProcessColors(brandColor, secondary, mode), isDark ?? false), [brandColor, secondary, mode, isDark]);
   const selectedStyle = previewStyle ?? style;
@@ -1657,6 +1676,7 @@ export function ProcessSectionShared({
         onSubtitleChange={onSubtitleChange}
         onBadgeTextChange={onBadgeTextChange}
         onItemsChange={onItemsChange}
+        onCircularCtaTextChange={onCircularCtaTextChange}
       />
     );
   }
@@ -1697,6 +1717,7 @@ export function ProcessSectionShared({
             onSubtitleChange={onSubtitleChange}
             onBadgeTextChange={onBadgeTextChange}
             onItemsChange={onItemsChange}
+            onCircularCtaTextChange={onCircularCtaTextChange}
           />
         </BrowserFrame>
       </PreviewWrapper>

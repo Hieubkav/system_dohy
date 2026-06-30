@@ -875,6 +875,8 @@ export function LiveComponentPreviewRenderer({
     case 'Process': {
       return (
         <ProcessPreviewAny
+          config={config}
+          onConfigChange={onConfigChange}
           steps={config.steps}
           onItemsChange={(nextSteps: any) => onConfigChange({ ...config, steps: nextSteps })}
           circularCtaText={config.circularCtaText}
@@ -901,7 +903,6 @@ export function LiveComponentPreviewRenderer({
           badgeText={badgeText}
           spacing={spacing}
           isVisualEditAllowed={true}
-          onConfigChange={onConfigChange}
           onTitleChange={onTitleChange}
           onSubtitleChange={(val: string) => handleHeaderConfigChange('subtitle', val)}
           onBadgeTextChange={(val: string) => handleHeaderConfigChange('badgeText', val)}

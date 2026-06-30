@@ -41,6 +41,8 @@ interface ProcessPreviewProps {
   onSubtitleChange?: (value: string) => void;
   onBadgeTextChange?: (value: string) => void;
   onItemsChange?: (value: any[]) => void;
+  config?: any;
+  onConfigChange?: (cfg: any) => void;
 }
 
 export const ProcessPreview = ({
@@ -73,6 +75,8 @@ export const ProcessPreview = ({
   onSubtitleChange,
   onBadgeTextChange,
   onItemsChange,
+  config,
+  onConfigChange,
 }: ProcessPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
@@ -133,6 +137,7 @@ export const ProcessPreview = ({
         onSubtitleChange={onSubtitleChange}
         onBadgeTextChange={onBadgeTextChange}
         onItemsChange={onItemsChange}
+        onCircularCtaTextChange={(val) => onConfigChange?.({ ...config, circularCtaText: val })}
       />
     </div>
   );

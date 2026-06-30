@@ -1151,6 +1151,64 @@ const renderCentered = ({
   );
 };
 
+const KanbanContactItem = ({
+  item,
+  tokens,
+  kanbanTokens,
+  isPreview,
+}: {
+  item: ContactConfigState['contactItems'][number];
+  tokens: ContactColorTokens;
+  kanbanTokens: ContactColorTokens;
+  isPreview: boolean;
+}) => {
+  const { isVisualEditActive, config, onSaveConfig } = React.useContext(VisualEditContext);
+
+  const handleUpdate = (field: 'label' | 'value', val: string) => {
+    if (onSaveConfig && config) {
+      const nextItems = (config.contactItems || []).map((cit) =>
+        cit.id === item.id ? { ...cit, [field]: val } : cit
+      );
+      onSaveConfig({ ...config, contactItems: nextItems });
+    }
+  };
+
+  return (
+    <div
+      className="flex items-start gap-2.5 tv:gap-4 p-2.5 tv:p-4 border rounded-sm transition-all duration-200 group border-l-[3px]"
+      style={{
+        backgroundColor: tokens.cardBackground,
+        borderTopColor: tokens.cardBorder,
+        borderRightColor: tokens.cardBorder,
+        borderBottomColor: tokens.cardBorder,
+        borderLeftColor: tokens.primary,
+      }}
+    >
+      <div className="shrink-0 mt-0.5" style={{ color: kanbanTokens.primary }}>
+        {renderContactIcon(item.icon, 14)}
+      </div>
+      <div className="min-w-0 flex-1">
+        <h4 className="font-bold text-[10px] tv:text-xs uppercase tracking-wider mb-0.5" style={{ color: tokens.labelText }}>
+          <EditableText
+            text={item.label}
+            placeholder="Nhãn"
+            onSave={(val) => handleUpdate('label', val)}
+            isVisualEditActive={isVisualEditActive}
+          />
+        </h4>
+        {renderItemValue(
+          item,
+          kanbanTokens,
+          isPreview,
+          'text-xs tv:text-base font-semibold leading-relaxed',
+          isVisualEditActive,
+          (val) => handleUpdate('value', val)
+        )}
+      </div>
+    </div>
+  );
+};
+
 const renderKanban = ({
   info,
   config,
@@ -1170,7 +1228,6 @@ const renderKanban = ({
   sourcePath?: string;
   isPreview: boolean;
 }) => {
-  const { isVisualEditActive, onSaveConfig } = React.useContext(VisualEditContext);
   const contactItems = getDisplayItems(config, isPreview);
   const hasForm = Boolean(config.showForm);
   const hasMap = Boolean(config.showMap);
@@ -1178,15 +1235,6 @@ const renderKanban = ({
   const kanbanTokens = {
     ...tokens,
     formBackground: 'transparent',
-  };
-
-  const handleUpdate = (itemId: number | string, field: 'label' | 'value', val: string) => {
-    if (onSaveConfig && config) {
-      const nextItems = (config.contactItems || []).map((cit) =>
-        cit.id === itemId ? { ...cit, [field]: val } : cit
-      );
-      onSaveConfig({ ...config, contactItems: nextItems });
-    }
   };
 
   let columnsCount = 1;
@@ -1228,32 +1276,13 @@ const renderKanban = ({
           </div>
           <div className="space-y-2 tv:space-y-4 flex-1">
             {contactItems.map((item) => (
-              <div
+              <KanbanContactItem
                 key={item.id}
-                className="flex items-start gap-2.5 tv:gap-4 p-2.5 tv:p-4 border rounded-sm transition-all duration-200 group border-l-[3px]"
-                style={{
-                  backgroundColor: tokens.cardBackground,
-                  borderTopColor: tokens.cardBorder,
-                  borderRightColor: tokens.cardBorder,
-                  borderBottomColor: tokens.cardBorder,
-                  borderLeftColor: tokens.primary,
-                }}
-              >
-                <div className="shrink-0 mt-0.5" style={{ color: kanbanTokens.primary }}>
-                  {renderContactIcon(item.icon, 14)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="font-bold text-[10px] tv:text-xs uppercase tracking-wider mb-0.5" style={{ color: tokens.labelText }}>
-                    <EditableText
-                      text={item.label}
-                      placeholder="Nhãn"
-                      onSave={(val) => handleUpdate(item.id, 'label', val)}
-                      isVisualEditActive={isVisualEditActive}
-                    />
-                  </h4>
-                  {renderItemValue(item, kanbanTokens, isPreview, 'text-xs tv:text-base font-semibold leading-relaxed', isVisualEditActive, (val) => handleUpdate(item.id, 'value', val))}
-                </div>
-              </div>
+                item={item}
+                tokens={tokens}
+                kanbanTokens={kanbanTokens}
+                isPreview={isPreview}
+              />
             ))}
           </div>
 
