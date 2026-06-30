@@ -875,7 +875,12 @@ export function LiveComponentPreviewRenderer({
     case 'Process': {
       return (
         <ProcessPreviewAny
-          config={config as any}
+          steps={config.steps}
+          onItemsChange={(nextSteps: any) => onConfigChange({ ...config, steps: nextSteps })}
+          circularCtaText={config.circularCtaText}
+          circularCtaLink={config.circularCtaLink}
+          desktopColumns={config.desktopColumns}
+          cornerRadius={config.cornerRadius}
           brandColor={brandColor}
           secondary={secondary}
           mode={mode}
