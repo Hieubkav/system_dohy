@@ -1,6 +1,6 @@
-'use client';
-
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
 import React from 'react';
+
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
@@ -55,6 +55,11 @@ export const TestimonialsPreview = ({
   splitBackgroundOverlayOpacity,
   spacing = 'normal',
   cornerRadius = 'lg',
+  isVisualEditAllowed = true,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
+  onItemsChange,
 }: {
   items: TestimonialsItem[];
   brandColor: string;
@@ -80,9 +85,24 @@ export const TestimonialsPreview = ({
   splitBackgroundImage?: string;
   splitBackgroundOverlayOpacity?: number;
   cornerRadius?: TestimonialsCornerRadius;
+  isVisualEditAllowed?: boolean;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
+  onItemsChange?: (value: TestimonialsItem[]) => void;
 }) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
   const previewStyle = selectedStyle ?? 'cards';
   const itemCount = items.length;
 
@@ -90,6 +110,10 @@ export const TestimonialsPreview = ({
     if (['cards', 'slider', 'marquee', 'showcase', 'quote', 'minimal', 'split-carousel', 'overlap-carousel', 'builder-cards', 'builder-carousel'].includes(style)) {
       onStyleChange?.(style as TestimonialsStyle);
     }
+  };
+
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
   };
 
   const colors = React.useMemo(
@@ -109,37 +133,48 @@ export const TestimonialsPreview = ({
       info={`${itemCount} đánh giá`}
       fontStyle={fontStyle}
       fontClassName={fontClassName}
+    visualEditActive={isVisualEditActive}
+    visualEditAllowed={isVisualEditAllowed}
+    onVisualEditToggle={handleToggleVisualEdit}
     >
-      <BrowserFrame>
-        <div className="@container/preview">
-          <TestimonialsSectionShared
-            items={items}
-            style={previewStyle}
-            title={title}
-            subtitle={subtitle}
-            tokens={colors}
-            mode={mode}
-            context="preview"
-            device={device}
-            fontStyle={fontStyle}
-            fontClassName={fontClassName}
-            hideHeader={hideHeader}
-            showTitle={showTitle}
-            showSubtitle={showSubtitle}
-            headerAlign={headerAlign}
-            titleColorPrimary={titleColorPrimary}
-            subtitleAboveTitle={subtitleAboveTitle}
-            uppercaseText={uppercaseText}
-            showBadge={showBadge}
-            badgeText={badgeText}
-            desktopColumns={desktopColumns}
-            splitBackgroundImage={splitBackgroundImage}
-            splitBackgroundOverlayOpacity={splitBackgroundOverlayOpacity}
-            spacing={spacing}
-            cornerRadius={cornerRadius}
-          />
-        </div>
-      </BrowserFrame>
+      <div className="space-y-3">
+
+        <BrowserFrame>
+          <div className="@container/preview">
+            <TestimonialsSectionShared
+              items={items}
+              style={previewStyle}
+              title={title}
+              subtitle={subtitle}
+              tokens={colors}
+              mode={mode}
+              context="preview"
+              device={device}
+              fontStyle={fontStyle}
+              fontClassName={fontClassName}
+              hideHeader={hideHeader}
+              showTitle={showTitle}
+              showSubtitle={showSubtitle}
+              headerAlign={headerAlign}
+              titleColorPrimary={titleColorPrimary}
+              subtitleAboveTitle={subtitleAboveTitle}
+              uppercaseText={uppercaseText}
+              showBadge={showBadge}
+              badgeText={badgeText}
+              desktopColumns={desktopColumns}
+              splitBackgroundImage={splitBackgroundImage}
+              splitBackgroundOverlayOpacity={splitBackgroundOverlayOpacity}
+              spacing={spacing}
+              cornerRadius={cornerRadius}
+              visualEditActive={isVisualEditActive}
+              onTitleChange={onTitleChange}
+              onSubtitleChange={onSubtitleChange}
+              onBadgeTextChange={onBadgeTextChange}
+              onItemsChange={onItemsChange}
+            />
+          </div>
+        </BrowserFrame>
+      </div>
     </PreviewWrapper>
   );
 };

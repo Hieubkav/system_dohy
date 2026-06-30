@@ -151,6 +151,7 @@ export default async function RootLayout({
   return (
     <html
       lang="vi"
+      suppressHydrationWarning
       className={isDark ? 'dark' : ''}
       style={{
         '--site-brand-primary': brandPrimary,

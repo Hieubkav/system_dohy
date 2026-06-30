@@ -9,6 +9,7 @@ const RESERVED_SLUGS = new Set([
   "account",
   "admin",
   "api",
+  "apps",
   "book",
   "cart",
   "checkout",
@@ -42,12 +43,52 @@ const RESERVED_SLUGS = new Set([
   "wishlist",
 ]);
 
-type SlugTable = "posts" | "products" | "services" | "courses" | "projects" | "resources" | "postCategories" | "productCategories" | "serviceCategories" | "courseCategories" | "projectCategories" | "resourceCategories";
-type SlugId = Id<"posts"> | Id<"products"> | Id<"services"> | Id<"courses"> | Id<"projects"> | Id<"resources"> | Id<"postCategories"> | Id<"productCategories"> | Id<"serviceCategories"> | Id<"courseCategories"> | Id<"projectCategories"> | Id<"resourceCategories">;
+type SlugTable =
+  | "posts"
+  | "products"
+  | "services"
+  | "courses"
+  | "projects"
+  | "resources"
+  | "postCategories"
+  | "productCategories"
+  | "serviceCategories"
+  | "courseCategories"
+  | "projectCategories"
+  | "resourceCategories"
+  | "productTypes"
+  | "attributeGroups"
+  | "attributeTerms";
+type SlugId =
+  | Id<"posts">
+  | Id<"products">
+  | Id<"services">
+  | Id<"courses">
+  | Id<"projects">
+  | Id<"resources">
+  | Id<"postCategories">
+  | Id<"productCategories">
+  | Id<"serviceCategories">
+  | Id<"courseCategories">
+  | Id<"projectCategories">
+  | Id<"resourceCategories">
+  | Id<"productTypes">
+  | Id<"attributeGroups">
+  | Id<"attributeTerms">;
 
 const TABLES_BY_SCOPE: Record<SlugScope, SlugTable[]> = {
   record: ["posts", "products", "services", "courses", "projects", "resources"],
-  category: ["postCategories", "productCategories", "serviceCategories", "courseCategories", "projectCategories", "resourceCategories"],
+  category: [
+    "postCategories",
+    "productCategories",
+    "serviceCategories",
+    "courseCategories",
+    "projectCategories",
+    "resourceCategories",
+    "productTypes",
+    "attributeGroups",
+    "attributeTerms",
+  ],
 };
 
 const normalizeSlug = (value: string) => value.trim().toLowerCase();
@@ -62,6 +103,16 @@ const isSlugTaken = async (ctx: QueryCtx | MutationCtx, params: {
   const candidate = normalizeSlug(params.slug);
   if (!candidate) {return false;}
   if (isReservedSlug(candidate)) {return true;}
+
+  if (params.scope === "category") {
+    const miniApp = await ctx.db
+      .query("miniApps")
+      .withIndex("by_route_slug", (q) => q.eq("routeSlug", candidate))
+      .unique();
+    if (miniApp && miniApp.routeMode === "root") {
+      return true;
+    }
+  }
 
   for (const table of TABLES_BY_SCOPE[params.scope]) {
     const existing = await ctx.db

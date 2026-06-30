@@ -37,6 +37,14 @@ const PUBLIC_SETTING_KEYS = [
   "seo_description",
   "seo_keywords",
   "seo_title",
+  "seo_brand_aliases",
+  "seo_brand_summary",
+  "seo_brand_search_queries",
+  "seo_brand_topics",
+  "seo_brand_services",
+  "seo_brand_audience",
+  "seo_brand_differentiators",
+  "seo_brand_proof_points",
   "site_language",
   "site_name",
   "site_tagline",
@@ -311,7 +319,17 @@ const buildPublicAiContextPrompt = (args: {
     resolveOptionalString(args.settings, "seo_title"),
     resolveOptionalString(args.settings, "seo_description"),
     resolveOptionalString(args.settings, "seo_keywords"),
+    resolveOptionalString(args.settings, "seo_brand_aliases"),
+    resolveOptionalString(args.settings, "seo_brand_summary"),
+    resolveOptionalString(args.settings, "seo_brand_search_queries"),
+    resolveOptionalString(args.settings, "seo_brand_topics"),
+    resolveOptionalString(args.settings, "seo_brand_services"),
   ].filter(Boolean).join(" | ").slice(0, 360);
+  const brandContext = [
+    resolveOptionalString(args.settings, "seo_brand_audience") ? `khách hàng mục tiêu: ${resolveOptionalString(args.settings, "seo_brand_audience")}` : "",
+    resolveOptionalString(args.settings, "seo_brand_differentiators") ? `điểm khác biệt: ${resolveOptionalString(args.settings, "seo_brand_differentiators")}` : "",
+    resolveOptionalString(args.settings, "seo_brand_proof_points") ? `bằng chứng tin cậy: ${resolveOptionalString(args.settings, "seo_brand_proof_points")}` : "",
+  ].filter(Boolean).join("; ").slice(0, 520);
   const routeMode = args.settings.ia_route_mode === "namespace" ? "namespace" : "unified";
   const detailPattern = routeMode === "namespace"
     ? "/{nhom-noi-dung}/{slug}; nếu có danh mục SEO thì có thể là /{categorySlug}/{slug}"
@@ -321,6 +339,7 @@ const buildPublicAiContextPrompt = (args: {
     "Ngữ cảnh vận hành nội bộ, dùng để hiểu website. Không giải thích nguồn cấu hình hoặc trạng thái kỹ thuật cho khách.",
     `- Website: ${siteName}${tagline ? ` - ${tagline}` : ""}${siteUrl ? ` (${siteUrl})` : ""}; ngôn ngữ ưu tiên: ${language}.`,
     seoSummary ? `- Định vị/nội dung SEO: ${seoSummary}` : "",
+    brandContext ? `- Brand SEO context: ${brandContext}.` : "",
     contactParts.length > 0 ? `- Liên hệ công khai: ${contactParts.join("; ")}.` : "",
     socials.length > 0 ? `- Kênh xã hội đang dùng: ${socials.join(", ")}.` : "",
     `- Nhóm nội dung có thể tư vấn và dẫn link: ${joinLabels(args.enabledRoutableModules.map((item) => item.label))}.`,

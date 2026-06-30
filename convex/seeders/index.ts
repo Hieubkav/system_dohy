@@ -32,7 +32,6 @@ export { SettingsSeeder } from './settings.seeder';
 export { MediaSeeder } from './media.seeder';
 export { MenusSeeder } from './menus.seeder';
 export { HomepageSeeder } from './homepage.seeder';
-export { KanbanSeeder } from './kanban.seeder';
 export { NotificationsSeeder } from './notifications.seeder';
 export { AdminModulesSeeder } from './adminModules.seeder';
 export { SystemPresetsSeeder } from './systemPresets.seeder';

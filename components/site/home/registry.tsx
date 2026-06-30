@@ -30,6 +30,10 @@ const CtaRuntimeSection = dynamic(
   () => import('./sections/CtaRuntimeSection').then((mod) => ({ default: mod.CtaRuntimeSection })),
   { loading: () => null }
 );
+const CustomHomeRuntimeSection = dynamic(
+  () => import('./sections/CustomHomeRuntimeSection').then((mod) => ({ default: mod.CustomHomeRuntimeSection })),
+  { ssr: false, loading: () => null }
+);
 const FeaturesRuntimeSection = dynamic(
   () => import('./sections/FeaturesRuntimeSection').then((mod) => ({ default: mod.FeaturesRuntimeSection })),
   { loading: () => null }
@@ -82,6 +86,10 @@ const VideoRuntimeSection = dynamic(
   () => import('./sections/VideoRuntimeSection').then((mod) => ({ default: mod.VideoRuntimeSection })),
   { loading: () => null }
 );
+const PokemonChampionsRuntimeSection = dynamic(
+  () => import('./sections/PokemonChampionsRuntimeSection').then((mod) => ({ default: mod.PokemonChampionsRuntimeSection })),
+  { ssr: false, loading: () => null }
+);
 
 // SSR disabled: các component này cần browser API ngay khi mount
 // (SpeedDial: position:fixed viewport, Popup: overlay, Countdown: window timer, Career: lazy form)
@@ -112,10 +120,12 @@ export const homeComponentRegistry: Record<string, ComponentType<any>> = {
   Contact: ContactSection,
   Countdown: CountdownSectionWrapper,
   CTA: CtaRuntimeSection,
+  CustomHome: CustomHomeRuntimeSection,
   FAQ: FaqRuntimeSection,
   Features: FeaturesRuntimeSection,
   Hero: HeroRuntimeSection,
   HomepageCategoryHero: HomepageCategoryHeroSection,
+  PokemonChampions: PokemonChampionsRuntimeSection,
   Pricing: PricingSection,
   Popup: PopupSection,
   Process: ProcessRuntimeSection,

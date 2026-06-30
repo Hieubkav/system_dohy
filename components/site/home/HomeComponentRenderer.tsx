@@ -116,6 +116,7 @@ export function HomeComponentRenderer({ component, snapshotComponentKey, sharedD
         title={component.title}
         snapshotComponentKey={snapshotComponentKey}
         isDark={isDark}
+        fontKey={resolvedFont.fontKey}
         tokens={getHomepageCategoryHeroColors(
           resolvedColors.primary,
           resolvedColors.secondary,
@@ -132,6 +133,7 @@ export function HomeComponentRenderer({ component, snapshotComponentKey, sharedD
         title={component.title}
         snapshotComponentKey={snapshotComponentKey}
         isDark={isDark}
+        fontKey={resolvedFont.fontKey}
       />
     );
 
@@ -142,8 +144,10 @@ export function HomeComponentRenderer({ component, snapshotComponentKey, sharedD
     || sectionType === 'CaseStudy'
     || sectionType === 'CategoryProducts'
     || sectionType === 'Career'
+    || sectionType === 'CustomHome'
     || sectionType === 'HomepageCategoryHero'
     || sectionType === 'Partners'
+    || sectionType === 'PokemonChampions'
     || sectionType === 'Pricing'
     || sectionType === 'ProductCategories'
     || sectionType === 'ProductGrid'

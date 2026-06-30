@@ -13,8 +13,13 @@ import {
   DialogTitle,
   Label,
   cn,
+  Checkbox,
 } from '../components/ui';
 import { AiDirectGeneratePanel } from '../components/AiDirectGenerateButton';
+import {
+  buildAiFillMissingPrompt,
+  buildAiFillMissingSample,
+} from '@/lib/ai-import/fill-missing';
 import { parseAiMenuInput, type AiMenuLine } from './_ai-menu-parser';
 
 /* ────────────────────────────────────────────────────────────
@@ -80,23 +85,38 @@ const SAMPLE_JSON = `{
    ──────────────────────────────────────────────────────────── */
 
 export function AiMenuImportDialog({
+  currentItems,
   open,
   onOpenChange,
   onApply,
 }: {
+  currentItems?: AiMenuLine[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onApply: (items: AiMenuLine[]) => void;
 }) {
   const [rawInput, setRawInput] = useState('');
   const [lastCopied, setLastCopied] = useState<'prompt' | 'sample' | null>(null);
+  const [fillMissingOnly, setFillMissingOnly] = useState(false);
+  const currentMenuData = useMemo(() => ({ items: currentItems ?? [] }), [currentItems]);
+  const prompt = useMemo(() => fillMissingOnly
+    ? buildAiFillMissingPrompt(MENU_MEGA_PROMPT, currentMenuData, { contextLabel: 'Menu hiện có' })
+    : MENU_MEGA_PROMPT, [currentMenuData, fillMissingOnly]);
+  const sample = useMemo(() => fillMissingOnly
+    ? buildAiFillMissingSample(SAMPLE_JSON, currentMenuData)
+    : SAMPLE_JSON, [currentMenuData, fillMissingOnly]);
 
   const result = useMemo(() => {
     if (!rawInput.trim()) return { lines: [] as AiMenuLine[], error: '' };
     return parseAiMenuInput(rawInput);
   }, [rawInput]);
+  const applicableLines = useMemo(() => {
+    if (!fillMissingOnly || !currentItems?.length) {return result.lines;}
+    const existingLabels = new Set(currentItems.map((item) => item.label.trim().toLowerCase()).filter(Boolean));
+    return result.lines.filter((line) => !existingLabels.has(line.label.trim().toLowerCase()));
+  }, [currentItems, fillMissingOnly, result.lines]);
 
-  const canApply = rawInput.trim().length > 0 && result.lines.length > 0 && !result.error;
+  const canApply = rawInput.trim().length > 0 && applicableLines.length > 0 && !result.error;
 
   const copyText = async (value: string, type: 'prompt' | 'sample') => {
     await navigator.clipboard.writeText(value);
@@ -107,7 +127,7 @@ export function AiMenuImportDialog({
 
   const handleApply = () => {
     if (!canApply) return;
-    onApply(result.lines);
+    onApply(applicableLines);
     setRawInput('');
     onOpenChange(false);
   };
@@ -125,26 +145,34 @@ export function AiMenuImportDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs dark:border-slate-800 dark:bg-slate-900/30">
+          <span className="font-semibold text-slate-700 dark:text-slate-300">Tùy chọn Prompt AI:</span>
+          <label className="flex cursor-pointer select-none items-center gap-2">
+            <Checkbox checked={fillMissingOnly} onCheckedChange={(checked) => setFillMissingOnly(checked)} />
+            <span className="font-medium text-slate-600 dark:text-slate-400">Chỉ tạo phần còn thiếu</span>
+          </label>
+        </div>
+
         <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
           {/* ── Cột trái: Prompt + JSON mẫu ── */}
           <div className="space-y-3">
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/50">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <Label className="flex items-center gap-1.5"><FileText size={14} /> Prompt chuẩn</Label>
-                <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => void copyText(MENU_MEGA_PROMPT, 'prompt')}>
+                <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => void copyText(prompt, 'prompt')}>
                   {lastCopied === 'prompt' ? <Check size={12} /> : <Copy size={12} />} Copy
                 </Button>
               </div>
-              <pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-md bg-white p-2 text-[11px] leading-5 text-slate-600 dark:bg-slate-900 dark:text-slate-300">{MENU_MEGA_PROMPT}</pre>
+              <pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-md bg-white p-2 text-[11px] leading-5 text-slate-600 dark:bg-slate-900 dark:text-slate-300">{prompt}</pre>
             </div>
             <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <Label>JSON mẫu</Label>
-                <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => void copyText(SAMPLE_JSON, 'sample')}>
+                <Button type="button" variant="outline" size="sm" className="h-7 gap-1 text-xs" onClick={() => void copyText(sample, 'sample')}>
                   {lastCopied === 'sample' ? <Check size={12} /> : <Copy size={12} />} Copy
                 </Button>
               </div>
-              <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded-md bg-slate-50 p-2 text-[11px] leading-5 text-slate-600 dark:bg-slate-800 dark:text-slate-300">{SAMPLE_JSON}</pre>
+              <pre className="max-h-40 overflow-auto whitespace-pre-wrap rounded-md bg-slate-50 p-2 text-[11px] leading-5 text-slate-600 dark:bg-slate-800 dark:text-slate-300">{sample}</pre>
             </div>
           </div>
 
@@ -153,14 +181,15 @@ export function AiMenuImportDialog({
             <div className="space-y-2">
               <Label>Dán kết quả AI</Label>
               <AiDirectGeneratePanel
-                prompt={MENU_MEGA_PROMPT}
+                allowEmptyBrief={fillMissingOnly}
+                prompt={prompt}
                 sessionId="admin-menu-import"
                 onGenerated={setRawInput}
                 placeholder="Ví dụ: Website bán phụ kiện tủ bếp, cần menu gồm Trang chủ, Sản phẩm, Dịch vụ, Dự án, Bài viết, Liên hệ."
               />
               <textarea
                 className="min-h-64 w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-800 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                placeholder={SAMPLE_JSON}
+                placeholder={sample}
                 value={rawInput}
                 onChange={(e) => setRawInput(e.target.value)}
               />
@@ -177,7 +206,7 @@ export function AiMenuImportDialog({
                 {result.error ? (
                   <div className="flex gap-1.5"><X size={14} className="mt-0.5 shrink-0" /><span>{result.error}</span></div>
                 ) : (
-                  <div className="flex gap-1.5"><Check size={14} className="mt-0.5 shrink-0" /><span>Sẵn sàng thêm {result.lines.length} menu item.</span></div>
+                  <div className="flex gap-1.5"><Check size={14} className="mt-0.5 shrink-0" /><span>Sẵn sàng thêm {applicableLines.length} menu item.</span></div>
                 )}
               </div>
             )}
@@ -205,7 +234,7 @@ export function AiMenuImportDialog({
         <DialogFooter className="gap-2">
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Huỷ</Button>
           <Button type="button" disabled={!canApply} onClick={handleApply}>
-            Thêm {result.lines.length || ''} menu item
+            Thêm {applicableLines.length || ''} menu item
           </Button>
         </DialogFooter>
       </DialogContent>

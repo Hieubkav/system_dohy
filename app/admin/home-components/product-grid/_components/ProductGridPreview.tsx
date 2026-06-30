@@ -1,4 +1,6 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React, { useMemo, useState } from 'react';
 import { useQuery } from 'convex/react';
@@ -56,6 +58,10 @@ export const ProductGridPreview = ({
   showAddToCartButton,
   showBuyNowButton,
   cartButtonsLayout,
+  isVisualEditAllowed = true,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: {
   brandColor: string;
   secondary: string;
@@ -85,10 +91,28 @@ export const ProductGridPreview = ({
   showAddToCartButton?: boolean;
   showBuyNowButton?: boolean;
   cartButtonsLayout?: 'stack' | 'grid-2';
+  isVisualEditAllowed?: boolean;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
 }) => {
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
+  const [visualEditEnabled, setVisualEditEnabled] = useState(false);
+
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
+
   const aspectRatioSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'defaultImageAspectRatio' });
   const visibleCategoryTabs = categoryTabs ?? [];
   const isMinimalStyle = (selectedStyle ?? 'commerce') === 'minimal';
@@ -209,6 +233,10 @@ export const ProductGridPreview = ({
       uppercaseText={uppercaseText}
       brandColor={brandColor}
       className={className}
+      visualEditEnabled={isVisualEditActive}
+      onTitleChange={onTitleChange}
+      onSubtitleChange={onSubtitleChange}
+      onBadgeTextChange={onBadgeTextChange}
     />
   );
 
@@ -239,117 +267,122 @@ export const ProductGridPreview = ({
             deviceWidthClass={deviceWidths[device]}
             fontStyle={fontStyle}
             fontClassName={fontClassName}
+            visualEditActive={isVisualEditActive}
+            visualEditAllowed={isVisualEditAllowed}
+            onVisualEditToggle={handleToggleVisualEdit}
           >
-            <BrowserFrame url="yoursite.com/products">
-              <section
-                className={cn(sectionSpacingClassName, 'px-4 md:px-6')}
-                style={{ backgroundColor: brandColor }}
-              >
-                <div className="max-w-7xl mx-auto">
-                  {renderPreviewHeader('mb-6')}
+            <div className="space-y-3">
+              <BrowserFrame url="yoursite.com/products">
+                <section
+                  className={cn(sectionSpacingClassName, 'px-4 md:px-6')}
+                  style={{ backgroundColor: brandColor }}
+                >
+                  <div className="max-w-7xl mx-auto">
+                    {renderPreviewHeader('mb-6')}
 
-                  {hasTabs && (
-                    <div className="mb-6">
-                      <CategoryTabSlider
-                        tabs={resolvedTabs}
-                        activeTabId={activeTab}
-                        onTabChange={(tabId) => setActiveTab(tabId === activeTab ? null : tabId)}
-                        brandColor={brandColor}
-                        brandBgColor={brandColor}
-                        showAllTab={false}
-                        allTabLabel="Tất cả"
-                      />
-                    </div>
-                  )}
+                    {hasTabs && (
+                      <div className="mb-6">
+                        <CategoryTabSlider
+                          tabs={resolvedTabs}
+                          activeTabId={activeTab}
+                          onTabChange={(tabId) => setActiveTab(tabId === activeTab ? null : tabId)}
+                          brandColor={brandColor}
+                          brandBgColor={brandColor}
+                          showAllTab={false}
+                          allTabLabel="Tất cả"
+                        />
+                      </div>
+                    )}
 
-                  {selectedCategoryEmpty ? renderEmptyCategoryState() : (
-                    <div className={`grid ${gridColsClass} gap-3 md:gap-4`}>
-                      {displayItems.slice(0, itemCount).map((item) => {
-                    const discount = getDiscount(item.price, item.originalPrice);
-                    return (
-                      <div
-                        key={item.id}
-                        className={cn('group border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer', cardRadiusClassName)}
-                        style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}
-                      >
-                        <div className="relative overflow-hidden" style={{ ...imageAspectRatioStyle, backgroundColor: tokens.filterBarBackground }}>
-                          {item.image ? (
-                            <PreviewImage
-                              src={item.image}
-                              alt={item.name}
-                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center">
-                              <Package size={40} style={{ color: tokens.emptyStateIconColor }} />
-                            </div>
-                          )}
-                          {discount && (
-                            <div className="absolute top-2 left-2">
-                              <SaleBadge text={discount} className="text-[10px] px-2 py-1" />
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="p-4 flex flex-col flex-1">
-                          <h3 className="font-bold text-base truncate group-hover:opacity-80 transition-colors" style={{ color: tokens.bodyText }}>
-                            {item.name}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-auto pt-2 mb-4">
-                            <span className="font-bold text-base" style={{ color: tokens.priceColor }}>{item.price}</span>
-                            {item.originalPrice && (
-                              <span className="text-xs line-through" style={{ color: tokens.priceOriginalText }}>
-                                {item.originalPrice}
-                              </span>
+                    {selectedCategoryEmpty ? renderEmptyCategoryState() : (
+                      <div className={`grid ${gridColsClass} gap-3 md:gap-4`}>
+                        {displayItems.slice(0, itemCount).map((item) => {
+                      const discount = getDiscount(item.price, item.originalPrice);
+                      return (
+                        <div
+                          key={item.id}
+                          className={cn('group border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer', cardRadiusClassName)}
+                          style={{ backgroundColor: tokens.cardBackground, borderColor: tokens.cardBorder }}
+                        >
+                          <div className="relative overflow-hidden" style={{ ...imageAspectRatioStyle, backgroundColor: tokens.filterBarBackground }}>
+                            {item.image ? (
+                              <PreviewImage
+                                src={item.image}
+                                alt={item.name}
+                                className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="h-full w-full flex items-center justify-center">
+                                <Package size={40} style={{ color: tokens.emptyStateIconColor }} />
+                              </div>
+                            )}
+                            {discount && (
+                              <div className="absolute top-2 left-2">
+                                <SaleBadge text={discount} className="text-[10px] px-2 py-1" />
+                              </div>
                             )}
                           </div>
-                          {showAddToCartButton || showBuyNowButton ? (
-                            <ProductCardActions
-                              product={{
-                                _id: String(item.id),
-                                name: item.name,
-                                price: item.price ? Number(item.price.replace(/\D/g, '')) : undefined,
-                                salePrice: item.price ? Number(item.price.replace(/\D/g, '')) : undefined,
-                              }}
-                              tokens={tokens}
-                              showStock={false}
-                              showAddToCartButton={!!showAddToCartButton}
-                              showBuyNowButton={!!showBuyNowButton}
-                              buyNowLabel="Mua ngay"
-                              onAddToCart={() => onPreviewAction(item, 'addToCart')}
-                              onBuyNow={() => onPreviewAction(item, 'buyNow')}
-                              cartButtonsLayout={cartButtonsLayout}
-                              device={device}
-                            />
-                          ) : (
-                            <button
-                              type="button"
-                              className="w-full gap-1.5 border-2 py-1.5 px-4 rounded-lg font-medium flex items-center justify-center transition-colors hover:bg-opacity-10 whitespace-nowrap text-xs md:text-sm"
-                              style={{ borderColor: tokens.secondaryActionBorder, color: tokens.secondaryActionText, backgroundColor: tokens.secondaryActionHoverBg }}
-                            >
-                              Xem chi tiết <ArrowRight className="w-3 h-3 flex-shrink-0" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                      })}
-                    </div>
-                  )}
 
-                  {displayItems.length >= 3 && (
-                    <div className="flex justify-center mt-8">
-                      <button
-                        type="button"
-                        className="px-10 py-3 rounded-full text-sm font-bold bg-white text-slate-900 hover:bg-slate-50 transition-colors shadow-md"
-                      >
-                        Xem tất cả
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </section>
-            </BrowserFrame>
+                          <div className="p-4 flex flex-col flex-1">
+                            <h3 className="font-bold text-base truncate group-hover:opacity-80 transition-colors" style={{ color: tokens.bodyText }}>
+                              {item.name}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-auto pt-2 mb-4">
+                              <span className="font-bold text-base" style={{ color: tokens.priceColor }}>{item.price}</span>
+                              {item.originalPrice && (
+                                <span className="text-xs line-through" style={{ color: tokens.priceOriginalText }}>
+                                  {item.originalPrice}
+                                </span>
+                              )}
+                            </div>
+                            {showAddToCartButton || showBuyNowButton ? (
+                              <ProductCardActions
+                                product={{
+                                  _id: String(item.id),
+                                  name: item.name,
+                                  price: item.price ? Number(item.price.replace(/\D/g, '')) : undefined,
+                                  salePrice: item.price ? Number(item.price.replace(/\D/g, '')) : undefined,
+                                }}
+                                tokens={tokens}
+                                showStock={false}
+                                showAddToCartButton={!!showAddToCartButton}
+                                showBuyNowButton={!!showBuyNowButton}
+                                buyNowLabel="Mua ngay"
+                                onAddToCart={() => onPreviewAction(item, 'addToCart')}
+                                onBuyNow={() => onPreviewAction(item, 'buyNow')}
+                                cartButtonsLayout={cartButtonsLayout}
+                                device={device}
+                              />
+                            ) : (
+                              <button
+                                type="button"
+                                className="w-full gap-1.5 border-2 py-1.5 px-4 rounded-lg font-medium flex items-center justify-center transition-colors hover:bg-opacity-10 whitespace-nowrap text-xs md:text-sm"
+                                style={{ borderColor: tokens.secondaryActionBorder, color: tokens.secondaryActionText, backgroundColor: tokens.secondaryActionHoverBg }}
+                              >
+                                Xem chi tiết <ArrowRight className="w-3 h-3 flex-shrink-0" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                        })}
+                      </div>
+                    )}
+
+                    {displayItems.length >= 3 && (
+                      <div className="flex justify-center mt-8">
+                        <button
+                          type="button"
+                          className="px-10 py-3 rounded-full text-sm font-bold bg-white text-slate-900 hover:bg-slate-50 transition-colors shadow-md"
+                        >
+                          Xem tất cả
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </BrowserFrame>
+            </div>
           </PreviewWrapper>
           <ColorInfoPanel brandColor={brandColor} secondary={secondary} />
           <QuickAddVariantModal
@@ -376,36 +409,40 @@ export const ProductGridPreview = ({
         deviceWidthClass={deviceWidths[device]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+        visualEditActive={isVisualEditActive}
+        visualEditAllowed={isVisualEditAllowed}
+        onVisualEditToggle={handleToggleVisualEdit}
       >
-        <BrowserFrame url="yoursite.com/products">
-          <section className={cn(sectionSpacingClassName, 'px-4 md:px-6')}>
-            <div className="max-w-7xl mx-auto">
-              {renderPreviewHeader('mb-6')}
+        <div className="space-y-3">
+          <BrowserFrame url="yoursite.com/products">
+            <section className={cn(sectionSpacingClassName, 'px-4 md:px-6')}>
+              <div className="max-w-7xl mx-auto">
+                {renderPreviewHeader('mb-6')}
 
-              {hasTabs && (
-                <div
-                  className="flex items-center gap-3 px-4 md:px-6 py-2 overflow-x-auto rounded-t-lg mb-4"
-                  style={{ backgroundColor: brandColor }}
-                >
-                  <span className="font-bold text-sm whitespace-nowrap text-white" style={{ color: textOnBrand }}>Danh mục:</span>
-                  <div className="flex-1 overflow-hidden">
-                    <CategoryTabSlider
-                      tabs={resolvedTabs}
-                      activeTabId={activeTab}
-                      onTabChange={(tabId) => setActiveTab(tabId === activeTab ? null : tabId)}
-                      brandColor={brandColor}
-                      brandBgColor={brandColor}
-                      showAllTab={false}
-                      allTabLabel="Tất cả"
-                    />
+                {hasTabs && (
+                  <div
+                    className="flex items-center gap-3 px-4 md:px-6 py-2 overflow-x-auto rounded-t-lg mb-4"
+                    style={{ backgroundColor: brandColor }}
+                  >
+                    <span className="font-bold text-sm whitespace-nowrap text-white" style={{ color: textOnBrand }}>Danh mục:</span>
+                    <div className="flex-1 overflow-hidden">
+                      <CategoryTabSlider
+                        tabs={resolvedTabs}
+                        activeTabId={activeTab}
+                        onTabChange={(tabId) => setActiveTab(tabId === activeTab ? null : tabId)}
+                        brandColor={brandColor}
+                        brandBgColor={brandColor}
+                        showAllTab={false}
+                        allTabLabel="Tất cả"
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <div className="py-2">
-                {selectedCategoryEmpty ? renderEmptyCategoryState() : (
-                  <div className={`grid ${gridColsClass} gap-4 md:gap-6`}>
-                    {displayItems.slice(0, itemCount).map((item) => {
+                <div className="py-2">
+                  {selectedCategoryEmpty ? renderEmptyCategoryState() : (
+                    <div className={`grid ${gridColsClass} gap-4 md:gap-6`}>
+                      {displayItems.slice(0, itemCount).map((item) => {
                     const discount = getDiscount(item.price, item.originalPrice);
                     return (
                       <div
@@ -477,6 +514,7 @@ export const ProductGridPreview = ({
                     })}
                   </div>
                 )}
+                </div>
 
                 {displayItems.length >= 3 && (
                   <div className="flex justify-center mt-8">
@@ -490,9 +528,9 @@ export const ProductGridPreview = ({
                   </div>
                 )}
               </div>
-            </div>
-          </section>
-        </BrowserFrame>
+            </section>
+          </BrowserFrame>
+        </div>
       </PreviewWrapper>
       <ColorInfoPanel brandColor={brandColor} secondary={secondary} />
       <QuickAddVariantModal
@@ -573,6 +611,10 @@ export const ProductGridPreview = ({
       showAddToCartButton={showAddToCartButton}
       showBuyNowButton={showBuyNowButton}
       cartButtonsLayout={cartButtonsLayout}
+      isVisualEditAllowed={isVisualEditAllowed}
+      onTitleChange={onTitleChange}
+      onSubtitleChange={onSubtitleChange}
+      onBadgeTextChange={onBadgeTextChange}
     />
   );
 };

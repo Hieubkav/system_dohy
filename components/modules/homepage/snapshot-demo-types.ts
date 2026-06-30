@@ -42,6 +42,17 @@ export type SnapshotSEOSettings = {
   seo_og_image: string;
   seo_google_verification: string;
   seo_bing_verification: string;
+  seo_brand_aliases?: string;
+  seo_brand_summary?: string;
+  seo_brand_entity_type?: string;
+  seo_brand_search_queries?: string;
+  seo_brand_topics?: string;
+  seo_brand_services?: string;
+  seo_brand_audience?: string;
+  seo_brand_differentiators?: string;
+  seo_brand_proof_points?: string;
+  seo_brand_same_as?: string;
+  seo_site_search_path?: string;
 };
 
 export type SnapshotRoutingSettings = {

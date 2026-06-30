@@ -1,4 +1,6 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React from 'react';
 import { Image as ImageIcon } from 'lucide-react';
@@ -38,6 +40,10 @@ interface ClientsPreviewProps {
   badgeText?: string;
   spacing?: SectionSpacing;
   cornerRadius?: ClientsCornerRadius;
+  isVisualEditAllowed?: boolean;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
 }
 
 const getImageInfoText = (style: ClientsStyle, count: number) => {
@@ -74,7 +80,23 @@ export const ClientsPreview = ({
   badgeText,
   spacing,
   cornerRadius,
+  isVisualEditAllowed = true,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: ClientsPreviewProps) => {
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
+
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
 
@@ -98,6 +120,9 @@ export const ClientsPreview = ({
         device={device}
         setDevice={setDevice}
         previewStyle={selectedStyle}
+        visualEditActive={isVisualEditActive}
+        visualEditAllowed={isVisualEditAllowed}
+        onVisualEditToggle={handleToggleVisualEdit}
         setPreviewStyle={(value) => onStyleChange?.(value as ClientsStyle)}
         styles={CLIENTS_STYLES}
         info={info}
@@ -105,41 +130,48 @@ export const ClientsPreview = ({
         fontStyle={fontStyle}
         fontClassName={fontClassName}
       >
-        <BrowserFrame>
-          {items.length === 0 ? (
-            <section className="px-4 py-8" style={{ backgroundColor: tokens.neutralSurface }}>
-              <div className="flex flex-col items-center justify-center h-40">
-                <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: tokens.placeholderIconBackground }}>
-                  <ImageIcon size={28} style={{ color: tokens.placeholderIcon }} />
+        <div className="space-y-3">
+
+          <BrowserFrame>
+            {items.length === 0 ? (
+              <section className="px-4 py-8" style={{ backgroundColor: tokens.neutralSurface }}>
+                <div className="flex flex-col items-center justify-center h-40">
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: tokens.placeholderIconBackground }}>
+                    <ImageIcon size={28} style={{ color: tokens.placeholderIcon }} />
+                  </div>
+                  <p className="text-sm font-medium" style={{ color: tokens.neutralText }}>Chưa có ảnh banner</p>
+                  <p className="text-xs mt-1" style={{ color: tokens.placeholderText }}>Thêm từ 1 đến 8 ảnh để xem preview</p>
                 </div>
-                <p className="text-sm font-medium" style={{ color: tokens.neutralText }}>Chưa có ảnh banner</p>
-                <p className="text-xs mt-1" style={{ color: tokens.placeholderText }}>Thêm từ 1 đến 8 ảnh để xem preview</p>
-              </div>
-            </section>
-          ) : (
-            <ClientsSectionShared
-              context="preview"
-              title={resolvedTitle}
-              style={selectedStyle}
-              items={items}
-              tokens={tokens}
-              device={device}
-              hideHeader={hideHeader}
-              showTitle={showTitle}
-              subtitle={previewSubtitle}
-              showSubtitle={showSubtitle}
-              headerAlign={headerAlign}
-              titleColorPrimary={titleColorPrimary}
-              subtitleAboveTitle={subtitleAboveTitle}
-              uppercaseText={uppercaseText}
-              showBadge={showBadge}
-              badgeText={previewBadgeText}
-              spacing={spacing}
-              cornerRadius={cornerRadius}
-              brandColor={brandColor}
-            />
-          )}
-        </BrowserFrame>
+              </section>
+            ) : (
+              <ClientsSectionShared
+                context="preview"
+                title={resolvedTitle}
+                style={selectedStyle}
+                items={items}
+                tokens={tokens}
+                device={device}
+                hideHeader={hideHeader}
+                showTitle={showTitle}
+                subtitle={previewSubtitle}
+                showSubtitle={showSubtitle}
+                headerAlign={headerAlign}
+                titleColorPrimary={titleColorPrimary}
+                subtitleAboveTitle={subtitleAboveTitle}
+                uppercaseText={uppercaseText}
+                showBadge={showBadge}
+                badgeText={previewBadgeText}
+                spacing={spacing}
+                cornerRadius={cornerRadius}
+                brandColor={brandColor}
+                visualEditEnabled={isVisualEditActive}
+                onTitleChange={onTitleChange}
+                onSubtitleChange={onSubtitleChange}
+                onBadgeTextChange={onBadgeTextChange}
+              />
+            )}
+          </BrowserFrame>
+        </div>
       </PreviewWrapper>
 
       <ColorInfoPanel

@@ -7,23 +7,34 @@ import { useMutation, useQuery } from 'convex/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
-import { revalidateSeoPaths } from '@/app/actions/seo-revalidate';
+import { revalidateSeoPaths, revalidateSiteLayout } from '@/app/actions/seo-revalidate';
 import { Button, Card, CardContent, CardHeader, CardTitle, Checkbox, Input, Label, cn } from '../../components/ui';
 import { ModuleGuard } from '../../components/ModuleGuard';
 import { SettingsImageUploader } from '../../components/SettingsImageUploader';
 import { TagInput } from '../../components/TagInput';
 import MapLocationPicker from '../MapLocationPicker';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
-import { AiSeoImportDialog } from './AiSeoImportDialog';
+import { AiSeoImportDialog, type AiSeoImportPayload } from './AiSeoImportDialog';
 import { SeoBuilderDialog } from './SeoBuilderDialog';
 import { ProductSupplementalContentManager } from './ProductSupplementalContentManager';
 import { ShopConfigAdminContainer } from '@/components/modules/orders/ShopConfigAdminContainer';
 import { getEmailConfigurationStatus } from '@/lib/email-config-status';
+import { FONT_REGISTRY, resolveFontVariable } from '@/lib/fonts/registry';
+import {
+  DEFAULT_PRODUCT_CONTACT_SALE_LINK_TYPE,
+  PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY,
+  PRODUCT_CONTACT_SALE_LINK_OPTIONS,
+  PRODUCT_CONTACT_SALE_LINK_TYPE_KEY,
+  isValidProductContactSaleCustomUrl,
+  normalizeProductContactSaleLinkType,
+  resolveProductContactSaleHref,
+} from '@/lib/products/contact-sale-link';
 
 type SettingsSection = 'site' | 'contact' | 'seo' | 'advanced';
 type SettingsFormValue = string | boolean;
-type AdvancedTab = 'product-placeholder' | 'product-frame' | 'watermark' | 'header' | 'product-supplemental' | 'shop-config' | 'email-config';
-const ADVANCED_TAB_ORDER: AdvancedTab[] = ['product-placeholder', 'product-frame', 'watermark', 'header', 'product-supplemental', 'shop-config', 'email-config'];
+type SeoTab = 'basic' | 'brand';
+type AdvancedTab = 'product-placeholder' | 'product-frame' | 'watermark' | 'header' | 'product-supplemental' | 'shop-config' | 'contact-link' | 'email-config';
+const ADVANCED_TAB_ORDER: AdvancedTab[] = ['product-placeholder', 'product-frame', 'watermark', 'header', 'product-supplemental', 'shop-config', 'contact-link', 'email-config'];
 type HeaderConfig = {
   showBrandName?: boolean;
   logoSizeLevel?: number;
@@ -118,6 +129,74 @@ const SEO_META_LIMITS: Record<string, number> = {
   seo_title: 60,
 };
 
+const SEO_BRAND_FIELD_KEYS = [
+  'seo_brand_aliases',
+  'seo_brand_summary',
+  'seo_brand_entity_type',
+  'seo_brand_search_queries',
+  'seo_brand_topics',
+  'seo_brand_services',
+  'seo_brand_audience',
+  'seo_brand_differentiators',
+  'seo_brand_proof_points',
+  'seo_brand_same_as',
+  'seo_site_search_path',
+] as const;
+
+const SEO_BRAND_FIELD_KEY_SET = new Set<string>(SEO_BRAND_FIELD_KEYS);
+
+const SEO_FIELD_HELP: Record<string, { help: string; placeholder: string }> = {
+  seo_brand_aliases: {
+    help: 'Tên gọi khác, viết liền/viết rời/viết tắt. Ví dụ: Dohy, Dohy Studio, DOHY Media, dohystudio, dohy studio.',
+    placeholder: 'Dohy, Dohy Studio, DOHY Media, dohystudio, dohy studio',
+  },
+  seo_brand_audience: {
+    help: 'Nói rõ ai là khách chính và họ thường cần gì khi tìm đến website.',
+    placeholder: 'Doanh nghiệp, marketer, chủ dự án cần hình ảnh 3D để bán hàng và thuyết trình...',
+  },
+  seo_brand_differentiators: {
+    help: 'Điểm khiến thương hiệu khác đối thủ, nên viết bằng lợi ích thật, dễ kiểm chứng.',
+    placeholder: 'Quy trình rõ ràng, hình ảnh sắc nét, tư vấn theo mục tiêu kinh doanh...',
+  },
+  seo_brand_entity_type: {
+    help: 'Chọn kiểu gần nhất: Thương hiệu/công ty chung, cửa hàng có địa chỉ, hoặc đơn vị chuyên cung cấp dịch vụ.',
+    placeholder: 'ProfessionalService',
+  },
+  seo_brand_proof_points: {
+    help: 'Bằng chứng tin cậy như portfolio, số năm kinh nghiệm, chứng nhận, khách hàng, cam kết.',
+    placeholder: 'Portfolio dự án thực tế, quy trình minh bạch, kênh liên hệ chính thức...',
+  },
+  seo_brand_same_as: {
+    help: 'Mỗi dòng một link kênh chính thức như Google Business, YouTube, TikTok, LinkedIn, Facebook.',
+    placeholder: 'https://www.youtube.com/@brand\nhttps://www.tiktok.com/@brand',
+  },
+  seo_brand_search_queries: {
+    help: 'Các cách khách có thể gõ tên thương hiệu, gồm viết liền, viết rời hoặc tên cũ. Không thêm tên đối thủ.',
+    placeholder: 'dohy, dohystudio, dohy studio, dohy media',
+  },
+  seo_brand_services: {
+    help: 'Những sản phẩm hoặc dịch vụ quan trọng nhất muốn Google hiểu và gợi ý.',
+    placeholder: 'dựng hình 3D, render kiến trúc, animation 3D',
+  },
+  seo_brand_summary: {
+    help: 'Viết 1-2 câu nói thương hiệu là ai, làm gì và dành cho ai.',
+    placeholder: 'Dohy Studio là studio hình ảnh 3D chuyên render kiến trúc, diễn họa sản phẩm và visual marketing...',
+  },
+  seo_brand_topics: {
+    help: 'Các chủ đề chính mà website muốn được ghi nhớ.',
+    placeholder: '3D visualization, architectural rendering, product rendering, visual marketing',
+  },
+  seo_site_search_path: {
+    help: 'Đường dẫn ô tìm kiếm của website. Giữ {search_term_string} để hệ thống thay bằng từ khóa.',
+    placeholder: '/search?q={search_term_string}',
+  },
+};
+
+const SEO_FIELD_DEFAULTS: Partial<Record<(typeof SEO_BRAND_FIELD_KEYS)[number], string>> = {
+  seo_brand_entity_type: 'Organization',
+  seo_site_search_path: '/search?q={search_term_string}',
+};
+
 const REMOVED_SEO_KEYS = new Set([
   'seo_robots',
   'seo_business_type',
@@ -146,6 +225,7 @@ const PRODUCT_WATERMARK_ADVANCED_FEATURE = 'enableProductWatermarkAdvanced';
 const HEADER_MENU_ADVANCED_FEATURE = 'enableHeaderMenuAdvanced';
 const PRODUCT_SUPPLEMENTAL_ADVANCED_FEATURE = 'enableProductSupplementalAdvanced';
 const SHOP_CONFIG_ADVANCED_FEATURE = 'enableShopConfigAdvanced';
+const PRODUCT_CONTACT_LINK_ADVANCED_FEATURE = 'enableProductContactLinkAdvanced';
 const EMAIL_CONFIG_ADVANCED_FEATURE = 'enableMail';
 const EMAIL_SETTING_KEYS = [
   'mail_driver',
@@ -235,6 +315,8 @@ function SettingsContent({ section }: { section: SettingsSection }) {
   const [isSecondaryAuto, setIsSecondaryAuto] = useState(true);
   const [hasCleanedSeoFields, setHasCleanedSeoFields] = useState(false);
   const [hasCleanedContactFields, setHasCleanedContactFields] = useState(false);
+  const [hasSyncedSeoRuntimeFields, setHasSyncedSeoRuntimeFields] = useState(false);
+  const [seoTab, setSeoTab] = useState<SeoTab>('basic');
   const [advancedTab, setAdvancedTab] = useState<AdvancedTab>('product-placeholder');
   const [headerConfigDraft, setHeaderConfigDraft] = useState<HeaderConfig>(DEFAULT_HEADER_CONFIG);
   const [initialHeaderConfig, setInitialHeaderConfig] = useState<HeaderConfig>(DEFAULT_HEADER_CONFIG);
@@ -248,6 +330,7 @@ function SettingsContent({ section }: { section: SettingsSection }) {
   const featuresData = useQuery(api.admin.modules.listModuleFeatures, { moduleKey: MODULE_KEY });
   const fieldsData = useQuery(api.admin.modules.listModuleFields, { moduleKey: MODULE_KEY });
   const defaultImageAspectRatio = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'defaultImageAspectRatio' });
+  const productSaleModeSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'saleMode' });
   const [selectedFrameAR, setSelectedFrameAR] = useState<string>('');
   const [shopConfigDirty, setShopConfigDirty] = useState(false);
   const [shopConfigSaving, setShopConfigSaving] = useState(false);
@@ -277,6 +360,8 @@ function SettingsContent({ section }: { section: SettingsSection }) {
   const canEditEmailConfig = isFeatureEnabled(EMAIL_CONFIG_ADVANCED_FEATURE, false);
  
   const canEditProductSupplemental = isFeatureEnabled(PRODUCT_SUPPLEMENTAL_ADVANCED_FEATURE, true);
+  const isProductContactSaleMode = productSaleModeSetting?.value === 'contact';
+  const canEditProductContactLink = isProductContactSaleMode && isFeatureEnabled(PRODUCT_CONTACT_LINK_ADVANCED_FEATURE, true);
   const enabledAdvancedTabs = useMemo<AdvancedTab[]>(() => ADVANCED_TAB_ORDER.filter((tab) => {
     switch (tab) {
       case 'product-placeholder': return canEditProductImage;
@@ -285,6 +370,7 @@ function SettingsContent({ section }: { section: SettingsSection }) {
       case 'header': return canEditHeaderMenu;
       case 'product-supplemental': return canEditProductSupplemental;
       case 'shop-config': return canEditShopConfig;
+      case 'contact-link': return canEditProductContactLink;
       case 'email-config': return canEditEmailConfig;
       default: return false;
     }
@@ -294,6 +380,7 @@ function SettingsContent({ section }: { section: SettingsSection }) {
     canEditProductFrame,
     canEditProductImage,
     canEditProductSupplemental,
+    canEditProductContactLink,
     canEditProductWatermark,
     canEditShopConfig,
   ]);
@@ -309,6 +396,12 @@ function SettingsContent({ section }: { section: SettingsSection }) {
       setAdvancedTab('shop-config');
     }
   }, [tabParam, canEditShopConfig]);
+
+  useEffect(() => {
+    if (tabParam === 'contact-link' && canEditProductContactLink) {
+      setAdvancedTab('contact-link');
+    }
+  }, [tabParam, canEditProductContactLink]);
 
   useEffect(() => {
     if (tabParam === 'email-config' && canEditEmailConfig) {
@@ -367,10 +460,12 @@ function SettingsContent({ section }: { section: SettingsSection }) {
   // Mutations
   const setMultiple = useMutation(api.settings.setMultiple);
   const removeMultiple = useMutation(api.settings.removeMultiple);
+  const syncModuleConfig = useMutation(api.admin.modules.syncModuleConfigFromDefinition);
 
   const isLoading = settingsData === undefined
     || featuresData === undefined
-    || fieldsData === undefined;
+    || fieldsData === undefined
+    || productSaleModeSetting === undefined;
 
   const isSectionEnabled = section === 'site'
     ? true
@@ -448,6 +543,17 @@ function SettingsContent({ section }: { section: SettingsSection }) {
       if (values.product_image_placeholder === undefined) {
         values.product_image_placeholder = '';
       }
+      if (values[PRODUCT_CONTACT_SALE_LINK_TYPE_KEY] === undefined) {
+        values[PRODUCT_CONTACT_SALE_LINK_TYPE_KEY] = DEFAULT_PRODUCT_CONTACT_SALE_LINK_TYPE;
+      }
+      if (values[PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY] === undefined) {
+        values[PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY] = '';
+      }
+      SEO_BRAND_FIELD_KEYS.forEach((key) => {
+        if (values[key] === undefined) {
+          values[key] = SEO_FIELD_DEFAULTS[key] ?? '';
+        }
+      });
       if (values.enable_product_frames === undefined) {
         values.enable_product_frames = false;
       }
@@ -508,6 +614,15 @@ function SettingsContent({ section }: { section: SettingsSection }) {
       if (values.product_watermark_text_repeat === undefined) {
         values.product_watermark_text_repeat = false;
       }
+      if (values.product_watermark_text_vertical_repeat === undefined) {
+        values.product_watermark_text_vertical_repeat = false;
+      }
+      if (values.product_watermark_text_font === undefined) {
+        values.product_watermark_text_font = 'be-vietnam-pro';
+      }
+      if (values.product_watermark_text_line_gap === undefined) {
+        values.product_watermark_text_line_gap = '30';
+      }
       EMAIL_SETTING_KEYS.forEach((key) => {
         if (values[key] === undefined) {
           if (key === 'mail_from_name') {
@@ -534,6 +649,21 @@ function SettingsContent({ section }: { section: SettingsSection }) {
     void removeMultiple({ keys: Array.from(REMOVED_SEO_KEYS) })
       .finally(() => setHasCleanedSeoFields(true));
   }, [settingsData, hasCleanedSeoFields, removeMultiple]);
+
+  useEffect(() => {
+    if (section !== 'seo' || !fieldsData || hasSyncedSeoRuntimeFields) {return;}
+    const fieldKeys = new Set(fieldsData.map((field) => field.fieldKey));
+    const hasMissingBrandFields = SEO_BRAND_FIELD_KEYS.some((fieldKey) => !fieldKeys.has(fieldKey));
+    if (!hasMissingBrandFields) {
+      setHasSyncedSeoRuntimeFields(true);
+      return;
+    }
+    setHasSyncedSeoRuntimeFields(true);
+    void syncModuleConfig({ moduleKey: MODULE_KEY }).catch((error) => {
+      console.error('Failed to sync settings SEO runtime fields:', error);
+      toast.warning('Chưa đồng bộ được field Brand SEO. Hãy thử tải lại trang.');
+    });
+  }, [fieldsData, hasSyncedSeoRuntimeFields, section, syncModuleConfig]);
 
   useEffect(() => {
     if (!settingsData || hasCleanedContactFields) {return;}
@@ -588,6 +718,14 @@ function SettingsContent({ section }: { section: SettingsSection }) {
 
   const updateField = (key: string, value: string | boolean) => {
     setForm(prev => ({ ...prev, [key]: value }));
+  };
+
+  const applySeoPayload = (payload: AiSeoImportPayload) => {
+    Object.entries(payload).forEach(([key, value]) => {
+      if (typeof value === 'string' && value.trim()) {
+        updateField(key, value);
+      }
+    });
   };
 
   const getStringField = (key: string, fallback = '') => {
@@ -714,6 +852,15 @@ function SettingsContent({ section }: { section: SettingsSection }) {
       }
     }
 
+    if (section === 'advanced' && advancedTab === 'contact-link' && canEditProductContactLink) {
+      const linkType = normalizeProductContactSaleLinkType(form[PRODUCT_CONTACT_SALE_LINK_TYPE_KEY]);
+      const customUrl = getStringField(PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY).trim();
+      if (linkType === 'custom' && !isValidProductContactSaleCustomUrl(customUrl)) {
+        toast.error('Link tùy chỉnh phải bắt đầu bằng /, http(s)://, tel: hoặc mailto:.');
+        return false;
+      }
+    }
+
     // Validate required fields
     const requiredFields = fieldsData?.filter(f => f.required && f.enabled) ?? [];
     for (const field of requiredFields) {
@@ -820,6 +967,13 @@ function SettingsContent({ section }: { section: SettingsSection }) {
           });
         }
       });
+      if (!settingsToSave.some((item) => item.key === 'enable_product_frames')) {
+        settingsToSave.push({
+          group: 'advanced',
+          key: 'enable_product_frames',
+          value: form.enable_product_frames === true || form.enable_product_frames === 'true',
+        });
+      }
       // Save watermark settings
       const watermarkKeys = [
         'enable_product_watermark',
@@ -836,6 +990,9 @@ function SettingsContent({ section }: { section: SettingsSection }) {
         'product_watermark_text_color',
         'product_watermark_text_opacity',
         'product_watermark_text_repeat',
+        'product_watermark_text_vertical_repeat',
+        'product_watermark_text_font',
+        'product_watermark_text_line_gap',
       ];
       watermarkKeys.forEach((key) => {
         if (!settingsToSave.some((item) => item.key === key)) {
@@ -844,7 +1001,8 @@ function SettingsContent({ section }: { section: SettingsSection }) {
             key === 'enable_product_watermark' ||
             key === 'product_watermark_image_enabled' ||
             key === 'product_watermark_text_enabled' ||
-            key === 'product_watermark_text_repeat'
+            key === 'product_watermark_text_repeat' ||
+            key === 'product_watermark_text_vertical_repeat'
           ) {
             value = form[key] === true || form[key] === 'true';
           }
@@ -863,6 +1021,22 @@ function SettingsContent({ section }: { section: SettingsSection }) {
           value: normalizeHeaderConfig(headerConfigDraft),
         });
       }
+      if (canEditProductContactLink) {
+        if (!settingsToSave.some((item) => item.key === PRODUCT_CONTACT_SALE_LINK_TYPE_KEY)) {
+          settingsToSave.push({
+            group: 'advanced',
+            key: PRODUCT_CONTACT_SALE_LINK_TYPE_KEY,
+            value: normalizeProductContactSaleLinkType(form[PRODUCT_CONTACT_SALE_LINK_TYPE_KEY]),
+          });
+        }
+        if (!settingsToSave.some((item) => item.key === PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY)) {
+          settingsToSave.push({
+            group: 'advanced',
+            key: PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY,
+            value: form[PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY] || '',
+          });
+        }
+      }
       if (section === 'advanced' && advancedTab === 'email-config' && canEditEmailConfig) {
         EMAIL_SETTING_KEYS.forEach((key) => {
           if (!settingsToSave.some((item) => item.key === key)) {
@@ -877,6 +1051,9 @@ function SettingsContent({ section }: { section: SettingsSection }) {
 
       const hasSiteUrlChanged = form.site_url !== initialForm.site_url;
       await setMultiple({ settings: settingsToSave });
+      void revalidateSiteLayout().catch((err) => {
+        console.error('Failed to revalidate site layout:', err);
+      });
       if (hasSiteUrlChanged) {
         void revalidateSeoPaths().catch(() => {
           toast.warning('Đã lưu, đồng bộ SEO đang chậm.');
@@ -898,6 +1075,7 @@ function SettingsContent({ section }: { section: SettingsSection }) {
     const value = form[field.fieldKey];
     const stringValue = typeof value === 'string' ? value : '';
     const key = field.fieldKey;
+    const fieldHelp = SEO_FIELD_HELP[key];
     const metaLimit = SEO_META_LIMITS[key];
     const showCounter = Boolean(metaLimit);
     const counterText = showCounter ? `${stringValue.length}/${metaLimit}` : null;
@@ -1157,8 +1335,9 @@ function SettingsContent({ section }: { section: SettingsSection }) {
               value={stringValue}
               onChange={(e) =>{  updateField(key, e.target.value); }}
               className="w-full min-h-[80px] rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
-              placeholder={`Nhập ${field.name.toLowerCase()}...`}
+              placeholder={fieldHelp?.placeholder ?? `Nhập ${field.name.toLowerCase()}...`}
             />
+            {fieldHelp?.help && <p className="text-xs text-slate-500">{fieldHelp.help}</p>}
           </div>
         );
       }
@@ -1194,6 +1373,25 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                 <option value="vi">Tiếng Việt</option>
                 <option value="en">English</option>
               </select>
+            </div>
+          );
+        }
+        if (key === 'seo_brand_entity_type') {
+          return (
+            <div className="space-y-2" key={key}>
+              <Label>{field.name}</Label>
+              <select
+                value={stringValue || 'Organization'}
+                onChange={(e) =>{  updateField(key, e.target.value); }}
+                className="w-full h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+              >
+                <option value="Organization">Thương hiệu / công ty chung</option>
+                <option value="LocalBusiness">Cửa hàng / doanh nghiệp có địa chỉ</option>
+                <option value="ProfessionalService">Đơn vị cung cấp dịch vụ chuyên môn</option>
+              </select>
+              <p className="text-xs text-slate-500">
+                Nếu website bán dịch vụ như studio, agency, tư vấn, thiết kế, đào tạo, hãy chọn “Đơn vị cung cấp dịch vụ chuyên môn”.
+              </p>
             </div>
           );
         }
@@ -1350,9 +1548,9 @@ function SettingsContent({ section }: { section: SettingsSection }) {
             <TagInput
               value={stringValue}
               onChange={(val) =>{  updateField(key, val); }}
-              placeholder="Nhập từ khóa và nhấn Enter..."
+              placeholder={fieldHelp?.placeholder ?? 'Nhập từ khóa và nhấn Enter...'}
             />
-            <p className="text-xs text-slate-500">Nhấn Enter để thêm, Backspace để xóa</p>
+            <p className="text-xs text-slate-500">{fieldHelp?.help ?? 'Nhấn Enter để thêm, Backspace để xóa'}</p>
           </div>
         );
       }
@@ -1371,8 +1569,9 @@ function SettingsContent({ section }: { section: SettingsSection }) {
             <Input
               value={stringValue}
               onChange={(e) =>{  updateField(key, e.target.value); }}
-              placeholder={`Nhập ${field.name.toLowerCase()}...`}
+              placeholder={fieldHelp?.placeholder ?? `Nhập ${field.name.toLowerCase()}...`}
             />
+            {fieldHelp?.help && <p className="text-xs text-slate-500">{fieldHelp.help}</p>}
           </div>
         );
       }
@@ -1393,6 +1592,13 @@ function SettingsContent({ section }: { section: SettingsSection }) {
 
   const currentFields = fieldsByGroup[section] ?? [];
   const socialFields = section === 'contact' ? (fieldsByGroup.social ?? []) : [];
+  const seoBasicFields = section === 'seo'
+    ? currentFields.filter(field => !SEO_BRAND_FIELD_KEY_SET.has(field.fieldKey))
+    : [];
+  const seoBrandFields = section === 'seo'
+    ? currentFields.filter(field => SEO_BRAND_FIELD_KEY_SET.has(field.fieldKey))
+    : [];
+  const activeSeoFields = seoTab === 'brand' ? seoBrandFields : seoBasicFields;
   const hasAdvancedPlaceholderField = currentFields.some(field => field.fieldKey === 'product_image_placeholder');
   const headerCta = {
     ...DEFAULT_HEADER_CONFIG.cta,
@@ -1402,6 +1608,26 @@ function SettingsContent({ section }: { section: SettingsSection }) {
   const headerSpacingLevel = typeof headerConfigDraft.headerSpacingLevel === 'number' ? headerConfigDraft.headerSpacingLevel : 5;
   const logoSizeLabel = LOGO_SIZE_OPTIONS[logoSizeLevel - 1]?.label ?? 'Mặc định';
   const headerSpacingLabel = HEADER_SPACING_OPTIONS[headerSpacingLevel - 1]?.label ?? 'Cân bằng';
+  const productContactSaleLinkType = normalizeProductContactSaleLinkType(form[PRODUCT_CONTACT_SALE_LINK_TYPE_KEY]);
+  const productContactSaleHref = resolveProductContactSaleHref(form);
+  const productContactSaleSourceText = (() => {
+    if (productContactSaleLinkType === 'zalo') {
+      const value = getStringField('contact_zalo');
+      return value ? `Đang dùng Zalo trong Thông tin liên hệ: ${value}` : 'Chưa có Zalo, hệ thống sẽ tạm dẫn về /contact.';
+    }
+    if (productContactSaleLinkType === 'messenger') {
+      const value = getStringField('contact_messenger');
+      return value ? `Đang dùng Messenger trong Thông tin liên hệ: ${value}` : 'Chưa có Messenger, hệ thống sẽ tạm dẫn về /contact.';
+    }
+    if (productContactSaleLinkType === 'phone') {
+      const value = getStringField('contact_phone');
+      return value ? `Đang dùng số điện thoại: ${value}` : 'Chưa có số điện thoại, hệ thống sẽ tạm dẫn về /contact.';
+    }
+    if (productContactSaleLinkType === 'custom') {
+      return 'Nhập link nội bộ hoặc link ngoài, ví dụ /contact hoặc https://zalo.me/0902723232.';
+    }
+    return 'Mặc định dẫn về trang /contact.';
+  })();
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-28">
@@ -1516,6 +1742,20 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                         )}
                       >
                         Cấu hình cửa hàng
+                      </button>
+                    )}
+                    {canEditProductContactLink && (
+                      <button
+                        type="button"
+                        onClick={() => handleTabChange('contact-link')}
+                        className={cn(
+                          'px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+                          advancedTab === 'contact-link'
+                            ? 'border-orange-500 text-slate-900 dark:text-slate-100'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                        )}
+                      >
+                        Liên hệ
                       </button>
                     )}
                     {canEditEmailConfig && (
@@ -1824,6 +2064,19 @@ function SettingsContent({ section }: { section: SettingsSection }) {
 
                                 <div className="grid grid-cols-2 gap-4">
                                   <div className="space-y-1.5">
+                                    <Label>Font chữ</Label>
+                                    <select
+                                      value={String(form.product_watermark_text_font ?? 'be-vietnam-pro')}
+                                      onChange={(e) => updateField('product_watermark_text_font', e.target.value)}
+                                      className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                                    >
+                                      {FONT_REGISTRY.map((font) => (
+                                        <option key={font.key} value={font.key}>{font.label}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                                  <div className="space-y-1.5">
                                     <Label>Cỡ chữ (px)</Label>
                                     <select
                                       value={String(form.product_watermark_text_font_size ?? '8')}
@@ -1835,8 +2088,10 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                                       ))}
                                     </select>
                                   </div>
+                                </div>
 
-                                  <div className="space-y-1.5">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="space-y-1.5 col-span-2">
                                     <Label>Màu chữ</Label>
                                     <div className="flex gap-2">
                                       <input
@@ -1870,13 +2125,41 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                                   />
                                 </div>
 
-                                <div className="flex items-center gap-3">
-                                  <Checkbox
-                                    id="product_watermark_text_repeat"
-                                    checked={form.product_watermark_text_repeat === true || form.product_watermark_text_repeat === 'true'}
-                                    onCheckedChange={(checked) => updateField('product_watermark_text_repeat', checked)}
-                                  />
-                                  <Label htmlFor="product_watermark_text_repeat" className="cursor-pointer text-xs text-slate-600 dark:text-slate-400">Lặp watermark chữ theo hàng ngang</Label>
+                                {(form.product_watermark_text_vertical_repeat === true || form.product_watermark_text_vertical_repeat === 'true') && (
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between text-xs text-slate-500">
+                                      <Label>Độ giãn hàng dọc (line gap)</Label>
+                                      <span>{form.product_watermark_text_line_gap ?? 30}%</span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="10"
+                                      max="80"
+                                      value={parseFloat(String(form.product_watermark_text_line_gap ?? 30))}
+                                      onChange={(e) => updateField('product_watermark_text_line_gap', e.target.value)}
+                                      className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer dark:bg-slate-700 accent-orange-500"
+                                    />
+                                  </div>
+                                )}
+
+                                <div className="flex flex-col gap-2 pt-1">
+                                  <div className="flex items-center gap-3">
+                                    <Checkbox
+                                      id="product_watermark_text_repeat"
+                                      checked={form.product_watermark_text_repeat === true || form.product_watermark_text_repeat === 'true'}
+                                      onCheckedChange={(checked) => updateField('product_watermark_text_repeat', checked)}
+                                    />
+                                    <Label htmlFor="product_watermark_text_repeat" className="cursor-pointer text-xs text-slate-600 dark:text-slate-400">Lặp watermark chữ theo hàng ngang</Label>
+                                  </div>
+
+                                  <div className="flex items-center gap-3">
+                                    <Checkbox
+                                      id="product_watermark_text_vertical_repeat"
+                                      checked={form.product_watermark_text_vertical_repeat === true || form.product_watermark_text_vertical_repeat === 'true'}
+                                      onCheckedChange={(checked) => updateField('product_watermark_text_vertical_repeat', checked)}
+                                    />
+                                    <Label htmlFor="product_watermark_text_vertical_repeat" className="cursor-pointer text-xs text-slate-600 dark:text-slate-400">Lặp watermark chữ theo hàng dọc</Label>
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -1935,30 +2218,73 @@ function SettingsContent({ section }: { section: SettingsSection }) {
 
                               {/* Watermark chữ */}
                               {(form.product_watermark_text_enabled === true || form.product_watermark_text_enabled === 'true') && typeof form.product_watermark_text_content === 'string' && form.product_watermark_text_content && (
-                                <div
-                                  className="absolute left-0 right-0 transform -translate-y-1/2 whitespace-nowrap text-center select-none pointer-events-auto hover:bg-orange-500/10 border-y border-dashed border-transparent hover:border-orange-500 py-1 touch-none"
-                                  style={{
-                                    top: `${form.product_watermark_text_y ?? 80}%`,
-                                    opacity: (parseFloat(String(form.product_watermark_text_opacity ?? 35))) / 100,
-                                    color: String(form.product_watermark_text_color ?? '#64748B'),
-                                    fontSize: `${form.product_watermark_text_font_size ?? 8}px`,
-                                    fontFamily: '"Be Vietnam Pro", sans-serif',
-                                    cursor: 'ns-resize',
-                                  }}
-                                  onPointerDown={(e) => handlePreviewPointerDown(e, 'text-move')}
-                                  onPointerMove={handlePreviewPointerMove}
-                                  onPointerUp={handlePreviewPointerUp}
-                                >
-                                  {form.product_watermark_text_repeat === true || form.product_watermark_text_repeat === 'true' ? (
-                                    <div className="w-full overflow-hidden inline-flex justify-center gap-4">
-                                      {Array(8).fill(null).map((_, i) => (
-                                        <span key={i}>{form.product_watermark_text_content as string}</span>
-                                      ))}
-                                    </div>
+                                <>
+                                  {form.product_watermark_text_vertical_repeat === true || form.product_watermark_text_vertical_repeat === 'true' ? (
+                                    Array.from({ length: 21 }, (_, index) => {
+                                      const i = index - 10;
+                                      const startY = parseFloat(String(form.product_watermark_text_y ?? 80));
+                                      const lineGap = parseFloat(String(form.product_watermark_text_line_gap ?? 30));
+                                      const topVal = startY + i * lineGap;
+                                      if (topVal < -20 || topVal > 120) return null;
+                                      const isMain = i === 0;
+                                      return (
+                                        <div
+                                          key={i}
+                                          className={cn(
+                                            "absolute left-0 right-0 transform -translate-y-1/2 whitespace-nowrap text-center select-none py-1 touch-none",
+                                            isMain ? "pointer-events-auto hover:bg-orange-500/10 border-y border-dashed border-transparent hover:border-orange-500" : "pointer-events-none"
+                                          )}
+                                          style={{
+                                            top: `${topVal}%`,
+                                            opacity: (parseFloat(String(form.product_watermark_text_opacity ?? 35))) / 100,
+                                            color: String(form.product_watermark_text_color ?? '#64748B'),
+                                            fontSize: `${form.product_watermark_text_font_size ?? 8}px`,
+                                            fontFamily: `var(${resolveFontVariable(String(form.product_watermark_text_font || 'be-vietnam-pro'))}), sans-serif`,
+                                            cursor: isMain ? 'ns-resize' : 'default',
+                                          }}
+                                          onPointerDown={isMain ? (e) => handlePreviewPointerDown(e, 'text-move') : undefined}
+                                          onPointerMove={isMain ? handlePreviewPointerMove : undefined}
+                                          onPointerUp={isMain ? handlePreviewPointerUp : undefined}
+                                        >
+                                          {form.product_watermark_text_repeat === true || form.product_watermark_text_repeat === 'true' ? (
+                                            <div className="w-full overflow-hidden inline-flex justify-center gap-4">
+                                              {Array(8).fill(null).map((_, idx) => (
+                                                <span key={idx}>{form.product_watermark_text_content as string}</span>
+                                              ))}
+                                            </div>
+                                          ) : (
+                                            <span>{form.product_watermark_text_content}</span>
+                                          )}
+                                        </div>
+                                      );
+                                    })
                                   ) : (
-                                    <span>{form.product_watermark_text_content}</span>
+                                    <div
+                                      className="absolute left-0 right-0 transform -translate-y-1/2 whitespace-nowrap text-center select-none pointer-events-auto hover:bg-orange-500/10 border-y border-dashed border-transparent hover:border-orange-500 py-1 touch-none"
+                                      style={{
+                                        top: `${form.product_watermark_text_y ?? 80}%`,
+                                        opacity: (parseFloat(String(form.product_watermark_text_opacity ?? 35))) / 100,
+                                        color: String(form.product_watermark_text_color ?? '#64748B'),
+                                        fontSize: `${form.product_watermark_text_font_size ?? 8}px`,
+                                        fontFamily: `var(${resolveFontVariable(String(form.product_watermark_text_font || 'be-vietnam-pro'))}), sans-serif`,
+                                        cursor: 'ns-resize',
+                                      }}
+                                      onPointerDown={(e) => handlePreviewPointerDown(e, 'text-move')}
+                                      onPointerMove={handlePreviewPointerMove}
+                                      onPointerUp={handlePreviewPointerUp}
+                                    >
+                                      {form.product_watermark_text_repeat === true || form.product_watermark_text_repeat === 'true' ? (
+                                        <div className="w-full overflow-hidden inline-flex justify-center gap-4">
+                                          {Array(8).fill(null).map((_, i) => (
+                                            <span key={i}>{form.product_watermark_text_content as string}</span>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <span>{form.product_watermark_text_content}</span>
+                                      )}
+                                    </div>
                                   )}
-                                </div>
+                                </>
                               )}
 
                               <span className="absolute bottom-1 right-2 text-[9px] font-bold text-slate-500 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xs px-1.5 py-0.5 rounded-sm">Preview</span>
@@ -2124,6 +2450,60 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                         saveShopConfigRef.current = ref;
                       }}
                     />
+                  )}
+                  {advancedTab === 'contact-link' && canEditProductContactLink && (
+                    <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+                      <div className="lg:col-span-7 space-y-4">
+                        <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                          <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Đường dẫn nút Liên hệ</h3>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Áp dụng cho sản phẩm khi Chế độ bán hàng đang là Nút liên hệ.
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Điểm đến</Label>
+                          <select
+                            value={productContactSaleLinkType}
+                            onChange={(event) => updateField(PRODUCT_CONTACT_SALE_LINK_TYPE_KEY, event.target.value)}
+                            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                          >
+                            {PRODUCT_CONTACT_SALE_LINK_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                          </select>
+                          <p className="text-xs text-slate-500">{productContactSaleSourceText}</p>
+                        </div>
+                        {productContactSaleLinkType === 'custom' && (
+                          <div className="space-y-2">
+                            <Label>Link tùy chỉnh</Label>
+                            <Input
+                              value={getStringField(PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY)}
+                              onChange={(event) => updateField(PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY, event.target.value)}
+                              placeholder="https://zalo.me/0902723232"
+                            />
+                            <p className="text-xs text-slate-500">
+                              Hỗ trợ link nội bộ bắt đầu bằng /, link ngoài https://, tel: hoặc mailto:.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="lg:col-span-5">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                          <Label className="text-slate-900 dark:text-slate-100">Preview</Label>
+                          <div className="mt-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+                            <div className="inline-flex min-h-10 items-center justify-center rounded-md bg-slate-900 px-4 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
+                              Liên hệ
+                            </div>
+                            <div className="mt-3 space-y-1 text-xs text-slate-500">
+                              <p>Đường dẫn sẽ dùng:</p>
+                              <code className="block break-all rounded bg-slate-100 px-2 py-1 font-mono text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                                {productContactSaleHref}
+                              </code>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   )}
                   {advancedTab === 'email-config' && canEditEmailConfig && (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -2304,6 +2684,47 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                     </div>
                   )}
                 </div>
+              ) : section === 'seo' ? (
+                <div className="space-y-5">
+                  <div className="flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-700">
+                    <button
+                      type="button"
+                      onClick={() => setSeoTab('basic')}
+                      className={cn(
+                        'px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+                        seoTab === 'basic'
+                          ? 'border-orange-500 text-slate-900 dark:text-slate-100'
+                          : 'border-transparent text-slate-500 hover:text-slate-700'
+                      )}
+                    >
+                      Cơ bản
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSeoTab('brand')}
+                      className={cn(
+                        'px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+                        seoTab === 'brand'
+                          ? 'border-orange-500 text-slate-900 dark:text-slate-100'
+                          : 'border-transparent text-slate-500 hover:text-slate-700'
+                      )}
+                    >
+                      Thương hiệu
+                    </button>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+                    {seoTab === 'basic'
+                      ? 'Điền tiêu đề, mô tả, từ khóa và ảnh chia sẻ cho trang chủ.'
+                      : 'Điền tên gọi khác, cách khách hay gõ tên thương hiệu, dịch vụ chính và các kênh chính thức.'}
+                  </div>
+                  {activeSeoFields.length > 0 ? (
+                    activeSeoFields.map(field => renderField(field))
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-slate-200 p-4 text-sm text-slate-500 dark:border-slate-700">
+                      Chưa có trường nào trong tab này.
+                    </div>
+                  )}
+                </div>
               ) : (
                 currentFields.map(field => renderField(field))
               )}
@@ -2342,19 +2763,11 @@ function SettingsContent({ section }: { section: SettingsSection }) {
             <>
               <AiSeoImportDialog
                 form={form}
-                onApply={(payload) => {
-                  if (payload.seo_title) updateField('seo_title', payload.seo_title);
-                  if (payload.seo_description) updateField('seo_description', payload.seo_description);
-                  if (payload.seo_keywords) updateField('seo_keywords', payload.seo_keywords);
-                }}
+                onApply={applySeoPayload}
               />
               <SeoBuilderDialog
                 form={form}
-                onApply={(payload) => {
-                  if (payload.seo_title) updateField('seo_title', payload.seo_title);
-                  if (payload.seo_description) updateField('seo_description', payload.seo_description);
-                  if (payload.seo_keywords) updateField('seo_keywords', payload.seo_keywords);
-                }}
+                onApply={applySeoPayload}
               />
             </>
           )}

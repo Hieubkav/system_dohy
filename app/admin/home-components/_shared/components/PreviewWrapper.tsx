@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Eye, Monitor, Smartphone, Tablet, Sun, Moon } from 'lucide-react';
+import { Eye, Monitor, MousePointer2, Smartphone, Tablet, Sun, Moon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -16,6 +16,7 @@ const devices = [
 ];
 
 type PreviewDarkContextValue = { isDark: boolean };
+type PreviewVisualEditContextValue = { active: boolean };
 
 let previewDarkSnapshot = false;
 const previewDarkListeners = new Set<(isDark: boolean) => void>();
@@ -34,6 +35,9 @@ const subscribePreviewDark = (listener: (isDark: boolean) => void) => {
 };
 
 export const PreviewDarkContext = React.createContext<PreviewDarkContextValue | null>(null);
+export const PreviewVisualEditContext = React.createContext<PreviewVisualEditContextValue | null>(null);
+export const LiveEditorContext = React.createContext<{ isLiveEditor: boolean }>({ isLiveEditor: false });
+
 export const usePreviewDark = () => {
   const context = React.useContext(PreviewDarkContext);
   const [isDark, setIsDark] = React.useState(previewDarkSnapshot);
@@ -42,6 +46,7 @@ export const usePreviewDark = () => {
 
   return context ?? { isDark };
 };
+export const usePreviewVisualEdit = () => React.useContext(PreviewVisualEditContext) ?? { active: false };
 
 const injectPreviewDark = (children: React.ReactNode, isDark: boolean): React.ReactNode => (
   React.Children.map(children, (child) => {
@@ -76,6 +81,10 @@ export const PreviewWrapper = ({
   deviceWidthClass,
   fontStyle,
   fontClassName,
+  visualEditActive,
+  visualEditAllowed = false,
+  onVisualEditToggle,
+  hideFrame = false,
 }: { 
   title: string;
   children: React.ReactNode;
@@ -88,10 +97,22 @@ export const PreviewWrapper = ({
   deviceWidthClass: string;
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
+  visualEditActive?: boolean;
+  visualEditAllowed?: boolean;
+  onVisualEditToggle?: () => void;
+  hideFrame?: boolean;
 }) => {
   const pathname = usePathname();
   const config = useQuery(api.homeComponentSystemConfig.getConfig);
+  const liveEditor = React.useContext(LiveEditorContext);
+  const isLiveMode = liveEditor?.isLiveEditor ?? false;
+  const shouldHideFrame = hideFrame || isLiveMode;
+
   const [isDark, setIsDark] = React.useState(false);
+  const [internalVisualEditActive, setInternalVisualEditActive] = React.useState(false);
+  const effectiveVisualEditActive = isLiveMode ? true : (visualEditActive ?? internalVisualEditActive);
+  const handleVisualEditToggle = onVisualEditToggle ?? (() => setInternalVisualEditActive((prev) => !prev));
+
 
   React.useEffect(() => {
     if (typeof window === 'undefined') {
@@ -117,6 +138,21 @@ export const PreviewWrapper = ({
   React.useEffect(() => {
     setPreviewDarkSnapshot(isDark);
   }, [isDark]);
+
+  if (shouldHideFrame) {
+    return (
+      <PreviewDarkContext.Provider value={{ isDark }}>
+        <PreviewVisualEditContext.Provider value={{ active: effectiveVisualEditActive }}>
+          <div
+            className={cn("@container mx-auto", deviceWidthClass, fontClassName, isDark ? "dark bg-slate-950" : "")}
+            style={fontStyle}
+          >
+            {injectPreviewDark(children, isDark)}
+          </div>
+        </PreviewVisualEditContext.Provider>
+      </PreviewDarkContext.Provider>
+    );
+  }
 
   const detectedType = React.useMemo(() => {
     if (!pathname) return null;
@@ -180,17 +216,35 @@ export const PreviewWrapper = ({
               >
                 {isDark ? <Sun size={16} /> : <Moon size={16} />}
               </button>
+              {visualEditAllowed ? (
+                <button
+                  type="button"
+                  onClick={handleVisualEditToggle}
+                  title={effectiveVisualEditActive ? 'Tắt sửa text' : 'Bật sửa text'}
+                  aria-pressed={effectiveVisualEditActive}
+                  className={cn(
+                    'p-1.5 rounded-md transition-all',
+                    effectiveVisualEditActive
+                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300'
+                      : 'text-slate-900 hover:text-slate-700 dark:text-slate-100 dark:hover:text-slate-300',
+                  )}
+                >
+                  <MousePointer2 size={16} />
+                </button>
+              ) : null}
             </div>
           </div>
         </CardHeader>
         <CardContent>
           {/* Preview width only shrinks this frame; Tailwind sm/md/lg still reads the admin viewport, so preview layout classes must branch from device. */}
-          <div
-            className={cn("@container mx-auto transition-all duration-300", deviceWidthClass, fontClassName, isDark ? "dark bg-slate-950" : "")}
-            style={fontStyle}
-          >
-            {injectPreviewDark(children, isDark)}
-          </div>
+          <PreviewVisualEditContext.Provider value={{ active: effectiveVisualEditActive }}>
+            <div
+              className={cn("@container mx-auto transition-all duration-300", deviceWidthClass, fontClassName, isDark ? "dark bg-slate-950" : "")}
+              style={fontStyle}
+            >
+              {injectPreviewDark(children, isDark)}
+            </div>
+          </PreviewVisualEditContext.Provider>
           {info && (
             <div className="mt-3 text-xs text-slate-500">
               Style: <strong className="text-slate-700 dark:text-slate-300">{styles.find(s => s.id === previewStyle)?.label}</strong>

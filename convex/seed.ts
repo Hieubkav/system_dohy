@@ -42,8 +42,7 @@ export const seedModules = mutation({
       { category: "marketing" as const, description: "Báo cáo và phân tích dữ liệu", enabled: true, icon: "BarChart3", isCore: false, key: "analytics", name: "Thống kê", order: 17 },
       { category: "content" as const, description: "Quản lý dịch vụ và danh mục dịch vụ", enabled: true, icon: "Briefcase", isCore: false, key: "services", name: "Dịch vụ", order: 18 },
       { category: "content" as const, description: "Quản lý tài nguyên, link tải và quyền truy cập", enabled: true, icon: "FileText", isCore: false, key: "resources", name: "Tài nguyên", order: 19 },
-      { category: "system" as const, description: "Bảng Kanban quản lý công việc nội bộ", enabled: true, icon: "LayoutGrid", isCore: false, key: "kanban", name: "Kanban Board", order: 20 },
-      { category: "commerce" as const, dependencies: ["services"], dependencyType: "all" as const, description: "Quản lý lịch hẹn và đặt lịch", enabled: true, icon: "CalendarDays", isCore: false, key: "bookings", name: "Đặt lịch", order: 21 },
+      { category: "commerce" as const, dependencies: ["services"], dependencyType: "all" as const, description: "Quản lý lịch hẹn và đặt lịch", enabled: true, icon: "CalendarDays", isCore: false, key: "bookings", name: "Đặt lịch", order: 20 },
     ];
 
     for (const mod of modules) {
@@ -1462,7 +1461,7 @@ export const seedUsersModule = mutation({
       if (!existingRoles) {
         const roles: { name: string; description: string; color: string; isSystem: boolean; isSuperAdmin?: boolean; permissions: Record<string, string[]> }[] = [
           { color: "#ef4444", description: "Toàn quyền truy cập hệ thống", isSuperAdmin: true, isSystem: true, name: "Super Admin", permissions: { "*": ["*"] } },
-          { color: "#3b82f6", description: "Quản trị viên hệ thống", isSystem: true, name: "Admin", permissions: { customers: ["read", "update"], kanban: ["read", "create", "update", "delete"], orders: ["read", "update"], posts: ["read", "create", "update", "delete"], products: ["read", "create", "update", "delete"], settings: ["read"], users: ["read"] } },
+          { color: "#3b82f6", description: "Quản trị viên hệ thống", isSystem: true, name: "Admin", permissions: { customers: ["read", "update"], orders: ["read", "update"], posts: ["read", "create", "update", "delete"], products: ["read", "create", "update", "delete"], settings: ["read"], users: ["read"] } },
           { color: "#22c55e", description: "Biên tập viên nội dung", isSystem: false, name: "Editor", permissions: { media: ["read", "create"], posts: ["read", "create", "update"], products: ["read"] } },
           { color: "#f59e0b", description: "Kiểm duyệt viên", isSystem: false, name: "Moderator", permissions: { comments: ["read", "update", "delete"], customers: ["read"], posts: ["read"], products: ["read"] } },
         ];
@@ -1645,7 +1644,6 @@ export const seedRolesModule = mutation({
           name: "Admin", 
           permissions: { 
             customers: ["view", "create", "edit"],
-            kanban: ["view", "create", "edit", "delete"],
             media: ["view", "create", "delete"],
             orders: ["view", "create", "edit"],
             posts: ["view", "create", "edit", "delete"],
@@ -1818,6 +1816,17 @@ export const seedSettingsModule = mutation({
         { group: "seo", key: "seo_og_image", value: "" },
         { group: "seo", key: "seo_google_verification", value: "" },
         { group: "seo", key: "seo_bing_verification", value: "" },
+        { group: "seo", key: "seo_brand_aliases", value: "" },
+        { group: "seo", key: "seo_brand_summary", value: "" },
+        { group: "seo", key: "seo_brand_entity_type", value: "Organization" },
+        { group: "seo", key: "seo_brand_search_queries", value: "" },
+        { group: "seo", key: "seo_brand_topics", value: "" },
+        { group: "seo", key: "seo_brand_services", value: "" },
+        { group: "seo", key: "seo_brand_audience", value: "" },
+        { group: "seo", key: "seo_brand_differentiators", value: "" },
+        { group: "seo", key: "seo_brand_proof_points", value: "" },
+        { group: "seo", key: "seo_brand_same_as", value: "" },
+        { group: "seo", key: "seo_site_search_path", value: "/search?q={search_term_string}" },
         { group: "advanced", key: "product_image_placeholder", value: "" },
         
         // Social settings
@@ -1951,6 +1960,17 @@ export const seedSettingsModule = mutation({
         { enabled: true, fieldKey: "seo_og_image", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "OG Image", order: 13, required: false, type: "image" as const },
         { enabled: true, fieldKey: "seo_google_verification", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Google Verification", order: 14, required: false, type: "text" as const },
         { enabled: true, fieldKey: "seo_bing_verification", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Bing Verification", order: 15, required: false, type: "text" as const },
+        { enabled: true, fieldKey: "seo_brand_aliases", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Tên gọi khác", order: 20, required: false, type: "tags" as const },
+        { enabled: true, fieldKey: "seo_brand_summary", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Giới thiệu ngắn", order: 21, required: false, type: "textarea" as const },
+        { enabled: true, fieldKey: "seo_brand_entity_type", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Loại website/thương hiệu", order: 22, required: false, type: "select" as const },
+        { enabled: true, fieldKey: "seo_brand_search_queries", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Cách khách tìm thương hiệu", order: 23, required: false, type: "tags" as const },
+        { enabled: true, fieldKey: "seo_brand_topics", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Chủ đề chính", order: 24, required: false, type: "tags" as const },
+        { enabled: true, fieldKey: "seo_brand_services", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Sản phẩm, dịch vụ chính", order: 25, required: false, type: "tags" as const },
+        { enabled: true, fieldKey: "seo_brand_audience", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Khách hàng chính", order: 26, required: false, type: "textarea" as const },
+        { enabled: true, fieldKey: "seo_brand_differentiators", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Điểm khác biệt", order: 27, required: false, type: "textarea" as const },
+        { enabled: true, fieldKey: "seo_brand_proof_points", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Bằng chứng tin cậy", order: 28, required: false, type: "textarea" as const },
+        { enabled: true, fieldKey: "seo_brand_same_as", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Kênh chính thức", order: 29, required: false, type: "textarea" as const },
+        { enabled: true, fieldKey: "seo_site_search_path", group: "seo", isSystem: false, linkedFeature: "enableSEO", moduleKey: "settings", name: "Đường dẫn tìm kiếm", order: 30, required: false, type: "text" as const },
         { enabled: true, fieldKey: "product_image_placeholder", group: "advanced", isSystem: false, moduleKey: "settings", name: "Ảnh placeholder sản phẩm", order: 20, required: false, type: "image" as const },
         // Social fields
         { enabled: true, fieldKey: "social_facebook", group: "social", isSystem: false, linkedFeature: "enableSocial", moduleKey: "settings", name: "Facebook", order: 16, required: false, type: "text" as const },
@@ -2827,6 +2847,29 @@ export const addBookingsModuleToList = mutation({
       key: "bookings",
       name: "Đặt lịch",
       order: 20,
+    });
+    return null;
+  },
+  returns: v.null(),
+});
+
+// Thêm module catalogs vào danh sách adminModules (chỉ chạy 1 lần)
+export const addCatalogsModuleToList = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const existing = await ctx.db.query("adminModules").withIndex("by_key", q => q.eq("key", "catalogs")).first();
+    if (existing) {
+      return null;
+    }
+    await ctx.db.insert("adminModules", {
+      category: "content" as const,
+      description: "Tài liệu catalog PDF dạng flipbook",
+      enabled: true,
+      icon: "BookOpen",
+      isCore: false,
+      key: "catalogs",
+      name: "Catalog",
+      order: 23,
     });
     return null;
   },

@@ -82,6 +82,8 @@ export default function CategoryProductsEditPage({
   const component = snapshotComponent ?? liveComponent;
   const updateMutation = useMutation(api.homeComponents.update);
   const aspectRatioSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'defaultImageAspectRatio' });
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const isVisualEditAllowed = systemConfig?.typeVisualEditOverrides?.[COMPONENT_TYPE]?.enabled ?? true;
 
   const [title, setTitle] = useState('');
   const [active, setActive] = useState(true);
@@ -469,6 +471,9 @@ export default function CategoryProductsEditPage({
               />
             )}
             <CategoryProductsPreview
+              title={title}
+              onTitleChange={setTitle}
+              isVisualEditAllowed={isVisualEditAllowed}
               config={{
                 columnsDesktop,
                 columnsMobile,

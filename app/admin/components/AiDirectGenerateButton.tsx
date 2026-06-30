@@ -136,6 +136,7 @@ export function AiDirectGenerateButton({
 }
 
 type AiDirectGeneratePanelProps = {
+  allowEmptyBrief?: boolean;
   buttonLabel?: string;
   className?: string;
   description?: string;
@@ -148,6 +149,7 @@ type AiDirectGeneratePanelProps = {
 };
 
 export function AiDirectGeneratePanel({
+  allowEmptyBrief = false,
   buttonLabel = 'Tạo bằng ChatJPT',
   className,
   description = 'Ô này là dữ liệu đầu vào chính. ChatJPT phải bám trực tiếp nội dung này để tạo JSON ở ô bên dưới.',
@@ -160,25 +162,39 @@ export function AiDirectGeneratePanel({
 }: AiDirectGeneratePanelProps) {
   const [brief, setBrief] = React.useState('');
   const normalizedBrief = brief.trim();
-  const finalPrompt = React.useMemo(() => [
-    'Bạn đang tạo dữ liệu JSON cho tính năng Import AI trong admin VietAdmin.',
-    '',
-    'YÊU CẦU CỦA ADMIN, SOURCE OF TRUTH BẮT BUỘC:',
-    `"""${normalizedBrief}"""`,
-    '',
-    'Quy tắc bắt buộc khi tạo nội dung:',
-    '- Chủ đề, title, heading, nội dung chính và ví dụ phải trực tiếp bám vào yêu cầu admin ở trên.',
-    '- Không được tự đổi sang chủ đề khác, không tạo nội dung chung chung nếu admin đã nhập chủ đề cụ thể.',
-    '- Nếu admin nhập tên bài/sản phẩm/dịch vụ, JSON phải thể hiện đúng tên hoặc đúng ý đó.',
-    '- Nếu admin yêu cầu dạng danh sách như "Top 10 ...", nội dung phải là danh sách tương ứng, không đổi thành bài khác.',
-    '- Nếu thiếu chi tiết, chỉ suy luận an toàn trong phạm vi yêu cầu admin đưa.',
-    '- Vẫn phải trả đúng JSON hợp lệ theo schema kỹ thuật bên dưới.',
-    '',
-    'PROMPT KỸ THUẬT VÀ SCHEMA:',
-    prompt.trim(),
-    '',
-    'Trả về JSON hợp lệ ngay bây giờ.',
-  ].join('\n'), [normalizedBrief, prompt]);
+  const finalPrompt = React.useMemo(() => {
+    const briefLines = normalizedBrief
+      ? [
+          'YÊU CẦU CỦA ADMIN, SOURCE OF TRUTH BẮT BUỘC:',
+          `"""${normalizedBrief}"""`,
+          '',
+          'Quy tắc bắt buộc khi tạo nội dung:',
+          '- Chủ đề, title, heading, nội dung chính và ví dụ phải trực tiếp bám vào yêu cầu admin ở trên.',
+          '- Không được tự đổi sang chủ đề khác, không tạo nội dung chung chung nếu admin đã nhập chủ đề cụ thể.',
+          '- Nếu admin nhập tên bài/sản phẩm/dịch vụ, JSON phải thể hiện đúng tên hoặc đúng ý đó.',
+          '- Nếu admin yêu cầu dạng danh sách như "Top 10 ...", nội dung phải là danh sách tương ứng, không đổi thành bài khác.',
+          '- Nếu thiếu chi tiết, chỉ suy luận an toàn trong phạm vi yêu cầu admin đưa.',
+          '- Vẫn phải trả đúng JSON hợp lệ theo schema kỹ thuật bên dưới.',
+        ]
+      : [
+          'ADMIN KHÔNG NHẬP YÊU CẦU BỔ SUNG:',
+          '- Hãy bám dữ liệu hiện có, schema và quy tắc trong prompt kỹ thuật bên dưới.',
+          '- Nếu prompt kỹ thuật đang bật chế độ tạo phần còn lại, chỉ điền field còn thiếu và giữ nguyên field đã có.',
+          '- Không được tự đổi chủ đề, title, heading hoặc dữ liệu hiện có.',
+          '- Vẫn phải trả đúng JSON hợp lệ theo schema kỹ thuật bên dưới.',
+        ];
+
+    return [
+      'Bạn đang tạo dữ liệu JSON cho tính năng Import AI trong admin VietAdmin.',
+      '',
+      ...briefLines,
+      '',
+      'PROMPT KỸ THUẬT VÀ SCHEMA:',
+      prompt.trim(),
+      '',
+      'Trả về JSON hợp lệ ngay bây giờ.',
+    ].join('\n');
+  }, [normalizedBrief, prompt]);
 
   return (
     <div className={cn('rounded-lg border border-cyan-100 bg-cyan-50/70 p-3 dark:border-cyan-900/50 dark:bg-cyan-950/20', className)}>
@@ -192,7 +208,7 @@ export function AiDirectGeneratePanel({
           sessionId={sessionId}
           sourcePath={sourcePath}
           onGenerated={onGenerated}
-          disabled={!normalizedBrief}
+          disabled={!allowEmptyBrief && !normalizedBrief}
           label={buttonLabel}
           className="h-8 border-cyan-200 bg-white text-cyan-700 hover:bg-cyan-50 dark:border-cyan-900 dark:bg-slate-950 dark:text-cyan-200"
         />

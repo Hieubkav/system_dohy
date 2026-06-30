@@ -20,6 +20,14 @@ import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/c
 import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
 import { CategoryTagsInput } from '@/app/admin/components/AdditionalCategoriesSelect';
 import { HeadlineGeneratorWidget } from '@/app/admin/components/HeadlineGeneratorWidget';
+import {
+  PostAdvancedSeoFields,
+  PostFormTabs,
+  type PostFaqItem,
+  type PostFormTab,
+  normalizePostFaqItems,
+  normalizePostStringList,
+} from '../components/PostAdvancedSeoFields';
 
 const MODULE_KEY = 'posts';
 const COC_TARGET_OPTIONS: Array<{ key: GeneratorRequest['templateKey']; label: string; description: string }> = [
@@ -56,6 +64,10 @@ export default function PostCreatePage() {
   const [excerpt, setExcerpt] = useState('');
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
+  const [focusKeyword, setFocusKeyword] = useState('');
+  const [postTags, setPostTags] = useState<string[]>([]);
+  const [relatedQueries, setRelatedQueries] = useState<string[]>([]);
+  const [faqItems, setFaqItems] = useState<PostFaqItem[]>([]);
   const [thumbnail, setThumbnail] = useState<string | undefined>();
   const [thumbnailStorageId, setThumbnailStorageId] = useState<Id<'_storage'> | undefined>();
   const [categoryId, setCategoryId] = useState('');
@@ -67,6 +79,7 @@ export default function PostCreatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editorResetKey, setEditorResetKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<PostFormTab>('content');
 
   const [generatorTemplateKey, setGeneratorTemplateKey] = useState(COC_TARGET_OPTIONS[0].key);
   const generatorProductLimit = 6;
@@ -112,6 +125,26 @@ export default function PostCreatePage() {
   const hasMarkdownRender = enabledFields.has('markdownRender');
   const hasHtmlRender = enabledFields.has('htmlRender');
   const showAdvancedRenderCard = hasMarkdownRender || hasHtmlRender;
+  const showAdvancedSeoFields = enabledFields.has('focusKeyword')
+    || enabledFields.has('tags')
+    || enabledFields.has('relatedQueries')
+    || enabledFields.has('faqItems');
+  const aiImportCurrentData = useMemo<AiEntityImportPayload>(() => ({
+    authorName: authorName.trim(),
+    content: content.trim(),
+    excerpt: excerpt.trim(),
+    faqItems: normalizePostFaqItems(faqItems),
+    focusKeyword: focusKeyword.trim(),
+    htmlRender: htmlRender.trim(),
+    markdownRender: markdownRender.trim(),
+    metaDescription: metaDescription.trim(),
+    metaTitle: metaTitle.trim(),
+    relatedQueries: normalizePostStringList(relatedQueries),
+    slug: slug.trim(),
+    tags: normalizePostStringList(postTags),
+    thumbnail: thumbnail ?? '',
+    title: title.trim(),
+  }), [authorName, content, excerpt, faqItems, focusKeyword, htmlRender, markdownRender, metaDescription, metaTitle, relatedQueries, slug, postTags, thumbnail, title]);
   const schedulingEnabled = enabledFields.has('publish_date') && (schedulingFeature?.enabled ?? false);
 
   const generatorEnabled = Boolean(settingsData?.find(s => s.settingKey === 'enableAutoPostGenerator')?.value);
@@ -415,6 +448,10 @@ export default function PostCreatePage() {
     setExcerpt(item.excerpt || item.description || truncateText(stripHtml(nextContent), 180));
     setMetaTitle(item.metaTitle || truncateText(nextTitle, 60));
     setMetaDescription(item.metaDescription || truncateText(stripHtml(item.excerpt || nextContent), 160));
+    if (item.focusKeyword) {setFocusKeyword(item.focusKeyword);}
+    if (item.tags?.length) {setPostTags(normalizePostStringList(item.tags));}
+    if (item.relatedQueries?.length) {setRelatedQueries(normalizePostStringList(item.relatedQueries));}
+    if (item.faqItems?.length) {setFaqItems(normalizePostFaqItems(item.faqItems));}
     if (item.thumbnail) {
       setThumbnail(item.thumbnail);
       setThumbnailStorageId(undefined);
@@ -438,6 +475,9 @@ export default function PostCreatePage() {
       const resolvedPublishedAt = status === 'Published' && !publishImmediately
         ? toTimestamp(publishAtLocal)
         : undefined;
+      const normalizedPostTags = enabledFields.has('tags') ? normalizePostStringList(postTags) : [];
+      const normalizedRelatedQueries = enabledFields.has('relatedQueries') ? normalizePostStringList(relatedQueries) : [];
+      const normalizedFaqItems = enabledFields.has('faqItems') ? normalizePostFaqItems(faqItems) : [];
       await createPost({
         authorName: enabledFields.has('author_name') ? authorName.trim() || undefined : undefined,
         categoryId: categoryId as Id<"postCategories">,
@@ -449,16 +489,20 @@ export default function PostCreatePage() {
         markdownRender: markdownRender.trim() || undefined,
         htmlRender: htmlRender.trim() || undefined,
         excerpt: excerpt.trim() || undefined,
+        ...(enabledFields.has('faqItems') ? { faqItems: normalizedFaqItems.length > 0 ? normalizedFaqItems : undefined } : {}),
+        ...(enabledFields.has('focusKeyword') ? { focusKeyword: focusKeyword.trim() || undefined } : {}),
         metaDescription: enabledFields.has('metaDescription')
           ? (metaDescription.trim() || resolvedMetaDescription || undefined)
           : undefined,
         metaTitle: enabledFields.has('metaTitle')
           ? (metaTitle.trim() || resolvedMetaTitle || undefined)
           : undefined,
+        ...(enabledFields.has('relatedQueries') ? { relatedQueries: normalizedRelatedQueries.length > 0 ? normalizedRelatedQueries : undefined } : {}),
         slug: slug.trim() || title.toLowerCase().replaceAll(/\s+/g, '-'),
         publishImmediately: status === 'Published' ? publishImmediately : undefined,
         publishedAt: status === 'Published' ? resolvedPublishedAt : undefined,
         status,
+        ...(enabledFields.has('tags') ? { tags: normalizedPostTags.length > 0 ? normalizedPostTags : undefined } : {}),
         thumbnail,
         thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
         title: title.trim(),
@@ -489,6 +533,9 @@ export default function PostCreatePage() {
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          <PostFormTabs activeTab={activeTab} onChange={setActiveTab} />
+          {activeTab === 'content' ? (
+            <>
           {generatorEnabled && (
             <Card>
               <CardHeader><CardTitle className="text-base">Sinh tự động</CardTitle></CardHeader>
@@ -800,6 +847,29 @@ export default function PostCreatePage() {
               </CardContent>
             </Card>
           )}
+            </>
+          ) : showAdvancedSeoFields ? (
+            <PostAdvancedSeoFields
+              faqItems={faqItems}
+              focusKeyword={focusKeyword}
+              onFaqItemsChange={setFaqItems}
+              onFocusKeywordChange={setFocusKeyword}
+              onRelatedQueriesChange={setRelatedQueries}
+              onTagsChange={setPostTags}
+              relatedQueries={relatedQueries}
+              showFaqItems={enabledFields.has('faqItems')}
+              showFocusKeyword={enabledFields.has('focusKeyword')}
+              showRelatedQueries={enabledFields.has('relatedQueries')}
+              showTags={enabledFields.has('tags')}
+              tags={postTags}
+            />
+          ) : (
+            <Card>
+              <CardContent className="py-8 text-center text-sm text-slate-500">
+                SEO nâng cao đang tắt trong cấu hình module Posts.
+              </CardContent>
+            </Card>
+          )}
         </div>
         
         <div className="space-y-6">
@@ -921,7 +991,7 @@ export default function PostCreatePage() {
         disableSave={isSubmitting || !title.trim() || !categoryId}
       >
         <div className="flex flex-wrap justify-end gap-2">
-          <AiEntityImportDialog kind="post" enabledFields={enabledFields} onApply={handleApplyAiPost} />
+          <AiEntityImportDialog kind="post" currentData={aiImportCurrentData} enabledFields={enabledFields} onApply={handleApplyAiPost} />
           <Button type="submit" variant="accent" disabled={isSubmitting || !title.trim() || !categoryId}>
             {isSubmitting && <Loader2 size={16} className="animate-spin mr-2" />}
             Đăng bài

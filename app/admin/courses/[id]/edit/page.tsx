@@ -195,6 +195,50 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     selectedValueIds,
   ]);
 
+  const aiImportCurrentData = useMemo<AiEntityImportPayload>(() => ({
+    comparePriceAmount,
+    content: content.trim(),
+    durationText: durationText.trim(),
+    excerpt: excerpt.trim(),
+    featured,
+    htmlRender: htmlRender.trim(),
+    instructorName: instructorName.trim(),
+    introVideoType,
+    introVideoUrl: introVideoUrl.trim(),
+    isPriceVisible,
+    level,
+    markdownRender: markdownRender.trim(),
+    metaDescription: metaDescription.trim(),
+    metaTitle: metaTitle.trim(),
+    price: priceAmount,
+    priceNote: priceNote.trim(),
+    pricingType,
+    slug: slug.trim(),
+    thumbnail: thumbnail ?? '',
+    title: title.trim(),
+  }), [
+    comparePriceAmount,
+    content,
+    durationText,
+    excerpt,
+    featured,
+    htmlRender,
+    instructorName,
+    introVideoType,
+    introVideoUrl,
+    isPriceVisible,
+    level,
+    markdownRender,
+    metaDescription,
+    metaTitle,
+    priceAmount,
+    priceNote,
+    pricingType,
+    slug,
+    thumbnail,
+    title,
+  ]);
+
   const generalHasChanges = useMemo(() => {
     if (!initialSnapshotRef.current) {return false;}
     return JSON.stringify(initialSnapshotRef.current) !== JSON.stringify(currentSnapshot);
@@ -788,7 +832,7 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
           <>
             <Button type="button" variant="ghost" onClick={() => { router.push('/admin/courses'); }} disabled={isSubmitting}>Hủy bỏ</Button>
             <div className="flex flex-wrap justify-end gap-2">
-              <AiEntityImportDialog kind="course" enabledFields={enabledFields} onApply={handleApplyAiCourse} />
+              <AiEntityImportDialog kind="course" currentData={aiImportCurrentData} enabledFields={enabledFields} onApply={handleApplyAiCourse} />
               <Button
                 type="button"
                 variant="outline"

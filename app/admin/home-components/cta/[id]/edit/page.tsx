@@ -125,6 +125,9 @@ export default function CtaEditPage({
     }
   }, [component, id, router, snapshotComponent]);
 
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const isVisualEditAllowed = systemConfig?.typeVisualEditOverrides?.[COMPONENT_TYPE]?.enabled ?? true;
+
   const resolvedCustomSecondary = resolveSecondaryByMode(customState.mode, customState.primary, customState.secondary);
   const customChanged = enableTypeOverrides && showCustomBlock
     ? customState.enabled !== initialCustom.enabled
@@ -371,6 +374,8 @@ export default function CtaEditPage({
               onStyleChange={setCtaStyle}
               fontStyle={fontStyle}
               fontClassName="font-active"
+              isVisualEditAllowed={isVisualEditAllowed}
+              onConfigChange={setCtaConfig}
             />
           </div>
         </div>

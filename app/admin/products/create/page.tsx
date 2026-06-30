@@ -25,6 +25,7 @@ import { getAttributeIconComponent } from '@/app/admin/attribute-groups/_lib/ico
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
 import { CategoryTagsInput } from '@/app/admin/components/AdditionalCategoriesSelect';
+import { AdvancedSeoFields, SeoFormTabs, normalizeSeoFaqItems, normalizeSeoStringList, type SeoFaqItem, type SeoFormTab } from '@/app/admin/components/AdvancedSeoFields';
 import { InlineMatrixBuilder, type OptionCatalogItem, type VariantOptionSelection, type VariantRow } from '@/app/admin/products/components/inline-matrix-builder';
 import { normalizeVariantRows, normalizeVariantSelections, validateVariantPayload, type NormalizedVariantRow } from '@/app/admin/products/components/inline-variant-utils';
 
@@ -125,6 +126,11 @@ function ProductCreateContent() {
   const [htmlRender, setHtmlRender] = useState('');
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
+  const [seoTab, setSeoTab] = useState<SeoFormTab>('content');
+  const [focusKeyword, setFocusKeyword] = useState('');
+  const [relatedQueries, setRelatedQueries] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [faqItems, setFaqItems] = useState<SeoFaqItem[]>([]);
   const [image, setImage] = useState<string | undefined>();
   const [imageStorageId, setImageStorageId] = useState<Id<'_storage'> | undefined>();
   const [galleryItems, setGalleryItems] = useState<ImageItem[]>([]);
@@ -167,6 +173,10 @@ function ProductCreateContent() {
   const hasMarkdownRender = enabledFields.has('markdownRender');
   const hasHtmlRender = enabledFields.has('htmlRender');
   const showAdvancedRenderCard = hasMarkdownRender || hasHtmlRender;
+  const showAdvancedSeoFields = enabledFields.has('focusKeyword')
+    || enabledFields.has('tags')
+    || enabledFields.has('relatedQueries')
+    || enabledFields.has('faqItems');
 
   // Apply defaultStatus from settings
   const defaultStatus = useMemo(() => {
@@ -369,6 +379,44 @@ function ProductCreateContent() {
   [optionsData]);
   const normalizedVariantSelections = useMemo(() => normalizeVariantSelections(variantSelections), [variantSelections]);
   const normalizedVariantRows = useMemo(() => normalizeVariantRows(variantRows), [variantRows]);
+  const aiImportCurrentData = useMemo<AiEntityImportPayload>(() => ({
+    attributeTermIds,
+    combos: JSON.parse(JSON.stringify(combos)),
+    content: description.trim(),
+    description: description.trim(),
+    faqItems: normalizeSeoFaqItems(faqItems),
+    focusKeyword: focusKeyword.trim(),
+    htmlRender: htmlRender.trim(),
+    image: image ?? '',
+    markdownRender: markdownRender.trim(),
+    metaDescription: metaDescription.trim(),
+    metaTitle: metaTitle.trim(),
+    name: name.trim(),
+    price: price.trim() ? Number.parseInt(price, 10) : undefined,
+    relatedQueries: normalizeSeoStringList(relatedQueries),
+    salePrice: salePrice.trim() ? Number.parseInt(salePrice, 10) : undefined,
+    slug: slug.trim(),
+    stock: stock.trim() ? Number.parseInt(stock, 10) : undefined,
+    tags: normalizeSeoStringList(tags),
+  }), [
+    attributeTermIds,
+    combos,
+    description,
+    faqItems,
+    focusKeyword,
+    htmlRender,
+    image,
+    markdownRender,
+    metaDescription,
+    metaTitle,
+    name,
+    price,
+    relatedQueries,
+    salePrice,
+    slug,
+    stock,
+    tags,
+  ]);
 
   useEffect(() => {
     if (defaultStatus) {
@@ -726,6 +774,10 @@ function ProductCreateContent() {
         metaTitle: enabledFields.has('metaTitle')
           ? (metaTitle.trim() || resolvedMetaTitle || undefined)
           : undefined,
+        focusKeyword: enabledFields.has('focusKeyword') ? (focusKeyword.trim() || undefined) : undefined,
+        relatedQueries: enabledFields.has('relatedQueries') ? normalizeSeoStringList(relatedQueries) : undefined,
+        tags: enabledFields.has('tags') ? normalizeSeoStringList(tags) : undefined,
+        faqItems: enabledFields.has('faqItems') ? normalizeSeoFaqItems(faqItems) : undefined,
         name: name.trim(),
         options: variantPayload.options,
         variants: variantPayload.variants,
@@ -800,6 +852,9 @@ function ProductCreateContent() {
       {(!variantEnabled || activeTab === 'general') && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          <SeoFormTabs activeTab={seoTab} onChange={setSeoTab} />
+          {seoTab === 'content' ? (
+            <>
           <Card>
             <CardHeader><CardTitle className="text-base">Thông tin cơ bản</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -1592,6 +1647,30 @@ function ProductCreateContent() {
               </CardContent>
             </Card>
           )}
+
+            </>
+          ) : showAdvancedSeoFields ? (
+            <AdvancedSeoFields
+              focusKeyword={focusKeyword}
+              onFocusKeywordChange={setFocusKeyword}
+              tags={tags}
+              onTagsChange={setTags}
+              relatedQueries={relatedQueries}
+              onRelatedQueriesChange={setRelatedQueries}
+              faqItems={faqItems}
+              onFaqItemsChange={setFaqItems}
+              showFocusKeyword={enabledFields.has('focusKeyword')}
+              showTags={enabledFields.has('tags')}
+              showRelatedQueries={enabledFields.has('relatedQueries')}
+              showFaqItems={enabledFields.has('faqItems')}
+            />
+          ) : (
+            <Card>
+              <CardContent className="py-8 text-center text-sm text-slate-500">
+                SEO nâng cao đang tắt trong cấu hình module Products.
+              </CardContent>
+            </Card>
+          )}
         </div>
         
         <div className="space-y-6">
@@ -1891,8 +1970,16 @@ function ProductCreateContent() {
                   value={image}
                   storageId={imageStorageId}
                   onChange={(url, storageId) => {
-                    setImage(url);
-                    setImageStorageId(storageId);
+                    if (!url && galleryItems.length > 0) {
+                      const firstItem = galleryItems[0];
+                      setImage(firstItem.url);
+                      setImageStorageId(firstItem.storageId ?? undefined);
+                      setGalleryItems(galleryItems.slice(1));
+                      toast.info('Đã đôn ảnh đầu tiên từ thư viện làm ảnh chính');
+                    } else {
+                      setImage(url);
+                      setImageStorageId(storageId);
+                    }
                   }}
                   folder="products"
                   naming={{ entityName: slug.trim() || 'product', style: 'slug-index', index: 1 }}
@@ -1904,13 +1991,27 @@ function ProductCreateContent() {
             </Card>
           )}
 
-          {showBaseImages && enabledFields.has('images') && image && (
+          {showBaseImages && enabledFields.has('images') && (
             <Card>
               <CardHeader><CardTitle className="text-base">Thư viện ảnh</CardTitle></CardHeader>
               <CardContent>
                 <MultiImageUploader<ImageItem>
                   items={galleryItems}
-                  onChange={setGalleryItems}
+                  onChange={(items) => {
+                    if (!image && items.length > 0) {
+                      const validIndex = items.findIndex(item => Boolean(item.url));
+                      if (validIndex !== -1) {
+                        const firstImage = items[validIndex];
+                        setImage(firstImage.url);
+                        setImageStorageId(firstImage.storageId ?? undefined);
+                        const remainingItems = items.filter((_, idx) => idx !== validIndex);
+                        setGalleryItems(remainingItems);
+                        toast.info('Đã tự động đặt ảnh tải lên làm ảnh chính');
+                        return;
+                      }
+                    }
+                    setGalleryItems(items);
+                  }}
                   folder="products"
                   naming={{ entityName: slug.trim() || 'product', style: 'slug-index' }}
                   namingIndexOffset={1}
@@ -1990,6 +2091,7 @@ function ProductCreateContent() {
           <div className="flex flex-wrap justify-end gap-2">
             <AiEntityImportDialog
               kind="product"
+              currentData={aiImportCurrentData}
               enabledFields={enabledFields}
               onApply={handleApplyAiProduct}
               enableProductTypes={enableProductTypes}

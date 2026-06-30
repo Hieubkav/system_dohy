@@ -144,11 +144,6 @@ export const SEED_DEPENDENCIES: Record<string, ModuleDependency> = {
     deps: ['posts', 'products'],
     type: 'optional', // Can work without content
   },
-  kanban: {
-    deps: ['users'],
-    minRecords: 1,
-    type: 'all',
-  },
   subscriptions: {
     deps: ['users'],
     minRecords: 1,

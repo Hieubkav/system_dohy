@@ -93,6 +93,49 @@ export default function CourseCreatePage() {
   const hasMarkdownRender = enabledFields.has('markdownRender');
   const hasHtmlRender = enabledFields.has('htmlRender');
   const showAdvancedRender = hasMarkdownRender || hasHtmlRender;
+  const aiImportCurrentData = useMemo<AiEntityImportPayload>(() => ({
+    comparePriceAmount,
+    content: content.trim(),
+    durationText: durationText.trim(),
+    excerpt: excerpt.trim(),
+    featured,
+    htmlRender: htmlRender.trim(),
+    instructorName: instructorName.trim(),
+    introVideoType,
+    introVideoUrl: introVideoUrl.trim(),
+    isPriceVisible,
+    level,
+    markdownRender: markdownRender.trim(),
+    metaDescription: metaDescription.trim(),
+    metaTitle: metaTitle.trim(),
+    price: priceAmount,
+    priceNote: priceNote.trim(),
+    pricingType,
+    slug: slug.trim(),
+    thumbnail: thumbnail ?? '',
+    title: title.trim(),
+  }), [
+    comparePriceAmount,
+    content,
+    durationText,
+    excerpt,
+    featured,
+    htmlRender,
+    instructorName,
+    introVideoType,
+    introVideoUrl,
+    isPriceVisible,
+    level,
+    markdownRender,
+    metaDescription,
+    metaTitle,
+    priceAmount,
+    priceNote,
+    pricingType,
+    slug,
+    thumbnail,
+    title,
+  ]);
 
   useEffect(() => {
     if (!settingsData) {return;}
@@ -504,7 +547,7 @@ export default function CourseCreatePage() {
           <>
             <Button type="button" variant="ghost" onClick={() => { router.push('/admin/courses'); }}>Hủy bỏ</Button>
             <div className="flex flex-wrap justify-end gap-2">
-              <AiEntityImportDialog kind="course" enabledFields={enabledFields} onApply={handleApplyAiCourse} />
+              <AiEntityImportDialog kind="course" currentData={aiImportCurrentData} enabledFields={enabledFields} onApply={handleApplyAiCourse} />
               <Button type="submit" variant="accent" disabled={isSubmitting || !title.trim() || !categoryId} className="bg-indigo-600 hover:bg-indigo-500">
                 {isSubmitting && <Loader2 size={16} className="mr-2 animate-spin" />}
                 Tạo khóa học

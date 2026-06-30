@@ -1,5 +1,6 @@
 'use client';
 
+
 import React from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -28,6 +29,8 @@ interface ContactPreviewProps {
   mode?: ContactBrandMode;
   selectedStyle?: ContactStyle;
   onStyleChange?: (style: ContactStyle) => void;
+  onConfigChange?: (config: ContactConfigState) => void;
+  onTitleChange?: (value: string) => void;
   title?: string;
   mapData?: ContactMapData | null;
   fontStyle?: React.CSSProperties;
@@ -41,6 +44,8 @@ interface ContactPreviewContentProps {
   mode: ContactBrandMode;
   previewStyle: ContactStyle;
   title?: string;
+  onConfigChange?: (config: ContactConfigState) => void;
+  onTitleChange?: (value: string) => void;
   mapData?: ContactMapData | null;
   device: PreviewDevice;
   homePageBgColor: string;
@@ -53,6 +58,8 @@ const ContactPreviewContent = ({
   mode,
   previewStyle,
   title,
+  onConfigChange,
+  onTitleChange,
   mapData,
   device,
   homePageBgColor,
@@ -77,6 +84,8 @@ const ContactPreviewContent = ({
           context="preview"
           device={device}
           title={title}
+          onConfigChange={onConfigChange}
+          onTitleChange={onTitleChange}
           mapData={mapData ?? undefined}
           isDark={isDark}
         />
@@ -92,6 +101,8 @@ export function ContactPreview({
   mode = 'dual',
   selectedStyle,
   onStyleChange,
+  onConfigChange,
+  onTitleChange,
   title,
   mapData,
   fontStyle,
@@ -177,6 +188,7 @@ export function ContactPreview({
         deviceWidthClass={deviceWidths[device]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+        visualEditAllowed={Boolean(onConfigChange || onTitleChange)}
       >
         <ContactPreviewContent
           config={normalizedConfig}
@@ -185,6 +197,8 @@ export function ContactPreview({
           mode={mode}
           previewStyle={previewStyle}
           title={title}
+          onConfigChange={onConfigChange}
+          onTitleChange={onTitleChange}
           mapData={mapData}
           device={device}
           homePageBgColor={homePageBgColor}

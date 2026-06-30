@@ -83,6 +83,20 @@ export default function ServiceCreatePage() {
   const hasHtmlRender = enabledFields.has('htmlRender');
   const showAdvancedRenderCard = hasMarkdownRender || hasHtmlRender;
   const multiCategoryEnabled = Boolean(settingsData?.find(s => s.settingKey === 'enableMultipleCategories')?.value);
+  const aiImportCurrentData = useMemo<AiEntityImportPayload>(() => ({
+    content: content.trim(),
+    duration: duration.trim(),
+    excerpt: excerpt.trim(),
+    featured,
+    htmlRender: htmlRender.trim(),
+    markdownRender: markdownRender.trim(),
+    metaDescription: metaDescription.trim(),
+    metaTitle: metaTitle.trim(),
+    price,
+    slug: slug.trim(),
+    thumbnail: thumbnail ?? '',
+    title: title.trim(),
+  }), [content, duration, excerpt, featured, htmlRender, markdownRender, metaDescription, metaTitle, price, slug, thumbnail, title]);
 
   const generateSlugFromTitle = (value: string) => value.toLowerCase()
       .normalize("NFD").replaceAll(/[\u0300-\u036F]/g, "")
@@ -498,7 +512,7 @@ export default function ServiceCreatePage() {
         <>
           <Button type="button" variant="ghost" onClick={() =>{  router.push('/admin/services'); }}>Hủy bỏ</Button>
           <div className="flex flex-wrap justify-end gap-2">
-            <AiEntityImportDialog kind="service" enabledFields={enabledFields} onApply={handleApplyAiService} />
+            <AiEntityImportDialog kind="service" currentData={aiImportCurrentData} enabledFields={enabledFields} onApply={handleApplyAiService} />
             <Button type="submit" variant="accent" disabled={isSubmitting || !title.trim() || !categoryId} className="bg-teal-600 hover:bg-teal-500">
               {isSubmitting && <Loader2 size={16} className="animate-spin mr-2" />}
               Đăng

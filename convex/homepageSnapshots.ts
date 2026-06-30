@@ -94,6 +94,17 @@ const SNAPSHOT_REQUIRED_SETTINGS_KEYS = {
     'seo_og_image',
     'seo_google_verification',
     'seo_bing_verification',
+    'seo_brand_aliases',
+    'seo_brand_summary',
+    'seo_brand_entity_type',
+    'seo_brand_search_queries',
+    'seo_brand_topics',
+    'seo_brand_services',
+    'seo_brand_audience',
+    'seo_brand_differentiators',
+    'seo_brand_proof_points',
+    'seo_brand_same_as',
+    'seo_site_search_path',
   ],
 } as const;
 

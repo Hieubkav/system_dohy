@@ -20,7 +20,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useInView } from 'react-intersection-observer';
 import { api } from '@/convex/_generated/api';
-import { useBrandColors } from '@/components/site/hooks';
+import { useBrandColors, useSiteSettings } from '@/components/site/hooks';
 import {
   getProductDetailColors,
   resolveProductDetailElementColor,
@@ -51,6 +51,12 @@ import { toRichTextContent } from '@/lib/products/product-supplemental-content';
 import { ProductAttributesBadges } from '../products/ProductsPage';
 import { buildCategoryPath, buildDetailPath, normalizeRouteMode } from '@/lib/ia/route-mode';
 import { useProductFrameConfig } from '@/components/shared/ProductImageFrameBox';
+import {
+  PRODUCT_CONTACT_SALE_LINK_SETTING_KEYS,
+  navigateProductContactSaleHref,
+  resolveProductContactSaleHref,
+} from '@/lib/products/contact-sale-link';
+import { getCategoryPathItems, type CategoryTreeItem } from '@/lib/products/category-tree';
 
 type ProductDetailStyle = 'classic' | 'modern' | 'minimal' | 'premium';
 type ModernHeroStyle = 'full' | 'split' | 'minimal';
@@ -418,15 +424,17 @@ function useEnabledProductFields(): Set<string> {
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  initialProduct?: any;
 }
 
-export default function ProductDetailPage({ params }: PageProps) {
+export default function ProductDetailPage({ params, initialProduct }: PageProps) {
   const { slug } = use(params);
   const brandColors = useBrandColors();
   const brandColor = brandColors.primary;
+  const { isDark } = useSiteSettings();
   const tokens = useMemo(
-    () => getProductDetailColors(brandColors.primary, brandColors.secondary, brandColors.mode || 'single'),
-    [brandColors.primary, brandColors.secondary, brandColors.mode]
+    () => getProductDetailColors(brandColors.primary, brandColors.secondary, brandColors.mode || 'single', isDark),
+    [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]
   );
   const experienceConfig = useProductDetailExperienceConfig();
   const classicHighlights = useClassicHighlights();
@@ -442,6 +450,7 @@ export default function ProductDetailPage({ params }: PageProps) {
   const commentsRepliesFeature = useQuery(api.admin.modules.getModuleFeature, { featureKey: 'enableReplies', moduleKey: 'comments' });
   const commentsSettings = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'comments' });
   const saleModeSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'saleMode' });
+  const contactSaleLinkSettings = useQuery(api.settings.getMultiple, { keys: [...PRODUCT_CONTACT_SALE_LINK_SETTING_KEYS] });
   const wishlistModule = useQuery(api.admin.modules.getModuleByKey, { key: 'wishlist' });
   const ordersModule = useQuery(api.admin.modules.getModuleByKey, { key: 'orders' });
   const commerceCapabilities = useQuery(api.cart.getCommerceCapabilities, {});
@@ -450,7 +459,8 @@ export default function ProductDetailPage({ params }: PageProps) {
   const incrementLike = useMutation(api.comments.incrementLike);
   const decrementLike = useMutation(api.comments.decrementLike);
   
-  const product = useQuery(api.products.getBySlug, { slug });
+  const productQuery = useQuery(api.products.getBySlug, { slug });
+  const product = productQuery ?? (initialProduct as Exclude<typeof productQuery, undefined>);
 
   const enableProductTypesSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'enableProductTypes' });
   const enableProductTypes = enableProductTypesSetting?.value === true;
@@ -531,6 +541,10 @@ export default function ProductDetailPage({ params }: PageProps) {
     if (!categories) {return new Map<string, string>();}
     return new Map(categories.map((item) => [item._id, item.slug]));
   }, [categories]);
+  const categoryPath = useMemo(
+    () => getCategoryPathItems(categories ?? [], product?.categoryId),
+    [categories, product?.categoryId]
+  );
   const productImagePlaceholderSetting = useQuery(api.settings.getValue, { key: 'product_image_placeholder', defaultValue: '' });
   const productImagePlaceholder = isValidImageSrc(productImagePlaceholderSetting)
     ? productImagePlaceholderSetting.trim()
@@ -670,6 +684,7 @@ export default function ProductDetailPage({ params }: PageProps) {
     }
     return 'cart';
   }, [saleModeSetting?.value]);
+  const contactSaleHref = useMemo(() => resolveProductContactSaleHref(contactSaleLinkSettings), [contactSaleLinkSettings]);
   const commentRepliesMap = useMemo(() => {
     const map = new Map<string, CommentData[]>();
     comments.forEach((comment) => {
@@ -805,7 +820,7 @@ export default function ProductDetailPage({ params }: PageProps) {
     }
 
     if (saleMode === 'contact') {
-      router.push('/contact');
+      navigateProductContactSaleHref(contactSaleHref, router);
       return;
     }
 
@@ -995,6 +1010,7 @@ export default function ProductDetailPage({ params }: PageProps) {
     ...product,
     categoryName: category?.name ?? 'Sản phẩm',
     categorySlug: category?.slug,
+    categoryPath,
     hasVariants: product.hasVariants,
   };
 
@@ -1057,6 +1073,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           productAttributesMap={productAttributesMap}
           productTypeId={(product as any)?.productTypeId}
           premiumBannerItems={experienceConfig.premiumBannerItems}
+          productTerms={productTerms}
           premiumBannerBg={experienceConfig.premiumBannerBg}
           premiumBannerText={experienceConfig.premiumBannerText}
           showPremiumBanner={experienceConfig.showPremiumBanner}
@@ -1132,6 +1149,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           socialButtons={experienceConfig.socialButtons}
           productAttributesMap={productAttributesMap}
           productTypeId={(product as any)?.productTypeId}
+          productTerms={productTerms}
         />
       )}
       {experienceConfig.layoutStyle === 'modern' && (
@@ -1193,6 +1211,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           productTypeId={(product as any)?.productTypeId}
           enableProductTypes={enableProductTypes}
           productTypeSlugMap={productTypeSlugMap}
+          productTerms={productTerms}
         />
       )}
       {experienceConfig.layoutStyle === 'minimal' && (
@@ -1254,6 +1273,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           productTypeId={(product as any)?.productTypeId}
           enableProductTypes={enableProductTypes}
           productTypeSlugMap={productTypeSlugMap}
+          productTerms={productTerms}
         />
       )}
       <ProductImageLightbox
@@ -1288,6 +1308,7 @@ interface ProductData {
   categoryId: Id<"productCategories">;
   categoryName: string;
   categorySlug?: string;
+  categoryPath?: CategoryTreeItem[];
   combos?: any[];
 }
 
@@ -1315,6 +1336,52 @@ interface CommentData {
 interface ProductSupplementalContentData {
   preContent?: string;
   postContent?: string;
+}
+
+function ProductCategoryBreadcrumbLinks({
+  product,
+  routeMode,
+  iconSize,
+  includeProductsLink = false,
+}: {
+  product: ProductData;
+  routeMode: 'unified' | 'namespace';
+  iconSize: number;
+  includeProductsLink?: boolean;
+}) {
+  const categoryPath: CategoryTreeItem[] = product.categoryPath?.length
+    ? product.categoryPath
+    : product.categorySlug
+      ? [{ _id: product.categoryId, name: product.categoryName, slug: product.categorySlug }]
+      : [];
+
+  return (
+    <>
+      {includeProductsLink && (
+        <>
+          <Link href="/products" className="transition-colors">Sản phẩm</Link>
+          <ChevronRight size={iconSize} />
+        </>
+      )}
+      {categoryPath.map((category) => (
+        <React.Fragment key={category._id}>
+          <Link
+            href={buildCategoryPath({ categorySlug: category.slug ?? '', mode: routeMode, moduleKey: 'products' })}
+            className="transition-colors"
+          >
+            {category.name}
+          </Link>
+          <ChevronRight size={iconSize} />
+        </React.Fragment>
+      ))}
+      {categoryPath.length === 0 && !includeProductsLink && (
+        <>
+          <Link href="/products" className="transition-colors">Sản phẩm</Link>
+          <ChevronRight size={iconSize} />
+        </>
+      )}
+    </>
+  );
 }
 
 interface StyleProps {
@@ -1355,6 +1422,7 @@ interface StyleProps {
   productTypeId?: string;
   enableProductTypes?: boolean;
   productTypeSlugMap?: Map<string, string>;
+  productTerms: any[];
 }
 
 interface ExperienceBlocksProps {
@@ -2110,6 +2178,7 @@ function ClassicStyle({
   productTypeId,
   highlightsPosition,
   highlightsSpacing,
+  productTerms,
 }: ClassicStyleProps) {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -2255,30 +2324,13 @@ function ClassicStyle({
       <div className="border-b" style={{ borderColor: tokens.divider }}>
         <div className="max-w-6xl mx-auto px-4 py-2 md:py-3">
           <nav className="flex items-center gap-1 text-[11px] md:hidden" style={{ color: tokens.breadcrumbText }}>
-            {product.categorySlug && product.categoryName ? (
-              <>
-                <Link href={buildCategoryPath({ categorySlug: product.categorySlug, mode: routeMode, moduleKey: 'products' })} className="transition-colors">{product.categoryName}</Link>
-                <ChevronRight size={10} />
-              </>
-            ) : (
-              <>
-                <Link href="/products" className="transition-colors">Sản phẩm</Link>
-                <ChevronRight size={10} />
-              </>
-            )}
+            <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={10} />
             <span className="font-medium truncate max-w-[180px]" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
           </nav>
           <nav className="hidden md:flex items-center gap-2 text-sm" style={{ color: tokens.breadcrumbText }}>
             <Link href="/" className="transition-colors">Trang chủ</Link>
             <ChevronRight size={14} />
-            <Link href="/products" className="transition-colors">Sản phẩm</Link>
-            <ChevronRight size={14} />
-            {product.categorySlug && (
-              <>
-                <Link href={buildCategoryPath({ categorySlug: product.categorySlug, mode: routeMode, moduleKey: 'products' })} className="transition-colors">{product.categoryName}</Link>
-                <ChevronRight size={14} />
-              </>
-            )}
+            <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={14} includeProductsLink />
             <span className="font-medium truncate max-w-[200px]" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
           </nav>
         </div>
@@ -2591,6 +2643,14 @@ function ClassicStyle({
                   style={{ color: tokens.bodyText }}
                 />
               )}
+              {productTerms.filter(term => term.description && term.description.trim()).map(term => (
+                <RichContent
+                  key={term._id}
+                  content={toRichTextContent(term.description!)}
+                  className="max-w-none mt-4 pt-4 border-t border-dashed border-slate-100 dark:border-slate-800"
+                  style={{ color: tokens.bodyText }}
+                />
+              ))}
               {supplementalContent?.postContent ? (
                 <RichContent
                   content={toRichTextContent(supplementalContent.postContent)}
@@ -2741,6 +2801,7 @@ function PremiumStyle({
   productAttributesMap,
   productTypeId,
   premiumBannerItems,
+  productTerms,
   premiumBannerBg = 'primary',
   premiumBannerText = 'white',
   showPremiumBanner = true,
@@ -3093,30 +3154,13 @@ function PremiumStyle({
       <div className="border-b" style={{ borderColor: tokens.divider }}>
         <div className="max-w-6xl mx-auto px-4 py-2 md:py-3">
           <nav className="flex items-center gap-1 text-[11px] md:hidden" style={{ color: tokens.breadcrumbText }}>
-            {product.categorySlug && product.categoryName ? (
-              <>
-                <Link href={buildCategoryPath({ categorySlug: product.categorySlug, mode: routeMode, moduleKey: 'products' })} className="transition-colors">{product.categoryName}</Link>
-                <ChevronRight size={10} />
-              </>
-            ) : (
-              <>
-                <Link href="/products" className="transition-colors">Sản phẩm</Link>
-                <ChevronRight size={10} />
-              </>
-            )}
+            <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={10} />
             <span className="font-medium truncate max-w-[180px]" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
           </nav>
           <nav className="hidden md:flex items-center gap-2 text-sm" style={{ color: tokens.breadcrumbText }}>
             <Link href="/" className="transition-colors">Trang chủ</Link>
             <ChevronRight size={14} />
-            <Link href="/products" className="transition-colors">Sản phẩm</Link>
-            <ChevronRight size={14} />
-            {product.categorySlug && (
-              <>
-                <Link href={buildCategoryPath({ categorySlug: product.categorySlug, mode: routeMode, moduleKey: 'products' })} className="transition-colors">{product.categoryName}</Link>
-                <ChevronRight size={14} />
-              </>
-            )}
+            <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={14} includeProductsLink />
             <span className="font-medium truncate max-w-[200px]" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
           </nav>
         </div>
@@ -3974,6 +4018,14 @@ function PremiumStyle({
                   style={{ color: tokens.bodyText }}
                 />
               )}
+              {productTerms.filter(term => term.description && term.description.trim()).map(term => (
+                <RichContent
+                  key={term._id}
+                  content={toRichTextContent(term.description!)}
+                  className="max-w-none mt-4 pt-4 border-t border-dashed border-slate-100 dark:border-slate-800"
+                  style={{ color: tokens.bodyText }}
+                />
+              ))}
               {supplementalContent?.postContent ? (
                 <RichContent
                   content={toRichTextContent(supplementalContent.postContent)}
@@ -4350,6 +4402,7 @@ function ModernStyle({
   productTypeSlugMap,
   highlightsPosition,
   highlightsSpacing,
+  productTerms,
 }: StyleProps & ExperienceBlocksProps & HighlightBlockProps & { heroStyle: ModernHeroStyle }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -4510,23 +4563,29 @@ function ModernStyle({
         <div className="max-w-6xl mx-auto px-4 py-3 md:py-4">
           <nav className="flex items-center justify-between gap-4">
             <div className="md:hidden flex items-center gap-1 text-[11px] truncate" style={{ color: tokens.breadcrumbText }}>
-              {product.categorySlug && product.categoryName ? (
-                <>
-                  <Link href={buildCategoryPath({ categorySlug: product.categorySlug, mode: routeMode, moduleKey: 'products' })} className="transition-colors">{product.categoryName}</Link>
-                  <ChevronRight size={10} />
-                </>
-              ) : (
-                <>
-                  <Link href="/products" className="transition-colors">Sản phẩm</Link>
-                  <ChevronRight size={10} />
-                </>
-              )}
+              <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={10} />
               <span className="truncate" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
             </div>
             <div className="hidden md:block text-sm truncate" style={{ color: tokens.breadcrumbText }}>
               <Link href="/" className="transition-colors">Trang chủ</Link>
               {' / '}
               <Link href="/products" className="transition-colors">Sản phẩm</Link>
+              {(product.categoryPath?.length
+                ? product.categoryPath
+                : product.categorySlug
+                  ? [{ _id: product.categoryId, name: product.categoryName, slug: product.categorySlug }]
+                  : []
+              ).map((category) => (
+                <React.Fragment key={category._id}>
+                  {' / '}
+                  <Link
+                    href={buildCategoryPath({ categorySlug: category.slug ?? '', mode: routeMode, moduleKey: 'products' })}
+                    className="transition-colors"
+                  >
+                    {category.name}
+                  </Link>
+                </React.Fragment>
+              ))}
               {' / '}
               <span style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
             </div>
@@ -4958,6 +5017,14 @@ function ModernStyle({
                       style={{ color: tokens.bodyText }}
                     />
                   )}
+                  {productTerms.filter(term => term.description && term.description.trim()).map(term => (
+                    <RichContent
+                      key={term._id}
+                      content={toRichTextContent(term.description!)}
+                      className="max-w-none mt-4 pt-4 border-t border-dashed border-slate-100 dark:border-slate-800"
+                      style={{ color: tokens.bodyText }}
+                    />
+                  ))}
                   {supplementalContent?.postContent ? (
                     <RichContent
                       content={toRichTextContent(supplementalContent.postContent)}
@@ -5084,6 +5151,7 @@ function MinimalStyle({
   productTypeSlugMap,
   highlightsPosition,
   highlightsSpacing,
+  productTerms,
 }: StyleProps & ExperienceBlocksProps & HighlightBlockProps & { contentWidth: MinimalContentWidth }) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedOptions, setSelectedOptions] = useState<VariantSelectionMap>({});
@@ -5266,24 +5334,13 @@ function MinimalStyle({
       <main className={`${contentWidthClass} mx-auto px-0 md:px-6 py-6 md:py-10`}>
         <div className="px-4 md:px-0 mb-3 md:mb-6">
           <nav className="flex items-center gap-1 text-[11px] md:hidden" style={{ color: tokens.breadcrumbText }}>
-            {product.categorySlug && product.categoryName ? (
-              <>
-                <Link href={buildCategoryPath({ categorySlug: product.categorySlug, mode: routeMode, moduleKey: 'products' })} className="transition-colors">{product.categoryName}</Link>
-                <ChevronRight size={10} />
-              </>
-            ) : (
-              <>
-                <Link href="/products" className="transition-colors">Sản phẩm</Link>
-                <ChevronRight size={10} />
-              </>
-            )}
+            <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={10} />
             <span className="truncate max-w-[180px]" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
           </nav>
           <nav className="hidden md:flex items-center gap-2 text-xs" style={{ color: tokens.breadcrumbText }}>
             <Link href="/" className="transition-colors">Trang chủ</Link>
             <ChevronRight size={12} />
-            <Link href="/products" className="transition-colors">Sản phẩm</Link>
-            <ChevronRight size={12} />
+            <ProductCategoryBreadcrumbLinks product={product} routeMode={routeMode} iconSize={12} includeProductsLink />
             <span className="truncate max-w-[160px]" style={{ color: tokens.breadcrumbActive }}>{product.name}</span>
           </nav>
         </div>
@@ -5571,6 +5628,14 @@ function MinimalStyle({
                   style={{ color: tokens.bodyText }}
                 />
               )}
+              {productTerms.filter(term => term.description && term.description.trim()).map(term => (
+                <RichContent
+                  key={term._id}
+                  content={toRichTextContent(term.description!)}
+                  className="leading-relaxed font-light text-justify mt-4 pt-4 border-t border-dashed border-slate-100 dark:border-slate-800"
+                  style={{ color: tokens.bodyText }}
+                />
+              ))}
               {supplementalContent?.postContent ? (
                 <RichContent
                   content={toRichTextContent(supplementalContent.postContent)}

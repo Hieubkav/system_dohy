@@ -1,9 +1,11 @@
 # Core Operating Principles
 - Trả lời bằng Tiếng Việt có dấu.
 - Tuân thủ KISS, YAGNI, DRY.
+  - Quy tắc 200/50: Ưu tiên giải pháp ngắn gọn, tinh giản; nếu viết 200 dòng code mà có thể tối ưu gọn gàng thành 50 dòng thì bắt buộc phải viết lại.
 - Tuân thủ Rails Convention Over Configuration.
 - Không mở rộng scope ngoài yêu cầu.
-- Ưu tiên thay đổi nhỏ, dễ rollback.
+- Ưu tiên thay đổi nhỏ, dễ rollback. Áp dụng Surgical Changes nghiêm ngặt: Chỉ sửa đúng những gì được yêu cầu. Tuyệt đối không tự ý định dạng lại (formatting), sửa comment hoặc dọn dẹp/refactor code lân cận nếu chúng không bị lỗi và không liên quan trực tiếp đến tác vụ (tránh git noise và regression bugs).
+- Think & Push back: Luôn nêu rõ giả định trước khi triển khai. Nếu phát hiện giải pháp đơn giản hơn hoặc nhận thấy yêu cầu mơ hồ/nhiều cách hiểu, bắt buộc dừng lại phản biện hoặc hỏi rõ người dùng để thống nhất (chỉ tự quyết khi hướng đi đã rõ ràng, đơn giản và duy nhất theo Decision & AskUser Quality Rules).
 
 # Workspace Hygiene & Cleanliness Guardrails (Quy tắc Giữ gìn Vệ sinh Workspace)
 - **Tuyệt đối không tạo file nháp vương vãi:** Nghiêm cấm tạo các file kịch bản tạm thời, file vá (patch), file test hoặc file nháp (ví dụ `.js`, `.ts`, `.py`, `.md`, `.json`...) trực tiếp ở thư mục gốc của dự án hoặc các thư mục module cốt lõi mà không có mục đích sử dụng lâu dài.

@@ -18,6 +18,7 @@ import { ContactInquiryForm } from '@/components/contact/ContactInquiryForm';
 import OpenStreetMapDisplay from '@/components/maps/OpenStreetMapDisplay';
 import { sanitizeGoogleMapIframe, type ContactMapData } from '@/lib/contact/getContactMapData';
 import { getSectionSpacingClassName } from '../../_shared/types/sectionSpacing';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
 import { renderContactIcon } from '../_lib/iconOptions';
 import { getContactCornerRadiusClassName } from '../_lib/constants';
 import type { PreviewDevice } from '../../_shared/hooks/usePreviewDevice';
@@ -44,6 +45,8 @@ interface ContactSectionSharedProps {
   mapData?: ContactMapData;
   sourcePath?: string;
   isDark?: boolean;
+  onConfigChange?: (config: ContactConfigState) => void;
+  onTitleChange?: (value: string) => void;
 }
 
 const PinterestIcon = ({ size = 18 }: { size?: number }) => (
@@ -263,10 +266,71 @@ const getDisplayItems = (config: ContactConfigState, isPreview: boolean) => {
   });
 };
 
-const renderItemValue = (item: ContactConfigState['contactItems'][number], tokens: ContactColorTokens, isPreview: boolean, className = 'text-sm') => {
-  const displayValue = item.value?.trim() || item.href?.trim() || (isPreview ? 'Chưa có nội dung' : '');
-  if (!displayValue) {return null;}
+const VisualEditContext = React.createContext<{
+  isVisualEditActive: boolean;
+  config?: ContactConfigState;
+  onSaveConfig?: (config: ContactConfigState) => void;
+}>({
+  isVisualEditActive: false,
+});
+
+const EditableText = ({
+  text,
+  onSave,
+  className,
+  style,
+  tag: Tag = 'span',
+  placeholder = '',
+  isVisualEditActive = false,
+}: {
+  text: string;
+  onSave: (val: string) => void;
+  className?: string;
+  style?: React.CSSProperties;
+  tag?: any;
+  placeholder?: string;
+  isVisualEditActive?: boolean;
+}) => {
+  const Component = Tag;
+  return (
+    <Component
+      contentEditable={isVisualEditActive}
+      suppressContentEditableWarning={isVisualEditActive}
+      onBlur={isVisualEditActive ? (e: any) => onSave(e.currentTarget.textContent ?? '') : undefined}
+      className={cn(className, isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+      style={style}
+    >
+      {text || (isVisualEditActive ? placeholder : '')}
+    </Component>
+  );
+};
+
+const renderItemValue = (
+  item: ContactConfigState['contactItems'][number],
+  tokens: ContactColorTokens,
+  isPreview: boolean,
+  className = 'text-sm',
+  isVisualEditActive = false,
+  onSaveValue?: (val: string) => void
+) => {
+  const displayValue = item.value?.trim() || item.href?.trim() || (isPreview ? (isVisualEditActive ? 'Chưa có nội dung' : '') : '');
+  if (!displayValue && !isVisualEditActive) {return null;}
   const textClassName = cn('min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]', className);
+
+  if (isVisualEditActive) {
+    return (
+      <EditableText
+        text={item.value || item.href || ''}
+        placeholder="Nhập nội dung..."
+        onSave={onSaveValue || (() => {})}
+        isVisualEditActive={isVisualEditActive}
+        tag="span"
+        className={textClassName}
+        style={{ color: tokens.valueText }}
+      />
+    );
+  }
+
   const content = <span className={textClassName} style={{ color: tokens.valueText }}>{displayValue}</span>;
 
   if (!item.href) {return content;}
@@ -297,12 +361,34 @@ const ContactItemRow = ({
   isPreview: boolean;
   valueClassName?: string;
 }) => {
+  const { isVisualEditActive, config, onSaveConfig } = React.useContext(VisualEditContext);
+
+  const handleUpdate = (field: 'label' | 'value', val: string) => {
+    if (onSaveConfig && config) {
+      const nextItems = (config.contactItems || []).map((cit) =>
+        cit.id === item.id ? { ...cit, [field]: val } : cit
+      );
+      onSaveConfig({
+        ...config,
+        contactItems: nextItems,
+      });
+    }
+  };
+
   return (
     <div className="flex items-start gap-3">
       <IconBadge icon={renderContactIcon(item.icon, iconSize)} tokens={tokens} className="mt-0.5" />
-      <div className="min-w-0">
-        <h4 className="font-semibold text-sm mb-0.5" style={{ color: tokens.labelText }}>{item.label}</h4>
-        {renderItemValue(item, tokens, isPreview, valueClassName ?? 'text-sm')}
+      <div className="min-w-0 flex-1">
+        <h4 className="font-semibold text-sm mb-0.5" style={{ color: tokens.labelText }}>
+          <EditableText
+            text={item.label || ''}
+            placeholder="Nhãn..."
+            onSave={(val) => handleUpdate('label', val)}
+            isVisualEditActive={isVisualEditActive}
+            tag="span"
+          />
+        </h4>
+        {renderItemValue(item, tokens, isPreview, valueClassName ?? 'text-sm', isVisualEditActive, (val) => handleUpdate('value', val))}
       </div>
     </div>
   );
@@ -321,11 +407,33 @@ const ContactItemCard = ({
   isPreview: boolean;
   radiusClassName?: string;
 }) => {
+  const { isVisualEditActive, config, onSaveConfig } = React.useContext(VisualEditContext);
+
+  const handleUpdate = (field: 'label' | 'value', val: string) => {
+    if (onSaveConfig && config) {
+      const nextItems = (config.contactItems || []).map((cit) =>
+        cit.id === item.id ? { ...cit, [field]: val } : cit
+      );
+      onSaveConfig({
+        ...config,
+        contactItems: nextItems,
+      });
+    }
+  };
+
   return (
     <div className={cn('flex min-w-0 flex-col items-center border p-5 text-center', radiusClassName)} style={{ borderColor: tokens.cardBorder, backgroundColor: tokens.cardBackground }}>
       <IconBadge icon={renderContactIcon(item.icon, iconSize)} tokens={tokens} className="mb-3" />
-      <h3 className="font-medium text-sm mb-1" style={{ color: tokens.labelText }}>{item.label}</h3>
-      {renderItemValue(item, tokens, isPreview, 'text-sm font-semibold')}
+      <h3 className="font-medium text-sm mb-1" style={{ color: tokens.labelText }}>
+        <EditableText
+          text={item.label || ''}
+          placeholder="Nhãn..."
+          onSave={(val) => handleUpdate('label', val)}
+          isVisualEditActive={isVisualEditActive}
+          tag="span"
+        />
+      </h3>
+      {renderItemValue(item, tokens, isPreview, 'text-sm font-semibold', isVisualEditActive, (val) => handleUpdate('value', val))}
     </div>
   );
 };
@@ -401,17 +509,22 @@ const ContactSectionHeader = ({
   title,
   config,
   tokens,
+  onConfigChange,
+  onTitleChange,
 }: {
   title?: string;
   config: ContactConfigState;
   tokens: ContactColorTokens;
+  onConfigChange?: (config: ContactConfigState) => void;
+  onTitleChange?: (value: string) => void;
 }) => {
+  const { isVisualEditActive } = React.useContext(VisualEditContext);
   const resolvedTitle = typeof title === 'string' ? title.trim() : '';
   const resolvedSubtitle = typeof config.subtitle === 'string' ? config.subtitle.trim() : '';
   const resolvedBadgeText = typeof config.badgeText === 'string' ? config.badgeText.trim() : '';
-  const hasTitle = config.showTitle !== false && resolvedTitle.length > 0;
-  const hasSubtitle = config.showSubtitle !== false && resolvedSubtitle.length > 0;
-  const hasBadge = config.showBadge !== false && resolvedBadgeText.length > 0;
+  const hasTitle = config.showTitle !== false && (resolvedTitle.length > 0 || isVisualEditActive);
+  const hasSubtitle = config.showSubtitle !== false && (resolvedSubtitle.length > 0 || isVisualEditActive);
+  const hasBadge = config.showBadge !== false && (resolvedBadgeText.length > 0 || isVisualEditActive);
 
   if (config.hideHeader || (!hasTitle && !hasSubtitle && !hasBadge)) {
     return null;
@@ -432,7 +545,12 @@ const ContactSectionHeader = ({
           color: tokens.sectionBadgeText,
         }}
       >
-        {resolvedBadgeText}
+        <EditableText
+          text={resolvedBadgeText}
+          placeholder="Badge..."
+          onSave={(value) => onConfigChange?.({ ...config, badgeText: value })}
+          isVisualEditActive={isVisualEditActive}
+        />
       </span>
     </div>
   );
@@ -445,7 +563,13 @@ const ContactSectionHeader = ({
       )}
       style={{ color: titleColor }}
     >
-      {resolvedTitle}
+      <EditableText
+        text={resolvedTitle}
+        placeholder="Tiêu đề..."
+        onSave={(value) => onTitleChange?.(value)}
+        isVisualEditActive={isVisualEditActive}
+        tag="span"
+      />
     </h2>
   );
 
@@ -457,7 +581,13 @@ const ContactSectionHeader = ({
       )}
       style={{ color: tokens.helperText }}
     >
-      {resolvedSubtitle}
+      <EditableText
+        text={resolvedSubtitle}
+        placeholder="Mô tả..."
+        onSave={(value) => onConfigChange?.({ ...config, subtitle: value })}
+        isVisualEditActive={isVisualEditActive}
+        tag="span"
+      />
     </p>
   );
 
@@ -1213,7 +1343,10 @@ export function ContactSectionShared({
   mapData,
   sourcePath,
   isDark = false,
+  onConfigChange,
+  onTitleChange,
 }: ContactSectionSharedProps) {
+  const visualEdit = usePreviewVisualEdit();
   const currentDevice = getDisplayDevice(context, device);
   const isPreview = context === 'preview';
   const info = getInfo(config, title);
@@ -1249,15 +1382,19 @@ export function ContactSectionShared({
   })();
 
   return (
-    <section className={cn(getSectionSpacingClassName(config.spacing), getSectionInlinePadding(context, currentDevice), isDark && 'dark')}>
-      <div className={cn(containerClass, 'space-y-6')}>
-        <ContactSectionHeader
-          title={title}
-          config={config}
-          tokens={tokens}
-        />
-        {content}
-      </div>
-    </section>
+    <VisualEditContext.Provider value={{ isVisualEditActive: isPreview && visualEdit.active, config, onSaveConfig: onConfigChange }}>
+      <section className={cn(getSectionSpacingClassName(config.spacing), getSectionInlinePadding(context, currentDevice), isDark && 'dark')}>
+        <div className={cn(containerClass, 'space-y-6')}>
+          <ContactSectionHeader
+            title={title}
+            config={config}
+            tokens={tokens}
+            onConfigChange={onConfigChange}
+            onTitleChange={onTitleChange}
+          />
+          {content}
+        </div>
+      </section>
+    </VisualEditContext.Provider>
   );
 }

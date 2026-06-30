@@ -1,4 +1,6 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React from 'react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
@@ -48,6 +50,11 @@ export const ServicesPreview = ({
   mode = 'dual',
   fontStyle,
   fontClassName,
+  isVisualEditAllowed = true,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
+  onItemsChange,
 }: {
   items: ServiceItem[];
   mediaPlacement?: ServiceItemMediaPlacement;
@@ -73,15 +80,48 @@ export const ServicesPreview = ({
   mode?: ServicesBrandMode;
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
+  isVisualEditAllowed?: boolean;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
+  onItemsChange?: (value: ServiceItem[]) => void;
 }) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
 
   const previewStyle = selectedStyle;
   const colors = React.useMemo(
     () => adaptTokensForDarkMode(getServicesColors(brandColor, secondary, mode), isDark),
     [brandColor, secondary, mode, isDark],
   );
+
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
+
+  const handleItemTextUpdate = (idx: number, field: 'title' | 'description', nextText: string) => {
+    if (!onItemsChange) return;
+    const nextItems = items.map((item, i) => {
+      if (i === idx) {
+        return {
+          ...item,
+          [field]: nextText,
+        };
+      }
+      return item;
+    });
+    onItemsChange(nextItems);
+  };
 
   return (
     <>
@@ -90,6 +130,9 @@ export const ServicesPreview = ({
         device={device}
         setDevice={setDevice}
         previewStyle={previewStyle}
+        visualEditActive={isVisualEditActive}
+        visualEditAllowed={isVisualEditAllowed}
+        onVisualEditToggle={handleToggleVisualEdit}
         setPreviewStyle={(next) => onStyleChange?.(next as ServicesStyle)}
         styles={SERVICES_STYLES}
         info={`${items.length} mục`}
@@ -97,47 +140,55 @@ export const ServicesPreview = ({
         fontClassName={fontClassName ?? 'font-active'}
         deviceWidthClass={deviceWidths[device]}
       >
-        <BrowserFrame>
-          <div className={getServicesSectionSpacingClassName(spacing as ServicesSpacing)}>
-            <div className="px-4">
-              <SectionHeader
-                title={title}
-                subtitle={subtitle}
-                badgeText={badgeText}
-                hideHeader={hideHeader}
-                showTitle={showTitle}
-                showSubtitle={showSubtitle}
-                showBadge={showBadge}
+        <div className="space-y-3">
+
+          <BrowserFrame url="yoursite.com/services">
+            <div className={getServicesSectionSpacingClassName(spacing as ServicesSpacing)}>
+              <div className="px-4">
+                <SectionHeader
+                  title={title}
+                  subtitle={subtitle}
+                  badgeText={badgeText}
+                  hideHeader={hideHeader}
+                  showTitle={showTitle}
+                  showSubtitle={showSubtitle}
+                  showBadge={showBadge}
+                  headerAlign={headerAlign}
+                  titleColorPrimary={titleColorPrimary}
+                  subtitleAboveTitle={subtitleAboveTitle}
+                  uppercaseText={uppercaseText}
+                  brandColor={brandColor}
+                  visualEditEnabled={isVisualEditActive}
+                  onTitleChange={onTitleChange}
+                  onSubtitleChange={onSubtitleChange}
+                  onBadgeTextChange={onBadgeTextChange}
+                />
+              </div>
+              <ServicesSectionCore
+                items={items}
+                style={previewStyle}
+                mediaPlacement={mediaPlacement}
+                mediaAlign={mediaAlign}
                 headerAlign={headerAlign}
-                titleColorPrimary={titleColorPrimary}
-                subtitleAboveTitle={subtitleAboveTitle}
-                uppercaseText={uppercaseText}
-                brandColor={brandColor}
+                desktopColumns={desktopColumns}
+                subtitle={''}
+                showTitle={false}
+                showSubtitle={false}
+                title={''}
+                colors={colors}
+                device={device}
+                spacing="none"
+                cornerRadius={cornerRadius}
+                isPreview
+                carouselId={`services-preview-carousel-${device}`}
+                isVisualEditActive={isVisualEditActive}
+                onItemTextUpdate={handleItemTextUpdate}
               />
             </div>
-            <ServicesSectionCore
-              items={items}
-              style={previewStyle}
-              mediaPlacement={mediaPlacement}
-              mediaAlign={mediaAlign}
-              headerAlign={headerAlign}
-              desktopColumns={desktopColumns}
-              subtitle={''}
-              showTitle={false}
-              showSubtitle={false}
-              title={''}
-              colors={colors}
-              device={device}
-              spacing="none"
-              cornerRadius={cornerRadius}
-              isPreview
-              carouselId={`services-preview-carousel-${device}`}
-            />
-          </div>
-        </BrowserFrame>
+          </BrowserFrame>
+        </div>
       </PreviewWrapper>
       <ColorInfoPanel brandColor={colors.primary} secondary={colors.secondary} />
     </>
   );
 };
-

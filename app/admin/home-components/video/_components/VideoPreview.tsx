@@ -1,4 +1,6 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React from 'react';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
@@ -41,6 +43,10 @@ interface VideoPreviewProps {
   showBadge?: boolean;
   badgeText?: string;
   spacing?: SectionSpacing;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
+  onConfigChange?: (config: VideoConfig) => void;
 }
 
 const getPreviewInfo = (style: VideoStyle, videoUrl: string) => {
@@ -83,11 +89,19 @@ export const VideoPreview = ({
   showBadge,
   badgeText,
   spacing,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
+  onConfigChange,
 }: VideoPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
 
   const previewStyle = selectedStyle ?? config.style ?? 'centered';
+  const isVisualEditAllowed = Boolean(onConfigChange || onTitleChange || onSubtitleChange || onBadgeTextChange);
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
 
   const tokens: VideoColorTokens = React.useMemo(
     () => adaptTokensForDarkMode(getVideoColorTokens({
@@ -112,6 +126,9 @@ export const VideoPreview = ({
         deviceWidthClass={deviceWidths[device]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+        visualEditActive={isVisualEditActive}
+        visualEditAllowed={isVisualEditAllowed}
+        onVisualEditToggle={() => setVisualEditEnabled((prev) => !prev)}
       >
         <BrowserFrame>
           <VideoSectionShared
@@ -134,6 +151,11 @@ export const VideoPreview = ({
             showBadge={showBadge}
             badgeText={badgeText}
             spacing={spacing}
+            onTitleChange={onTitleChange}
+            onSubtitleChange={onSubtitleChange}
+            onBadgeTextChange={onBadgeTextChange}
+            visualEditEnabled={isVisualEditActive}
+            onConfigChange={onConfigChange}
           />
         </BrowserFrame>
       </PreviewWrapper>

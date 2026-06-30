@@ -9,6 +9,8 @@ import type { FieldConfig, FieldType } from '@/types/module-config';
 
 type FeaturesState = Record<string, boolean>;
 type SettingsState = Record<string, string | number | boolean>;
+const ADVANCED_SEO_MODULES = new Set(['posts', 'products', 'services', 'projects', 'courses', 'resources']);
+const ADVANCED_SEO_FIELD_KEYS = new Set(['faqItems', 'focusKeyword', 'relatedQueries', 'tags']);
 
 export function useModuleConfig(config: ModuleDefinition) {
   const moduleKey = config.key;
@@ -261,6 +263,13 @@ export function useModuleConfig(config: ModuleDefinition) {
         return { ...f, enabled: newState };
       }));
      }
+
+    if (ADVANCED_SEO_MODULES.has(moduleKey) && key === 'enableAdvancedSEO') {
+      setLocalFeatures(prev => (prev.enableTags === undefined ? prev : { ...prev, enableTags: newState }));
+      setLocalFields(prev => prev.map(field => (
+        ADVANCED_SEO_FIELD_KEYS.has(field.key) ? { ...field, enabled: newState } : field
+      )));
+    }
 
     if (moduleKey === 'subscriptions' && key === 'enablePriority') {
       setLocalFields(prev => prev.map(field => (

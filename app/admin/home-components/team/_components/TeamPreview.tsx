@@ -1,4 +1,6 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React from 'react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
@@ -46,6 +48,10 @@ interface TeamPreviewProps {
   spacing?: SectionSpacing;
   desktopColumns?: TeamDesktopColumns;
   cornerRadius?: TeamCornerRadius;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
+  onMembersChange?: (members: TeamEditorMember[]) => void;
 }
 
 export const TeamPreview = ({
@@ -72,10 +78,21 @@ export const TeamPreview = ({
   spacing,
   desktopColumns,
   cornerRadius,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
+  onMembersChange,
 }: TeamPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
   const style = normalizeTeamStyle(selectedStyle);
+  const isVisualEditAllowed = Boolean(onMembersChange || onTitleChange || onSubtitleChange || onBadgeTextChange);
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
 
   const validation = React.useMemo(() => getTeamValidationResult({
     primary: brandColor,
@@ -99,6 +116,9 @@ export const TeamPreview = ({
         deviceWidthClass={deviceWidths[device]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+        visualEditActive={isVisualEditActive}
+        visualEditAllowed={isVisualEditAllowed}
+        onVisualEditToggle={handleToggleVisualEdit}
       >
         <BrowserFrame url="yoursite.com/team">
           <TeamSectionShared
@@ -124,6 +144,11 @@ export const TeamPreview = ({
             spacing={spacing}
             desktopColumns={desktopColumns}
             cornerRadius={cornerRadius}
+            onTitleChange={onTitleChange}
+            onSubtitleChange={onSubtitleChange}
+            onBadgeTextChange={onBadgeTextChange}
+            visualEditEnabled={isVisualEditActive}
+            onMembersChange={onMembersChange}
           />
         </BrowserFrame>
       </PreviewWrapper>

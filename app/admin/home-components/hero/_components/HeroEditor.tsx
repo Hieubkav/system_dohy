@@ -109,6 +109,7 @@ export function HeroEditor({
   showSnapshotLabel,
   colorOverride,
   fontOverride,
+  isVisualEditAllowed = true,
 }: {
   backHref: string;
   draftOwnerKey: string;
@@ -120,6 +121,7 @@ export function HeroEditor({
   showSnapshotLabel?: string;
   colorOverride?: ReturnType<typeof useTypeColorOverrideState>;
   fontOverride?: ReturnType<typeof useTypeFontOverrideState>;
+  isVisualEditAllowed?: boolean;
 }) {
   const router = useRouter();
   const { commitUploads, trackUpload } = useDraftFileCleanup(draftOwnerKey);
@@ -368,6 +370,8 @@ export function HeroEditor({
               spacing={spacing}
               fontStyle={fontStyle}
               fontClassName="font-active"
+              isVisualEditAllowed={isVisualEditAllowed}
+              onContentChange={setHeroContent}
             />
           </div>
         </div>

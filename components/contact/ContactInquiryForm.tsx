@@ -37,8 +37,7 @@ export function ContactInquiryForm({
   isPreview = false,
   withContainer = true,
 }: ContactInquiryFormProps) {
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
   const {
     values,
     updateValue,

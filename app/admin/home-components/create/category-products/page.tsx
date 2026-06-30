@@ -25,6 +25,8 @@ import type { Id } from '@/convex/_generated/dataModel';
 export default function CategoryProductsCreatePage() {
   const COMPONENT_TYPE = 'CategoryProducts';
   const { title, setTitle, active, setActive, handleSubmit, isSubmitting } = useComponentForm('Sản phẩm theo danh mục', COMPONENT_TYPE);
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const isVisualEditAllowed = systemConfig?.typeVisualEditOverrides?.[COMPONENT_TYPE]?.enabled ?? true;
   const { customState, effectiveColors, showCustomBlock, setCustomState, systemColors } = useTypeColorOverrideState(COMPONENT_TYPE, { seedCustomFromSettingsWhenTypeEmpty: true });
   const { customState: customFontState, effectiveFont, showCustomBlock: showFontCustomBlock, setCustomState: setCustomFontState } = useTypeFontOverrideState(COMPONENT_TYPE, { seedCustomFromSettingsWhenTypeEmpty: true });
   const { primary, secondary, mode } = effectiveColors;
@@ -132,6 +134,9 @@ export default function CategoryProductsCreatePage() {
       />
 
       <CategoryProductsPreview
+        title={title}
+        onTitleChange={setTitle}
+        isVisualEditAllowed={isVisualEditAllowed}
         config={{
           columnsDesktop,
           columnsMobile,

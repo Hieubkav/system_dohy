@@ -12,6 +12,8 @@ interface CTASectionSharedProps {
   style: CTAStyle;
   tokens: CTAStyleTokens;
   context: 'preview' | 'site';
+  isVisualEditActive?: boolean;
+  onConfigChange?: (config: CTAConfig) => void;
 }
 
 const CTA_FALLBACKS = {
@@ -70,27 +72,44 @@ const getSpacingClassName = (style: CTAStyle, spacing?: SectionSpacing) => {
   return 'py-8 md:py-12 lg:py-14 @max-md/preview:py-8';
 };
 
-export function CTASectionShared({ config, style, tokens, context }: CTASectionSharedProps) {
+export function CTASectionShared({ config, style, tokens, context, isVisualEditActive = false, onConfigChange }: CTASectionSharedProps) {
   const normalizedStyle = normalizeCTAStyle(style);
   const HeadingTag = context === 'site' ? 'h2' : 'h3';
   const radiusClassNames = getRadiusClassNames(config.cornerRadius);
   const containerWidthClassName = getContainerWidthClassName(config.containerWidth);
   const spacingClassName = getSpacingClassName(normalizedStyle, config.noVerticalMargin === true ? 'none' : config.spacing);
 
-  const badge = getValue(config.badge);
-  const title = getValue(config.title) ?? CTA_FALLBACKS.title;
-  const description = getValue(config.description) ?? CTA_FALLBACKS.description;
-  const primaryButtonText = getValue(config.buttonText) ?? CTA_FALLBACKS.buttonText;
+  const handleTextChange = (field: keyof CTAConfig, value: string) => {
+    if (onConfigChange) {
+      onConfigChange({
+        ...config,
+        [field]: value,
+      });
+    }
+  };
+
+  const badge = isVisualEditActive ? (config.badge || 'Badge...') : getValue(config.badge);
+  const title = isVisualEditActive ? (config.title || CTA_FALLBACKS.title) : (getValue(config.title) ?? CTA_FALLBACKS.title);
+  const description = isVisualEditActive ? (config.description || CTA_FALLBACKS.description) : (getValue(config.description) ?? CTA_FALLBACKS.description);
+  const primaryButtonText = isVisualEditActive ? (config.buttonText || CTA_FALLBACKS.buttonText) : (getValue(config.buttonText) ?? CTA_FALLBACKS.buttonText);
   const primaryButtonLink = getValue(config.buttonLink) ?? CTA_FALLBACKS.buttonLink;
-  const secondaryButtonText = getValue(config.secondaryButtonText);
+  const secondaryButtonText = isVisualEditActive ? (config.secondaryButtonText || 'Thêm nút phụ...') : getValue(config.secondaryButtonText);
   const secondaryButtonLink = getValue(config.secondaryButtonLink) ?? CTA_FALLBACKS.buttonLink;
 
   const sectionClass = context === 'preview' ? 'w-full' : '';
 
   const primaryButton = (
     <a
-      href={primaryButtonLink}
-      className={cn(buttonBaseClass, radiusClassNames.button, 'whitespace-nowrap')}
+      href={isVisualEditActive ? undefined : primaryButtonLink}
+      contentEditable={isVisualEditActive}
+      suppressContentEditableWarning={isVisualEditActive}
+      onBlur={(e) => handleTextChange('buttonText', e.currentTarget.textContent ?? '')}
+      className={cn(
+        buttonBaseClass,
+        radiusClassNames.button,
+        'whitespace-nowrap',
+        isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+      )}
       style={{
         backgroundColor: tokens.primaryButtonBg,
         border: tokens.primaryButtonBorder ? `1px solid ${tokens.primaryButtonBorder}` : undefined,
@@ -101,13 +120,17 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
     </a>
   );
 
-  const secondaryButton = secondaryButtonText ? (
+  const secondaryButton = (secondaryButtonText || isVisualEditActive) ? (
     <a
-      href={secondaryButtonLink}
+      href={isVisualEditActive ? undefined : secondaryButtonLink}
+      contentEditable={isVisualEditActive}
+      suppressContentEditableWarning={isVisualEditActive}
+      onBlur={(e) => handleTextChange('secondaryButtonText', e.currentTarget.textContent ?? '')}
       className={cn(
         buttonBaseClass,
         radiusClassNames.button,
         'whitespace-nowrap border',
+        isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
       )}
       style={{
         backgroundColor: tokens.secondaryButtonBg ?? 'transparent',
@@ -121,7 +144,14 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
 
   const badgeNode = badge ? (
     <span
-      className={cn('mb-3 inline-flex w-fit items-center border px-3 tv:px-5 py-1 tv:py-2 text-xs tv:text-sm font-semibold uppercase tracking-wide', radiusClassNames.badge)}
+      contentEditable={isVisualEditActive}
+      suppressContentEditableWarning={isVisualEditActive}
+      onBlur={(e) => handleTextChange('badge', e.currentTarget.textContent ?? '')}
+      className={cn(
+        'mb-3 inline-flex w-fit items-center border px-3 tv:px-5 py-1 tv:py-2 text-xs tv:text-sm font-semibold uppercase tracking-wide',
+        radiusClassNames.badge,
+        isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+      )}
       style={{
         backgroundColor: tokens.badgeBg,
         borderColor: tokens.badgeBorder ?? 'transparent',
@@ -141,10 +171,28 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
           <div className="mx-auto w-full flex flex-col items-center justify-between gap-5 px-4 sm:gap-6 sm:px-6 md:flex-row md:gap-8 @max-md/preview:flex-col @max-md/preview:gap-5 @max-md/preview:px-4">
             <div className="max-w-xl text-center md:text-left @max-md/preview:text-center @max-md/preview:max-w-full">
               {badgeNode}
-              <HeadingTag className="text-xl font-bold sm:text-2xl md:text-3xl tv:text-5xl break-words" style={{ color: tokens.title }}>
+              <HeadingTag
+                contentEditable={isVisualEditActive}
+                suppressContentEditableWarning={isVisualEditActive}
+                onBlur={(e) => handleTextChange('title', e.currentTarget.textContent ?? '')}
+                className={cn(
+                  'text-xl font-bold sm:text-2xl md:text-3xl tv:text-5xl break-words',
+                  isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                )}
+                style={{ color: tokens.title }}
+              >
                 {title}
               </HeadingTag>
-              <p className="mt-2 text-sm leading-relaxed sm:text-base tv:text-xl tv:leading-loose break-words" style={{ color: tokens.description }}>
+              <p
+                contentEditable={isVisualEditActive}
+                suppressContentEditableWarning={isVisualEditActive}
+                onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+                className={cn(
+                  'mt-2 text-sm leading-relaxed sm:text-base tv:text-xl tv:leading-loose break-words',
+                  isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                )}
+                style={{ color: tokens.description }}
+              >
                 {description}
               </p>
             </div>
@@ -172,10 +220,28 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
         >
           <div className="max-w-xl text-center md:text-left @max-md/preview:text-center @max-md/preview:max-w-full">
             {badgeNode}
-            <HeadingTag className="text-xl font-bold sm:text-2xl md:text-3xl tv:text-5xl break-words" style={{ color: tokens.title }}>
+            <HeadingTag
+              contentEditable={isVisualEditActive}
+              suppressContentEditableWarning={isVisualEditActive}
+              onBlur={(e) => handleTextChange('title', e.currentTarget.textContent ?? '')}
+              className={cn(
+                'text-xl font-bold sm:text-2xl md:text-3xl tv:text-5xl break-words',
+                isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+              )}
+              style={{ color: tokens.title }}
+            >
               {title}
             </HeadingTag>
-            <p className="mt-2 text-sm leading-relaxed sm:text-base tv:text-xl tv:leading-loose break-words" style={{ color: tokens.description }}>
+            <p
+              contentEditable={isVisualEditActive}
+              suppressContentEditableWarning={isVisualEditActive}
+              onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+              className={cn(
+                'mt-2 text-sm leading-relaxed sm:text-base tv:text-xl tv:leading-loose break-words',
+                isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+              )}
+              style={{ color: tokens.description }}
+            >
               {description}
             </p>
           </div>
@@ -193,10 +259,28 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
       <section className={cn('px-4', spacingClassName, sectionClass)} style={{ background: tokens.sectionBg, borderColor: tokens.sectionBorder }}>
         <div className={cn(containerWidthClassName, 'px-4 text-center sm:px-6')}>
           {badgeNode}
-          <HeadingTag className="text-xl font-bold sm:text-2xl md:text-3xl lg:text-4xl tv:text-5xl" style={{ color: tokens.title }}>
+          <HeadingTag
+            contentEditable={isVisualEditActive}
+            suppressContentEditableWarning={isVisualEditActive}
+            onBlur={(e) => handleTextChange('title', e.currentTarget.textContent ?? '')}
+            className={cn(
+              'text-xl font-bold sm:text-2xl md:text-3xl lg:text-4xl tv:text-5xl',
+              isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+            )}
+            style={{ color: tokens.title }}
+          >
             {title}
           </HeadingTag>
-          <p className="mx-auto mt-2 max-w-2xl tv:max-w-4xl text-sm leading-relaxed sm:mt-3 sm:text-base tv:text-xl tv:leading-loose" style={{ color: tokens.description }}>
+          <p
+            contentEditable={isVisualEditActive}
+            suppressContentEditableWarning={isVisualEditActive}
+            onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+            className={cn(
+              'mx-auto mt-2 max-w-2xl tv:max-w-4xl text-sm leading-relaxed sm:mt-3 sm:text-base tv:text-xl tv:leading-loose',
+              isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+            )}
+            style={{ color: tokens.description }}
+          >
             {description}
           </p>
           <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:mt-6 sm:flex-row md:mt-7">
@@ -222,10 +306,28 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
             <div>
               {badgeNode}
               <div className={cn('mb-3 h-1 w-12 sm:mb-4 sm:w-16', radiusClassNames.accent)} style={{ backgroundColor: tokens.accentLine ?? tokens.secondaryButtonBorder }} />
-              <HeadingTag className="text-lg font-bold sm:text-xl md:text-2xl tv:text-5xl" style={{ color: tokens.title }}>
+              <HeadingTag
+                contentEditable={isVisualEditActive}
+                suppressContentEditableWarning={isVisualEditActive}
+                onBlur={(e) => handleTextChange('title', e.currentTarget.textContent ?? '')}
+                className={cn(
+                  'text-lg font-bold sm:text-xl md:text-2xl tv:text-5xl',
+                  isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                )}
+                style={{ color: tokens.title }}
+              >
                 {title}
               </HeadingTag>
-              <p className="mt-2 text-sm leading-relaxed sm:text-base tv:text-xl tv:leading-loose" style={{ color: tokens.description }}>
+              <p
+                contentEditable={isVisualEditActive}
+                suppressContentEditableWarning={isVisualEditActive}
+                onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+                className={cn(
+                  'mt-2 text-sm leading-relaxed sm:text-base tv:text-xl tv:leading-loose',
+                  isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                )}
+                style={{ color: tokens.description }}
+              >
                 {description}
               </p>
             </div>
@@ -253,10 +355,28 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
             <div className="flex flex-col items-center justify-between gap-5 text-center sm:gap-6 md:flex-row md:text-left @max-md/preview:flex-col @max-md/preview:text-center @max-md/preview:gap-5">
               <div className="max-w-2xl @max-md/preview:max-w-full">
                 {badgeNode}
-                <HeadingTag className="text-lg font-bold sm:text-xl md:text-2xl lg:text-3xl tv:text-5xl break-words" style={{ color: tokens.title }}>
+                <HeadingTag
+                  contentEditable={isVisualEditActive}
+                  suppressContentEditableWarning={isVisualEditActive}
+                  onBlur={(e) => handleTextChange('title', e.currentTarget.textContent ?? '')}
+                  className={cn(
+                    'text-lg font-bold sm:text-xl md:text-2xl lg:text-3xl tv:text-5xl break-words',
+                    isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                  )}
+                  style={{ color: tokens.title }}
+                >
                   {title}
                 </HeadingTag>
-                <p className="mt-2 text-sm leading-relaxed sm:text-base tv:text-xl tv:leading-loose break-words" style={{ color: tokens.description }}>
+                <p
+                  contentEditable={isVisualEditActive}
+                  suppressContentEditableWarning={isVisualEditActive}
+                  onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+                  className={cn(
+                    'mt-2 text-sm leading-relaxed sm:text-base tv:text-xl tv:leading-loose break-words',
+                    isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                  )}
+                  style={{ color: tokens.description }}
+                >
                   {description}
                 </p>
               </div>
@@ -279,10 +399,28 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
         <section className={cn('px-4', spacingClassName, sectionClass)} style={{ background: tokens.sectionBg }}>
           <div className="mx-auto w-full px-4 text-center sm:px-6">
             {badgeNode}
-            <HeadingTag className="text-xl font-bold sm:text-2xl md:text-3xl lg:text-4xl tv:text-5xl" style={{ color: tokens.title }}>
+            <HeadingTag
+              contentEditable={isVisualEditActive}
+              suppressContentEditableWarning={isVisualEditActive}
+              onBlur={(e) => handleTextChange('title', e.currentTarget.textContent ?? '')}
+              className={cn(
+                'text-xl font-bold sm:text-2xl md:text-3xl lg:text-4xl tv:text-5xl',
+                isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+              )}
+              style={{ color: tokens.title }}
+            >
               {title}
             </HeadingTag>
-            <p className="mx-auto mt-2 max-w-2xl tv:max-w-4xl text-sm leading-relaxed sm:mt-3 sm:text-base tv:text-xl tv:leading-loose" style={{ color: tokens.description }}>
+            <p
+              contentEditable={isVisualEditActive}
+              suppressContentEditableWarning={isVisualEditActive}
+              onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+              className={cn(
+                'mx-auto mt-2 max-w-2xl tv:max-w-4xl text-sm leading-relaxed sm:mt-3 sm:text-base tv:text-xl tv:leading-loose',
+                isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+              )}
+              style={{ color: tokens.description }}
+            >
               {description}
             </p>
             <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:mt-6 sm:flex-row md:mt-7">
@@ -308,10 +446,28 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
           }}
         >
           {badgeNode}
-          <HeadingTag className="text-xl font-bold sm:text-2xl md:text-3xl lg:text-4xl tv:text-5xl" style={{ color: tokens.title }}>
+          <HeadingTag
+            contentEditable={isVisualEditActive}
+            suppressContentEditableWarning={isVisualEditActive}
+            onBlur={(e) => handleTextChange('title', e.currentTarget.textContent ?? '')}
+            className={cn(
+              'text-xl font-bold sm:text-2xl md:text-3xl lg:text-4xl tv:text-5xl',
+              isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+            )}
+            style={{ color: tokens.title }}
+          >
             {title}
           </HeadingTag>
-          <p className="mx-auto mt-2 max-w-2xl tv:max-w-4xl text-sm leading-relaxed sm:mt-3 sm:text-base tv:text-xl tv:leading-loose" style={{ color: tokens.description }}>
+          <p
+            contentEditable={isVisualEditActive}
+            suppressContentEditableWarning={isVisualEditActive}
+            onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+            className={cn(
+              'mx-auto mt-2 max-w-2xl tv:max-w-4xl text-sm leading-relaxed sm:mt-3 sm:text-base tv:text-xl tv:leading-loose',
+              isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+            )}
+            style={{ color: tokens.description }}
+          >
             {description}
           </p>
           <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:mt-6 sm:flex-row md:mt-7">
@@ -338,10 +494,28 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
           <div className="flex items-center gap-3 text-center sm:gap-4 md:text-left @max-md/preview:text-center">
             <div className={cn('block h-8 w-1 sm:h-12 md:h-14', radiusClassNames.accent)} style={{ backgroundColor: tokens.accentLine }} />
             <div>
-              <HeadingTag className="text-lg font-bold sm:text-xl tv:text-5xl break-words" style={{ color: tokens.title }}>
+              <HeadingTag
+                contentEditable={isVisualEditActive}
+                suppressContentEditableWarning={isVisualEditActive}
+                onBlur={(e) => handleTextChange('title', e.currentTarget.textContent ?? '')}
+                className={cn(
+                  'text-lg font-bold sm:text-xl tv:text-5xl break-words',
+                  isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                )}
+                style={{ color: tokens.title }}
+              >
                 {title}
               </HeadingTag>
-              <p className="mt-1 text-sm leading-relaxed sm:text-base tv:text-xl tv:leading-loose break-words" style={{ color: tokens.description }}>
+              <p
+                contentEditable={isVisualEditActive}
+                suppressContentEditableWarning={isVisualEditActive}
+                onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+                className={cn(
+                  'mt-1 text-sm leading-relaxed sm:text-base tv:text-xl tv:leading-loose break-words',
+                  isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                )}
+                style={{ color: tokens.description }}
+              >
                 {description}
               </p>
             </div>
@@ -371,10 +545,28 @@ export function CTASectionShared({ config, style, tokens, context }: CTASectionS
         <div className="flex items-center gap-3 text-center sm:gap-4 md:text-left @max-md/preview:text-center">
           <div className={cn('block h-8 w-1 sm:h-12 md:h-14', radiusClassNames.accent)} style={{ backgroundColor: tokens.accentLine }} />
           <div>
-            <HeadingTag className="text-lg font-bold sm:text-xl tv:text-5xl break-words" style={{ color: tokens.title }}>
+            <HeadingTag
+              contentEditable={isVisualEditActive}
+              suppressContentEditableWarning={isVisualEditActive}
+              onBlur={(e) => handleTextChange('title', e.currentTarget.textContent ?? '')}
+              className={cn(
+                'text-lg font-bold sm:text-xl tv:text-5xl break-words',
+                isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+              )}
+              style={{ color: tokens.title }}
+            >
               {title}
             </HeadingTag>
-            <p className="mt-1 text-sm leading-relaxed sm:text-base tv:text-xl tv:leading-loose break-words" style={{ color: tokens.description }}>
+            <p
+              contentEditable={isVisualEditActive}
+              suppressContentEditableWarning={isVisualEditActive}
+              onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+              className={cn(
+                'mt-1 text-sm leading-relaxed sm:text-base tv:text-xl tv:leading-loose break-words',
+                isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+              )}
+              style={{ color: tokens.description }}
+            >
               {description}
             </p>
           </div>

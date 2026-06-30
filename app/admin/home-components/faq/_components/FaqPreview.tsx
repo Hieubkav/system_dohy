@@ -1,5 +1,6 @@
 'use client';
 
+
 import React from 'react';
 import { AlertTriangle, Eye } from 'lucide-react';
 import { cn } from '../../../components/ui';
@@ -62,6 +63,10 @@ export const FaqPreview = ({
   showBadge,
   badgeText,
   spacing = DEFAULT_FAQ_SPACING,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
+  onItemTextChange,
 }: {
   items: FaqItem[];
   brandColor: string;
@@ -84,6 +89,10 @@ export const FaqPreview = ({
   showBadge?: boolean;
   badgeText?: string;
   spacing?: SectionSpacing;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
+  onItemTextChange?: (id: FaqItem['id'], field: 'question' | 'answer', value: string) => void;
 }) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
@@ -152,6 +161,7 @@ export const FaqPreview = ({
         deviceWidthClass={deviceWidths[device]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+        visualEditAllowed={Boolean(onItemTextChange || onTitleChange || onSubtitleChange || onBadgeTextChange)}
       >
         <BrowserFrame url="yoursite.com/faq">
           <div className={cn('container mx-auto', style === 'cards' && device !== 'desktop' ? 'px-0' : 'px-4', sectionSpacingClassName)}>
@@ -168,6 +178,9 @@ export const FaqPreview = ({
               subtitleAboveTitle={subtitleAboveTitle}
               uppercaseText={uppercaseText}
               brandColor={brandColor}
+              onTitleChange={onTitleChange}
+              onSubtitleChange={onSubtitleChange}
+              onBadgeTextChange={onBadgeTextChange}
             />
             <FaqSectionShared
               items={items}
@@ -182,6 +195,7 @@ export const FaqPreview = ({
               spacingClassName="py-0"
               rounded={rounded}
               desktopColumns={desktopColumns}
+              onItemTextChange={onItemTextChange}
             />
           </div>
         </BrowserFrame>

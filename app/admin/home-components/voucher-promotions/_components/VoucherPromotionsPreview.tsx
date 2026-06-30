@@ -1,5 +1,6 @@
 'use client';
 
+
 import React from 'react';
 import { PreviewWrapper, usePreviewDark } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, usePreviewDevice } from '../../_shared/hooks/usePreviewDevice';
@@ -34,6 +35,9 @@ interface VoucherPromotionsPreviewProps {
   canUseRealData?: boolean;
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
 }
 
 export const VoucherPromotionsPreview = ({
@@ -48,6 +52,9 @@ export const VoucherPromotionsPreview = ({
   canUseRealData = true,
   fontStyle,
   fontClassName,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: VoucherPromotionsPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
@@ -131,6 +138,9 @@ export const VoucherPromotionsPreview = ({
           cornerRadius={config.cornerRadius ?? 'lg'}
           spacing={config.spacing ?? 'normal'}
           iconName={config.iconName}
+          onTitleChange={onTitleChange}
+          onSubtitleChange={onSubtitleChange}
+          onBadgeTextChange={onBadgeTextChange}
         />
       </PreviewWrapper>
 

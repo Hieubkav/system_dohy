@@ -26,6 +26,7 @@ import { resolveProductImageAspectRatio } from '@/lib/products/image-aspect-rati
 import { getAttributeIconComponent } from '@/app/admin/attribute-groups/_lib/iconRegistry';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
+import { AdvancedSeoFields, SeoFormTabs, normalizeSeoFaqItems, normalizeSeoStringList, type SeoFaqItem, type SeoFormTab } from '@/app/admin/components/AdvancedSeoFields';
 import { InlineMatrixBuilder, type OptionCatalogItem, type VariantOptionSelection, type VariantRow } from '@/app/admin/products/components/inline-matrix-builder';
 import { normalizeVariantRows, normalizeVariantSelections, validateVariantPayload, type NormalizedVariantRow } from '@/app/admin/products/components/inline-variant-utils';
 
@@ -184,6 +185,11 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
   const [htmlRender, setHtmlRender] = useState('');
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
+  const [seoTab, setSeoTab] = useState<SeoFormTab>('content');
+  const [focusKeyword, setFocusKeyword] = useState('');
+  const [relatedQueries, setRelatedQueries] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
+  const [faqItems, setFaqItems] = useState<SeoFaqItem[]>([]);
   const [image, setImage] = useState<string | undefined>();
   const [imageStorageId, setImageStorageId] = useState<Id<'_storage'> | undefined>();
   const [galleryItems, setGalleryItems] = useState<ImageItem[]>([]);
@@ -294,6 +300,10 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
     imageStorageId?: Id<'_storage'> | null;
     metaDescription: string;
     metaTitle: string;
+    focusKeyword: string;
+    relatedQueries: string[];
+    tags: string[];
+    faqItems: SeoFaqItem[];
     name: string;
     price: string;
     productType: 'physical' | 'digital';
@@ -319,6 +329,10 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
   const hasMarkdownRender = enabledFields.has('markdownRender');
   const hasHtmlRender = enabledFields.has('htmlRender');
   const showAdvancedRenderCard = hasMarkdownRender || hasHtmlRender;
+  const showAdvancedSeoFields = enabledFields.has('focusKeyword')
+    || enabledFields.has('tags')
+    || enabledFields.has('relatedQueries')
+    || enabledFields.has('faqItems');
 
   const variantEnabled = useMemo(() => {
     const setting = settingsData?.find(s => s.settingKey === 'variantEnabled');
@@ -527,6 +541,10 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
     imageStorageId: image ? (imageStorageId ?? null) : null,
     metaDescription: metaDescription.trim(),
     metaTitle: metaTitle.trim(),
+    focusKeyword: focusKeyword.trim(),
+    relatedQueries: normalizeSeoStringList(relatedQueries),
+    tags: normalizeSeoStringList(tags),
+    faqItems: normalizeSeoFaqItems(faqItems),
     name: name.trim(),
     price: price.trim(),
     productType,
@@ -557,6 +575,10 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
     imageStorageId,
     metaDescription,
     metaTitle,
+    focusKeyword,
+    relatedQueries,
+    tags,
+    faqItems,
     name,
     price,
     productType,
@@ -571,6 +593,45 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
     attributeTermIds,
     rangeInputs,
     combos,
+  ]);
+
+  const aiImportCurrentData = useMemo<AiEntityImportPayload>(() => ({
+    attributeTermIds,
+    combos: JSON.parse(JSON.stringify(combos)),
+    content: normalizedDescription,
+    description: normalizedDescription,
+    faqItems: normalizeSeoFaqItems(faqItems),
+    focusKeyword: focusKeyword.trim(),
+    htmlRender: htmlRender.trim(),
+    image: image ?? '',
+    markdownRender: markdownRender.trim(),
+    metaDescription: metaDescription.trim(),
+    metaTitle: metaTitle.trim(),
+    name: name.trim(),
+    price: price.trim() ? Number.parseInt(price, 10) : undefined,
+    relatedQueries: normalizeSeoStringList(relatedQueries),
+    salePrice: salePrice.trim() ? Number.parseInt(salePrice, 10) : undefined,
+    slug: slug.trim(),
+    stock: stock.trim() ? Number.parseInt(stock, 10) : undefined,
+    tags: normalizeSeoStringList(tags),
+  }), [
+    attributeTermIds,
+    combos,
+    faqItems,
+    focusKeyword,
+    htmlRender,
+    image,
+    markdownRender,
+    metaDescription,
+    metaTitle,
+    name,
+    normalizedDescription,
+    price,
+    relatedQueries,
+    salePrice,
+    slug,
+    stock,
+    tags,
   ]);
 
   const hasChanges = useMemo(() => {
@@ -781,6 +842,10 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
       setHtmlRender(productData.htmlRender ?? '');
       setMetaTitle(productData.metaTitle ?? '');
       setMetaDescription(productData.metaDescription ?? '');
+      setFocusKeyword((productData as { focusKeyword?: string }).focusKeyword ?? '');
+      setRelatedQueries((productData as { relatedQueries?: string[] }).relatedQueries ?? []);
+      setTags((productData as { tags?: string[] }).tags ?? []);
+      setFaqItems((productData as { faqItems?: SeoFaqItem[] }).faqItems ?? []);
       setImage(productData.image);
       setImageStorageId((productData as { imageStorageId?: Id<'_storage'> }).imageStorageId);
       const galleryStorageIds = (productData as { imageStorageIds?: (Id<'_storage'> | null)[] }).imageStorageIds ?? [];
@@ -818,6 +883,10 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
           : null,
         metaDescription: (productData.metaDescription ?? '').trim(),
         metaTitle: (productData.metaTitle ?? '').trim(),
+        focusKeyword: ((productData as { focusKeyword?: string }).focusKeyword ?? '').trim(),
+        relatedQueries: normalizeSeoStringList((productData as { relatedQueries?: string[] }).relatedQueries ?? []),
+        tags: normalizeSeoStringList((productData as { tags?: string[] }).tags ?? []),
+        faqItems: normalizeSeoFaqItems((productData as { faqItems?: SeoFaqItem[] }).faqItems ?? []),
         name: productData.name.trim(),
         price: productData.price.toString(),
         productType: productTypeMode === 'both' ? (productData.productType ?? 'physical') : productTypeMode,
@@ -1079,6 +1148,10 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
         metaTitle: enabledFields.has('metaTitle')
           ? (resolvedMetaTitleValue || undefined)
           : undefined,
+        focusKeyword: enabledFields.has('focusKeyword') ? (focusKeyword.trim() || undefined) : undefined,
+        relatedQueries: enabledFields.has('relatedQueries') ? normalizeSeoStringList(relatedQueries) : undefined,
+        tags: enabledFields.has('tags') ? normalizeSeoStringList(tags) : undefined,
+        faqItems: enabledFields.has('faqItems') ? normalizeSeoFaqItems(faqItems) : undefined,
         name: name.trim(),
         options: variantPayload.options,
         variants: variantPayload.variants,
@@ -1105,6 +1178,10 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
         htmlRender: htmlRender.trim(),
         metaDescription: resolvedMetaDescriptionValue,
         metaTitle: resolvedMetaTitleValue,
+        focusKeyword: focusKeyword.trim(),
+        relatedQueries: normalizeSeoStringList(relatedQueries),
+        tags: normalizeSeoStringList(tags),
+        faqItems: normalizeSeoFaqItems(faqItems),
         combos: JSON.parse(JSON.stringify(combos)),
       };
       if (enabledFields.has('metaTitle')) {
@@ -1202,6 +1279,9 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
       {(!variantEnabled || activeTab === 'general') && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          <SeoFormTabs activeTab={seoTab} onChange={setSeoTab} />
+          {seoTab === 'content' ? (
+            <>
           <Card>
             <CardHeader><CardTitle className="text-base">Thông tin cơ bản</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -2067,6 +2147,30 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
               </CardContent>
             </Card>
           )}
+
+            </>
+          ) : showAdvancedSeoFields ? (
+            <AdvancedSeoFields
+              focusKeyword={focusKeyword}
+              onFocusKeywordChange={setFocusKeyword}
+              tags={tags}
+              onTagsChange={setTags}
+              relatedQueries={relatedQueries}
+              onRelatedQueriesChange={setRelatedQueries}
+              faqItems={faqItems}
+              onFaqItemsChange={setFaqItems}
+              showFocusKeyword={enabledFields.has('focusKeyword')}
+              showTags={enabledFields.has('tags')}
+              showRelatedQueries={enabledFields.has('relatedQueries')}
+              showFaqItems={enabledFields.has('faqItems')}
+            />
+          ) : (
+            <Card>
+              <CardContent className="py-8 text-center text-sm text-slate-500">
+                SEO nâng cao đang tắt trong cấu hình module Products.
+              </CardContent>
+            </Card>
+          )}
         </div>
         
         <div className="space-y-6">
@@ -2098,7 +2202,7 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
                       setAdditionalCategoryIds(ids.slice(1));
                     }}
                   />
-                  <p className="text-xs text-slate-500">Thẻ đầu tiên là danh mục chính/canonical, các thẻ sau là danh mục phụ.</p>
+                  <p className="text-xs text-slate-500">Thẻ đầu tiên là danh mục chính/canonical. Danh mục cha/con hiển thị theo đường dẫn để dễ chọn đúng nhánh.</p>
                   {hasTaxonomyConflict && (
                     <p className="text-xs font-semibold text-red-500 mt-1.5">
                       Lưu ý: Các danh mục được chọn đang thuộc các kiểu sản phẩm khác nhau. 
@@ -2107,12 +2211,15 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
                   )}
                   </>
                 ) : (
+                  <>
                   <ProductCategoryCombobox
                     categories={categoriesData}
                     value={categoryId}
                     onChange={setCategoryId}
                     onQuickCreate={() => setShowCategoryModal(true)}
                   />
+                  <p className="text-xs text-slate-500">Ưu tiên chọn danh mục con cụ thể. Khi lọc danh mục cha ngoài public, hệ thống sẽ gom cả sản phẩm của các danh mục con.</p>
+                  </>
                 )}
               </div>
             </CardContent>
@@ -2361,8 +2468,16 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
                   value={image}
                   storageId={imageStorageId}
                   onChange={(url, storageId) => {
-                    setImage(url);
-                    setImageStorageId(storageId);
+                    if (!url && galleryItems.length > 0) {
+                      const firstItem = galleryItems[0];
+                      setImage(firstItem.url);
+                      setImageStorageId(firstItem.storageId ?? undefined);
+                      setGalleryItems(galleryItems.slice(1));
+                      toast.info('Đã đôn ảnh đầu tiên từ thư viện làm ảnh chính');
+                    } else {
+                      setImage(url);
+                      setImageStorageId(storageId);
+                    }
                   }}
                   folder="products"
                   naming={{ entityName: slug.trim() || 'product', style: 'slug-index', index: 1 }}
@@ -2374,13 +2489,27 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
             </Card>
           )}
 
-          {showBaseImages && enabledFields.has('images') && image && (
+          {showBaseImages && enabledFields.has('images') && (
             <Card>
               <CardHeader><CardTitle className="text-base">Thư viện ảnh</CardTitle></CardHeader>
               <CardContent>
                 <MultiImageUploader<ImageItem>
                   items={galleryItems}
-                  onChange={setGalleryItems}
+                  onChange={(items) => {
+                    if (!image && items.length > 0) {
+                      const validIndex = items.findIndex(item => Boolean(item.url));
+                      if (validIndex !== -1) {
+                        const firstImage = items[validIndex];
+                        setImage(firstImage.url);
+                        setImageStorageId(firstImage.storageId ?? undefined);
+                        const remainingItems = items.filter((_, idx) => idx !== validIndex);
+                        setGalleryItems(remainingItems);
+                        toast.info('Đã tự động đặt ảnh tải lên làm ảnh chính');
+                        return;
+                      }
+                    }
+                    setGalleryItems(items);
+                  }}
                   folder="products"
                   naming={{ entityName: slug.trim() || 'product', style: 'slug-index' }}
                   namingIndexOffset={1}
@@ -2477,6 +2606,7 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
           <div className="flex flex-wrap justify-end gap-2">
             <AiEntityImportDialog
               kind="product"
+              currentData={aiImportCurrentData}
               enabledFields={enabledFields}
               onApply={handleApplyAiProduct}
               enableProductTypes={enableProductTypes}

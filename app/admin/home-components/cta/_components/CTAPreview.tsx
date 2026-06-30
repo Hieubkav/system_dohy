@@ -1,4 +1,6 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React from 'react';
 import { AlertTriangle, Eye } from 'lucide-react';
@@ -27,12 +29,16 @@ const CTAPreviewContent = ({
   secondary,
   mode,
   style,
+  isVisualEditActive,
+  onConfigChange,
 }: {
   config: CTAConfig;
   brandColor: string;
   secondary: string;
   mode: 'single' | 'dual';
   style: CTAStyle;
+  isVisualEditActive?: boolean;
+  onConfigChange?: (config: CTAConfig) => void;
 }) => {
   const { isDark } = usePreviewDark();
   const { tokens } = React.useMemo(() => getCTAValidationResult({
@@ -46,7 +52,14 @@ const CTAPreviewContent = ({
 
   return (
     <BrowserFrame url="yoursite.com">
-      <CTASectionShared config={config} style={style} tokens={tokens} context="preview" />
+      <CTASectionShared
+        config={config}
+        style={style}
+        tokens={tokens}
+        context="preview"
+        isVisualEditActive={isVisualEditActive}
+        onConfigChange={onConfigChange}
+      />
     </BrowserFrame>
   );
 };
@@ -60,6 +73,8 @@ export const CTAPreview = ({
   onStyleChange,
   fontStyle,
   fontClassName,
+  isVisualEditAllowed = true,
+  onConfigChange,
 }: {
   config: CTAConfig;
   brandColor: string;
@@ -69,8 +84,20 @@ export const CTAPreview = ({
   onStyleChange?: (style: CTAStyle) => void;
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
+  isVisualEditAllowed?: boolean;
+  onConfigChange?: (config: CTAConfig) => void;
 }) => {
   const { device, setDevice } = usePreviewDevice();
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
   const style = selectedStyle;
 
   const {
@@ -87,6 +114,10 @@ export const CTAPreview = ({
 
   const accentBalance = getCTAAccentBalance(style);
 
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
+
   return (
     <>
       <PreviewWrapper
@@ -94,6 +125,9 @@ export const CTAPreview = ({
         device={device}
         setDevice={setDevice}
         previewStyle={style}
+        visualEditActive={isVisualEditActive}
+        visualEditAllowed={isVisualEditAllowed}
+        onVisualEditToggle={handleToggleVisualEdit}
         setPreviewStyle={(s) => onStyleChange?.(s as CTAStyle)}
         styles={CTA_STYLES}
         info={mode === 'single' ? '1 màu' : '2 màu'}
@@ -101,13 +135,18 @@ export const CTAPreview = ({
         fontStyle={fontStyle}
         fontClassName={fontClassName}
       >
-        <CTAPreviewContent
-          config={config}
-          brandColor={brandColor}
-          secondary={secondary}
-          mode={mode}
-          style={style}
-        />
+        <div className="space-y-3">
+
+          <CTAPreviewContent
+            config={config}
+            brandColor={brandColor}
+            secondary={secondary}
+            mode={mode}
+            style={style}
+            isVisualEditActive={isVisualEditActive}
+            onConfigChange={onConfigChange}
+          />
+        </div>
       </PreviewWrapper>
 
       {mode === 'dual' && harmonyStatus.isTooSimilar && (

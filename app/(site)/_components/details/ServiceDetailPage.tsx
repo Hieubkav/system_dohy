@@ -86,9 +86,10 @@ function useEnabledServiceFields(): Set<string> {
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  initialService?: any;
 }
 
-export default function ServiceDetailPage({ params }: PageProps) {
+export default function ServiceDetailPage({ params, initialService }: PageProps) {
   const { slug } = use(params);
   const brandColors = useBrandColors();
   const { isDark } = useSiteSettings();
@@ -100,7 +101,8 @@ export default function ServiceDetailPage({ params }: PageProps) {
   const enabledFields = useEnabledServiceFields();
   const { addItem, openDrawer } = useCart();
   
-  const service = useQuery(api.services.getBySlug, { slug });
+  const serviceQuery = useQuery(api.services.getBySlug, { slug });
+  const service = serviceQuery ?? (initialService as Exclude<typeof serviceQuery, undefined>);
   const serviceCommerceSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'services', settingKey: 'commerceMode' });
   const category = useQuery(
     api.serviceCategories.getById,

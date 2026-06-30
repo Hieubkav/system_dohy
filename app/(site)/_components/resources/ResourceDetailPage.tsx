@@ -45,9 +45,10 @@ const getRadiusClass = (radius?: 'none' | 'sm' | 'lg') => {
 
 type ResourceDetailPageProps = {
   params: Promise<{ slug: string }>;
+  initialResource?: any;
 };
 
-export default function ResourceDetailPage({ params }: ResourceDetailPageProps) {
+export default function ResourceDetailPage({ params, initialResource }: ResourceDetailPageProps) {
   const { slug } = use(params);
   const router = useRouter();
   const config = useResourcesDetailConfig();
@@ -55,7 +56,8 @@ export default function ResourceDetailPage({ params }: ResourceDetailPageProps) 
   const { isDark } = useSiteSettings();
   const { addItem, openDrawer } = useCart();
   const { openLoginModal, token } = useCustomerAuth();
-  const resource = useQuery(api.resources.getBySlug, { slug });
+  const resourceQuery = useQuery(api.resources.getBySlug, { slug });
+  const resource = resourceQuery ?? (initialResource as Exclude<typeof resourceQuery, undefined>);
   const resourceCommerceSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'resources', settingKey: 'commerceMode' });
   const category = useQuery(api.resourceCategories.getById, resource?.categoryId ? { id: resource.categoryId } : 'skip');
   const resourceAccess = useQuery(api.resources.getResourceAccess, resource?._id ? { resourceId: resource._id, token: token ?? undefined } : 'skip');

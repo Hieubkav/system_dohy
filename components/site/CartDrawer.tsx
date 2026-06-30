@@ -26,8 +26,7 @@ const itemTypeLabel = (itemType?: 'product' | 'service' | 'course' | 'resource')
 
 export function CartDrawer() {
   const brandColors = useBrandColors();
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
   const tokens = useMemo(
     () => getCartColors(brandColors.primary, brandColors.secondary, brandColors.mode, isDark),
     [brandColors.primary, brandColors.secondary, brandColors.mode, isDark]

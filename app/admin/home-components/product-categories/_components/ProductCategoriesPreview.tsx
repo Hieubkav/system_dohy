@@ -1,6 +1,9 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React from 'react';
+
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
@@ -39,6 +42,10 @@ export const ProductCategoriesPreview = ({
   fontClassName,
   selectionMode = 'real',
   demoCategories = [],
+  isVisualEditAllowed = true,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: { 
   config: ProductCategoriesConfig;
   title?: string;
@@ -52,9 +59,28 @@ export const ProductCategoriesPreview = ({
   fontClassName?: string;
   selectionMode?: ProductCategoriesSelectionMode;
   demoCategories?: DemoProductCategoryItem[];
+  isVisualEditAllowed?: boolean;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
 }) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
+
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
+
   const previewStyle = (selectedStyle ?? config.style) || 'image-strip';
   const setPreviewStyle = (s: string) => onStyleChange?.(s as ProductCategoriesStyle);
   const colors = React.useMemo(() => adaptTokensForDarkMode(getProductCategoriesColors(brandColor, secondary, mode), isDark), [brandColor, secondary, mode, isDark]);
@@ -123,7 +149,7 @@ export const ProductCategoriesPreview = ({
       const imageMode = item.imageMode ?? 'default';
       let displayImage = cat.image;
       let displayIcon: string | undefined;
-      
+
       if (imageMode === 'icon' && item.customImage?.startsWith('icon:')) {
         displayIcon = item.customImage.replace('icon:', '');
         displayImage = undefined;
@@ -133,7 +159,7 @@ export const ProductCategoriesPreview = ({
       } else if (imageMode === 'upload' || imageMode === 'url') {
         displayImage = item.customImage ?? cat.image;
       }
-      
+
       return {
         ...cat,
         itemId: item.id || idx,
@@ -185,38 +211,48 @@ export const ProductCategoriesPreview = ({
         deviceWidthClass={deviceWidths[device]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+      visualEditActive={isVisualEditActive}
+      visualEditAllowed={isVisualEditAllowed}
+      onVisualEditToggle={handleToggleVisualEdit}
       >
-        <BrowserFrame>
-          <ProductCategoriesSectionShared
-            title={title ?? 'Danh mục sản phẩm'}
-            subtitle={subtitle}
-            subheading={subtitle}
-            headerAlign={headerAlign}
-            align={headerAlign}
-            hideHeader={config.hideHeader}
-            showTitle={config.showTitle}
-            showSubtitle={config.showSubtitle}
-            titleColorPrimary={config.titleColorPrimary}
-            subtitleAboveTitle={config.subtitleAboveTitle}
-            uppercaseText={config.uppercaseText}
-            showBadge={config.showBadge}
-            badgeText={config.badgeText}
-            style={previewStyle}
-            items={finalItems}
-            colors={colors}
-            brandColor={brandColor}
-            context="preview"
-            device={device}
-            mode={mode}
-            showProductCount={config.showProductCount}
-            spacing={config.spacing}
-            cornerRadius={config.cornerRadius}
-            desktopColumns={config.desktopColumns}
-            fontClassName={fontClassName}
-            fontStyle={fontStyle}
-            getItemHref={(item) => item.link || `#`}
-          />
-        </BrowserFrame>
+        <div className="space-y-3">
+
+          <BrowserFrame>
+            <ProductCategoriesSectionShared
+              title={title ?? 'Danh mục sản phẩm'}
+              subtitle={subtitle}
+              subheading={subtitle}
+              headerAlign={headerAlign}
+              align={headerAlign}
+              hideHeader={config.hideHeader}
+              showTitle={config.showTitle}
+              showSubtitle={config.showSubtitle}
+              titleColorPrimary={config.titleColorPrimary}
+              subtitleAboveTitle={config.subtitleAboveTitle}
+              uppercaseText={config.uppercaseText}
+              showBadge={config.showBadge}
+              badgeText={config.badgeText}
+              style={previewStyle}
+              items={finalItems}
+              colors={colors}
+              brandColor={brandColor}
+              context="preview"
+              device={device}
+              mode={mode}
+              showProductCount={config.showProductCount}
+              spacing={config.spacing}
+              cornerRadius={config.cornerRadius}
+              desktopColumns={config.desktopColumns}
+              fontClassName={fontClassName}
+              fontStyle={fontStyle}
+              getItemHref={(item) => item.link || `#`}
+              visualEditEnabled={isVisualEditActive}
+              onTitleChange={onTitleChange}
+              onSubtitleChange={onSubtitleChange}
+              onBadgeTextChange={onBadgeTextChange}
+            />
+          </BrowserFrame>
+        </div>
       </PreviewWrapper>
 
       <ColorInfoPanel brandColor={brandColor} secondary={secondary} />

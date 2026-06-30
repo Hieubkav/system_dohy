@@ -14,6 +14,7 @@ type VideoType = 'none' | 'youtube' | 'drive' | 'external';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  initialProject?: any;
 }
 
 const getEmbedUrl = (type: VideoType, url?: string) => {
@@ -44,11 +45,12 @@ const resolveProjectContent = (project: {
   return project.content ? withFormatMarker('richtext', project.content) : '';
 };
 
-export default function ProjectDetailPage({ params }: PageProps) {
+export default function ProjectDetailPage({ params, initialProject }: PageProps) {
   const { slug } = use(params);
   const { primary: brandColor } = useBrandColors();
   const detailConfig = useProjectsDetailConfig();
-  const project = useQuery(api.projects.getBySlug, { slug });
+  const projectQuery = useQuery(api.projects.getBySlug, { slug });
+  const project = projectQuery ?? (initialProject as Exclude<typeof projectQuery, undefined>);
   const category = useQuery(api.projectCategories.getById, project?.categoryId ? { id: project.categoryId } : 'skip');
   const categories = useQuery(api.projectCategories.listActive, { limit: 100 });
   const routeModeSetting = useQuery(api.settings.getValue, { key: 'ia_route_mode', defaultValue: 'unified' });

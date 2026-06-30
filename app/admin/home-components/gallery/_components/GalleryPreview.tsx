@@ -1,5 +1,6 @@
 'use client';
 
+
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Image as ImageIcon, X } from 'lucide-react';
 import { useQuery } from 'convex/react';
@@ -184,6 +185,9 @@ export const GalleryPreview = ({
   desktopColumns = 4,
   cornerRadius = 'lg',
   spacing = 'normal',
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: {
   items: GalleryItem[];
   brandColor: string;
@@ -209,6 +213,9 @@ export const GalleryPreview = ({
   fullWidthDesktop?: boolean;
   desktopColumns?: GalleryDesktopColumns;
   cornerRadius?: GalleryCornerRadius;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
 }): React.ReactElement => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
@@ -957,6 +964,9 @@ export const GalleryPreview = ({
               uppercaseText={uppercaseText}
               brandColor={colors.primary}
               className={cn("mx-auto mb-0", fullWidthDesktop ? 'w-full px-4' : 'max-w-7xl px-4')}
+              onTitleChange={onTitleChange}
+              onSubtitleChange={onSubtitleChange}
+              onBadgeTextChange={onBadgeTextChange}
             />
             {renderGalleryContent()}
           </div>

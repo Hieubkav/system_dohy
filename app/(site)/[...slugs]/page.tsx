@@ -5,13 +5,17 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { getConvexClient } from '@/lib/convex';
 import { getContactSettings, getSEOSettings, getSiteSettings, getSocialSettings } from '@/lib/get-settings';
 import { buildSeoMetadata } from '@/lib/seo/metadata';
+import {
+  buildModuleArticleSchema,
+  buildModuleDetailFaqSchema,
+  buildModuleProductSchema,
+  buildModuleServiceSchema,
+  toModuleDetailSeoData,
+} from '@/lib/seo/module-detail';
 import { buildDetailPath } from '@/lib/ia/route-mode';
 import {
   JsonLd,
-  generateArticleSchema,
   generateBreadcrumbSchema,
-  generateProductSchema,
-  generateServiceSchema,
 } from '@/components/seo/JsonLd';
 
 // Import các page components trung tâm
@@ -142,14 +146,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       return buildSeoMetadata({
         contact,
         descriptionOverride: product.metaDescription ?? product.description ?? seo.seo_description,
-        entity: {
-          description: product.description,
-          image: product.image,
-          images: product.images,
-          metaDescription: product.metaDescription,
-          metaTitle: product.metaTitle,
-          name: product.name,
-        },
+        entity: toModuleDetailSeoData(product),
         entityExists: true,
         pathname: canonicalPath,
         routeType: 'detail',
@@ -178,13 +175,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
       return buildSeoMetadata({
         contact,
-        entity: {
-          excerpt: service.excerpt,
-          metaDescription: service.metaDescription,
-          metaTitle: service.metaTitle,
-          thumbnail: service.thumbnail,
-          title: service.title,
-        },
+        entity: toModuleDetailSeoData(service),
         entityExists: true,
         pathname: canonicalPath,
         routeType: 'detail',
@@ -213,14 +204,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
       return buildSeoMetadata({
         contact,
-        entity: {
-          content: course.content,
-          excerpt: course.excerpt,
-          metaDescription: course.metaDescription,
-          metaTitle: course.metaTitle,
-          thumbnail: course.thumbnail,
-          title: course.title,
-        },
+        entity: toModuleDetailSeoData(course),
         entityExists: true,
         pathname: canonicalPath,
         routeType: 'detail',
@@ -249,14 +233,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       return buildSeoMetadata({
         contact,
         descriptionOverride: (resource.metaDescription ?? resource.excerpt) ?? seo.seo_description,
-        entity: {
-          content: resource.content,
-          excerpt: resource.excerpt,
-          image: resource.thumbnail,
-          metaDescription: resource.metaDescription,
-          metaTitle: resource.metaTitle,
-          title: resource.title,
-        },
+        entity: toModuleDetailSeoData(resource),
         pathname: canonicalPath,
         routeType: 'detail',
         seo,
@@ -284,14 +261,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
       return buildSeoMetadata({
         contact,
-        entity: {
-          content: project.content,
-          excerpt: project.excerpt,
-          metaDescription: project.metaDescription,
-          metaTitle: project.metaTitle,
-          thumbnail: project.thumbnail,
-          title: project.title,
-        },
+        entity: toModuleDetailSeoData(project),
         entityExists: true,
         pathname: canonicalPath,
         routeType: 'detail',
@@ -319,14 +289,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     return buildSeoMetadata({
       contact,
-      entity: {
-        content: post.content,
-        excerpt: post.excerpt,
-        metaDescription: post.metaDescription,
-        metaTitle: post.metaTitle,
-        thumbnail: post.thumbnail,
-        title: post.title,
-      },
+      entity: toModuleDetailSeoData(post),
       entityExists: true,
       openGraphType: 'article',
       pathname: canonicalPath,
@@ -442,8 +405,6 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
       const productImages = product.images && product.images.length > 0
         ? product.images
         : (product.image ? [product.image] : undefined);
-      const productUpdatedAt = (product as { updatedAt?: number }).updatedAt;
-
       const ratingSummary = await client.query(api.comments.getRatingSummary, {
         targetId: product._id,
         targetType: 'product',
@@ -451,23 +412,22 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
 
       const showStock = enabledFields ? enabledFields.some((field) => field.fieldKey === 'stock') : true;
 
-      const productSchema = generateProductSchema({
+      const productSchema = buildModuleProductSchema({
         aggregateRating: ratingSummary.count > 0
           ? { ratingValue: Number(ratingSummary.average.toFixed(2)), reviewCount: ratingSummary.count }
           : undefined,
         brand: site.site_name,
-        description: product.metaDescription ?? product.description ?? seo.seo_description,
+        entity: {
+          ...product,
+          image,
+          images: productImages,
+        },
+        fallbackDescription: seo.seo_description,
         image,
-        images: productImages,
         inStock: showStock ? product.stock > 0 : true,
-        name: product.metaTitle ?? product.name,
-        price: product.price,
-        salePrice: product.salePrice,
-        sku: product.sku,
         url: productUrl,
-        createdAt: product._creationTime,
-        updatedAt: productUpdatedAt,
       });
+      const faqSchema = buildModuleDetailFaqSchema(product);
 
       const breadcrumbSchema = generateBreadcrumbSchema([
         { name: 'Trang chủ', url: baseUrl },
@@ -478,8 +438,9 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
       return (
         <>
           <JsonLd data={productSchema} />
+          {faqSchema && <JsonLd data={faqSchema} />}
           <JsonLd data={breadcrumbSchema} />
-          <ProductDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} />
+          <ProductDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} initialProduct={product} />
         </>
       );
     }
@@ -498,18 +459,18 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
         targetType: 'service',
       });
 
-      const serviceSchema = generateServiceSchema({
+      const serviceSchema = buildModuleServiceSchema({
         aggregateRating: ratingSummary.count > 0
           ? { ratingValue: Number(ratingSummary.average.toFixed(2)), reviewCount: ratingSummary.count }
           : undefined,
-        description: (service.metaDescription ?? service.excerpt) ?? seo.seo_description,
+        entity: service,
+        fallbackDescription: seo.seo_description,
         image,
-        name: service.metaTitle ?? service.title,
-        price: service.price,
         providerName: site.site_name,
         providerUrl: baseUrl,
         url: serviceUrl,
       });
+      const faqSchema = buildModuleDetailFaqSchema(service);
 
       const breadcrumbSchema = generateBreadcrumbSchema([
         { name: 'Trang chủ', url: baseUrl },
@@ -520,8 +481,9 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
       return (
         <>
           <JsonLd data={serviceSchema} />
+          {faqSchema && <JsonLd data={faqSchema} />}
           <JsonLd data={breadcrumbSchema} />
-          <ServiceDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} />
+          <ServiceDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} initialService={service} />
         </>
       );
     }
@@ -534,6 +496,15 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
       if (!course) {notFound();}
 
       const courseUrl = `${baseUrl}${canonicalPath}`;
+      const courseSchema = buildModuleArticleSchema({
+        entity: course,
+        fallbackDescription: seo.seo_description,
+        image: course.thumbnail ?? seo.seo_og_image,
+        siteName: site.site_name,
+        title: course.title,
+        url: courseUrl,
+      });
+      const faqSchema = buildModuleDetailFaqSchema(course);
       const breadcrumbSchema = generateBreadcrumbSchema([
         { name: 'Trang chủ', url: baseUrl },
         { name: category?.name ?? 'Khóa học', url: `${baseUrl}/${resolvedContext.categorySlug}` },
@@ -542,8 +513,10 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
 
       return (
         <>
+          <JsonLd data={courseSchema} />
+          {faqSchema && <JsonLd data={faqSchema} />}
           <JsonLd data={breadcrumbSchema} />
-          <CourseDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} />
+          <CourseDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} initialCourse={course} />
         </>
       );
     }
@@ -556,6 +529,15 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
       if (!resource) {notFound();}
 
       const resourceUrl = `${baseUrl}${canonicalPath}`;
+      const resourceSchema = buildModuleArticleSchema({
+        entity: resource,
+        fallbackDescription: seo.seo_description,
+        image: resource.thumbnail ?? seo.seo_og_image,
+        siteName: site.site_name,
+        title: resource.title,
+        url: resourceUrl,
+      });
+      const faqSchema = buildModuleDetailFaqSchema(resource);
       const breadcrumbSchema = generateBreadcrumbSchema([
         { name: 'Trang chủ', url: baseUrl },
         { name: category?.name ?? 'Tài nguyên', url: `${baseUrl}/${resolvedContext.categorySlug}` },
@@ -564,8 +546,10 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
 
       return (
         <>
+          <JsonLd data={resourceSchema} />
+          {faqSchema && <JsonLd data={faqSchema} />}
           <JsonLd data={breadcrumbSchema} />
-          <ResourceDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} />
+          <ResourceDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} initialResource={resource} />
         </>
       );
     }
@@ -578,6 +562,15 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
       if (!project) {notFound();}
 
       const projectUrl = `${baseUrl}${canonicalPath}`;
+      const projectSchema = buildModuleArticleSchema({
+        entity: project,
+        fallbackDescription: seo.seo_description,
+        image: project.thumbnail ?? seo.seo_og_image,
+        siteName: site.site_name,
+        title: project.title,
+        url: projectUrl,
+      });
+      const faqSchema = buildModuleDetailFaqSchema(project);
       const breadcrumbSchema = generateBreadcrumbSchema([
         { name: 'Trang chủ', url: baseUrl },
         { name: category?.name ?? 'Dự án', url: `${baseUrl}/${resolvedContext.categorySlug}` },
@@ -586,8 +579,10 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
 
       return (
         <>
+          <JsonLd data={projectSchema} />
+          {faqSchema && <JsonLd data={faqSchema} />}
           <JsonLd data={breadcrumbSchema} />
-          <ProjectDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} />
+          <ProjectDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} initialProject={project} />
         </>
       );
     }
@@ -599,15 +594,15 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
     const category = await client.query(api.postCategories.getById, { id: post.categoryId });
     const postUrl = `${baseUrl}${canonicalPath}`;
     const image = post.thumbnail ?? seo.seo_og_image;
-    const articleSchema = generateArticleSchema({
-      description: (post.metaDescription ?? post.excerpt) ?? seo.seo_description,
+    const articleSchema = buildModuleArticleSchema({
+      entity: post,
+      fallbackDescription: seo.seo_description,
       image,
-      publishedAt: post.publishedAt,
       siteName: site.site_name,
       title: post.metaTitle ?? post.title,
-      authorName: post.authorName,
       url: postUrl,
     });
+    const faqSchema = buildModuleDetailFaqSchema(post);
 
     const breadcrumbSchema = generateBreadcrumbSchema([
       { name: 'Trang chủ', url: baseUrl },
@@ -618,8 +613,9 @@ export default async function UnifiedCatchAllPage({ params }: Props) {
     return (
       <>
         <JsonLd data={articleSchema} />
+        {faqSchema && <JsonLd data={faqSchema} />}
         <JsonLd data={breadcrumbSchema} />
-        <PostDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} />
+        <PostDetailPage params={Promise.resolve({ slug: resolvedContext.recordSlug })} initialPost={post} />
       </>
     );
   }

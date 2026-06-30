@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { AdminEntityImage } from '../components/AdminEntityImage';
 import Link from 'next/link';
-import { useMutation, useQuery } from 'convex/react';
+import { useMutation, useQuery, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { ChevronDown, Copy, Edit, ExternalLink, Layers, Loader2, Plus, Search, Trash2 } from 'lucide-react';
@@ -38,7 +38,7 @@ function ProductsContent() {
   const duplicateProduct = useMutation(api.products.duplicate);
   const bulkRemove = useMutation(api.products.bulkRemove);
   const bulkUpdateStatus = useMutation(api.products.bulkUpdateStatus);
-  const bulkClearBrokenMedia = useMutation(api.products.bulkClearBrokenMedia);
+  const bulkClearBrokenMedia = useAction(api.products.bulkClearBrokenMedia);
   const reorderProducts = useMutation(api.products.reorder);
 
   const [searchTerm, setSearchTerm] = useState('');

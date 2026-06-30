@@ -25,6 +25,8 @@ interface CategoryItem {
 
 export default function ProductCategoriesCreatePage() {
   const COMPONENT_TYPE = 'ProductCategories';
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const isVisualEditAllowed = systemConfig?.typeVisualEditOverrides?.[COMPONENT_TYPE]?.enabled ?? true;
   const { title, setTitle, active, setActive, handleSubmit, isSubmitting } = useComponentForm('Danh mục sản phẩm', COMPONENT_TYPE);
   const { customState, effectiveColors, showCustomBlock, setCustomState, systemColors } = useTypeColorOverrideState(COMPONENT_TYPE, { seedCustomFromSettingsWhenTypeEmpty: true });
   const { customState: customFontState, effectiveFont, showCustomBlock: showFontCustomBlock, setCustomState: setCustomFontState } = useTypeFontOverrideState(COMPONENT_TYPE, { seedCustomFromSettingsWhenTypeEmpty: true });
@@ -209,6 +211,10 @@ export default function ProductCategoriesCreatePage() {
         fontClassName="font-active"
         selectionMode={selectionMode}
         demoCategories={demoCategories}
+        isVisualEditAllowed={isVisualEditAllowed}
+        onTitleChange={setTitle}
+        onSubtitleChange={setSubtitle}
+        onBadgeTextChange={setBadgeText}
       />
     </ComponentFormWrapper>
   );

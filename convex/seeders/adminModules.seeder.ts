@@ -17,6 +17,10 @@ export class AdminModulesSeeder extends BaseSeeder<AdminModuleData> {
     const startTime = Date.now();
     this.config = { batchSize: 50, dependencies: true, force: false, ...config };
 
+    // Capture the current enabled states from the database before any clear operation
+    const existingModules = await this.ctx.db.query('adminModules').collect();
+    const enabledMap = new Map(existingModules.map((m) => [m.key, m.enabled]));
+
     if (this.config.force) {
       await this.clear();
     }
@@ -43,13 +47,24 @@ export class AdminModulesSeeder extends BaseSeeder<AdminModuleData> {
       { category: 'content', description: 'Quản lý dự án, danh mục, video và thư viện ảnh dự án', enabled: true, icon: 'Briefcase', isCore: false, key: 'projects', name: 'Dự án', order: 19 },
       { category: 'content', description: 'Quản lý khóa học, danh mục và nội dung học', enabled: true, icon: 'GraduationCap', isCore: false, key: 'courses', name: 'Khóa học', order: 20 },
       { category: 'content', description: 'Quản lý tài nguyên, danh mục, link tải và quyền truy cập', enabled: true, icon: 'FileText', isCore: false, key: 'resources', name: 'Tài nguyên', order: 21 },
-      { category: 'system', description: 'Bảng Kanban quản lý công việc nội bộ', enabled: true, icon: 'LayoutGrid', isCore: false, key: 'kanban', name: 'Kanban Board', order: 22 },
+      { category: 'system', description: 'Nền tảng Mini App để tách thử nghiệm khỏi hệ thống lõi', enabled: true, icon: 'PanelsTopLeft', isCore: false, key: 'miniApps', name: 'Mini Apps', order: 22 },
+      { category: 'content', description: 'Tài liệu catalog PDF dạng flipbook', enabled: true, icon: 'BookOpen', isCore: false, key: 'catalogs', name: 'Catalog', order: 23 },
       { category: 'system', description: 'Quản lý gia hạn subscription khách hàng', enabled: true, icon: 'CalendarDays', isCore: false, key: 'subscriptions', name: 'Subscriptions', order: 23 },
     ];
 
-    const existingModules = await this.ctx.db.query('adminModules').take(1000);
-    const existingKeys = new Set(existingModules.map((module) => module.key));
-    const missingModules = modules.filter((module) => !existingKeys.has(module.key));
+    // Restore the enabled state from database for modules that existed before reseeding
+    const finalModules = this.config.force
+      ? modules.map((m) => {
+          if (enabledMap.has(m.key)) {
+            return { ...m, enabled: enabledMap.get(m.key)! };
+          }
+          return m;
+        })
+      : modules;
+
+    const currentExisting = this.config.force ? [] : existingModules;
+    const existingKeys = new Set(currentExisting.map((module) => module.key));
+    const missingModules = finalModules.filter((module) => !existingKeys.has(module.key));
 
     await Promise.all(missingModules.map(module => this.ctx.db.insert('adminModules', module)));
 
@@ -58,7 +73,7 @@ export class AdminModulesSeeder extends BaseSeeder<AdminModuleData> {
       dependencies: [],
       duration: Date.now() - startTime,
       module: this.moduleName,
-      skipped: modules.length - missingModules.length,
+      skipped: finalModules.length - missingModules.length,
     };
   }
 

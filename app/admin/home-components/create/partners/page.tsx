@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { Button } from '../../../components/ui';
 import { ComponentFormWrapper, useComponentForm } from '../shared';
 import { useTypeColorOverrideState } from '../../_shared/hooks/useTypeColorOverride';
@@ -19,6 +21,8 @@ interface PartnerItem extends ImageItem { id: string | number; url: string; link
 export default function PartnersCreatePage() {
   const COMPONENT_TYPE = 'Partners';
   const { title, setTitle, active, setActive, handleSubmit, isSubmitting } = useComponentForm('Đối tác / Logos', COMPONENT_TYPE);
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const isVisualEditAllowed = systemConfig?.typeVisualEditOverrides?.[COMPONENT_TYPE]?.enabled ?? true;
   const { customState, effectiveColors, showCustomBlock, setCustomState, systemColors } = useTypeColorOverrideState(COMPONENT_TYPE, { seedCustomFromSettingsWhenTypeEmpty: true });
   const { customState: customFontState, effectiveFont, showCustomBlock: showFontCustomBlock, setCustomState: setCustomFontState } = useTypeFontOverrideState(COMPONENT_TYPE, { seedCustomFromSettingsWhenTypeEmpty: true });
   const { primary, secondary, mode } = effectiveColors;
@@ -184,6 +188,10 @@ export default function PartnersCreatePage() {
         uppercaseText={headerState.uppercaseText}
         showBadge={headerState.showBadge}
         badgeText={headerState.badgeText}
+        isVisualEditAllowed={isVisualEditAllowed}
+        onTitleChange={setTitle}
+        onSubtitleChange={headerState.setSubtitle}
+        onBadgeTextChange={headerState.setBadgeText}
       />
     </ComponentFormWrapper>
   );

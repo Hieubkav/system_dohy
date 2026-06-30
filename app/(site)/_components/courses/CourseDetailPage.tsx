@@ -49,9 +49,10 @@ const isColorDark = (hex?: string) => {
 
 type CourseDetailPageProps = {
   params: Promise<{ slug: string }>;
+  initialCourse?: any;
 };
 
-export default function CourseDetailPage({ params }: CourseDetailPageProps) {
+export default function CourseDetailPage({ params, initialCourse }: CourseDetailPageProps) {
   const { slug } = use(params);
   const router = useRouter();
   const config = useCoursesDetailConfig();
@@ -59,7 +60,8 @@ export default function CourseDetailPage({ params }: CourseDetailPageProps) {
   const { isDark } = useSiteSettings();
   const { addItem, openDrawer } = useCart();
   const { customer, token } = useCustomerAuth();
-  const course = useQuery(api.courses.getBySlug, { slug });
+  const courseQuery = useQuery(api.courses.getBySlug, { slug });
+  const course = courseQuery ?? (initialCourse as Exclude<typeof courseQuery, undefined>);
   const courseCommerceSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'courses', settingKey: 'commerceMode' });
   const category = useQuery(api.courseCategories.getById, course?.categoryId ? { id: course.categoryId } : 'skip');
   const chapters = useQuery(api.courses.listChapters, course?._id ? { courseId: course._id } : 'skip');

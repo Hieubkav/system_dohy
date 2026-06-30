@@ -1,6 +1,9 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React from 'react';
+
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useBrandColors } from '@/components/site/hooks';
@@ -50,6 +53,10 @@ interface ServiceListPreviewProps {
   showViewAll?: boolean;
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
+  isVisualEditAllowed?: boolean;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
 }
 
 const MOCK_SERVICES: ServiceListPreviewItem[] = [
@@ -116,6 +123,10 @@ const ServiceListPreviewInner = ({
   validationTokens,
   device,
   showViewAll,
+  isVisualEditActive,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: {
   homePageBgColor: string;
   mode: ServiceListBrandMode;
@@ -138,6 +149,10 @@ const ServiceListPreviewInner = ({
   validationTokens: any;
   device: any;
   showViewAll: boolean;
+  isVisualEditActive?: boolean;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
 }) => {
   const { isDark } = usePreviewDark();
   const adaptedTokens = React.useMemo(() => adaptTokensForDarkMode(validationTokens, isDark), [validationTokens, isDark]);
@@ -166,6 +181,10 @@ const ServiceListPreviewInner = ({
         tokens={adaptedTokens}
         device={device}
         showViewAll={showViewAll}
+        visualEditEnabled={isVisualEditActive}
+        onTitleChange={onTitleChange}
+        onSubtitleChange={onSubtitleChange}
+        onBadgeTextChange={onBadgeTextChange}
       />
     </div>
   );
@@ -196,10 +215,27 @@ export const ServiceListPreview = ({
   cardRadius,
   desktopColumns,
   fontClassName,
+  isVisualEditAllowed = true,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: ServiceListPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
   const systemColors = useBrandColors();
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
 
   const homePageBgColor = React.useMemo(() => {
     if (!systemConfig?.homePageBackground) {return '#ffffff';}
@@ -249,32 +285,41 @@ export const ServiceListPreview = ({
         deviceWidthClass={deviceWidths[device]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+        visualEditActive={isVisualEditActive}
+        visualEditAllowed={isVisualEditAllowed}
+        onVisualEditToggle={handleToggleVisualEdit}
       >
-        <BrowserFrame url="yoursite.com/services">
-          <ServiceListPreviewInner
-            homePageBgColor={homePageBgColor}
-            mode={mode}
-            previewStyle={previewStyle}
-            hideHeader={hideHeader}
-            showTitle={showTitle}
-            showSubtitle={showSubtitle}
-            subtitle={subtitle}
-            headerAlign={headerAlign}
-            titleColorPrimary={titleColorPrimary}
-            subtitleAboveTitle={subtitleAboveTitle}
-            uppercaseText={uppercaseText}
-            showBadge={showBadge}
-            badgeText={badgeText}
-            spacing={spacing}
-            cardRadius={cardRadius}
-            desktopColumns={desktopColumns}
-            title={title}
-            displayItems={displayItems}
-            validationTokens={validation.tokens}
-            device={device}
-            showViewAll={showViewAll}
-          />
-        </BrowserFrame>
+        <div className="space-y-3">
+          <BrowserFrame url="yoursite.com/services">
+            <ServiceListPreviewInner
+              homePageBgColor={homePageBgColor}
+              mode={mode}
+              previewStyle={previewStyle}
+              hideHeader={hideHeader}
+              showTitle={showTitle}
+              showSubtitle={showSubtitle}
+              subtitle={subtitle}
+              headerAlign={headerAlign}
+              titleColorPrimary={titleColorPrimary}
+              subtitleAboveTitle={subtitleAboveTitle}
+              uppercaseText={uppercaseText}
+              showBadge={showBadge}
+              badgeText={badgeText}
+              spacing={spacing}
+              cardRadius={cardRadius}
+              desktopColumns={desktopColumns}
+              title={title}
+              displayItems={displayItems}
+              validationTokens={validation.tokens}
+              device={device}
+              showViewAll={showViewAll}
+              isVisualEditActive={isVisualEditActive}
+              onTitleChange={onTitleChange}
+              onSubtitleChange={onSubtitleChange}
+              onBadgeTextChange={onBadgeTextChange}
+            />
+          </BrowserFrame>
+        </div>
       </PreviewWrapper>
 
       {mode === 'dual' && (

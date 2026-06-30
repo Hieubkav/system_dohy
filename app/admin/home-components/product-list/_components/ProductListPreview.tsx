@@ -1,4 +1,6 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useQuery } from 'convex/react';
@@ -50,6 +52,10 @@ function CarouselPreviewInner({
   tokens,
   isProduct = true,
   onPreviewAction,
+  visualEditEnabled = false,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: {
   displayItems: ProductListPreviewItem[];
   device: 'desktop' | 'tablet' | 'mobile';
@@ -75,6 +81,10 @@ function CarouselPreviewInner({
   tokens?: any;
   isProduct?: boolean;
   onPreviewAction: (item: ProductListPreviewItem, action: PreviewQuickAddAction) => void;
+  visualEditEnabled?: boolean;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
 }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: 'start',
@@ -142,6 +152,10 @@ function CarouselPreviewInner({
           uppercaseText={uppercaseText}
           brandColor={brandColor}
           className="mb-0"
+          visualEditEnabled={visualEditEnabled}
+          onTitleChange={onTitleChange}
+          onSubtitleChange={onSubtitleChange}
+          onBadgeTextChange={onBadgeTextChange}
         />
         {(canScrollPrev || canScrollNext) && (
         <div className="flex justify-end items-center gap-2 mt-2">
@@ -469,6 +483,10 @@ export const ProductListPreview = ({
   showAddToCartButton = true,
   showBuyNowButton = true,
   cartButtonsLayout = 'stack',
+  isVisualEditAllowed = true,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: {
   brandColor: string;
   secondary: string;
@@ -503,6 +521,10 @@ export const ProductListPreview = ({
   showAddToCartButton?: boolean;
   showBuyNowButton?: boolean;
   cartButtonsLayout?: 'stack' | 'grid-2';
+  isVisualEditAllowed?: boolean;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
 }) => {
   const { isDark } = usePreviewDark();
   const tokens = React.useMemo(
@@ -522,6 +544,21 @@ export const ProductListPreview = ({
   const cardRadiusClassName = getProductListCardRadiusClassName(normalizedCardRadius);
   const imageRadiusClassName = getProductListImageRadiusClassName(normalizedCardRadius);
   const { device, setDevice } = usePreviewDevice();
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
+
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
+
   const normalizedDesktopColumns = desktopColumns === 3 ? 3 : 4;
   const normalizedLookbookColumns = lookbookDesktopColumns === 3 ? 3 : normalizedDesktopColumns;
   const responsiveGridClassName = React.useMemo(() => {
@@ -557,7 +594,7 @@ export const ProductListPreview = ({
     () => resolveProductImageAspectRatio(aspectRatioSetting?.value),
     [aspectRatioSetting?.value]
   );
-  
+
   const saleModeSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'products', settingKey: 'saleMode' });
   const saleMode = React.useMemo<'cart' | 'contact' | 'affiliate'>(() => {
     const value = saleModeSetting?.value;
@@ -622,6 +659,10 @@ export const ProductListPreview = ({
             uppercaseText={uppercaseText}
             brandColor={brandColor}
             className="mb-0"
+            visualEditEnabled={isVisualEditActive}
+            onTitleChange={onTitleChange}
+            onSubtitleChange={onSubtitleChange}
+            onBadgeTextChange={onBadgeTextChange}
           />
           <div className="flex justify-end mt-4">
             {headerRightSlot}
@@ -647,6 +688,10 @@ export const ProductListPreview = ({
             uppercaseText={uppercaseText}
             brandColor={brandColor}
             className="mb-0"
+            visualEditEnabled={isVisualEditActive}
+            onTitleChange={onTitleChange}
+            onSubtitleChange={onSubtitleChange}
+            onBadgeTextChange={onBadgeTextChange}
           />
           <div className="flex justify-end mt-2">
             <button type="button" className="flex items-center gap-1.5 text-sm font-semibold transition-colors hover:opacity-80" style={{ color: brandColor }}>
@@ -1044,7 +1089,7 @@ export const ProductListPreview = ({
     );
   };
 
-  const renderCarouselStyle = () => <CarouselPreviewInner displayItems={displayItems} device={device} brandColor={brandColor} secondary={secondary} subTitle={subTitle} displayTitle={displayTitle} displaySubtitle={displaySubtitle} imageAspectRatioStyle={imageAspectRatioStyle} getDiscount={getDiscount} effectiveShowBadge={effectiveShowBadge} effectiveShowTitle={effectiveShowTitle} effectiveShowSubtitle={effectiveShowSubtitle} effectiveHideHeader={effectiveHideHeader} titleStyle={titleStyle} uppercaseText={uppercaseText} headerAlign={headerAlign} subtitleAboveTitle={subtitleAboveTitle} cardRadiusClassName={cardRadiusClassName} showAddToCartButton={effectiveShowAddToCartButton} showBuyNowButton={effectiveShowBuyNowButton} cartButtonsLayout={cartButtonsLayout} tokens={tokens} isProduct={isProduct} onPreviewAction={onPreviewAction} />;
+  const renderCarouselStyle = () => <CarouselPreviewInner displayItems={displayItems} device={device} brandColor={brandColor} secondary={secondary} subTitle={subTitle} displayTitle={displayTitle} displaySubtitle={displaySubtitle} imageAspectRatioStyle={imageAspectRatioStyle} getDiscount={getDiscount} effectiveShowBadge={effectiveShowBadge} effectiveShowTitle={effectiveShowTitle} effectiveShowSubtitle={effectiveShowSubtitle} effectiveHideHeader={effectiveHideHeader} titleStyle={titleStyle} uppercaseText={uppercaseText} headerAlign={headerAlign} subtitleAboveTitle={subtitleAboveTitle} cardRadiusClassName={cardRadiusClassName} showAddToCartButton={effectiveShowAddToCartButton} showBuyNowButton={effectiveShowBuyNowButton} cartButtonsLayout={cartButtonsLayout} tokens={tokens} isProduct={isProduct} onPreviewAction={onPreviewAction} visualEditEnabled={isVisualEditActive} onTitleChange={onTitleChange} onSubtitleChange={onSubtitleChange} onBadgeTextChange={onBadgeTextChange} />;
 
   const renderWineCarouselStyle = () => (
     <WineCarouselPreviewInner
@@ -1754,10 +1799,15 @@ export const ProductListPreview = ({
         deviceWidthClass={deviceWidths[device]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+      visualEditActive={isVisualEditActive}
+      visualEditAllowed={isVisualEditAllowed}
+      onVisualEditToggle={handleToggleVisualEdit}
       >
-        <BrowserFrame url={`yoursite.com/${isProduct ? 'products' : 'services'}`}>
-          <div className={sectionSpacingClassName}>
-            {forceEmpty ? renderEmptyState() : (
+        <div className="space-y-3">
+
+          <BrowserFrame url={`yoursite.com/${isProduct ? 'products' : 'services'}`}>
+            <div className={sectionSpacingClassName}>
+              {forceEmpty ? renderEmptyState() : (
               <>
                 {previewStyle === 'minimal' && renderMinimalStyle()}
                 {previewStyle === 'commerce' && renderCommerceStyle()}
@@ -1776,7 +1826,8 @@ export const ProductListPreview = ({
             )}
           </div>
         </BrowserFrame>
-      </PreviewWrapper>
+      </div>
+    </PreviewWrapper>
       <ColorInfoPanel brandColor={brandColor} secondary={secondary} />
       {isProduct && (
         <QuickAddVariantModal

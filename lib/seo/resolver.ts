@@ -5,6 +5,7 @@
 
 import type { ContactSettings, SEOSettings, SiteSettings } from '@/lib/get-settings';
 import { stripHtml, truncateText } from '@/lib/seo';
+import { collectBrandSearchTerms, mergeUniqueSeoList, resolveBrandDescription, splitSeoList } from './brand';
 
 export type EntitySeoData = {
   title?: string;
@@ -62,7 +63,7 @@ export const resolveSeoDescription = (params: {
   seo: SEOSettings;
   fallback?: string;
 }): string => {
-  // Priority: metaDescription -> summary/excerpt -> cleaned description/content -> fallback -> site_tagline -> seo_description
+  // Priority: metaDescription -> summary/excerpt -> cleaned description/content -> fallback -> brand summary -> seo_description -> site_tagline
   if (params.entity?.metaDescription) {
     return params.entity.metaDescription;
   }
@@ -81,10 +82,11 @@ export const resolveSeoDescription = (params: {
   if (params.fallback) {
     return params.fallback;
   }
-  if (params.site.site_tagline) {
-    return params.site.site_tagline;
+  const brandDescription = resolveBrandDescription(params.seo, params.site);
+  if (brandDescription) {
+    return cleanDescription(brandDescription);
   }
-  return params.seo.seo_description || '';
+  return params.site.site_tagline || '';
 };
 
 export const resolveSeoImage = (params: {
@@ -114,19 +116,24 @@ export const resolveSeoImage = (params: {
 export const resolveSeoKeywords = (params: {
   entity?: { keywords?: string };
   seo: SEOSettings;
+  site?: SiteSettings;
 }): string[] => {
-  // Priority: entity keywords -> global seo_keywords
-  const entityKeywords = params.entity?.keywords
-    ? params.entity.keywords.split(',').map((k) => k.trim()).filter(Boolean)
-    : [];
+  const entityKeywords = splitSeoList(params.entity?.keywords);
+  const globalKeywords = splitSeoList(params.seo.seo_keywords);
+  const brandKeywords = params.site
+    ? collectBrandSearchTerms(params.seo, params.site)
+    : mergeUniqueSeoList(
+        splitSeoList(params.seo.seo_brand_aliases),
+        splitSeoList(params.seo.seo_brand_search_queries),
+        splitSeoList(params.seo.seo_brand_topics),
+        splitSeoList(params.seo.seo_brand_services)
+      );
 
   if (entityKeywords.length > 0) {
-    return entityKeywords;
+    return mergeUniqueSeoList(entityKeywords, brandKeywords);
   }
 
-  return params.seo.seo_keywords
-    ? params.seo.seo_keywords.split(',').map((k) => k.trim()).filter(Boolean)
-    : [];
+  return mergeUniqueSeoList(globalKeywords, brandKeywords);
 };
 
 export const resolveCanonicalUrl = (params: {

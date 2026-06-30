@@ -8,7 +8,7 @@ import { useQuery } from 'convex/react';
 import { 
   Bell, Briefcase, CalendarDays, ChevronRight, ChevronsLeft, GraduationCap,
   ChevronsRight, FileText, Globe, Image as ImageIcon, Inbox, LayoutDashboard, LayoutGrid, Loader2,
-  LogOut, Settings, ShoppingCart, Ticket, User, Users, X
+  LogOut, Settings, ShoppingCart, Ticket, User, Users, X, BookOpen
 } from 'lucide-react';
 import { cn } from './ui';
 import { api } from '@/convex/_generated/api';
@@ -147,6 +147,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   const trustPagesFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'settings', featureKey: 'enableTrustPages' });
   const courseFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'courses', featureKey: 'enableCourseFilters' });
   const resourceFiltersFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'resources', featureKey: 'enableResourceFilters' });
+  const miniAppsAdminFeature = useQuery(api.admin.modules.getModuleFeature, { moduleKey: 'miniApps', featureKey: 'enableAdminWorkspace' });
+  const miniApps = useQuery(api.miniApps.listEnabledForAdmin);
 
   const isActive = (route: string) => pathname.startsWith(route);
 
@@ -183,6 +185,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
     if (pathname.startsWith('/admin/settings')) {
       return 'Cài đặt';
     }
+    if (pathname.startsWith('/admin/mini-apps') || pathname.startsWith('/admin/kanban')) {
+      return 'Mini Apps';
+    }
     if (pathname.startsWith('/admin/bookings')) {
       return 'Dịch vụ';
     }
@@ -209,6 +214,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   const showCoursesSection = isModuleEnabled('courses');
   const showResourcesSection = isModuleEnabled('resources');
   const showProjectsSection = isModuleEnabled('projects');
+  const showCatalogsSection = isModuleEnabled('catalogs');
   const showServicesSection = isModuleEnabled('services');
   const showBookingsSection = isModuleEnabled('bookings');
   const showCommerceSection = isModuleEnabled('products') || isModuleEnabled('customers') || isModuleEnabled('orders') || isModuleEnabled('wishlist');
@@ -217,7 +223,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   const showMediaSection = isModuleEnabled('media');
   const showUsersSection = isModuleEnabled('users') || isModuleEnabled('roles');
   const showWebsiteSection = isModuleEnabled('menus') || isModuleEnabled('homepage') || isModuleEnabled('settings');
-  const showKanbanSection = isModuleEnabled('kanban');
+  const showMiniAppsSection = isModuleEnabled('miniApps') && (miniAppsAdminFeature?.enabled ?? true);
   const showSubscriptionsSection = isModuleEnabled('subscriptions');
   const showSettingsSection = isModuleEnabled('settings');
   const showContactInboxSection = isModuleEnabled('contactInbox');
@@ -227,11 +233,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   const productTypesEnabled = Boolean(productSettings?.find(setting => setting.settingKey === 'enableProductTypes')?.value);
 
   const analyticsSectionItemCount = showAnalyticsSection ? 1 : 0;
-  const contentSectionItemCount = Number(showPostsSection) + Number(showCoursesSection) + Number(showResourcesSection) + Number(showProjectsSection) + Number(showServicesSection);
+  const contentSectionItemCount = Number(showPostsSection) + Number(showCoursesSection) + Number(showResourcesSection) + Number(showProjectsSection) + Number(showCatalogsSection) + Number(showServicesSection);
   const commerceSectionItemCount = showCommerceSection ? 1 : 0;
   const mediaSectionItemCount = showMediaSection ? 1 : 0;
   const marketingSectionItemCount = Number(showNotificationsSection) + Number(showPromotionsSection);
-  const systemSectionItemCount = Number(showUsersSection) + Number(showWebsiteSection) + Number(showContactInboxSection) + Number(showKanbanSection) + Number(showSubscriptionsSection) + Number(showSettingsSection);
+  const systemSectionItemCount = Number(showUsersSection) + Number(showWebsiteSection) + Number(showContactInboxSection) + Number(showMiniAppsSection) + Number(showSubscriptionsSection) + Number(showSettingsSection);
 
   const shouldShowGroupTitle = (itemCount: number) => !isSidebarCollapsed && itemCount > 0;
   const getSectionClassName = (showTitle: boolean) => cn('space-y-1', !showTitle && '-mt-2');
@@ -248,6 +254,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
     userFeatures?.forEach(feature => { features[feature.featureKey] = feature.enabled; });
     return features;
   }, [userFeatures]);
+
+  const miniAppSubItems = useMemo(() => [
+    { href: '/admin/mini-apps', label: 'Tổng quan' },
+    ...(miniApps ?? [])
+      .filter(app => app.adminEnabled && app.key !== 'cv-builder')
+      .map(app => ({
+        href: `/admin/mini-apps/${app.key}`,
+        label: app.name.replace(/\s+Mini App$/i, ''),
+      })),
+  ], [miniApps]);
 
   const showAvatar = enabledFeatures.enableAvatar ?? true;
 
@@ -444,6 +460,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
               </div>
             )}
 
+            {/* Catalogs Section */}
+            {showCatalogsSection && (
+              <div className={getSectionClassName(showContentTitle)}>
+                {!showPostsSection && !showCoursesSection && !showResourcesSection && !showProjectsSection && showContentTitle && <div className="px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Nội dung</div>}
+                <SidebarItem
+                  icon={BookOpen}
+                  label="Catalog"
+                  href="/admin/catalogs"
+                  active={isActive('/admin/catalogs')}
+                  isCollapsed={isSidebarCollapsed}
+                  isExpanded={currentExpandedMenu === 'Catalog'}
+                  onToggle={() =>{  handleMenuToggle('Catalog'); }}
+                  pathname={pathname}
+                  isModuleEnabled={isModuleEnabled}
+                />
+              </div>
+            )}
+
             {/* Services Section */}
             {showServicesSection && (
               <div className={getSectionClassName(showContentTitle)}>
@@ -550,7 +584,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
             )}
 
             {/* System Section */}
-            {(showUsersSection || showWebsiteSection || showSettingsSection || showKanbanSection || showSubscriptionsSection || showContactInboxSection) && (
+            {(showUsersSection || showWebsiteSection || showSettingsSection || showMiniAppsSection || showSubscriptionsSection || showContactInboxSection) && (
               <div className={getSectionClassName(showSystemTitle)}>
                 {showSystemTitle && <div className="px-3 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Hệ thống</div>}
                 
@@ -605,17 +639,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
                   />
                 )}
 
-                {showKanbanSection && (
+                {showMiniAppsSection && (
                   <SidebarItem
                     icon={LayoutGrid}
-                    label="Kanban Board"
-                    href="/admin/kanban"
-                    active={isActive('/admin/kanban')}
+                    label="Mini Apps"
+                    href="/admin/mini-apps"
+                    active={isActive('/admin/mini-apps') || isActive('/admin/kanban')}
                     isCollapsed={isSidebarCollapsed}
-                    isExpanded={false}
-                    onToggle={() => {}}
+                    isExpanded={currentExpandedMenu === 'Mini Apps'}
+                    onToggle={() =>{  handleMenuToggle('Mini Apps'); }}
                     pathname={pathname}
                     isModuleEnabled={isModuleEnabled}
+                    subItems={miniAppSubItems}
                   />
                 )}
 

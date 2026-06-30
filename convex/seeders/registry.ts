@@ -11,9 +11,9 @@ import { CourseCategorySeeder } from './courseCategories.seeder';
 import { CourseSeeder } from './courses.seeder';
 import { CustomerSeeder } from './customers.seeder';
 import { HomepageSeeder } from './homepage.seeder';
-import { KanbanSeeder } from './kanban.seeder';
 import { MediaSeeder } from './media.seeder';
 import { MenusSeeder } from './menus.seeder';
+import { MiniAppsSeeder } from './miniApps.seeder';
 import { NotificationsSeeder } from './notifications.seeder';
 import { OrderSeeder } from './orders.seeder';
 import { PostCategorySeeder } from './postCategories.seeder';
@@ -47,10 +47,10 @@ export const SEEDER_REGISTRY: Record<string, SeederConstructor> = {
   courses: CourseSeeder,
   customers: CustomerSeeder,
   homepage: HomepageSeeder,
-  kanban: KanbanSeeder,
   landingPages: LandingPagesSeeder,
   media: MediaSeeder,
   menus: MenusSeeder,
+  miniApps: MiniAppsSeeder,
   notifications: NotificationsSeeder,
   orders: OrderSeeder,
   postCategories: PostCategorySeeder,

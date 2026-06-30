@@ -1,3 +1,4 @@
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
 import React from 'react';
 import { Building2 } from 'lucide-react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
@@ -51,6 +52,10 @@ export const PartnersPreview = ({
   uppercaseText,
   showBadge,
   badgeText,
+  isVisualEditAllowed = true,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: {
   items: PartnerItem[];
   brandColor: string;
@@ -81,9 +86,27 @@ export const PartnersPreview = ({
   uppercaseText?: boolean;
   showBadge?: boolean;
   badgeText?: string;
+  isVisualEditAllowed?: boolean;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
 }) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
+
   const previewStyle = selectedStyle ?? 'grid';
   const setPreviewStyle = (style: string) => onStyleChange?.(style as PartnersStyle);
   const colors = React.useMemo(
@@ -347,6 +370,10 @@ export const PartnersPreview = ({
           uppercaseText={uppercaseText}
           brandColor={brandColor}
           className={cn('mb-0', spacing === 'none' && 'gap-0')}
+          visualEditEnabled={isVisualEditActive}
+          onTitleChange={onTitleChange}
+          onSubtitleChange={onSubtitleChange}
+          onBadgeTextChange={onBadgeTextChange}
         />
       </div>
     );
@@ -365,36 +392,42 @@ export const PartnersPreview = ({
         info={`${items.length} logo • ${mode === 'dual' ? '2 màu' : '1 màu'}`}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+      visualEditActive={isVisualEditActive}
+      visualEditAllowed={isVisualEditAllowed}
+      onVisualEditToggle={handleToggleVisualEdit}
       >
-        <div className="mb-3 flex justify-end gap-2">
-          <Button
-            type="button"
-            variant={displayMode === 'withName' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => onDisplayModeChange?.('withName')}
-          >
-            Hiện tên logo
-          </Button>
-          <Button
-            type="button"
-            variant={displayMode === 'logoOnly' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => onDisplayModeChange?.('logoOnly')}
-          >
-            Chỉ logo
-          </Button>
+        <div className="space-y-3">
+
+          <div className="mb-3 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant={displayMode === 'withName' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onDisplayModeChange?.('withName')}
+            >
+              Hiện tên logo
+            </Button>
+            <Button
+              type="button"
+              variant={displayMode === 'logoOnly' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onDisplayModeChange?.('logoOnly')}
+            >
+              Chỉ logo
+            </Button>
+          </div>
+          <BrowserFrame>
+            {previewStyle !== 'marquee' && renderSharedHeader()}
+            {previewStyle === 'grid' && renderGridStyle()}
+            {previewStyle === 'marquee' && renderMarqueeStyle()}
+            {previewStyle === 'badge' && renderBadgeStyle()}
+            {previewStyle === 'carousel' && renderCarouselStyle()}
+            {previewStyle === 'logoCloud' && renderLogoCloudStyle()}
+            {previewStyle === 'glassLogoCloud' && renderGlassLogoCloudStyle()}
+            {previewStyle === 'clean' && renderCleanStyle()}
+            {previewStyle === 'divider' && renderDividerStyle()}
+          </BrowserFrame>
         </div>
-        <BrowserFrame>
-          {previewStyle !== 'marquee' && renderSharedHeader()}
-          {previewStyle === 'grid' && renderGridStyle()}
-          {previewStyle === 'marquee' && renderMarqueeStyle()}
-          {previewStyle === 'badge' && renderBadgeStyle()}
-          {previewStyle === 'carousel' && renderCarouselStyle()}
-          {previewStyle === 'logoCloud' && renderLogoCloudStyle()}
-          {previewStyle === 'glassLogoCloud' && renderGlassLogoCloudStyle()}
-          {previewStyle === 'clean' && renderCleanStyle()}
-          {previewStyle === 'divider' && renderDividerStyle()}
-        </BrowserFrame>
       </PreviewWrapper>
       <ColorInfoPanel brandColor={brandColor} secondary={secondary} />
     </>

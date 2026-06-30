@@ -1,6 +1,6 @@
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { mutation, query } from "./_generated/server";
-import { api } from "./_generated/api";
+import { action, internalMutation, mutation, query } from "./_generated/server";
+import { api, internal } from "./_generated/api";
 import { ConvexError, v } from "convex/values";
 import { paginationOptsValidator } from "convex/server";
 import { productStatus } from "./lib/validators";
@@ -9,7 +9,6 @@ import { resolveUniqueSlug } from "./lib/iaSlugs";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   dedupeStorageIds,
-  isBrokenStorageBackedUrl,
   removeOwnerFilesAndCleanup,
   syncOwnerFilesAndCleanup,
 } from "./lib/fileService";
@@ -18,6 +17,7 @@ import {
   listProductAdditionalCategoryIds,
   mergeProductsByCategoryAssignments,
 } from "./lib/multiCategory";
+import { listProductCategoryScopeIds } from "./lib/productCategoryHierarchy";
 
 export async function recalculateProductEffectivePrice(ctx: MutationCtx, productId: Id<"products">) {
   const product = await ctx.db.get(productId);
@@ -46,7 +46,7 @@ export async function recalculateProductEffectivePrice(ctx: MutationCtx, product
 async function searchActiveProductsByNameOrSku(
   ctx: QueryCtx,
   args: {
-    categoryId?: Id<"productCategories">;
+    categoryIds?: Id<"productCategories">[];
     productTypeId?: Id<"productTypes">;
     search: string;
     limit: number;
@@ -54,33 +54,51 @@ async function searchActiveProductsByNameOrSku(
 ) {
   const searchText = args.search.toLowerCase().trim();
   const fallbackLimit = Math.max(args.limit, 200);
-  const nameQuery = ctx.db
-    .query("products")
-    .withSearchIndex("search_name", (q) => {
-      const builder = q.search("name", searchText).eq("status", "Active");
-      return args.categoryId ? builder.eq("categoryId", args.categoryId) : builder;
-    });
-  const skuQuery = ctx.db
-    .query("products")
-    .withSearchIndex("search_sku", (q) => {
-      const builder = q.search("sku", searchText).eq("status", "Active");
-      return args.categoryId ? builder.eq("categoryId", args.categoryId) : builder;
-    });
-  const fallbackQuery = args.categoryId
-    ? ctx.db
-      .query("products")
-      .withIndex("by_category_status", (q) =>
-        q.eq("categoryId", args.categoryId!).eq("status", "Active")
-      )
-    : ctx.db
-      .query("products")
-      .withIndex("by_status_order", (q) => q.eq("status", "Active"));
+  const categoryIds = args.categoryIds ?? [];
 
-  const [nameResults, skuResults, fallbackResults] = await Promise.all([
-    nameQuery.take(args.limit),
-    skuQuery.take(args.limit),
-    fallbackQuery.take(fallbackLimit),
-  ]);
+  const searchInCategory = async (categoryId?: Id<"productCategories">) => {
+    const nameQuery = ctx.db
+      .query("products")
+      .withSearchIndex("search_name", (q) => {
+        const builder = q.search("name", searchText).eq("status", "Active");
+        return categoryId ? builder.eq("categoryId", categoryId) : builder;
+      });
+    const skuQuery = ctx.db
+      .query("products")
+      .withSearchIndex("search_sku", (q) => {
+        const builder = q.search("sku", searchText).eq("status", "Active");
+        return categoryId ? builder.eq("categoryId", categoryId) : builder;
+      });
+    const fallbackQuery = categoryId
+      ? ctx.db
+        .query("products")
+        .withIndex("by_category_status", (q) =>
+          q.eq("categoryId", categoryId).eq("status", "Active")
+        )
+      : ctx.db
+        .query("products")
+        .withIndex("by_status_order", (q) => q.eq("status", "Active"));
+
+    return Promise.all([
+      nameQuery.take(args.limit),
+      skuQuery.take(args.limit),
+      fallbackQuery.take(fallbackLimit),
+    ]);
+  };
+
+  const resultGroups = categoryIds.length > 0
+    ? await Promise.all(categoryIds.map((categoryId) => searchInCategory(categoryId)))
+    : [await searchInCategory()];
+
+  const [nameResults, skuResults, fallbackResults] = resultGroups.reduce(
+    (acc, group) => {
+      acc[0].push(...group[0]);
+      acc[1].push(...group[1]);
+      acc[2].push(...group[2]);
+      return acc;
+    },
+    [[], [], []] as [Doc<"products">[], Doc<"products">[], Doc<"products">[]],
+  );
 
   let products = Array.from(
     new Map([...nameResults, ...skuResults, ...fallbackResults].map((product) => [product._id, product])).values(),
@@ -91,6 +109,123 @@ async function searchActiveProductsByNameOrSku(
   }
 
   return products;
+}
+
+async function resolveProductCategoryScopeIds(ctx: QueryCtx, categoryId?: Id<"productCategories">) {
+  if (!categoryId) return [];
+  return listProductCategoryScopeIds(ctx, categoryId, { activeDescendantsOnly: true });
+}
+
+async function listActiveProductsByPrimaryCategories(
+  ctx: QueryCtx,
+  categoryIds: Id<"productCategories">[],
+  limit: number,
+  productTypeId?: Id<"productTypes">,
+) {
+  const productGroups = await Promise.all(
+    categoryIds.map(async (categoryId) => {
+      let query = ctx.db
+        .query("products")
+        .withIndex("by_category_status", (q) =>
+          q.eq("categoryId", categoryId).eq("status", "Active")
+        );
+
+      if (productTypeId) {
+        query = query.filter((q) => q.eq(q.field("productTypeId"), productTypeId));
+      }
+
+      return query.take(limit);
+    })
+  );
+
+  return Array.from(
+    new Map(productGroups.flat().map((product) => [product._id, product])).values()
+  );
+}
+
+async function collectActiveProductsByPrimaryCategories(
+  ctx: QueryCtx,
+  categoryIds: Id<"productCategories">[],
+  productTypeId?: Id<"productTypes">,
+) {
+  const productGroups = await Promise.all(
+    categoryIds.map(async (categoryId) => {
+      let query = ctx.db
+        .query("products")
+        .withIndex("by_category_status", (q) =>
+          q.eq("categoryId", categoryId).eq("status", "Active")
+        );
+
+      if (productTypeId) {
+        query = query.filter((q) => q.eq(q.field("productTypeId"), productTypeId));
+      }
+
+      return query.collect();
+    })
+  );
+
+  return Array.from(
+    new Map(productGroups.flat().map((product) => [product._id, product])).values()
+  );
+}
+
+async function mergeProductsByCategoryAssignmentsForScope(
+  ctx: QueryCtx,
+  categoryIds: Id<"productCategories">[],
+  primaryProducts: Doc<"products">[],
+  limit: number,
+) {
+  if (categoryIds.length === 0) return primaryProducts;
+
+  const assignmentGroups = await Promise.all(
+    categoryIds.map((categoryId) =>
+      ctx.db
+        .query("productCategoryAssignments")
+        .withIndex("by_category", (q) => q.eq("categoryId", categoryId))
+        .take(limit)
+    )
+  );
+  const assignedProducts = await Promise.all(
+    assignmentGroups.flat().map((item) => ctx.db.get(item.productId))
+  );
+  const map = new Map<Id<"products">, Doc<"products">>();
+  [...primaryProducts, ...assignedProducts.filter((item): item is Doc<"products"> => Boolean(item))]
+    .forEach((product) => map.set(product._id, product));
+  return Array.from(map.values());
+}
+
+function sortPublishedProducts(products: Doc<"products">[], sortBy: string) {
+  const sorted = [...products];
+  switch (sortBy) {
+    case "oldest":
+      sorted.sort((a, b) => a._creationTime - b._creationTime);
+      break;
+    case "popular":
+      sorted.sort((a, b) => b.sales - a.sales);
+      break;
+    case "price_asc":
+      sorted.sort((a, b) => (a.effectivePrice ?? 0) - (b.effectivePrice ?? 0));
+      break;
+    case "price_desc":
+      sorted.sort((a, b) => (b.effectivePrice ?? 0) - (a.effectivePrice ?? 0));
+      break;
+    case "name":
+      sorted.sort((a, b) => a.name.localeCompare(b.name, "vi"));
+      break;
+    case "name_desc":
+      sorted.sort((a, b) => b.name.localeCompare(a.name, "vi"));
+      break;
+    default:
+      sorted.sort((a, b) => b._creationTime - a._creationTime);
+      break;
+  }
+  return sorted;
+}
+
+function readScopeOffset(cursor: string | null) {
+  if (!cursor?.startsWith("scope:")) return 0;
+  const value = Number(cursor.slice("scope:".length));
+  return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
 const comboItemDoc = v.object({
@@ -996,13 +1131,79 @@ export const listPublishedPaginated = query({
   },
   handler: async (ctx, args) => {
     const sortBy = args.sortBy ?? "newest";
+    const categoryScopeIds = await resolveProductCategoryScopeIds(ctx, args.categoryId);
     let result;
 
-    if (args.categoryId) {
+    if (categoryScopeIds.length > 1) {
+      const offset = readScopeOffset(args.paginationOpts.cursor);
+      const requestedLimit = args.paginationOpts.numItems;
+      const fetchLimit = Math.min(offset + requestedLimit + 20, 1000);
+      let products = await listActiveProductsByPrimaryCategories(
+        ctx,
+        categoryScopeIds,
+        fetchLimit,
+        args.productTypeId,
+      );
+
+      if (await isMultiCategoryEnabled(ctx, "products")) {
+        products = await mergeProductsByCategoryAssignmentsForScope(ctx, categoryScopeIds, products, fetchLimit);
+        products = products.filter((product) =>
+          product.status === "Active" && (!args.productTypeId || product.productTypeId === args.productTypeId)
+        );
+      }
+
+      if (args.minPrice !== undefined || args.maxPrice !== undefined) {
+        products = products.filter((p) => {
+          const price = p.effectivePrice ?? 0;
+          if (args.minPrice !== undefined && price < args.minPrice) return false;
+          if (args.maxPrice !== undefined && price > args.maxPrice) return false;
+          return true;
+        });
+      }
+
+      const hasAttributeFilter = args.attributeTermIds && args.attributeTermIds.length > 0;
+      if (hasAttributeFilter && args.attributeTermIds) {
+        let matchedProductIds: Set<Id<"products">> | null = null;
+        let firstGroup = true;
+        for (const groupTerms of args.attributeTermIds) {
+          if (groupTerms.length === 0) continue;
+          const groupProductRows = await Promise.all(
+            groupTerms.map(termId =>
+              ctx.db.query("productAttributeTerms").withIndex("by_term", q => q.eq("termId", termId)).collect()
+            )
+          );
+          const groupProductIds = new Set(groupProductRows.flat().map(r => r.productId));
+          if (firstGroup) {
+            matchedProductIds = groupProductIds;
+            firstGroup = false;
+          } else {
+            matchedProductIds = new Set([...matchedProductIds!].filter(id => groupProductIds.has(id)));
+          }
+        }
+        if (matchedProductIds) {
+          products = products.filter(p => matchedProductIds!.has(p._id));
+        }
+      }
+
+      const settings = await getVariantSettings(ctx);
+      const page = await resolveVariantOverrides(
+        ctx,
+        sortPublishedProducts(products, sortBy).slice(offset, offset + requestedLimit),
+        settings,
+      );
+      const isDone = offset + requestedLimit >= products.length;
+      return {
+        continueCursor: isDone ? "" : `scope:${offset + requestedLimit}`,
+        isDone,
+        page,
+      };
+    }
+
+    if (categoryScopeIds.length === 1) {
       let query = ctx.db
         .query("products")
         .withIndex("by_category_status", (q) =>
-          q.eq("categoryId", args.categoryId!).eq("status", "Active")
+          q.eq("categoryId", categoryScopeIds[0]).eq("status", "Active")
         );
       
       if (args.productTypeId) {
@@ -1016,7 +1217,7 @@ export const listPublishedPaginated = query({
       if (await isMultiCategoryEnabled(ctx, "products")) {
         result = {
           ...result,
-          page: (await mergeProductsByCategoryAssignments(ctx, args.categoryId, result.page, args.paginationOpts.numItems))
+          page: (await mergeProductsByCategoryAssignments(ctx, categoryScopeIds[0], result.page, args.paginationOpts.numItems))
             .filter((product) => product.status === "Active" && (!args.productTypeId || product.productTypeId === args.productTypeId)),
         };
       }
@@ -1114,6 +1315,7 @@ export const listPublishedWithOffset = query({
     const limit = Math.min(args.limit ?? 12, 50);
     const offset = args.offset ?? 0;
     const sortBy = args.sortBy ?? "newest";
+    const categoryScopeIds = await resolveProductCategoryScopeIds(ctx, args.categoryId);
 
     let products: Doc<"products">[] = [];
     const hasAttributeFilter = args.attributeTermIds && args.attributeTermIds.length > 0;
@@ -1122,25 +1324,17 @@ export const listPublishedWithOffset = query({
     if (args.search?.trim()) {
       const fetchLimit = Math.min(offset + limit + 20, 500);
       products = await searchActiveProductsByNameOrSku(ctx, {
-        categoryId: args.categoryId,
+        categoryIds: categoryScopeIds.length > 0 ? categoryScopeIds : undefined,
         productTypeId: args.productTypeId,
         search: args.search,
         limit: fetchLimit,
       });
-    } else if (args.categoryId) {
-      let query = ctx.db
-        .query("products")
-        .withIndex("by_category_status", (q) =>
-          q.eq("categoryId", args.categoryId!).eq("status", "Active")
-        );
-      
-      if (args.productTypeId) {
-        query = query.filter((q) => q.eq(q.field("productTypeId"), args.productTypeId));
-      }
-
-      products = await query.take(fetchLimit);
+    } else if (categoryScopeIds.length > 0) {
+      products = await listActiveProductsByPrimaryCategories(ctx, categoryScopeIds, fetchLimit, args.productTypeId);
       if (await isMultiCategoryEnabled(ctx, "products")) {
-        products = await mergeProductsByCategoryAssignments(ctx, args.categoryId, products, fetchLimit);
+        products = categoryScopeIds.length === 1
+          ? await mergeProductsByCategoryAssignments(ctx, categoryScopeIds[0], products, fetchLimit)
+          : await mergeProductsByCategoryAssignmentsForScope(ctx, categoryScopeIds, products, fetchLimit);
         products = products.filter((product) => product.status === "Active" && (!args.productTypeId || product.productTypeId === args.productTypeId));
       }
     } else if (args.productTypeId) {
@@ -1268,24 +1462,22 @@ export const searchPublished = query({
   },
   handler: async (ctx, args) => {
     const limit = Math.min(args.limit ?? 20, 100);
+    const categoryScopeIds = await resolveProductCategoryScopeIds(ctx, args.categoryId);
     let products;
 
     if (args.search?.trim()) {
       const fetchLimit = Math.min(limit * 2, 200);
       products = await searchActiveProductsByNameOrSku(ctx, {
-        categoryId: args.categoryId,
+        categoryIds: categoryScopeIds.length > 0 ? categoryScopeIds : undefined,
         search: args.search,
         limit: fetchLimit,
       });
-    } else if (args.categoryId) {
-      products = await ctx.db
-        .query("products")
-        .withIndex("by_category_status", (q) =>
-          q.eq("categoryId", args.categoryId!).eq("status", "Active")
-        )
-        .take(limit * 2);
+    } else if (categoryScopeIds.length > 0) {
+      products = await listActiveProductsByPrimaryCategories(ctx, categoryScopeIds, limit * 2);
       if (await isMultiCategoryEnabled(ctx, "products")) {
-        products = await mergeProductsByCategoryAssignments(ctx, args.categoryId, products, limit * 2);
+        products = categoryScopeIds.length === 1
+          ? await mergeProductsByCategoryAssignments(ctx, categoryScopeIds[0], products, limit * 2)
+          : await mergeProductsByCategoryAssignmentsForScope(ctx, categoryScopeIds, products, limit * 2);
         products = products.filter((product) => product.status === "Active");
       }
     } else {
@@ -1367,21 +1559,14 @@ export const countPublished = query({
       }
     }
 
+    const categoryScopeIds = await resolveProductCategoryScopeIds(ctx, args.categoryId);
     let products;
-    if (args.categoryId) {
-      let query = ctx.db
-        .query("products")
-        .withIndex("by_category_status", (q) =>
-          q.eq("categoryId", args.categoryId!).eq("status", "Active")
-        );
-      
-      if (args.productTypeId) {
-        query = query.filter((q) => q.eq(q.field("productTypeId"), args.productTypeId));
-      }
-
-      products = await query.collect();
+    if (categoryScopeIds.length > 0) {
+      products = await collectActiveProductsByPrimaryCategories(ctx, categoryScopeIds, args.productTypeId);
       if (await isMultiCategoryEnabled(ctx, "products")) {
-        products = await mergeProductsByCategoryAssignments(ctx, args.categoryId, products, 1000);
+        products = categoryScopeIds.length === 1
+          ? await mergeProductsByCategoryAssignments(ctx, categoryScopeIds[0], products, 1000)
+          : await mergeProductsByCategoryAssignmentsForScope(ctx, categoryScopeIds, products, 1000);
         products = products.filter((product) => product.status === "Active" && (!args.productTypeId || product.productTypeId === args.productTypeId));
       }
     } else if (args.productTypeId) {
@@ -2355,17 +2540,90 @@ export const bulkUpdateStatus = mutation({
   returns: v.object({ skipped: v.number(), updated: v.number() }),
 });
 
-export const bulkClearBrokenMedia = mutation({
+async function isBrokenExternalUrl(url: string): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(url, {
+      method: "HEAD",
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      }
+    });
+    clearTimeout(timeoutId);
+    return res.status === 404;
+  } catch {
+    // Nếu DNS error, connection refused, v.v. (tức link đã sập hoàn toàn)
+    return true;
+  }
+}
+
+export const applyClearedMediaPatch = internalMutation({
+  args: {
+    patches: v.array(v.object({
+      id: v.id("products"),
+      patch: v.object({
+        image: v.optional(v.string()),
+        imageStorageId: v.optional(v.union(v.id("_storage"), v.null())),
+        images: v.optional(v.array(v.string())),
+        imageStorageIds: v.optional(v.array(v.union(v.id("_storage"), v.null()))),
+      })
+    }))
+  },
+  handler: async (ctx, args) => {
+    let updated = 0;
+    for (const item of args.patches) {
+      const product = await ctx.db.get(item.id);
+      if (!product) continue;
+
+      await ctx.db.patch(item.id, item.patch);
+
+      const nextPrimaryStorageId = Object.prototype.hasOwnProperty.call(item.patch, "imageStorageId")
+        ? item.patch.imageStorageId
+        : product.imageStorageId;
+      const nextGalleryStorageIds = Object.prototype.hasOwnProperty.call(item.patch, "imageStorageIds")
+        ? item.patch.imageStorageIds
+        : product.imageStorageIds;
+
+      await syncOwnerFilesAndCleanup(ctx, {
+        ownerField: "images",
+        ownerId: item.id,
+        ownerTable: "products",
+        purpose: "product-gallery",
+      }, dedupeStorageIds([nextPrimaryStorageId, ...(nextGalleryStorageIds ?? [])]), {
+        previousStorageIds: [product.imageStorageId, ...(product.imageStorageIds ?? [])],
+      });
+      updated += 1;
+    }
+
+    if (updated > 0) {
+      await ctx.runMutation(api.landingPages.syncProgrammaticFromSourceChange, { source: "product" });
+    }
+  }
+});
+
+export const bulkClearBrokenMedia = action({
   args: { ids: v.array(v.id("products")) },
   handler: async (ctx, args) => {
     let checked = 0;
-    let updated = 0;
     let clearedPrimary = 0;
     let clearedGallery = 0;
     let skipped = 0;
+    let updated = 0;
+
+    const patches: Array<{
+      id: Id<"products">;
+      patch: {
+        image?: string;
+        imageStorageId?: Id<"_storage"> | null;
+        images?: string[];
+        imageStorageIds?: Array<Id<"_storage"> | null>;
+      };
+    }> = [];
 
     for (const id of args.ids) {
-      const product = await ctx.db.get(id);
+      const product: Doc<"products"> | null = await ctx.runQuery(api.products.getById, { id });
       if (!product) {
         skipped += 1;
         continue;
@@ -2379,10 +2637,20 @@ export const bulkClearBrokenMedia = mutation({
         imageStorageIds?: Array<Id<"_storage"> | null>;
       } = {};
 
-      if (await isBrokenStorageBackedUrl(ctx, product.image, product.imageStorageId)) {
-        patch.image = "";
-        patch.imageStorageId = null;
-        clearedPrimary += 1;
+      if (product.image) {
+        let isPrimaryBroken = false;
+        if (product.imageStorageId) {
+          const resolvedUrl = await ctx.storage.getUrl(product.imageStorageId);
+          isPrimaryBroken = !resolvedUrl;
+        } else {
+          isPrimaryBroken = await isBrokenExternalUrl(product.image);
+        }
+
+        if (isPrimaryBroken) {
+          patch.image = "";
+          patch.imageStorageId = null;
+          clearedPrimary += 1;
+        }
       }
 
       const images = product.images ?? [];
@@ -2390,44 +2658,43 @@ export const bulkClearBrokenMedia = mutation({
       if (images.length > 0) {
         const keptImages: string[] = [];
         const keptStorageIds: Array<Id<"_storage"> | null> = [];
+        let galleryChanged = false;
+
         for (let index = 0; index < images.length; index += 1) {
           const url = images[index];
           const storageId = imageStorageIds[index] ?? null;
-          if (await isBrokenStorageBackedUrl(ctx, url, storageId)) {
+          let isGalleryBroken = false;
+
+          if (storageId) {
+            const resolvedUrl = await ctx.storage.getUrl(storageId);
+            isGalleryBroken = !resolvedUrl;
+          } else {
+            isGalleryBroken = await isBrokenExternalUrl(url);
+          }
+
+          if (isGalleryBroken) {
             clearedGallery += 1;
+            galleryChanged = true;
             continue;
           }
           keptImages.push(url);
           keptStorageIds.push(storageId);
         }
-        if (keptImages.length !== images.length) {
+
+        if (galleryChanged) {
           patch.images = keptImages;
           patch.imageStorageIds = keptStorageIds;
         }
       }
 
       if (Object.keys(patch).length > 0) {
-        await ctx.db.patch(id, patch);
-        const nextPrimaryStorageId = Object.prototype.hasOwnProperty.call(patch, "imageStorageId")
-          ? patch.imageStorageId
-          : product.imageStorageId;
-        const nextGalleryStorageIds = Object.prototype.hasOwnProperty.call(patch, "imageStorageIds")
-          ? patch.imageStorageIds
-          : product.imageStorageIds;
-        await syncOwnerFilesAndCleanup(ctx, {
-          ownerField: "images",
-          ownerId: id,
-          ownerTable: "products",
-          purpose: "product-gallery",
-        }, dedupeStorageIds([nextPrimaryStorageId, ...(nextGalleryStorageIds ?? [])]), {
-          previousStorageIds: [product.imageStorageId, ...(product.imageStorageIds ?? [])],
-        });
+        patches.push({ id, patch });
         updated += 1;
       }
     }
 
-    if (updated > 0) {
-      await ctx.runMutation(api.landingPages.syncProgrammaticFromSourceChange, { source: "product" });
+    if (patches.length > 0) {
+      await ctx.runMutation(internal.products.applyClearedMediaPatch, { patches });
     }
 
     return { checked, clearedGallery, clearedPrimary, skipped, updated };

@@ -1,18 +1,15 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
+import React, { useEffect, useRef, useState } from 'react';
 import { CustomerAuthProvider } from '@/app/(site)/auth/context';
 import { CartProvider } from '@/lib/cart';
+import { CustomToaster } from '@/components/shared/CustomToaster';
 
 import { useSiteSettings } from './hooks';
 
-const CustomToaster = dynamic(
-  () => import('@/components/shared/CustomToaster').then((mod) => ({ default: mod.CustomToaster })),
-  { ssr: false, loading: () => null }
-);
 
 export function SiteProviders({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
   const { siteDarkMode, isLoading } = useSiteSettings();
   const previousThemeRef = useRef<{
     colorScheme: string;
@@ -21,6 +18,7 @@ export function SiteProviders({ children }: { children: React.ReactNode }) {
   } | null>(null);
 
   useEffect(() => {
+    setMounted(true);
     if (isLoading) return;
 
     const root = document.documentElement;
@@ -30,9 +28,33 @@ export function SiteProviders({ children }: { children: React.ReactNode }) {
       hasDarkClass: root.classList.contains('dark'),
     };
 
+    if (typeof window !== 'undefined') {
+      try {
+        const lastDefault = localStorage.getItem('site_theme_last_default');
+        if (lastDefault && lastDefault !== siteDarkMode) {
+          localStorage.removeItem('site_theme_override');
+        }
+        localStorage.setItem('site_theme_last_default', siteDarkMode);
+      } catch (e) {
+        console.warn('Failed to sync theme override with database defaults:', e);
+      }
+    }
+
     const applyTheme = (isFromEvent?: boolean) => {
-      // DB là single source of truth — không dùng localStorage override
-      const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      let isDark = false;
+      
+      try {
+        const themeOverride = localStorage.getItem('site_theme_override');
+        if (themeOverride === 'dark') {
+          isDark = true;
+        } else if (themeOverride === 'light') {
+          isDark = false;
+        } else {
+          isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        }
+      } catch {
+        isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      }
 
       const currentlyDark = root.classList.contains('dark');
       const currentlyTheme = root.getAttribute('data-theme');
@@ -85,7 +107,7 @@ export function SiteProviders({ children }: { children: React.ReactNode }) {
     <CustomerAuthProvider>
       <CartProvider>
         {children}
-        <CustomToaster richColors position="top-right" />
+        {mounted && <CustomToaster richColors position="top-right" />}
       </CartProvider>
     </CustomerAuthProvider>
   );

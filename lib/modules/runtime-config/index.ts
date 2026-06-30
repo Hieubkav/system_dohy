@@ -6,8 +6,8 @@ import { contactInboxModule } from '../configs/contact-inbox.config';
 import { coursesModule } from '../configs/courses.config';
 import { customersModule } from '../configs/customers.config';
 import { homepageModule } from '../configs/homepage.config';
-import { kanbanModule } from '../configs/kanban.config';
 import { mediaModule } from '../configs/media.config';
+import { miniAppsModule } from '../configs/mini-apps.config';
 import { menusModule } from '../configs/menus.config';
 import { notificationsModule } from '../configs/notifications.config';
 import { ordersModule } from '../configs/orders.config';
@@ -22,6 +22,7 @@ import { settingsModule } from '../configs/settings.config';
 import { subscriptionsModule } from '../configs/subscriptions.config';
 import { usersModule } from '../configs/users.config';
 import { wishlistModule } from '../configs/wishlist.config';
+import { catalogsModule } from '../configs/catalogs.config';
 import { normalizeRuntimeDefinition } from './normalize';
 import type { RuntimeModuleDefinition } from './types';
 
@@ -105,8 +106,8 @@ const moduleDefinitions = [
   coursesModule,
   customersModule,
   homepageModule,
-  kanbanModule,
   mediaModule,
+  miniAppsModule,
   menusModule,
   notificationsModule,
   ordersModule,
@@ -121,6 +122,7 @@ const moduleDefinitions = [
   subscriptionsModule,
   usersModule,
   wishlistModule,
+  catalogsModule,
 ];
 
 const MODULE_RUNTIME_DEFINITIONS: Record<string, RuntimeModuleDefinition> = {

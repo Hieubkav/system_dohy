@@ -1,4 +1,6 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React, { useCallback, useEffect, useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -43,6 +45,10 @@ export const TrustBadgesPreview = ({
   config,
   fontStyle,
   fontClassName,
+  isVisualEditAllowed = true,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: { 
   items: TrustBadgeItem[]; 
   brandColor: string;
@@ -54,7 +60,23 @@ export const TrustBadgesPreview = ({
   config?: TrustBadgesConfig;
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
+  isVisualEditAllowed?: boolean;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
 }) => {
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
+
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
   const [carouselRef, carouselApi] = useEmblaCarousel({ align: 'start', containScroll: 'trimSnaps' });
@@ -180,6 +202,10 @@ export const TrustBadgesPreview = ({
       brandColor={brandColor}
       config={config}
       title={config?.heading ?? 'Chứng nhận & Giải thưởng'}
+      visualEditEnabled={isVisualEditActive}
+      onTitleChange={onTitleChange}
+      onSubtitleChange={onSubtitleChange}
+      onBadgeTextChange={onBadgeTextChange}
     />
   );
 
@@ -622,15 +648,21 @@ export const TrustBadgesPreview = ({
         deviceWidthClass={deviceWidths[device]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+      visualEditActive={isVisualEditActive}
+      visualEditAllowed={isVisualEditAllowed}
+      onVisualEditToggle={handleToggleVisualEdit}
       >
-        <BrowserFrame>
-          {previewStyle === 'grid' && renderGridStyle()}
-          {previewStyle === 'cards' && renderCardsStyle()}
-          {previewStyle === 'stack' && renderStackStyle()}
-          {previewStyle === 'wall' && renderWallStyle()}
-          {previewStyle === 'carousel' && renderCarouselStyle()}
-          {previewStyle === 'seal' && renderSealStyle()}
-        </BrowserFrame>
+        <div className="space-y-3">
+
+          <BrowserFrame>
+            {previewStyle === 'grid' && renderGridStyle()}
+            {previewStyle === 'cards' && renderCardsStyle()}
+            {previewStyle === 'stack' && renderStackStyle()}
+            {previewStyle === 'wall' && renderWallStyle()}
+            {previewStyle === 'carousel' && renderCarouselStyle()}
+            {previewStyle === 'seal' && renderSealStyle()}
+          </BrowserFrame>
+        </div>
       </PreviewWrapper>
       {mode === 'dual' ? <ColorInfoPanel brandColor={brandColor} secondary={secondary} /> : null}
       {renderImageGuidelines()}

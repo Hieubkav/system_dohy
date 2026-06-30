@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import Link from 'next/link';
 import { PublicImage as Image } from '@/components/shared/PublicImage';
 import { useRouter, usePathname } from 'next/navigation';
-import { useMutation, useQuery } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useBrandColors, useSiteSettings } from './hooks';
@@ -12,7 +12,7 @@ import dynamic from 'next/dynamic';
 import { ArrowLeft, ChevronDown, ChevronRight, Heart, LogOut, Mail, Package, Phone, Search, User, X, Sun, Moon } from 'lucide-react';
 import { CartIcon } from './CartIcon';
 import { useCustomerAuth } from '@/app/(site)/auth/context';
-import { getMenuColors, resolveMenuLayerColors, type MenuColors, type MenuLayerColorConfig } from './header/colors';
+import { getMenuColors, resolveMenuLayerColors, getAPCATextColor, type MenuColors, type MenuLayerColorConfig } from './header/colors';
 import { buildMenuTree, type MenuTreeNode } from '@/lib/utils/menu-tree';
 
 interface MenuItem {
@@ -23,6 +23,7 @@ interface MenuItem {
   depth: number;
   active: boolean;
   icon?: string;
+  isSpecial?: boolean;
   openInNewTab?: boolean;
 }
 
@@ -218,7 +219,6 @@ function DarkModeToggle({
 }) {
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(Boolean(controlledDark));
-  const setSetting = useMutation(api.settings.set);
 
   useEffect(() => {
     setMounted(true);
@@ -246,9 +246,15 @@ function DarkModeToggle({
     root.classList.toggle('dark', nextDark);
     root.setAttribute('data-theme', nextValue);
     root.style.colorScheme = nextValue;
+    
+    // Lưu vào localStorage thay vì DB
+    try {
+      localStorage.setItem('site_theme_override', nextValue);
+    } catch (e) {
+      console.warn('Failed to save theme setting to localStorage:', e);
+    }
+
     window.dispatchEvent(new Event('site-theme-change'));
-    // Persist vào DB (single source of truth)
-    void setSetting({ group: 'site', key: 'site_dark_mode', value: nextValue });
   };
 
   if (!mounted) {
@@ -768,6 +774,8 @@ export function Header({
   const showTopbarSlogan = Boolean(topbarConfig.show !== false && topbarSloganEnabled && topbarSlogan);
   const showTopbarHotline = Boolean(topbarConfig.show !== false && (topbarConfig.showHotline ?? true) && topbarConfig.hotline);
   const showTopbarEmail = Boolean(topbarConfig.show !== false && (topbarConfig.showEmail ?? true) && topbarConfig.email);
+  const searchToggleLabel = searchOpen ? 'Đóng tìm kiếm' : 'Mở tìm kiếm';
+  const mobileMenuToggleLabel = mobileMenuOpen ? 'Đóng menu' : 'Mở menu';
 
 
 
@@ -789,7 +797,10 @@ export function Header({
   const renderUserMenu = (variant: 'text' | 'icon', textClassName = '') => (
     <div className="relative user-menu-container">
       <button
+        type="button"
         onClick={() => { setUserMenuOpen(prev => !prev); }}
+        aria-label="Mở menu tài khoản"
+        aria-expanded={userMenuOpen}
         className={cn(
           variant === 'text'
             ? `hover:underline flex items-center gap-1 ${textClassName}`
@@ -844,7 +855,9 @@ export function Header({
           </div>
           <div className="border-t" style={{ borderColor: tokens.border }}>
             <button
+              type="button"
               onClick={() => { void handleLogout(); }}
+              aria-label="Đăng xuất"
               className="w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:bg-[var(--menu-dropdown-hover-bg)]"
               style={{ color: tokens.textSubtle, ...menuVars }}
             >
@@ -871,7 +884,7 @@ export function Header({
   const renderMobileMenuButton = (isTransparent = false, customColor?: string) => {
     const color = customColor || (isTransparent ? tokens.textInverse : layerColors.navbar.text);
     return (
-      <button onClick={handleMobileMenuToggle} className={cn('p-2 rounded-lg lg:hidden')} style={{ color }}>
+      <button type="button" onClick={handleMobileMenuToggle} aria-label={mobileMenuToggleLabel} aria-expanded={mobileMenuOpen} className={cn('p-2 rounded-lg lg:hidden')} style={{ color }}>
         <div className="w-5 h-4 flex flex-col justify-between">
           <span
             className={cn('w-full h-0.5 rounded transition-all', mobileMenuOpen && 'rotate-45 translate-y-1.5')}
@@ -1231,7 +1244,7 @@ export function Header({
               <div style={logoWrapStyle}>
                 {logo ? (
                   <div style={logoInnerStyle}>
-                    <Image mode="logo" src={logo} alt={displayName} width={logoSize} height={logoSize} style={{ width: 'auto', height: 'auto' }} />
+                    <Image mode="logo" src={logo} alt={displayName} width={logoSize} height={logoSize} style={{ width: 'auto', height: 'auto' }} priority={true} />
                   </div>
                 ) : (
                   <div style={logoInnerStyle}></div>
@@ -1261,15 +1274,22 @@ export function Header({
                     href={item.url}
                     target={item.openInNewTab ? '_blank' : undefined}
                     className={cn(
-                      "px-4 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1",
-                      hoveredItem === item._id
-                        ? "text-[var(--menu-hover-text)]"
-                        : "hover:bg-[var(--menu-hover-bg)] hover:text-[var(--menu-hover-text)]"
+                      "px-4 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-1.5",
+                      item.isSpecial
+                        ? "shadow-sm hover:opacity-90 active:scale-[0.98]"
+                        : (hoveredItem === item._id
+                          ? "text-[var(--menu-hover-text)]"
+                          : "hover:bg-[var(--menu-hover-bg)] hover:text-[var(--menu-hover-text)]")
                     )}
                     style={{
-                      ...(hoveredItem === item._id
-                        ? { backgroundColor: tokens.navItemHoverBg, color: tokens.navItemHoverText }
-                        : { color: layerColors.navbar.text }),
+                      ...(item.isSpecial
+                        ? {
+                            backgroundColor: brandColors.primary,
+                            color: getAPCATextColor(brandColors.primary),
+                          }
+                        : (hoveredItem === item._id
+                          ? { backgroundColor: tokens.navItemHoverBg, color: tokens.navItemHoverText }
+                          : { color: layerColors.navbar.text })),
                       ...menuVars,
                     }}
                     title={item.label}
@@ -1601,7 +1621,9 @@ export function Header({
                 </div>
               )}
               {config.showDarkModeToggle && (
-                <DarkModeToggle isDark={staticMode ? effectiveIsDark : undefined} onThemeToggle={staticMode ? handleStaticThemeToggle : undefined} tokens={navbarActionTokens} />
+                <div className="hidden lg:block">
+                  <DarkModeToggle isDark={staticMode ? effectiveIsDark : undefined} onThemeToggle={staticMode ? handleStaticThemeToggle : undefined} tokens={navbarActionTokens} />
+                </div>
               )}
               {showCart && (
                 <CartIcon variant="mobile" className="hidden lg:flex" tokens={navbarActionTokens} />
@@ -1619,7 +1641,10 @@ export function Header({
             <div className="ml-auto flex items-center gap-2 lg:hidden">
               {showSearch && (
                 <button
+                  type="button"
                   onClick={() => { setSearchOpen((prev) => !prev); }}
+                  aria-label={searchToggleLabel}
+                  aria-expanded={searchOpen}
                   className="p-2"
                   style={{ color: layerColors.navbar.text }}
                 >
@@ -1741,7 +1766,7 @@ export function Header({
               <div style={logoWrapStyle}>
                 {logo ? (
                   <div style={logoInnerStyle}>
-                    <Image mode="logo" src={logo} alt={displayName} width={logoSize} height={logoSize} style={{ width: 'auto', height: 'auto' }} />
+                    <Image mode="logo" src={logo} alt={displayName} width={logoSize} height={logoSize} style={{ width: 'auto', height: 'auto' }} priority={true} />
                   </div>
                 ) : (
                   <div style={logoInnerStyle} className="font-bold">
@@ -1783,7 +1808,10 @@ export function Header({
               <div className="flex lg:hidden items-center gap-2">
                 {showSearch && (
                   <button
+                    type="button"
                     onClick={() => { setSearchOpen((prev) => !prev); }}
+                    aria-label={searchToggleLabel}
+                    aria-expanded={searchOpen}
                     className="p-2"
                     style={{ color: layerColors.navbar.text }}
                   >
@@ -1874,15 +1902,22 @@ export function Header({
                   href={item.url}
                   target={item.openInNewTab ? '_blank' : undefined}
                   className={cn(
-                    "px-3 py-2 text-sm font-medium rounded-lg transition-colors flex items-center gap-1",
-                    hoveredItem === item._id
-                      ? "text-[var(--menu-hover-text)]"
-                      : "hover:bg-[var(--menu-hover-bg)] hover:text-[var(--menu-hover-text)]"
+                    "px-3 py-2 text-sm font-medium rounded-lg transition-all flex items-center gap-1.5",
+                    item.isSpecial
+                      ? "shadow-sm hover:opacity-90 active:scale-[0.98]"
+                      : (hoveredItem === item._id
+                        ? "text-[var(--menu-hover-text)]"
+                        : "hover:bg-[var(--menu-hover-bg)] hover:text-[var(--menu-hover-text)]")
                   )}
                   style={{
-                    ...(hoveredItem === item._id
-                      ? { backgroundColor: tokens.navItemHoverBg, color: tokens.navItemHoverText }
-                      : { color: layerColors.menu.text }),
+                    ...(item.isSpecial
+                      ? {
+                          backgroundColor: brandColors.primary,
+                          color: getAPCATextColor(brandColors.primary),
+                        }
+                      : (hoveredItem === item._id
+                        ? { backgroundColor: tokens.navItemHoverBg, color: tokens.navItemHoverText }
+                        : { color: layerColors.menu.text })),
                     ...menuVars,
                   }}
                 >
@@ -2088,9 +2123,21 @@ export function Header({
               <Link
                 href={item.url}
                 target={item.openInNewTab ? '_blank' : undefined}
-                className={cn('text-sm font-semibold uppercase tracking-wide transition-colors flex items-center gap-1', textClassName)}
+                className={cn(
+                  item.isSpecial
+                    ? 'text-sm font-semibold uppercase tracking-wide transition-all flex items-center gap-1.5 px-4 py-2 rounded-lg shadow-sm hover:opacity-90 active:scale-[0.98]'
+                    : 'text-sm font-semibold uppercase tracking-wide transition-colors flex items-center gap-1',
+                  textClassName
+                )}
                 style={{
-                  color: hoveredItem === item._id ? tokens.primary : '#ffffff',
+                  ...(item.isSpecial
+                    ? {
+                        backgroundColor: brandColors.primary,
+                        color: getAPCATextColor(brandColors.primary),
+                      }
+                    : {
+                        color: hoveredItem === item._id ? tokens.primary : '#ffffff',
+                      }),
                   ...menuVars
                 }}
               >
@@ -2374,7 +2421,10 @@ export function Header({
                 />
               </div>
               <button
+                type="button"
                 onClick={() => { setSearchOpen((prev) => !prev); }}
+                aria-label={searchToggleLabel}
+                aria-expanded={searchOpen}
                 className="p-2 text-white hover:opacity-80 transition-opacity"
               >
                 <Search size={18} />
@@ -2429,8 +2479,11 @@ export function Header({
         <div className="flex items-center gap-2 lg:hidden">
           {showSearch && (
             <button
-               onClick={() => { setSearchOpen((prev) => !prev); }}
-               className="p-2 text-white"
+              type="button"
+              onClick={() => { setSearchOpen((prev) => !prev); }}
+              aria-label={searchToggleLabel}
+              aria-expanded={searchOpen}
+              className="p-2 text-white"
             >
               <Search size={18} />
             </button>
@@ -2614,7 +2667,7 @@ export function Header({
               <div style={logoWrapStyle}>
                 {logo ? (
                   <div style={logoInnerStyle}>
-                    <Image mode="logo" src={logo} alt={displayName} width={logoSize} height={logoSize} style={{ width: 'auto', height: 'auto' }} />
+                    <Image mode="logo" src={logo} alt={displayName} width={logoSize} height={logoSize} style={{ width: 'auto', height: 'auto' }} priority={true} />
                   </div>
                 ) : (
                   <div className="rounded-full" style={{ backgroundColor: tokens.allbirdsAccentDot, width: logoDotSize, height: logoDotSize }}></div>
@@ -2649,12 +2702,23 @@ export function Header({
                       href={item.url}
                       target={item.openInNewTab ? '_blank' : undefined}
                       className={cn(
-                        'text-sm font-medium transition-colors flex items-center gap-1',
-                        hoveredItem === item._id
-                          ? 'text-[var(--menu-hover-text)]'
-                          : 'hover:text-[var(--menu-hover-text)]'
+                        item.isSpecial
+                          ? 'text-sm font-medium transition-all flex items-center gap-1.5 px-4 py-2 rounded-lg shadow-sm hover:opacity-90 active:scale-[0.98]'
+                          : (hoveredItem === item._id
+                            ? 'text-sm font-medium transition-colors flex items-center gap-1 text-[var(--menu-hover-text)]'
+                            : 'text-sm font-medium transition-colors flex items-center gap-1 hover:text-[var(--menu-hover-text)]')
                       )}
-                      style={{ color: layerColors.navbar.text, ...menuVars }}
+                      style={{
+                        ...(item.isSpecial
+                          ? {
+                              backgroundColor: brandColors.primary,
+                              color: getAPCATextColor(brandColors.primary),
+                            }
+                          : {
+                              color: layerColors.navbar.text,
+                            }),
+                        ...menuVars
+                      }}
                     >
                       <span>{item.label}</span>
                       {item.children.length > 0 && (
@@ -2884,7 +2948,10 @@ export function Header({
                       />
                     </div>
                     <button
+                      type="button"
                       onClick={() => { setSearchOpen((prev) => !prev); }}
+                      aria-label={searchToggleLabel}
+                      aria-expanded={searchOpen}
                       className="p-2 transition-colors hover:text-[var(--menu-icon-hover)]"
                       style={{ color: layerColors.navbar.text, ...menuVars }}
                     >
@@ -2912,7 +2979,10 @@ export function Header({
               <div className="flex items-center gap-1 lg:hidden">
                 {showSearch && (
                   <button
+                    type="button"
                     onClick={() => { setSearchOpen((prev) => !prev); }}
+                    aria-label={searchToggleLabel}
+                    aria-expanded={searchOpen}
                     className="p-2"
                     style={{ color: layerColors.navbar.text }}
                   >

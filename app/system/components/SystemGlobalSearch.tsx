@@ -13,7 +13,7 @@ type SearchItem = {
   keywords?: string[];
   subtitle: string;
   title: string;
-  type: 'experience' | 'module';
+  type: 'experience' | 'miniApp' | 'module';
 };
 
 const MAX_RESULTS = 20;
@@ -34,6 +34,7 @@ export function SystemGlobalSearch() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const modules = useQuery(api.admin.modules.listModules);
+  const miniApps = useQuery(api.miniApps.listAll);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -67,8 +68,16 @@ export function SystemGlobalSearch() {
       type: 'experience' as const,
     }));
 
-    return [...moduleItems, ...experienceItems];
-  }, [modules]);
+    const miniAppItems = (miniApps ?? []).map((app) => ({
+      href: '/system/mini-apps',
+      keywords: [app.key, app.type, app.routeSlug ?? ''],
+      subtitle: app.description,
+      title: app.name,
+      type: 'miniApp' as const,
+    }));
+
+    return [...moduleItems, ...experienceItems, ...miniAppItems];
+  }, [miniApps, modules]);
 
   const filteredItems = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -87,6 +96,7 @@ export function SystemGlobalSearch() {
   const showRecent = query.trim() === '' && recentSearches.length > 0;
   const moduleResults = showRecent ? [] : filteredItems.filter((item) => item.type === 'module');
   const experienceResults = showRecent ? [] : filteredItems.filter((item) => item.type === 'experience');
+  const miniAppResults = showRecent ? [] : filteredItems.filter((item) => item.type === 'miniApp');
 
   const addToRecentSearches = (item: SearchItem) => {
     setRecentSearches((prev) => {
@@ -306,6 +316,31 @@ export function SystemGlobalSearch() {
               )}
               {!showRecent && experienceResults.map((item, index) => {
                 const itemIndex = moduleResults.length + index;
+                return (
+                  <button
+                    key={item.href}
+                    type="button"
+                    onMouseEnter={() => setSelectedIndex(itemIndex)}
+                    onClick={() => handleSelect(item)}
+                    className={`w-full text-left px-4 py-2 flex flex-col gap-1 transition-colors ${
+                      selectedIndex === itemIndex
+                        ? 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300'
+                        : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    <span className="text-sm font-medium">{item.title}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{item.subtitle}</span>
+                  </button>
+                );
+              })}
+
+              {!showRecent && miniAppResults.length > 0 && (
+                <div className="px-4 pt-3 text-[10px] uppercase tracking-wider text-slate-400">
+                  Mini Apps
+                </div>
+              )}
+              {!showRecent && miniAppResults.map((item, index) => {
+                const itemIndex = moduleResults.length + experienceResults.length + index;
                 return (
                   <button
                     key={item.href}

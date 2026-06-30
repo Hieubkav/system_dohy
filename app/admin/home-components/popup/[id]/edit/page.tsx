@@ -67,6 +67,9 @@ export default function PopupEditPage({
   const component = snapshotComponent ?? liveComponent;
   const updateMutation = useMutation(api.homeComponents.update);
 
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const isVisualEditAllowed = systemConfig?.typeVisualEditOverrides?.[COMPONENT_TYPE]?.enabled ?? true;
+
   const [title, setTitle] = useState('');
   const [active, setActive] = useState(true);
   const [config, setConfig] = useState<PopupConfig>(() => normalizePopupConfig({}));
@@ -266,6 +269,9 @@ export default function PopupEditPage({
               title={title}
               selectedStyle={config.style}
               onStyleChange={(style) => setConfig((current) => ({ ...current, style }))}
+              isVisualEditAllowed={isVisualEditAllowed}
+              onConfigChange={setConfig}
+              onTitleChange={setTitle}
             />
           </div>
         </div>

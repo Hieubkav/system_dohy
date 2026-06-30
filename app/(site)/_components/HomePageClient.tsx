@@ -18,8 +18,12 @@ const CRITICAL_COMPONENTS_COUNT = 2;
 
 export default function HomePageClient({
   initialComponents,
+  initialHomePageChrome,
+  initialSiteSettings,
 }: {
   initialComponents?: Doc<'homeComponents'>[];
+  initialHomePageChrome?: { showSpeedDial: boolean };
+  initialSiteSettings?: Record<string, unknown>;
 }): React.ReactElement {
   const [showDeferred, setShowDeferred] = useState(false);
   const [idleReady, setIdleReady] = useState(false);
@@ -39,6 +43,26 @@ export default function HomePageClient({
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
   const systemColors = useBrandColors();
   const { isDark } = useSiteSettings();
+
+  const siteSettingsQuery = useQuery(api.settings.getMultiple, {
+    keys: ['site_name', 'site_tagline', 'seo_title'],
+  });
+  const siteSettings = siteSettingsQuery ?? initialSiteSettings;
+
+  const h1Text = useMemo(() => {
+    if (!siteSettings) {return 'Chào mừng!';}
+    const siteName = (siteSettings.site_name as string)?.trim();
+    const seoTitle = (siteSettings.seo_title as string)?.trim();
+    const siteTagline = (siteSettings.site_tagline as string)?.trim();
+
+    if (seoTitle) {
+      return seoTitle;
+    }
+    if (siteName && siteTagline) {
+      return `${siteName} - ${siteTagline}`;
+    }
+    return siteName || 'Chào mừng!';
+  }, [siteSettings]);
 
   const sharedData: SharedSystemData = useMemo(() => ({
     systemConfig: systemConfig ?? null,
@@ -199,7 +223,7 @@ export default function HomePageClient({
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Chào mừng!</h1>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">{h1Text}</h1>
           <p className="text-slate-500">
             Chưa có nội dung trang chủ. Vui lòng thêm components trong{' '}
             <Link href="/admin/home-components" className="text-blue-600 hover:underline">
@@ -222,8 +246,10 @@ export default function HomePageClient({
   const criticalComponents = sortedComponents.slice(0, CRITICAL_COMPONENTS_COUNT);
   const deferredComponents = showDeferred ? sortedComponents.slice(CRITICAL_COMPONENTS_COUNT) : [];
   const popupComponents = resolvedComponents.filter((componentItem) => componentItem.type === 'Popup');
+  const showHomePageSpeedDial = systemConfig?.homePageChrome?.showSpeedDial ?? initialHomePageChrome?.showSpeedDial ?? true;
 
   const speedDialComponents = resolvedComponents.filter((componentItem) => {
+    if (!showHomePageSpeedDial) {return false;}
     if (componentItem.type !== 'SpeedDial' || !componentItem.active) {return false;}
     const config = componentItem.config as Record<string, unknown>;
     return config.showOnAllPages !== true;

@@ -81,6 +81,10 @@ export async function create(
     markdownRender?: string;
     metaDescription?: string;
     metaTitle?: string;
+    focusKeyword?: string;
+    relatedQueries?: string[];
+    tags?: string[];
+    faqItems?: Array<{ question: string; answer: string }>;
     order?: number;
     projectUrl?: string;
     renderType?: RenderType;
@@ -114,6 +118,10 @@ export async function create(
     markdownRender: args.markdownRender,
     metaDescription: args.metaDescription,
     metaTitle: args.metaTitle,
+    focusKeyword: args.focusKeyword,
+    relatedQueries: args.relatedQueries,
+    tags: args.tags,
+    faqItems: args.faqItems,
     order,
     projectUrl: args.projectUrl,
     publishedAt: status === "Published" ? Date.now() : undefined,
@@ -145,6 +153,10 @@ export async function update(
     markdownRender?: string;
     metaDescription?: string;
     metaTitle?: string;
+    focusKeyword?: string;
+    relatedQueries?: string[];
+    tags?: string[];
+    faqItems?: Array<{ question: string; answer: string }>;
     order?: number;
     projectUrl?: string;
     renderType?: RenderType;

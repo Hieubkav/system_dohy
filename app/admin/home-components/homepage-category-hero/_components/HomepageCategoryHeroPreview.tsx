@@ -1,5 +1,6 @@
 'use client';
 
+
 import React from 'react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';

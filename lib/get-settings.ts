@@ -22,6 +22,17 @@ export interface SEOSettings {
   seo_og_image: string;
   seo_google_verification: string;
   seo_bing_verification: string;
+  seo_brand_aliases: string;
+  seo_brand_summary: string;
+  seo_brand_entity_type: string;
+  seo_brand_search_queries: string;
+  seo_brand_topics: string;
+  seo_brand_services: string;
+  seo_brand_audience: string;
+  seo_brand_differentiators: string;
+  seo_brand_proof_points: string;
+  seo_brand_same_as: string;
+  seo_site_search_path: string;
 }
 
 export interface ContactSettings {
@@ -66,6 +77,17 @@ const SETTINGS_KEYS = {
     "seo_og_image",
     "seo_google_verification",
     "seo_bing_verification",
+    "seo_brand_aliases",
+    "seo_brand_summary",
+    "seo_brand_entity_type",
+    "seo_brand_search_queries",
+    "seo_brand_topics",
+    "seo_brand_services",
+    "seo_brand_audience",
+    "seo_brand_differentiators",
+    "seo_brand_proof_points",
+    "seo_brand_same_as",
+    "seo_site_search_path",
   ],
   social: [
     "social_facebook",
@@ -107,10 +129,21 @@ const normalizeSiteSettings = (settings: Record<string, unknown>): SiteSettings 
 
 const normalizeSEOSettings = (settings: Record<string, unknown>): SEOSettings => ({
   seo_bing_verification: (settings.seo_bing_verification as string) || "",
+  seo_brand_aliases: (settings.seo_brand_aliases as string) || "",
+  seo_brand_audience: (settings.seo_brand_audience as string) || "",
+  seo_brand_differentiators: (settings.seo_brand_differentiators as string) || "",
+  seo_brand_entity_type: (settings.seo_brand_entity_type as string) || "Organization",
+  seo_brand_proof_points: (settings.seo_brand_proof_points as string) || "",
+  seo_brand_same_as: (settings.seo_brand_same_as as string) || "",
+  seo_brand_search_queries: (settings.seo_brand_search_queries as string) || "",
+  seo_brand_services: (settings.seo_brand_services as string) || "",
+  seo_brand_summary: (settings.seo_brand_summary as string) || "",
+  seo_brand_topics: (settings.seo_brand_topics as string) || "",
   seo_description: (settings.seo_description as string) || "",
   seo_google_verification: (settings.seo_google_verification as string) || "",
   seo_keywords: (settings.seo_keywords as string) || "",
   seo_og_image: (settings.seo_og_image as string) || "",
+  seo_site_search_path: (settings.seo_site_search_path as string) || "/search?q={search_term_string}",
   seo_title: (settings.seo_title as string) || "",
 });
 

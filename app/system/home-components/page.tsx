@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
-import { Bot, Eye, EyeOff, LayoutTemplate, Type } from 'lucide-react';
+import { Bot, Eye, EyeOff, LayoutTemplate, MousePointer2, Type } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '@/convex/_generated/api';
 import { COMPONENT_TYPES, HOME_COMPONENT_TYPE_VALUES } from '@/app/admin/home-components/create/shared';
@@ -41,6 +41,8 @@ export default function SystemHomeComponentsPage() {
   const setGlobalFontOverride = useMutation(api.homeComponentSystemConfig.setGlobalFontOverride);
   const setTypeAiImportOverride = useMutation(api.homeComponentSystemConfig.setTypeAiImportOverride);
   const bulkSetTypeAiImportOverride = useMutation(api.homeComponentSystemConfig.bulkSetTypeAiImportOverride);
+  const setTypeVisualEditOverride = useMutation(api.homeComponentSystemConfig.setTypeVisualEditOverride);
+  const bulkSetTypeVisualEditOverride = useMutation(api.homeComponentSystemConfig.bulkSetTypeVisualEditOverride);
   const setHomePageBackground = useMutation(api.homeComponentSystemConfig.setHomePageBackground);
   const hideUnusedLayoutsAndTypes = useMutation(api.homeComponentSystemConfig.hideUnusedLayoutsAndTypes);
   const showAllLayoutsAndTypes = useMutation(api.homeComponentSystemConfig.showAllLayoutsAndTypes);
@@ -51,6 +53,7 @@ export default function SystemHomeComponentsPage() {
   const [typeOverrides, setTypeOverrides] = useState<Record<string, ColorOverride>>({});
   const [typeFontOverrides, setTypeFontOverrides] = useState<Record<string, FontOverride>>({});
   const [typeAiImportOverrides, setTypeAiImportOverrides] = useState<Record<string, AiImportOverride>>({});
+  const [typeVisualEditOverrides, setTypeVisualEditOverrides] = useState<Record<string, { enabled: boolean }>>({});
   const [globalFontOverride, setGlobalFontOverrideState] = useState({ enabled: false, fontKey: DEFAULT_FONT_KEY });
   const [homePageBackground, setHomePageBackgroundState] = useState({
     enabled: false,
@@ -64,6 +67,7 @@ export default function SystemHomeComponentsPage() {
     setTypeOverrides(config.typeColorOverrides);
     setTypeFontOverrides(config.typeFontOverrides);
     setTypeAiImportOverrides(config.typeAiImportOverrides);
+    setTypeVisualEditOverrides(config.typeVisualEditOverrides || {});
     setGlobalFontOverrideState(config.globalFontOverride ?? { enabled: false, fontKey: DEFAULT_FONT_KEY });
     setHomePageBackgroundState(config.homePageBackground ?? { enabled: false, type: 'white', customColor: '' });
   }, [config]);
@@ -155,6 +159,10 @@ export default function SystemHomeComponentsPage() {
     typeAiImportOverrides[type] ?? { enabled: true }
   );
 
+  const getDefaultVisualEditOverride = (type: string): { enabled: boolean } => (
+    typeVisualEditOverrides[type] ?? { enabled: true }
+  );
+
   const toggleCustomType = async (type: string) => {
     if (!CUSTOM_SUPPORTED_TYPES.has(type)) {return;}
     const current = getDefaultOverride(type);
@@ -208,6 +216,19 @@ export default function SystemHomeComponentsPage() {
       toast.success(nextEnabled ? 'Đã bật Import AI cho component.' : 'Đã tắt Import AI cho component.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Không thể cập nhật Import AI.');
+    }
+  };
+
+  const toggleVisualEditType = async (type: string) => {
+    if (!CUSTOM_SUPPORTED_TYPES.has(type)) {return;}
+    const current = getDefaultVisualEditOverride(type);
+    const nextEnabled = !current.enabled;
+    setTypeVisualEditOverrides((prev) => ({ ...prev, [type]: { enabled: nextEnabled } }));
+    try {
+      await setTypeVisualEditOverride({ enabled: nextEnabled, type });
+      toast.success(nextEnabled ? 'Đã bật Sửa trực quan cho component.' : 'Đã tắt Sửa trực quan cho component.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật Sửa trực quan.');
     }
   };
 
@@ -325,6 +346,23 @@ export default function SystemHomeComponentsPage() {
       toast.success(enabled ? 'Đã bật Import AI cho các component đã chọn.' : 'Đã tắt Import AI cho các component đã chọn.');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Không thể cập nhật Import AI hàng loạt.');
+    }
+  };
+
+  const handleBulkVisualEdit = async (enabled: boolean) => {
+    if (selectedTypes.length === 0) {return;}
+    const next = selectedTypes.reduce<Record<string, { enabled: boolean }>>((acc, type) => {
+      if (CUSTOM_SUPPORTED_TYPES.has(type)) {
+        acc[type] = { enabled };
+      }
+      return acc;
+    }, {});
+    setTypeVisualEditOverrides((prev) => ({ ...prev, ...next }));
+    try {
+      await bulkSetTypeVisualEditOverride({ enabled, types: selectedTypes });
+      toast.success(enabled ? 'Đã bật Sửa trực quan cho các component đã chọn.' : 'Đã tắt Sửa trực quan cho các component đã chọn.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể cập nhật Sửa trực quan hàng loạt.');
     }
   };
 
@@ -513,6 +551,12 @@ export default function SystemHomeComponentsPage() {
             <Button variant="outline" size="sm" onClick={() => handleBulkAiImport(false)} disabled={selectedTypes.length === 0}>
               Tắt AI đã chọn
             </Button>
+            <Button variant="outline" size="sm" onClick={() => handleBulkVisualEdit(true)} disabled={selectedTypes.length === 0}>
+              Bật trực quan đã chọn
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => handleBulkVisualEdit(false)} disabled={selectedTypes.length === 0}>
+              Tắt trực quan đã chọn
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -534,7 +578,7 @@ export default function SystemHomeComponentsPage() {
           </div>
 
           <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
-            <div className="grid grid-cols-[44px_60px_1fr_140px_420px] gap-3 px-4 py-2 text-xs font-semibold text-slate-500 bg-slate-50 dark:bg-slate-900">
+            <div className="grid grid-cols-[44px_60px_1fr_140px_520px] gap-3 px-4 py-2 text-xs font-semibold text-slate-500 bg-slate-50 dark:bg-slate-900">
               <div>
                 <input
                   type="checkbox"
@@ -651,6 +695,21 @@ export default function SystemHomeComponentsPage() {
                     >
                       <Bot size={12} />
                       {aiImportOverride.enabled ? 'AI bật' : 'AI tắt'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleVisualEditType(type.value)}
+                      disabled={!customSupported}
+                      className={cn(
+                        "inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs border",
+                        getDefaultVisualEditOverride(type.value).enabled
+                          ? "border-purple-200 text-purple-600 bg-purple-50"
+                          : "border-slate-200 text-slate-500 bg-white",
+                        !customSupported && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      <MousePointer2 size={12} />
+                      {getDefaultVisualEditOverride(type.value).enabled ? 'Trực quan bật' : 'Trực quan tắt'}
                     </button>
                   </div>
                 </div>

@@ -3,6 +3,7 @@
 import React, { useRef } from 'react';
 import { cn } from '@/app/admin/components/ui';
 import { SectionHeader } from '../../_shared/components/SectionHeader';
+import { EditablePreviewText } from '../../_shared/components/EditablePreviewText';
 import type { MarqueeColorTokens } from '../_lib/colors';
 import type { MarqueeBrandMode, MarqueeCornerRadius, MarqueeDirection, MarqueeItem, MarqueeScale, MarqueeSpeed, MarqueeStyle, MarqueeTextStyle } from '../_types';
 import { getMarqueeCornerRadiusClassName, getMarqueeSectionSpacingClassName, normalizeMarqueeCornerRadius, normalizeMarqueeSpacing, type MarqueeSpacing } from '../_types';
@@ -38,6 +39,11 @@ interface MarqueeSectionSharedProps {
   cornerRadius?: MarqueeCornerRadius;
   noBorderRadius?: boolean;
   noVerticalMargin?: boolean;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
+  visualEditEnabled?: boolean;
+  onItemsChange?: (items: MarqueeItem[]) => void;
 }
 
 // ── Scale system ─────────────────────────────────────────────────
@@ -335,6 +341,48 @@ interface LayoutProps {
   cornerRadiusClassName: string;
 }
 
+function EditableMarqueeList({
+  items,
+  tokens,
+  scale,
+  cornerRadiusClassName,
+  onItemsChange,
+}: {
+  items: MarqueeItem[];
+  tokens: MarqueeColorTokens;
+  scale: MarqueeScale;
+  cornerRadiusClassName: string;
+  onItemsChange?: (items: MarqueeItem[]) => void;
+}) {
+  const cfg = scaleConfig[scale];
+
+  return (
+    <div className={cn(cfg.py, 'overflow-hidden border-y', cornerRadiusClassName)} style={{ backgroundColor: tokens.minimalBg, borderColor: tokens.minimalBorder }}>
+      <div className={cn('flex flex-wrap items-center px-4', cfg.fontSize, cfg.gap)}>
+        {items.map((item) => (
+          <React.Fragment key={item.id}>
+            <EditablePreviewText
+              active={true}
+              value={item.text}
+              fallback="Nội dung chạy chữ"
+              className="font-semibold tracking-wide shrink-0"
+              style={{ color: tokens.minimalText }}
+              onChange={(value) => {
+                onItemsChange?.(items.map((current) => (
+                  current.id === item.id ? { ...current, text: value } : current
+                )));
+              }}
+            />
+            <span className="shrink-0 opacity-50 whitespace-pre" style={{ color: tokens.minimalBorder }}>
+              {item.separator ?? '✦'}
+            </span>
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Section ─────────────────────────────────────────────────
 export function MarqueeSectionShared(props: MarqueeSectionSharedProps) {
   const {
@@ -343,6 +391,7 @@ export function MarqueeSectionShared(props: MarqueeSectionSharedProps) {
     hideHeader, showTitle, showSubtitle, headerAlign, titleColorPrimary,
     subtitleAboveTitle, uppercaseText, showBadge, badgeText,
     spacing, cornerRadius, noBorderRadius, noVerticalMargin, fontStyle, fontClassName,
+    onTitleChange, onSubtitleChange, onBadgeTextChange, visualEditEnabled, onItemsChange,
   } = props;
 
   const duration = getSpeedDuration(speed, items.length);
@@ -356,8 +405,21 @@ export function MarqueeSectionShared(props: MarqueeSectionSharedProps) {
       || shouldShowBadge);
 
   const layoutProps: LayoutProps = { items, tokens, duration, direction, pauseOnHover, scale: scale ?? 1, cornerRadiusClassName };
+  const isVisualEditActive = props.context === 'preview' && Boolean(visualEditEnabled && onItemsChange);
 
   const renderLayout = () => {
+    if (isVisualEditActive) {
+      return (
+        <EditableMarqueeList
+          items={items}
+          tokens={tokens}
+          scale={scale ?? 1}
+          cornerRadiusClassName={cornerRadiusClassName}
+          onItemsChange={onItemsChange}
+        />
+      );
+    }
+
     switch (style) {
       case 'gradient': return <GradientLayout {...layoutProps} />;
       case 'minimal': return <MinimalLayout {...layoutProps} />;
@@ -390,6 +452,10 @@ export function MarqueeSectionShared(props: MarqueeSectionSharedProps) {
               showBadge={shouldShowBadge}
               badgeText={resolvedBadgeText}
               brandColor={tokens.primary}
+              visualEditEnabled={visualEditEnabled}
+              onTitleChange={onTitleChange}
+              onSubtitleChange={onSubtitleChange}
+              onBadgeTextChange={onBadgeTextChange}
             />
           </div>
         )}

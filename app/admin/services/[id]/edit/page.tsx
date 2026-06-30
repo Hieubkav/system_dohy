@@ -276,6 +276,21 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
     title,
   ]);
 
+  const aiImportCurrentData = useMemo<AiEntityImportPayload>(() => ({
+    content: normalizedContent,
+    duration: duration.trim(),
+    excerpt: excerpt.trim(),
+    featured,
+    htmlRender: htmlRender.trim(),
+    markdownRender: markdownRender.trim(),
+    metaDescription: metaDescription.trim(),
+    metaTitle: metaTitle.trim(),
+    price,
+    slug: slug.trim(),
+    thumbnail: thumbnail ?? '',
+    title: title.trim(),
+  }), [duration, excerpt, featured, htmlRender, markdownRender, metaDescription, metaTitle, normalizedContent, price, slug, thumbnail, title]);
+
   const hasChanges = useMemo(() => {
     if (!isDataLoaded || !initialSnapshotRef.current) {return false;}
     return JSON.stringify(initialSnapshotRef.current) !== JSON.stringify(currentSnapshot);
@@ -859,7 +874,7 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
         <>
           <Button type="button" variant="ghost" onClick={() =>{  router.push('/admin/services'); }}>Hủy bỏ</Button>
           <div className="flex gap-2">
-            <AiEntityImportDialog kind="service" enabledFields={enabledFields} onApply={handleApplyAiService} />
+            <AiEntityImportDialog kind="service" currentData={aiImportCurrentData} enabledFields={enabledFields} onApply={handleApplyAiService} />
             <Button
               type="button"
               variant="outline"

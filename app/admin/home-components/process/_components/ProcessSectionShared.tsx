@@ -60,7 +60,49 @@ interface ProcessSectionSharedProps {
   circularCtaText?: string;
   circularCtaLink?: string;
   isDark?: boolean;
+  visualEditActive?: boolean;
+  onVisualEditToggle?: () => void;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
+  onItemsChange?: (val: ProcessSharedStep[]) => void;
 }
+
+const EditableText = ({
+  active,
+  value,
+  onChange,
+  className,
+  style,
+  element: Element = 'span',
+}: {
+  active: boolean;
+  value: string;
+  onChange: (val: string) => void;
+  className?: string;
+  style?: React.CSSProperties;
+  element?: React.ElementType;
+}) => {
+  if (!active) {
+    return <Element className={className} style={style}>{value}</Element>;
+  }
+  return (
+    <Element
+      contentEditable={active}
+      suppressContentEditableWarning={active}
+      onBlur={(e: React.FocusEvent<HTMLElement>) => {
+        onChange(e.currentTarget.textContent ?? '');
+      }}
+      className={cn(
+        className,
+        'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+      )}
+      style={style}
+    >
+      {value}
+    </Element>
+  );
+};
 
 const PROCESS_STYLES: Array<{ id: ProcessStyle; label: string }> = [
   { id: 'horizontal', label: 'Horizontal' },
@@ -146,6 +188,11 @@ const renderHorizontal = ({
   headerConfig = {},
   desktopColumns = 4,
   spacing = DEFAULT_PROCESS_SPACING,
+  visualEditActive = false,
+  handleItemTextUpdate,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: {
   tokens: ProcessColorTokens;
   steps: ProcessSharedStep[];
@@ -156,6 +203,11 @@ const renderHorizontal = ({
   desktopColumns?: 3 | 4;
   spacing?: ProcessSpacing;
   cornerRadius?: ProcessCornerRadius;
+  visualEditActive?: boolean;
+  handleItemTextUpdate?: (stepIdx: number, field: string, nextText: string) => void;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
 }) => {
   if (steps.length === 0) {return renderEmptyState(tokens);}
 
@@ -176,7 +228,7 @@ const renderHorizontal = ({
 
   return (
     <div className={containerClass} style={{ backgroundColor: 'transparent' }}>
-      {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
+      {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true, visualEditActive, onTitleChange, onSubtitleChange, onBadgeTextChange })}
 
       <div className="relative">
         {/* Progress line behind dots */}
@@ -221,10 +273,10 @@ const renderHorizontal = ({
                 {step.icon || idx + 1}
               </div>
               <h4 className={cn('font-semibold mb-1', isSite ? 'text-xs sm:text-sm' : 'text-sm')} style={{ color: tokens.bodyText }}>
-                {step.title || `Bước ${idx + 1}`}
+                <EditableText active={visualEditActive} value={step.title || `Bước ${idx + 1}`} onChange={(val) => handleItemTextUpdate?.(idx, 'title', val)} />
               </h4>
               <p className="text-xs" style={{ color: tokens.mutedText }}>
-                {step.description || 'Mô tả...'}
+                <EditableText active={visualEditActive} value={step.description || 'Mô tả...'} onChange={(val) => handleItemTextUpdate?.(idx, 'description', val)} />
               </p>
             </div>
           ))}
@@ -252,6 +304,11 @@ const RenderStepper = ({
   desktopColumns: _desktopColumns = 4,
   spacing = DEFAULT_PROCESS_SPACING,
   cornerRadius = DEFAULT_PROCESS_CORNER_RADIUS,
+  visualEditActive = false,
+  handleItemTextUpdate,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: {
   tokens: ProcessColorTokens;
   steps: ProcessSharedStep[];
@@ -262,6 +319,11 @@ const RenderStepper = ({
   desktopColumns?: 3 | 4;
   spacing?: ProcessSpacing;
   cornerRadius?: ProcessCornerRadius;
+  visualEditActive?: boolean;
+  handleItemTextUpdate?: (stepIdx: number, field: string, nextText: string) => void;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
 }) => {
   if (steps.length === 0) {return renderEmptyState(tokens);}
 
@@ -271,10 +333,9 @@ const RenderStepper = ({
 
   const [activeStep, setActiveStep] = React.useState<number>(0);
 
-
   return (
     <div className={getSectionPadding(context, previewDevice, spacing)} style={{ backgroundColor: 'transparent' }}>
-      {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
+      {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true, visualEditActive, onTitleChange, onSubtitleChange, onBadgeTextChange })}
 
       <div className={cn('mx-auto', previewDevice === 'mobile' ? 'max-w-sm' : 'max-w-2xl')}>
         {visibleSteps.map((step, idx) => {
@@ -339,7 +400,7 @@ const RenderStepper = ({
                   )}
                   style={{ color: tokens.bodyText }}
                 >
-                  {step.title || `Bước ${idx + 1}`}
+                  <EditableText active={visualEditActive} value={step.title || `Bước ${idx + 1}`} onChange={(val) => handleItemTextUpdate?.(idx, 'title', val)} />
                 </h4>
                 <p
                   className={cn(
@@ -348,7 +409,7 @@ const RenderStepper = ({
                   )}
                   style={{ color: tokens.mutedText }}
                 >
-                  {step.description || 'Mô tả bước này...'}
+                  <EditableText active={visualEditActive} value={step.description || 'Mô tả bước này...'} onChange={(val) => handleItemTextUpdate?.(idx, 'description', val)} />
                 </p>
               </div>
             </div>
@@ -374,6 +435,11 @@ const renderCards = ({
   headerConfig = {},
   desktopColumns = 4,
   spacing = DEFAULT_PROCESS_SPACING,
+  visualEditActive = false,
+  handleItemTextUpdate,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: {
   tokens: ProcessColorTokens;
   steps: ProcessSharedStep[];
@@ -384,6 +450,11 @@ const renderCards = ({
   desktopColumns?: 3 | 4;
   spacing?: ProcessSpacing;
   cornerRadius?: ProcessCornerRadius;
+  visualEditActive?: boolean;
+  handleItemTextUpdate?: (stepIdx: number, field: string, nextText: string) => void;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
 }) => {
   if (steps.length === 0) {return renderEmptyState(tokens);}
 
@@ -421,7 +492,7 @@ const renderCards = ({
 
   return (
     <div className={getSectionPadding(context, previewDevice, spacing)} style={{ backgroundColor: 'transparent' }}>
-      {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
+      {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true, visualEditActive, onTitleChange, onSubtitleChange, onBadgeTextChange })}
 
       <div className={gridClass}>
         {visibleSteps.map((step, idx) => {
@@ -481,7 +552,7 @@ const renderCards = ({
                 className={cn('font-semibold mb-1 italic', titleClass)}
                 style={{ color: tokens.bodyText }}
               >
-                {step.title || `Bước ${idx + 1}`}
+                <EditableText active={visualEditActive} value={step.title || `Bước ${idx + 1}`} onChange={(val) => handleItemTextUpdate?.(idx, 'title', val)} />
               </h3>
 
               {/* Description */}
@@ -489,7 +560,7 @@ const renderCards = ({
                 className={cn('leading-relaxed px-2', descClass)}
                 style={{ color: tokens.mutedText }}
               >
-                {step.description || 'Mô tả bước này...'}
+                <EditableText active={visualEditActive} value={step.description || 'Mô tả bước này...'} onChange={(val) => handleItemTextUpdate?.(idx, 'description', val)} />
               </p>
             </div>
           );
@@ -508,6 +579,11 @@ const renderAccordion = ({
   headerConfig = {},
   desktopColumns: _desktopColumns = 4,
   spacing = DEFAULT_PROCESS_SPACING,
+  visualEditActive = false,
+  handleItemTextUpdate,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: {
   tokens: ProcessColorTokens;
   steps: ProcessSharedStep[];
@@ -518,6 +594,11 @@ const renderAccordion = ({
   desktopColumns?: 3 | 4;
   spacing?: ProcessSpacing;
   cornerRadius?: ProcessCornerRadius;
+  visualEditActive?: boolean;
+  handleItemTextUpdate?: (stepIdx: number, field: string, nextText: string) => void;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
 }) => {
   if (steps.length === 0) {return renderEmptyState(tokens);}
 
@@ -568,7 +649,7 @@ const renderAccordion = ({
 
   return (
     <div className={getSectionPadding(context, previewDevice, spacing)} style={{ backgroundColor: 'transparent' }}>
-      {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
+      {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true, visualEditActive, onTitleChange, onSubtitleChange, onBadgeTextChange })}
 
       {/* Desktop Layout - Zigzag wave */}
       <div className={cn(
@@ -630,13 +711,13 @@ const renderAccordion = ({
                 className="text-sm font-semibold leading-tight max-w-[220px] mb-1"
                 style={{ color: tokens.bodyText }}
               >
-                {step.title || `Bước ${idx + 1}`}
+                <EditableText active={visualEditActive} value={step.title || `Bước ${idx + 1}`} onChange={(val) => handleItemTextUpdate?.(idx, 'title', val)} />
               </h4>
               <p
                 className="text-xs leading-relaxed max-w-[220px]"
                 style={{ color: tokens.mutedText }}
               >
-                {step.description || 'Mô tả bước này...'}
+                <EditableText active={visualEditActive} value={step.description || 'Mô tả bước này...'} onChange={(val) => handleItemTextUpdate?.(idx, 'description', val)} />
               </p>
             </div>
           );
@@ -665,10 +746,10 @@ const renderAccordion = ({
                   </span>
                 </div>
                 <h4 className="text-xs font-semibold leading-tight px-2 mb-1" style={{ color: tokens.bodyText }}>
-                  {step.title || `Bước ${idx + 1}`}
+                  <EditableText active={visualEditActive} value={step.title || `Bước ${idx + 1}`} onChange={(val) => handleItemTextUpdate?.(idx, 'title', val)} />
                 </h4>
                 <p className="text-xs leading-relaxed px-2" style={{ color: tokens.mutedText }}>
-                  {step.description || 'Mô tả bước này...'}
+                  <EditableText active={visualEditActive} value={step.description || 'Mô tả bước này...'} onChange={(val) => handleItemTextUpdate?.(idx, 'description', val)} />
                 </p>
               </div>
             );
@@ -689,6 +770,11 @@ const renderMinimal = ({
   desktopColumns = 4,
   spacing = DEFAULT_PROCESS_SPACING,
   cornerRadius = DEFAULT_PROCESS_CORNER_RADIUS,
+  visualEditActive = false,
+  handleItemTextUpdate,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: {
   tokens: ProcessColorTokens;
   steps: ProcessSharedStep[];
@@ -699,6 +785,11 @@ const renderMinimal = ({
   desktopColumns?: 3 | 4;
   spacing?: ProcessSpacing;
   cornerRadius?: ProcessCornerRadius;
+  visualEditActive?: boolean;
+  handleItemTextUpdate?: (stepIdx: number, field: string, nextText: string) => void;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
 }) => {
   if (steps.length === 0) {return renderEmptyState(tokens);}
 
@@ -763,7 +854,7 @@ const renderMinimal = ({
 
   return (
     <div className={outerPadding} style={{ backgroundColor: 'transparent' }}>
-      {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true })}
+      {renderSectionHeader({ tokens, sectionTitle, previewDevice, headerConfig, showBadgeInline: true, visualEditActive, onTitleChange, onSubtitleChange, onBadgeTextChange })}
       <div className="relative mx-auto w-full max-w-[1360px]">
         {/* Dark Background Band */}
         <div
@@ -812,7 +903,7 @@ const renderMinimal = ({
                     className={cn('mb-2 font-bold tracking-tight', titleSize)}
                     style={{ color: tokens.bodyText }}
                   >
-                    {step.title || `Bước ${idx + 1}`}
+                    <EditableText active={visualEditActive} value={step.title || `Bước ${idx + 1}`} onChange={(val) => handleItemTextUpdate?.(idx, 'title', val)} />
                   </h3>
 
                   {/* Description */}
@@ -820,7 +911,7 @@ const renderMinimal = ({
                     className={cn('leading-[1.6] lg:leading-[1.65]', descSize)}
                     style={{ color: tokens.mutedText }}
                   >
-                    {step.description || 'Mô tả bước này...'}
+                    <EditableText active={visualEditActive} value={step.description || 'Mô tả bước này...'} onChange={(val) => handleItemTextUpdate?.(idx, 'description', val)} />
                   </p>
                 </div>
               );
@@ -1163,12 +1254,20 @@ const renderSectionHeader = ({
   tokens,
   sectionTitle,
   headerConfig,
+  visualEditActive,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: {
   tokens: ProcessColorTokens;
   sectionTitle: string;
   previewDevice: PreviewDevice;
   headerConfig: HeaderConfig;
   showBadgeInline?: boolean;
+  visualEditActive?: boolean;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
 }) => {
   const {
     hideHeader = false,
@@ -1197,6 +1296,10 @@ const renderSectionHeader = ({
       badgeText={badgeText}
       hideHeader={hideHeader}
       brandColor={tokens.primary}
+      visualEditEnabled={visualEditActive}
+      onTitleChange={onTitleChange}
+      onSubtitleChange={onSubtitleChange}
+      onBadgeTextChange={onBadgeTextChange}
     />
   );
 };
@@ -1395,6 +1498,11 @@ const ProcessSectionContent = ({
   cornerRadius = DEFAULT_PROCESS_CORNER_RADIUS,
   circularCtaText = '',
   circularCtaLink = '',
+  visualEditActive = false,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
+  onItemsChange,
 }: {
   steps: ProcessSharedStep[];
   sectionTitle: string;
@@ -1408,9 +1516,18 @@ const ProcessSectionContent = ({
   cornerRadius?: ProcessCornerRadius;
   circularCtaText?: string;
   circularCtaLink?: string;
+  visualEditActive?: boolean;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
+  onItemsChange?: (val: ProcessSharedStep[]) => void;
 }) => {
+  const handleItemTextUpdate = (stepIdx: number, field: string, nextText: string) => {
+    onItemsChange?.(steps.map((step, idx) => (idx === stepIdx ? { ...step, [field]: nextText } : step)));
+  };
+
   if (style === 'horizontal') {
-    return renderHorizontal({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius });
+    return renderHorizontal({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius, visualEditActive, handleItemTextUpdate, onTitleChange, onSubtitleChange, onBadgeTextChange });
   }
 
   if (style === 'stepper') {
@@ -1425,20 +1542,25 @@ const ProcessSectionContent = ({
         desktopColumns={desktopColumns}
         spacing={spacing}
         cornerRadius={cornerRadius}
+        visualEditActive={visualEditActive}
+        handleItemTextUpdate={handleItemTextUpdate}
+        onTitleChange={onTitleChange}
+        onSubtitleChange={onSubtitleChange}
+        onBadgeTextChange={onBadgeTextChange}
       />
     );
   }
 
   if (style === 'cards') {
-    return renderCards({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius });
+    return renderCards({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius, visualEditActive, handleItemTextUpdate, onTitleChange, onSubtitleChange, onBadgeTextChange });
   }
 
   if (style === 'accordion') {
-    return renderAccordion({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius });
+    return renderAccordion({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius, visualEditActive, handleItemTextUpdate, onTitleChange, onSubtitleChange, onBadgeTextChange });
   }
 
   if (style === 'minimal') {
-    return renderMinimal({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius });
+    return renderMinimal({ context, previewDevice, sectionTitle, steps, tokens, headerConfig, desktopColumns, spacing, cornerRadius, visualEditActive, handleItemTextUpdate, onTitleChange, onSubtitleChange, onBadgeTextChange });
   }
 
   if (style === 'compactMinimal') {
@@ -1501,6 +1623,12 @@ export function ProcessSectionShared({
   circularCtaText = '',
   circularCtaLink = '',
   isDark,
+  visualEditActive = false,
+  onVisualEditToggle,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
+  onItemsChange,
 }: ProcessSectionSharedProps) {
   const tokens = React.useMemo(() => adaptTokensForDarkMode(getProcessColors(brandColor, secondary, mode), isDark ?? false), [brandColor, secondary, mode, isDark]);
   const selectedStyle = previewStyle ?? style;
@@ -1524,6 +1652,11 @@ export function ProcessSectionShared({
         cornerRadius={cornerRadius}
         circularCtaText={circularCtaText}
         circularCtaLink={circularCtaLink}
+        visualEditActive={visualEditActive}
+        onTitleChange={onTitleChange}
+        onSubtitleChange={onSubtitleChange}
+        onBadgeTextChange={onBadgeTextChange}
+        onItemsChange={onItemsChange}
       />
     );
   }
@@ -1541,6 +1674,9 @@ export function ProcessSectionShared({
         deviceWidthClass={deviceWidths[previewDevice]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+        visualEditActive={visualEditActive}
+        visualEditAllowed={true}
+        onVisualEditToggle={onVisualEditToggle}
       >
         <BrowserFrame>
           <ProcessSectionContent
@@ -1556,6 +1692,11 @@ export function ProcessSectionShared({
             cornerRadius={cornerRadius}
             circularCtaText={circularCtaText}
             circularCtaLink={circularCtaLink}
+            visualEditActive={visualEditActive}
+            onTitleChange={onTitleChange}
+            onSubtitleChange={onSubtitleChange}
+            onBadgeTextChange={onBadgeTextChange}
+            onItemsChange={onItemsChange}
           />
         </BrowserFrame>
       </PreviewWrapper>

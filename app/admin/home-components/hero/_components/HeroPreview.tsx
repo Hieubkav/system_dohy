@@ -1,4 +1,6 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React, { useState } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
@@ -93,6 +95,8 @@ export const HeroPreview = ({
   fontStyle,
   fontClassName,
   isDark: propIsDark,
+  isVisualEditAllowed = true,
+  onContentChange,
 }: { 
   slides: { id: number; image: string; link: string; mediaType?: 'image' | 'video' }[]; 
   brandColor: string;
@@ -106,11 +110,35 @@ export const HeroPreview = ({
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
   isDark?: boolean;
+  isVisualEditAllowed?: boolean;
+  onContentChange?: (nextContent: HeroContent) => void;
 }) => {
   const { isDark: previewDark } = usePreviewDark();
   const isDarkState = propIsDark ?? previewDark;
   const { device, setDevice } = usePreviewDevice();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
+
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
+
+  const handleTextChange = (field: keyof HeroContent, nextText: string) => {
+    if (!onContentChange || !content) return;
+    onContentChange({
+      ...content,
+      [field]: nextText,
+    });
+  };
   const previewStyle = selectedStyle ?? 'slider';
   const activeSlideCount = previewStyle === 'bento'
     ? Math.min(slides.length, 4)
@@ -862,32 +890,71 @@ export const HeroPreview = ({
                   c.textAlign === 'right' && 'items-end text-right'
                 )}>
                   <div className={cn("max-w-xl", device === 'mobile' ? 'space-y-3' : 'space-y-4')}>
-                    {c.badge && (
+                    {(c.badge || isVisualEditActive) && (
                       <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: fullscreenColors.badgeBg, color: fullscreenColors.badgeText }}>
                         <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: fullscreenColors.badgeDotPulse }} />
-                        {c.badge}
+                        <span
+                          contentEditable={isVisualEditActive}
+                          suppressContentEditableWarning={isVisualEditActive}
+                          onBlur={(e) => handleTextChange('badge', e.currentTarget.textContent ?? '')}
+                          className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+                        >
+                          {c.badge || (isVisualEditActive ? 'Nhập badge...' : '')}
+                        </span>
                       </div>
                     )}
                     <h1 className={cn("font-bold text-white leading-tight", device === 'mobile' ? 'text-xl' : (device === 'tablet' ? 'text-2xl' : 'text-3xl md:text-4xl'))}>
-                      {parseHighlightedHeading(c.heading ?? 'Tiêu đề chính', c.highlightColor)}
+                      <span
+                        contentEditable={isVisualEditActive}
+                        suppressContentEditableWarning={isVisualEditActive}
+                        onBlur={(e) => handleTextChange('heading', e.currentTarget.textContent ?? '')}
+                        className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+                      >
+                        {isVisualEditActive ? (c.heading || 'Tiêu đề chính') : parseHighlightedHeading(c.heading ?? 'Tiêu đề chính', c.highlightColor)}
+                      </span>
                     </h1>
-                    {c.description && (
+                    {(c.description || isVisualEditActive) && (
                       <p className={cn("text-white/80", device === 'mobile' ? 'text-sm line-clamp-2' : 'text-base')}>
-                        {c.description}
+                        <span
+                          contentEditable={isVisualEditActive}
+                          suppressContentEditableWarning={isVisualEditActive}
+                          onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+                          className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+                        >
+                          {c.description || (isVisualEditActive ? 'Mô tả chi tiết banner...' : '')}
+                        </span>
                       </p>
                     )}
                     <div className={cn("flex gap-3", device === 'mobile' ? 'flex-col' : 'flex-row',
                       c.textAlign === 'center' && 'justify-center',
                       c.textAlign === 'right' && 'justify-end'
                     )}>
-                      {c.primaryButtonText && (
-                        <a href={primaryHref} className={cn("font-medium rounded-lg", device === 'mobile' ? 'px-4 py-2 text-sm' : 'px-6 py-2.5')} style={{ backgroundColor: primaryButtonBg, color: primaryButtonText }}>
-                          {c.primaryButtonText}
+                      {(c.primaryButtonText || isVisualEditActive) && (
+                        <a
+                          href={isVisualEditActive ? undefined : primaryHref}
+                          contentEditable={isVisualEditActive}
+                          suppressContentEditableWarning={isVisualEditActive}
+                          onBlur={(e) => handleTextChange('primaryButtonText', e.currentTarget.textContent ?? '')}
+                          className={cn("font-medium rounded-lg inline-flex items-center justify-center", device === 'mobile' ? 'px-4 py-2 text-sm' : 'px-6 py-2.5',
+                            isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                          )}
+                          style={{ backgroundColor: primaryButtonBg, color: primaryButtonText }}
+                        >
+                          {c.primaryButtonText || (isVisualEditActive ? 'Bắt đầu ngay' : '')}
                         </a>
                       )}
-                      {c.secondaryButtonText && (
-                        <a href={secondaryHref} className={cn("font-medium rounded-lg border hover:bg-white/10", device === 'mobile' ? 'px-4 py-2 text-sm' : 'px-6 py-2.5')} style={secondaryButtonStyle}>
-                          {c.secondaryButtonText}
+                      {(c.secondaryButtonText || isVisualEditActive) && (
+                        <a
+                          href={isVisualEditActive ? undefined : secondaryHref}
+                          contentEditable={isVisualEditActive}
+                          suppressContentEditableWarning={isVisualEditActive}
+                          onBlur={(e) => handleTextChange('secondaryButtonText', e.currentTarget.textContent ?? '')}
+                          className={cn("font-medium rounded-lg border hover:bg-white/10 inline-flex items-center justify-center", device === 'mobile' ? 'px-4 py-2 text-sm' : 'px-6 py-2.5',
+                            isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                          )}
+                          style={secondaryButtonStyle}
+                        >
+                          {c.secondaryButtonText || (isVisualEditActive ? 'Tìm hiểu thêm' : '')}
                         </a>
                       )}
                     </div>
@@ -953,29 +1020,68 @@ export const HeroPreview = ({
             device === 'mobile' ? 'max-w-full gap-4 pb-4' : 'min-w-[320px] max-w-[470px] gap-5 py-14',
             contentAlignClass
           )}>
-            {c.badge && (
+            {(c.badge || isVisualEditActive) && (
               <span className="inline-flex w-fit items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide" style={{ backgroundColor: conquestColors.badgeBg, color: conquestColors.badgeText }}>
                 <span className="h-2 w-2 rounded-full" style={{ backgroundColor: conquestColors.accentSolid }} />
-                {c.badge}
+                <span
+                  contentEditable={isVisualEditActive}
+                  suppressContentEditableWarning={isVisualEditActive}
+                  onBlur={(e) => handleTextChange('badge', e.currentTarget.textContent ?? '')}
+                  className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+                >
+                  {c.badge || (isVisualEditActive ? 'Nhập badge...' : '')}
+                </span>
               </span>
             )}
             <h1 className={cn("font-bold uppercase leading-[1.05]", device === 'mobile' ? 'text-3xl' : 'text-5xl')}>
-              {parseHighlightedHeading(c.heading ?? 'Chinh phục tầm cao mới', c.highlightColor || conquestColors.accentSolid)}
+              <span
+                contentEditable={isVisualEditActive}
+                suppressContentEditableWarning={isVisualEditActive}
+                onBlur={(e) => handleTextChange('heading', e.currentTarget.textContent ?? '')}
+                className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+              >
+                {isVisualEditActive ? (c.heading || 'Chinh phục tầm cao mới') : parseHighlightedHeading(c.heading ?? 'Chinh phục tầm cao mới', c.highlightColor || conquestColors.accentSolid)}
+              </span>
             </h1>
-            {c.description && (
+            {(c.description || isVisualEditActive) && (
               <p className={cn("max-w-xl", device === 'mobile' ? 'text-sm' : 'text-lg')} style={{ color: conquestColors.descriptionText }}>
-                {c.description}
+                <span
+                  contentEditable={isVisualEditActive}
+                  suppressContentEditableWarning={isVisualEditActive}
+                  onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+                  className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+                >
+                  {c.description || (isVisualEditActive ? 'Mô tả chi tiết banner...' : '')}
+                </span>
               </p>
             )}
             <div className={cn("flex gap-3", buttonAlignClass)}>
-              {c.primaryButtonText && (
-                <a href={primaryHref} className="rounded-full px-6 py-3 text-sm font-semibold shadow-lg" style={{ backgroundColor: primaryButtonBg, color: primaryButtonText }}>
-                  {c.primaryButtonText}
+              {(c.primaryButtonText || isVisualEditActive) && (
+                <a
+                  href={isVisualEditActive ? undefined : primaryHref}
+                  contentEditable={isVisualEditActive}
+                  suppressContentEditableWarning={isVisualEditActive}
+                  onBlur={(e) => handleTextChange('primaryButtonText', e.currentTarget.textContent ?? '')}
+                  className={cn("rounded-full px-6 py-3 text-sm font-semibold shadow-lg inline-flex items-center justify-center",
+                    isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                  )}
+                  style={{ backgroundColor: primaryButtonBg, color: primaryButtonText }}
+                >
+                  {c.primaryButtonText || (isVisualEditActive ? 'Bắt đầu ngay' : '')}
                 </a>
               )}
-              {c.secondaryButtonText && (
-                <a href={secondaryHref} className="rounded-full border px-6 py-3 text-sm font-semibold" style={secondaryButtonStyle}>
-                  {c.secondaryButtonText}
+              {(c.secondaryButtonText || isVisualEditActive) && (
+                <a
+                  href={isVisualEditActive ? undefined : secondaryHref}
+                  contentEditable={isVisualEditActive}
+                  suppressContentEditableWarning={isVisualEditActive}
+                  onBlur={(e) => handleTextChange('secondaryButtonText', e.currentTarget.textContent ?? '')}
+                  className={cn("rounded-full border px-6 py-3 text-sm font-semibold inline-flex items-center justify-center",
+                    isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                  )}
+                  style={secondaryButtonStyle}
+                >
+                  {c.secondaryButtonText || (isVisualEditActive ? 'Tìm hiểu thêm' : '')}
                 </a>
               )}
             </div>
@@ -1050,24 +1156,56 @@ export const HeroPreview = ({
                   c.textAlign === 'center' && 'text-center',
                   c.textAlign === 'right' && 'text-right'
                 )}>
-                  <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide" style={{ backgroundColor: splitColors.badgeBg, color: splitColors.badgeText }}>
-                    {c.badge ?? `Banner ${currentSlide + 1}/${slides.length}`}
-                  </span>
+                  {(c.badge || isVisualEditActive) && (
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide" style={{ backgroundColor: splitColors.badgeBg, color: splitColors.badgeText }}>
+                      <span
+                        contentEditable={isVisualEditActive}
+                        suppressContentEditableWarning={isVisualEditActive}
+                        onBlur={(e) => handleTextChange('badge', e.currentTarget.textContent ?? '')}
+                        className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+                      >
+                        {c.badge || (isVisualEditActive ? 'Nhập badge...' : `Banner ${currentSlide + 1}/${slides.length}`)}
+                      </span>
+                    </span>
+                  )}
                   <h2 className={cn("font-bold leading-tight", device === 'mobile' ? 'text-lg' : 'text-2xl lg:text-3xl')} style={{ color: splitColors.headingText }}>
-                    {parseHighlightedHeading(c.heading ?? 'Tiêu đề nổi bật', c.highlightColor)}
+                    <span
+                      contentEditable={isVisualEditActive}
+                      suppressContentEditableWarning={isVisualEditActive}
+                      onBlur={(e) => handleTextChange('heading', e.currentTarget.textContent ?? '')}
+                      className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+                    >
+                      {isVisualEditActive ? (c.heading || 'Tiêu đề nổi bật') : parseHighlightedHeading(c.heading ?? 'Tiêu đề nổi bật', c.highlightColor)}
+                    </span>
                   </h2>
-                  {c.description && (
+                  {(c.description || isVisualEditActive) && (
                     <p className={cn(device === 'mobile' ? 'text-sm' : 'text-base')} style={{ color: splitColors.descriptionText }}>
-                      {c.description}
+                      <span
+                        contentEditable={isVisualEditActive}
+                        suppressContentEditableWarning={isVisualEditActive}
+                        onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+                        className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+                      >
+                        {c.description || (isVisualEditActive ? 'Mô tả chi tiết banner...' : '')}
+                      </span>
                     </p>
                   )}
-                  {c.primaryButtonText && (
+                  {(c.primaryButtonText || isVisualEditActive) && (
                     <div className={cn("pt-2",
                       c.textAlign === 'center' && 'text-center',
                       c.textAlign === 'right' && 'text-right'
                     )}>
-                      <a href={primaryHref} className={cn("font-medium rounded-lg", device === 'mobile' ? 'px-4 py-2 text-sm' : 'px-6 py-2.5')} style={{ backgroundColor: primaryButtonBg, color: primaryButtonText }}>
-                        {c.primaryButtonText}
+                      <a
+                        href={isVisualEditActive ? undefined : primaryHref}
+                        contentEditable={isVisualEditActive}
+                        suppressContentEditableWarning={isVisualEditActive}
+                        onBlur={(e) => handleTextChange('primaryButtonText', e.currentTarget.textContent ?? '')}
+                        className={cn("font-medium rounded-lg inline-flex items-center justify-center", device === 'mobile' ? 'px-4 py-2 text-sm' : 'px-6 py-2.5',
+                          isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                        )}
+                        style={{ backgroundColor: primaryButtonBg, color: primaryButtonText }}
+                      >
+                        {c.primaryButtonText || (isVisualEditActive ? 'Bắt đầu ngay' : '')}
                       </a>
                     </div>
                   )}
@@ -1174,23 +1312,72 @@ export const HeroPreview = ({
                 )}
               </div>
               <div className="p-4" style={{ backgroundColor: parallaxColors.cardBg }}>
-                {c.badge && (
+                {(c.badge || isVisualEditActive) && (
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: parallaxColors.cardBadgeDot }} />
-                    <span className="text-xs font-semibold uppercase tracking-wide px-2.5 py-0.5 rounded-full" style={{ backgroundColor: parallaxColors.cardBadgeBg, color: parallaxColors.cardBadgeText }}>{c.badge}</span>
+                    <span
+                      contentEditable={isVisualEditActive}
+                      suppressContentEditableWarning={isVisualEditActive}
+                      onBlur={(e) => handleTextChange('badge', e.currentTarget.textContent ?? '')}
+                      className={cn("text-xs font-semibold uppercase tracking-wide px-2.5 py-0.5 rounded-full inline-flex",
+                        isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                      )}
+                      style={{ backgroundColor: parallaxColors.cardBadgeBg, color: parallaxColors.cardBadgeText }}
+                    >
+                      {c.badge || (isVisualEditActive ? 'Nhập badge...' : '')}
+                    </span>
                   </div>
                 )}
                 <h3 className="text-base font-bold" style={{ color: parallaxColors.headingText }}>
-                  {parseHighlightedHeading(c.heading ?? 'Tiêu đề nổi bật', c.highlightColor)}
+                  <span
+                    contentEditable={isVisualEditActive}
+                    suppressContentEditableWarning={isVisualEditActive}
+                    onBlur={(e) => handleTextChange('heading', e.currentTarget.textContent ?? '')}
+                    className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+                  >
+                    {isVisualEditActive ? (c.heading || 'Tiêu đề nổi bật') : parseHighlightedHeading(c.heading ?? 'Tiêu đề nổi bật', c.highlightColor)}
+                  </span>
                 </h3>
-                {c.description && <p className="mt-1 text-xs" style={{ color: parallaxColors.descriptionText }}>{c.description}</p>}
+                {(c.description || isVisualEditActive) && (
+                  <p className="mt-1 text-xs" style={{ color: parallaxColors.descriptionText }}>
+                    <span
+                      contentEditable={isVisualEditActive}
+                      suppressContentEditableWarning={isVisualEditActive}
+                      onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+                      className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+                    >
+                      {c.description || (isVisualEditActive ? 'Mô tả chi tiết banner...' : '')}
+                    </span>
+                  </p>
+                )}
                 <div className="flex items-center gap-3 mt-3">
-                  {c.primaryButtonText && (
-                    <a href={primaryHref} className="rounded-lg px-3 py-1.5 text-xs font-medium" style={{ backgroundColor: primaryButtonBg, color: primaryButtonText }}>
-                      {c.primaryButtonText}
+                  {(c.primaryButtonText || isVisualEditActive) && (
+                    <a
+                      href={isVisualEditActive ? undefined : primaryHref}
+                      contentEditable={isVisualEditActive}
+                      suppressContentEditableWarning={isVisualEditActive}
+                      onBlur={(e) => handleTextChange('primaryButtonText', e.currentTarget.textContent ?? '')}
+                      className={cn("rounded-lg px-3 py-1.5 text-xs font-medium inline-flex items-center justify-center",
+                        isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                      )}
+                      style={{ backgroundColor: primaryButtonBg, color: primaryButtonText }}
+                    >
+                      {c.primaryButtonText || (isVisualEditActive ? 'Bắt đầu ngay' : '')}
                     </a>
                   )}
-                  {c.countdownText && <span className="text-xs" style={{ color: parallaxColors.countdownText }}>{c.countdownText}</span>}
+                  {(c.countdownText || isVisualEditActive) && (
+                    <span
+                      contentEditable={isVisualEditActive}
+                      suppressContentEditableWarning={isVisualEditActive}
+                      onBlur={(e) => handleTextChange('countdownText', e.currentTarget.textContent ?? '')}
+                      className={cn("text-xs inline-flex",
+                        isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                      )}
+                      style={{ color: parallaxColors.countdownText }}
+                    >
+                      {c.countdownText || (isVisualEditActive ? 'Còn lại 00:00:00' : '')}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -1230,28 +1417,71 @@ export const HeroPreview = ({
                   cornerRadiusClassName,
                   'p-5 max-w-lg'
                 )} style={{ backgroundColor: parallaxColors.cardBg }}>
-                  {c.badge && (
+                  {(c.badge || isVisualEditActive) && (
                     <div className="flex items-center gap-3 mb-2">
                       <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: parallaxColors.cardBadgeDot }} />
-                      <span className="text-xs font-semibold uppercase tracking-wide px-2.5 py-0.5 rounded-full" style={{ backgroundColor: parallaxColors.cardBadgeBg, color: parallaxColors.cardBadgeText }}>{c.badge}</span>
+                      <span
+                        contentEditable={isVisualEditActive}
+                        suppressContentEditableWarning={isVisualEditActive}
+                        onBlur={(e) => handleTextChange('badge', e.currentTarget.textContent ?? '')}
+                        className={cn("text-xs font-semibold uppercase tracking-wide px-2.5 py-0.5 rounded-full inline-flex",
+                          isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                        )}
+                        style={{ backgroundColor: parallaxColors.cardBadgeBg, color: parallaxColors.cardBadgeText }}
+                      >
+                        {c.badge || (isVisualEditActive ? 'Nhập badge...' : '')}
+                      </span>
                     </div>
                   )}
                   <h3 className="text-xl font-bold" style={{ color: parallaxColors.headingText }}>
-                    {parseHighlightedHeading(c.heading ?? 'Tiêu đề nổi bật', c.highlightColor)}
+                    <span
+                      contentEditable={isVisualEditActive}
+                      suppressContentEditableWarning={isVisualEditActive}
+                      onBlur={(e) => handleTextChange('heading', e.currentTarget.textContent ?? '')}
+                      className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+                    >
+                      {isVisualEditActive ? (c.heading || 'Tiêu đề nổi bật') : parseHighlightedHeading(c.heading ?? 'Tiêu đề nổi bật', c.highlightColor)}
+                    </span>
                   </h3>
-                  {c.description && (
+                  {(c.description || isVisualEditActive) && (
                     <p className="mt-1 text-sm" style={{ color: parallaxColors.descriptionText }}>
-                      {c.description}
+                      <span
+                        contentEditable={isVisualEditActive}
+                        suppressContentEditableWarning={isVisualEditActive}
+                        onBlur={(e) => handleTextChange('description', e.currentTarget.textContent ?? '')}
+                        className={cn(isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+                      >
+                        {c.description || (isVisualEditActive ? 'Mô tả chi tiết banner...' : '')}
+                      </span>
                     </p>
                   )}
                   <div className="flex items-center gap-3 mt-3">
-                    {c.primaryButtonText && (
-                      <a href={primaryHref} className="rounded-lg px-5 py-2 text-sm font-medium" style={{ backgroundColor: primaryButtonBg, color: primaryButtonText }}>
-                        {c.primaryButtonText}
+                    {(c.primaryButtonText || isVisualEditActive) && (
+                      <a
+                        href={isVisualEditActive ? undefined : primaryHref}
+                        contentEditable={isVisualEditActive}
+                        suppressContentEditableWarning={isVisualEditActive}
+                        onBlur={(e) => handleTextChange('primaryButtonText', e.currentTarget.textContent ?? '')}
+                        className={cn("rounded-lg px-5 py-2 text-sm font-medium inline-flex items-center justify-center",
+                          isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                        )}
+                        style={{ backgroundColor: primaryButtonBg, color: primaryButtonText }}
+                      >
+                        {c.primaryButtonText || (isVisualEditActive ? 'Bắt đầu ngay' : '')}
                       </a>
                     )}
-                    {c.countdownText && (
-                      <span className="text-sm" style={{ color: parallaxColors.countdownText }}>{c.countdownText}</span>
+                    {(c.countdownText || isVisualEditActive) && (
+                      <span
+                        contentEditable={isVisualEditActive}
+                        suppressContentEditableWarning={isVisualEditActive}
+                        onBlur={(e) => handleTextChange('countdownText', e.currentTarget.textContent ?? '')}
+                        className={cn("text-sm inline-flex",
+                          isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text'
+                        )}
+                        style={{ color: parallaxColors.countdownText }}
+                      >
+                        {c.countdownText || (isVisualEditActive ? 'Còn lại 00:00:00' : '')}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -1291,8 +1521,13 @@ export const HeroPreview = ({
         deviceWidthClass={deviceWidths[device]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+      visualEditActive={isVisualEditActive}
+      visualEditAllowed={isVisualEditAllowed}
+      onVisualEditToggle={handleToggleVisualEdit}
       >
-        <BrowserFrame url="yoursite.com">
+        <div className="space-y-3">
+
+          <BrowserFrame url="yoursite.com">
           <div className="relative px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
             <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ backgroundColor: colors.primarySolid, opacity: 0.6 }} />
             <div className="flex items-center gap-3">
@@ -1317,7 +1552,8 @@ export const HeroPreview = ({
             <div className="flex gap-3">{[1,2,3,4].slice(0, device === 'mobile' ? 2 : 4).map(i => (<div key={i} className="flex-1 h-16 bg-slate-100 dark:bg-slate-800 rounded-lg"></div>))}</div>
           </div>
         </BrowserFrame>
-      </PreviewWrapper>
+      </div>
+    </PreviewWrapper>
       {previewStyle === 'slider' && mode === 'dual' && sliderColors.similarity > 0.9 && (
         <div className="mt-3 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-700 dark:text-amber-300">
           ⚠️ Hai màu quá giống nhau (similarity: {(sliderColors.similarity * 100).toFixed(0)}%). Khuyến nghị chọn màu phụ khác biệt hơn.

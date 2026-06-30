@@ -58,6 +58,8 @@ const DEFAULT_TITLES: Record<ComponentType, string> = {
 const toIntOrDefault = (value: string, fallback: number) => Number.parseInt(value, 10) || fallback;
 
 export function ProductListCreateShared({ type, titleLabel }: ProductListCreateSharedProps) {
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const isVisualEditAllowed = systemConfig?.typeVisualEditOverrides?.[type]?.enabled ?? true;
   const { title, setTitle, active, setActive, handleSubmit, isSubmitting } = useComponentForm(titleLabel ?? DEFAULT_TITLES[type], type);
   const colorOverrideType = type === 'ProductList' ? 'ProductList' : type;
   const { customState, effectiveColors, showCustomBlock, setCustomState, systemColors } = useTypeColorOverrideState(colorOverrideType, { seedCustomFromSettingsWhenTypeEmpty: true });
@@ -1058,6 +1060,10 @@ export function ProductListCreateShared({ type, titleLabel }: ProductListCreateS
             categoryMap={blogCategoryMap}
             fontStyle={fontStyle}
             fontClassName="font-active"
+            isVisualEditAllowed={isVisualEditAllowed}
+            onTitleChange={setTitle}
+            onSubtitleChange={setSectionTitle}
+            onBadgeTextChange={setSubTitle}
           />
         </div>
       ) : (type === 'ServiceList' ? (
@@ -1090,6 +1096,10 @@ export function ProductListCreateShared({ type, titleLabel }: ProductListCreateS
             desktopColumns={serviceDesktopColumns}
             fontStyle={fontStyle}
             fontClassName="font-active"
+            isVisualEditAllowed={isVisualEditAllowed}
+            onTitleChange={setTitle}
+            onSubtitleChange={setSectionTitle}
+            onBadgeTextChange={setSubTitle}
           />
         </div>
       ) : (
@@ -1125,6 +1135,10 @@ export function ProductListCreateShared({ type, titleLabel }: ProductListCreateS
           showAddToCartButton={showAddToCartButton}
           showBuyNowButton={showBuyNowButton}
           cartButtonsLayout={cartButtonsLayout}
+          isVisualEditAllowed={isVisualEditAllowed}
+          onTitleChange={setTitle}
+          onSubtitleChange={setSectionTitle}
+          onBadgeTextChange={setSubTitle}
         />
       ))}
     </ComponentFormWrapper>

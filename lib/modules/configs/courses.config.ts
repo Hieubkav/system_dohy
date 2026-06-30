@@ -1,4 +1,4 @@
-import { BadgeDollarSign, BookOpen, Code, FileText, Filter, GraduationCap, PlayCircle, Star, UserRound } from 'lucide-react';
+import { BadgeDollarSign, BookOpen, Code, FileText, Filter, GraduationCap, PlayCircle, Star, UserRound, Search } from 'lucide-react';
 import { defineModuleWithRuntime } from '../define-module';
 
 export const coursesModule = defineModuleWithRuntime({
@@ -16,6 +16,7 @@ export const coursesModule = defineModuleWithRuntime({
     { key: 'enableIntroVideo', label: 'Video giới thiệu', icon: PlayCircle, linkedField: 'introVideoUrl' },
     { key: 'enableFeatured', label: 'Nổi bật', icon: Star, linkedField: 'featured', enabled: false },
     { key: 'enableCourseFilters', label: 'Bộ lọc khóa học', icon: Filter, enabled: false },
+    { key: 'enableAdvancedSEO', label: 'SEO nâng cao', icon: Search, linkedField: 'focusKeyword', enabled: true },
     { key: 'enableMarkdownRender', label: 'Nội dung Markdown', icon: FileText, linkedField: 'markdownRender', enabled: false },
     { key: 'enableHtmlRender', label: 'Nội dung HTML', icon: Code, linkedField: 'htmlRender', enabled: false },
   ],
@@ -84,9 +85,13 @@ export const coursesModule = defineModuleWithRuntime({
       { enabled: false, fieldKey: 'featured', isSystem: false, linkedFeature: 'enableFeatured', name: 'Nổi bật', order: 17, required: false, type: 'boolean' },
       { enabled: true, fieldKey: 'metaTitle', group: 'seo', isSystem: false, name: 'Tiêu đề SEO', order: 18, required: false, type: 'text' },
       { enabled: true, fieldKey: 'metaDescription', group: 'seo', isSystem: false, name: 'Mô tả SEO', order: 19, required: false, type: 'textarea' },
-      { enabled: true, fieldKey: 'renderType', isSystem: false, name: 'Kiểu nội dung', order: 20, required: false, type: 'select' },
-      { enabled: false, fieldKey: 'markdownRender', isSystem: false, linkedFeature: 'enableMarkdownRender', name: 'Nội dung Markdown', order: 21, required: false, type: 'textarea' },
-      { enabled: false, fieldKey: 'htmlRender', isSystem: false, linkedFeature: 'enableHtmlRender', name: 'Nội dung HTML', order: 22, required: false, type: 'textarea' },
+      { enabled: true, fieldKey: 'focusKeyword', group: 'seo', isSystem: false, linkedFeature: 'enableAdvancedSEO', name: 'Từ khóa chính', order: 20, required: false, type: 'text' },
+      { enabled: true, fieldKey: 'tags', group: 'seo', isSystem: false, linkedFeature: 'enableAdvancedSEO', name: 'Tags', order: 21, required: false, type: 'tags' },
+      { enabled: true, fieldKey: 'relatedQueries', group: 'seo', isSystem: false, linkedFeature: 'enableAdvancedSEO', name: 'Cách khách hay tìm', order: 22, required: false, type: 'tags' },
+      { enabled: true, fieldKey: 'faqItems', group: 'seo', isSystem: false, linkedFeature: 'enableAdvancedSEO', name: 'FAQ', order: 23, required: false, type: 'json' },
+      { enabled: true, fieldKey: 'renderType', isSystem: false, name: 'Kiểu nội dung', order: 24, required: false, type: 'select' },
+      { enabled: false, fieldKey: 'markdownRender', isSystem: false, linkedFeature: 'enableMarkdownRender', name: 'Nội dung Markdown', order: 25, required: false, type: 'textarea' },
+      { enabled: false, fieldKey: 'htmlRender', isSystem: false, linkedFeature: 'enableHtmlRender', name: 'Nội dung HTML', order: 26, required: false, type: 'textarea' },
     ],
   },
 

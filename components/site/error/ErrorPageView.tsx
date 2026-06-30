@@ -38,8 +38,7 @@ export function ErrorPageView({
   onGoHome,
   onGoBack,
 }: ErrorPageViewProps) {
-  const { siteDarkMode } = useSiteSettings();
-  const isDark = siteDarkMode === 'dark' || (siteDarkMode === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { isDark } = useSiteSettings();
   const tokens = getErrorPageColors(brandColor, secondaryColor, colorMode, isDark);
   const copy = ERROR_CODE_COPY[code] ?? ERROR_CODE_COPY[404];
   const headline = customHeadline?.trim() || copy.headline;

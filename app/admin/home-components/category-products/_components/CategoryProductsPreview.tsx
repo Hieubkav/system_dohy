@@ -1,4 +1,5 @@
-import React from 'react';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+import React, { useState } from 'react';
 import { ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import useEmblaCarousel from 'embla-carousel-react';
 import { useQuery } from 'convex/react';
@@ -21,6 +22,7 @@ import { QuickAddVariantModal } from '@/components/products/QuickAddVariantModal
 import type { Id } from '@/convex/_generated/dataModel';
 import { buildPreviewQuickAddProduct, type PreviewQuickAddAction, type PreviewQuickAddProduct } from '../../_shared/lib/previewQuickAdd';
 import { adaptTokensForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
+import { SectionHeader } from '../../_shared/components/SectionHeader';
 import type {
   CategoryProductsBrandMode,
   CategoryProductsConfig,
@@ -47,6 +49,9 @@ interface CategoryProductsPreviewProps {
   productsData: CategoryProductsProduct[];
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
+  title?: string;
+  onTitleChange?: (val: string) => void;
+  isVisualEditAllowed?: boolean;
 }
 
 export const CategoryProductsPreview = ({ 
@@ -60,9 +65,26 @@ export const CategoryProductsPreview = ({
   productsData,
   fontStyle,
   fontClassName,
+  title = 'Sản phẩm theo danh mục',
+  onTitleChange,
+  isVisualEditAllowed = true,
 }: CategoryProductsPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
+  const [visualEditEnabled, setVisualEditEnabled] = useState(false);
+
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
+
   const previewStyle = selectedStyle || 'grid';
   const setPreviewStyle = (s: string) =>{  onStyleChange(s as CategoryProductsStyle); };
   const colors = React.useMemo(
@@ -1275,16 +1297,33 @@ export const CategoryProductsPreview = ({
         deviceWidthClass={deviceWidths[device]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+      visualEditActive={isVisualEditActive}
+      visualEditAllowed={isVisualEditAllowed}
+      onVisualEditToggle={handleToggleVisualEdit}
       >
-        <BrowserFrame>
-          {previewStyle === 'grid' && renderGridStyle()}
-          {previewStyle === 'carousel' && renderCarouselStyle()}
-          {previewStyle === 'cards' && renderCardsStyle()}
-          {previewStyle === 'bento' && renderBentoStyle()}
-          {previewStyle === 'magazine' && renderMagazineStyle()}
-          {previewStyle === 'showcase' && renderShowcaseStyle()}
-          {previewStyle === 'wine-grid' && renderWineGridStyle()}
-        </BrowserFrame>
+        <div className="space-y-3">
+
+          <BrowserFrame>
+            <div className="p-4 md:p-6 bg-white dark:bg-slate-900">
+              <SectionHeader
+                title={title}
+                hideHeader={false}
+                showTitle={true}
+                visualEditEnabled={isVisualEditActive}
+                onTitleChange={onTitleChange}
+                brandColor={_brandColor}
+                className="mb-6"
+              />
+              {previewStyle === 'grid' && renderGridStyle()}
+              {previewStyle === 'carousel' && renderCarouselStyle()}
+              {previewStyle === 'cards' && renderCardsStyle()}
+              {previewStyle === 'bento' && renderBentoStyle()}
+              {previewStyle === 'magazine' && renderMagazineStyle()}
+              {previewStyle === 'showcase' && renderShowcaseStyle()}
+              {previewStyle === 'wine-grid' && renderWineGridStyle()}
+            </div>
+          </BrowserFrame>
+        </div>
       </PreviewWrapper>
       <ColorInfoPanel brandColor={_brandColor} secondary={colors.secondary} />
       <QuickAddVariantModal

@@ -14,6 +14,8 @@ import type { AboutColorTokens } from '../_lib/colors';
 import { adaptColorForDarkMode } from '@/components/site/home/utils/darkModeColorAdapter';
 import { PublicImage } from '@/components/shared/PublicImage';
 
+import type { AboutConfig } from '../_types';
+
 type AboutSectionContext = 'preview' | 'site';
 
 export interface AboutSectionSharedProps {
@@ -38,9 +40,51 @@ export interface AboutSectionSharedProps {
   device?: PreviewDevice;
   imagePriority?: boolean;
   cornerRadius?: AboutCornerRadius;
+  config?: AboutConfig;
+  isVisualEditActive?: boolean;
+  onConfigChange?: (config: AboutConfig) => void;
 }
 
 const sanitizeText = (value?: string) => (typeof value === 'string' ? value : '').trim();
+
+const EditableText = ({
+  text,
+  onSave,
+  className,
+  style,
+  tag: Tag = 'span',
+  placeholder = '',
+  isVisualEditActive = false,
+}: {
+  text: string;
+  onSave: (val: string) => void;
+  className?: string;
+  style?: React.CSSProperties;
+  tag?: any;
+  placeholder?: string;
+  isVisualEditActive?: boolean;
+}) => {
+  const Component = Tag;
+  return (
+    <Component
+      contentEditable={isVisualEditActive}
+      suppressContentEditableWarning={isVisualEditActive}
+      onBlur={isVisualEditActive ? (e: any) => onSave(e.currentTarget.textContent ?? '') : undefined}
+      className={cn(className, isVisualEditActive && 'outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text')}
+      style={style}
+    >
+      {text || (isVisualEditActive ? placeholder : '')}
+    </Component>
+  );
+};
+
+const VisualEditContext = React.createContext<{
+  isVisualEditActive: boolean;
+  onSaveButtonText: (val: string) => void;
+}>({
+  isVisualEditActive: false,
+  onSaveButtonText: () => {},
+});
 
 const AboutImage = ({
   src,
@@ -85,11 +129,13 @@ const AboutButton = ({
 }: {
   context: AboutSectionContext;
   href: string;
-  text: string;
+  text: React.ReactNode;
   className: string;
   style: React.CSSProperties;
   withArrow?: boolean;
 }) => {
+
+
   if (context === 'site') {
     return (
       <Link href={href} className={className} style={style}>
@@ -129,11 +175,40 @@ export function AboutSectionShared({
   device = 'desktop',
   imagePriority = false,
   cornerRadius = DEFAULT_ABOUT_CORNER_RADIUS,
+  config,
+  isVisualEditActive = false,
+  onConfigChange,
 }: AboutSectionSharedProps) {
   const isPreview = context === 'preview';
   const isMobilePreview = isPreview && device === 'mobile';
   const isTabletPreview = isPreview && device === 'tablet';
   const isNarrowPreview = isPreview && device !== 'desktop';
+
+  const handleUpdate = (field: keyof AboutConfig, value: any) => {
+    if (onConfigChange && config) {
+      onConfigChange({
+        ...config,
+        [field]: value,
+      });
+    }
+  };
+
+  const handleUpdateFeatureTitle = (featureIndex: number, newTitle: string) => {
+    if (onConfigChange && config) {
+      const currentFeatures = config.features || [];
+      const nextFeatures = [...currentFeatures];
+      if (featureIndex >= 0 && featureIndex < nextFeatures.length) {
+        nextFeatures[featureIndex] = {
+          ...nextFeatures[featureIndex],
+          title: newTitle,
+        };
+      }
+      onConfigChange({
+        ...config,
+        features: nextFeatures,
+      });
+    }
+  };
 
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
 
@@ -154,19 +229,39 @@ export function AboutSectionShared({
     return false;
   }, [systemConfig?.homePageBackground]);
 
-  const resolvedHeading = sanitizeText(heading) || sanitizeText(title) || 'Về chúng tôi';
-  const resolvedDescription = sanitizeText(description);
-  const resolvedSubHeading = sanitizeText(subHeading);
-  const resolvedHighlightText = sanitizeText(highlightText);
-  const resolvedPhone = sanitizeText(phone);
-  const resolvedButtonText = sanitizeText(buttonText);
+  const resolvedHeading = isVisualEditActive ? (
+    <EditableText text={heading || title || 'Về chúng tôi'} placeholder="Về chúng tôi" onSave={(val) => handleUpdate('heading', val)} isVisualEditActive={isVisualEditActive} tag="span" />
+  ) : (sanitizeText(heading) || sanitizeText(title) || 'Về chúng tôi');
+
+  const resolvedDescription = isVisualEditActive ? (
+    <EditableText text={description || ''} placeholder="Mô tả..." onSave={(val) => handleUpdate('description', val)} isVisualEditActive={isVisualEditActive} tag="span" />
+  ) : sanitizeText(description);
+
+  const resolvedSubHeading = isVisualEditActive ? (
+    <EditableText text={subHeading || ''} placeholder="VỀ CHÚNG TÔI" onSave={(val) => handleUpdate('subHeading', val)} isVisualEditActive={isVisualEditActive} tag="span" />
+  ) : sanitizeText(subHeading);
+
+  const resolvedHighlightText = isVisualEditActive ? (
+    <EditableText text={highlightText || ''} placeholder="Chữ nổi bật" onSave={(val) => handleUpdate('highlightText', val)} isVisualEditActive={isVisualEditActive} tag="span" style={{ color: tokens.primary }} />
+  ) : sanitizeText(highlightText);
+
+  const resolvedPhone = isVisualEditActive ? (
+    <EditableText text={phone || ''} placeholder="Số điện thoại..." onSave={(val) => handleUpdate('phone', val)} isVisualEditActive={isVisualEditActive} tag="span" />
+  ) : sanitizeText(phone);
+
+  const resolvedButtonText = isVisualEditActive ? (
+    <EditableText text={buttonText || ''} placeholder="Nút bấm..." onSave={(val) => handleUpdate('buttonText', val)} isVisualEditActive={isVisualEditActive} tag="span" />
+  ) : sanitizeText(buttonText);
+
   const resolvedButtonLink = sanitizeText(buttonLink) || '/about';
   const resolvedImages = (Array.isArray(images) ? images : [])
     .map((value) => sanitizeText(value))
     .filter(Boolean);
   const primaryImage = sanitizeText(image) || resolvedImages[0] || '';
   const galleryImages = [primaryImage, resolvedImages[1] || primaryImage, resolvedImages[2] || resolvedImages[1] || primaryImage];
-  const visibleFeatures = features.filter((feature) => sanitizeText(feature.title));
+  const visibleFeatures = (features || [])
+    .map((feature, index) => ({ feature, index }))
+    .filter(({ feature }) => isVisualEditActive || sanitizeText(feature.title));
   const solarStat = Array.isArray(stats) ? stats.find((stat) => sanitizeText(stat.value) || sanitizeText(stat.label)) : undefined;
   const solarStatValue = sanitizeText(solarStat?.value) || '18+';
   const solarStatLabel = sanitizeText(solarStat?.label) || 'năm kinh nghiệm';
@@ -238,7 +333,7 @@ export function AboutSectionShared({
           <div className="flex justify-center w-full">
             <div className={cn('relative w-full overflow-hidden shadow-lg', isNarrowPreview ? 'aspect-video' : 'aspect-video md:aspect-[4/3]', cornerRadiusClass)}>
               {primaryImage
-                ? <AboutImage src={primaryImage} alt={resolvedHeading} className="w-full h-full object-cover" context={context} imagePriority={imagePriority} />
+                ? <AboutImage src={primaryImage} alt={heading || title || 'Về chúng tôi'} className="w-full h-full object-cover" context={context} imagePriority={imagePriority} />
                 : renderEmptyImage(48)}
               {resolvedPhone ? (
                 <div className={cn('absolute bottom-4 left-4 flex items-center p-1.5 shadow-xl w-max', cornerRadiusSoftClass)} style={{ backgroundColor: tokens.primary, opacity: 0.95 }}>
@@ -285,9 +380,9 @@ export function AboutSectionShared({
 
             {visibleFeatures.length > 0 ? (
               <div className="grid grid-cols-2 gap-3 mb-6">
-                {visibleFeatures.slice(0, 4).map((feature) => (
+                {visibleFeatures.slice(0, 4).map(({ feature, index }) => (
                   <div 
-                    key={feature.title} 
+                    key={index} 
                     className={cn('flex items-center gap-3 p-2 border', cornerRadiusSoftClass)}
                     style={{
                       backgroundColor: adaptColorForDarkMode('rgba(255, 255, 255, 0.6)', isDark, 'bg'),
@@ -307,7 +402,13 @@ export function AboutSectionShared({
                       className="font-extrabold text-sm leading-tight"
                       style={{ color: adaptColorForDarkMode('#030712', isDark, 'text') }}
                     >
-                      {feature.title}
+                      <EditableText 
+                        text={feature.title} 
+                        placeholder="Điểm nổi bật..." 
+                        onSave={(val) => handleUpdateFeatureTitle(index, val)} 
+                        isVisualEditActive={isVisualEditActive} 
+                        tag="span" 
+                      />
                     </span>
                   </div>
                 ))}
@@ -346,9 +447,9 @@ export function AboutSectionShared({
           </h2>
           {visibleFeatures.length > 0 ? (
             <div className="grid grid-cols-2 gap-4 mb-6">
-              {visibleFeatures.slice(0, 4).map((feature) => (
+              {visibleFeatures.slice(0, 4).map(({ feature, index }) => (
                 <div 
-                  key={feature.title} 
+                  key={index} 
                   className={cn('flex items-center gap-3 p-2', !isNarrowPreview && 'lg:bg-transparent lg:p-0', cornerRadius === 'none' ? 'rounded-none' : 'rounded')}
                   style={{
                     backgroundColor: isNarrowPreview ? adaptColorForDarkMode('rgba(255, 255, 255, 0.6)', isDark, 'bg') : 'transparent'
@@ -361,7 +462,13 @@ export function AboutSectionShared({
                     className={cn('font-semibold text-xs leading-tight', !isNarrowPreview && 'lg:text-sm')}
                     style={{ color: adaptColorForDarkMode('#1f2937', isDark, 'text') }}
                   >
-                    {feature.title}
+                    <EditableText 
+                      text={feature.title} 
+                      placeholder="Điểm nổi bật..." 
+                      onSave={(val) => handleUpdateFeatureTitle(index, val)} 
+                      isVisualEditActive={isVisualEditActive} 
+                      tag="span" 
+                    />
                   </span>
                 </div>
               ))}
@@ -415,7 +522,7 @@ export function AboutSectionShared({
         </div>
         <div className={cn('w-full min-h-[250px] top-0 bottom-0 relative', !isNarrowPreview && 'lg:w-2/5 lg:min-h-full lg:absolute lg:right-0')}>
           {primaryImage
-            ? <AboutImage src={primaryImage} alt={resolvedHeading} className="w-full h-full object-cover object-center absolute inset-0" context={context} imagePriority={imagePriority} />
+            ? <AboutImage src={primaryImage} alt={heading || title || 'Về chúng tôi'} className="w-full h-full object-cover object-center absolute inset-0" context={context} imagePriority={imagePriority} />
             : renderEmptyImage(48)}
           <div className={cn(
             'absolute inset-0',
@@ -462,8 +569,8 @@ export function AboutSectionShared({
           ) : null}
           {visibleFeatures.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 mb-5">
-              {visibleFeatures.slice(0, 4).map((feature) => (
-                <div key={feature.title} className="flex items-center gap-2">
+              {visibleFeatures.slice(0, 4).map(({ feature, index }) => (
+                <div key={index} className="flex items-center gap-2">
                   <div className="shrink-0 w-5 h-5 overflow-hidden flex items-center justify-center" style={{ color: tokens.primary }}>
                     {renderFeatureMedia(feature, 'w-5 h-5 stroke-[2.5]')}
                   </div>
@@ -471,7 +578,13 @@ export function AboutSectionShared({
                     className="font-extrabold text-xs xl:text-[13px]"
                     style={{ color: adaptColorForDarkMode('#030712', isDark, 'text') }}
                   >
-                    {feature.title}
+                    <EditableText 
+                      text={feature.title} 
+                      placeholder="Điểm nổi bật..." 
+                      onSave={(val) => handleUpdateFeatureTitle(index, val)} 
+                      isVisualEditActive={isVisualEditActive} 
+                      tag="span" 
+                    />
                   </span>
                 </div>
               ))}
@@ -526,14 +639,20 @@ export function AboutSectionShared({
             {resolvedDescription ? <p>{resolvedDescription}</p> : null}
             {visibleFeatures.length > 0 ? (
               <div className="grid grid-cols-2 gap-3 mt-2">
-                {visibleFeatures.slice(0, 4).map((feature) => (
-                  <div key={feature.title} className="flex items-center gap-2">
+                {visibleFeatures.slice(0, 4).map(({ feature, index }) => (
+                  <div key={index} className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: tokens.secondary }}></div>
                     <span 
                       className="font-bold text-xs"
                       style={{ color: adaptColorForDarkMode('#030712', isDark, 'text') }}
                     >
-                      {feature.title}
+                      <EditableText 
+                        text={feature.title} 
+                        placeholder="Điểm nổi bật..." 
+                        onSave={(val) => handleUpdateFeatureTitle(index, val)} 
+                        isVisualEditActive={isVisualEditActive} 
+                        tag="span" 
+                      />
                     </span>
                   </div>
                 ))}
@@ -579,8 +698,8 @@ export function AboutSectionShared({
           ) : null}
           {visibleFeatures.length > 0 ? (
             <div className="grid grid-cols-2 gap-2 mb-4">
-              {visibleFeatures.slice(0, 4).map((feature) => (
-                <div key={feature.title} className="flex items-center gap-1.5">
+              {visibleFeatures.slice(0, 4).map(({ feature, index }) => (
+                <div key={index} className="flex items-center gap-1.5">
                   <div className="shrink-0 w-3.5 h-3.5 overflow-hidden flex items-center justify-center" style={{ color: tokens.primary }}>
                     {renderFeatureMedia(feature, 'w-3.5 h-3.5 stroke-[3]')}
                   </div>
@@ -588,7 +707,13 @@ export function AboutSectionShared({
                     className="font-extrabold text-[10px] uppercase"
                     style={{ color: adaptColorForDarkMode('#030712', isDark, 'text') }}
                   >
-                    {feature.title}
+                    <EditableText 
+                      text={feature.title} 
+                      placeholder="Điểm nổi bật..." 
+                      onSave={(val) => handleUpdateFeatureTitle(index, val)} 
+                      isVisualEditActive={isVisualEditActive} 
+                      tag="span" 
+                    />
                   </span>
                 </div>
               ))}
@@ -669,14 +794,20 @@ export function AboutSectionShared({
           ) : null}
           {visibleFeatures.length > 0 ? (
             <div className="grid grid-cols-2 gap-2 mb-5">
-              {visibleFeatures.slice(0, 4).map((feature) => (
-                <div key={feature.title} className="flex items-center gap-1.5">
+              {visibleFeatures.slice(0, 4).map(({ feature, index }) => (
+                <div key={index} className="flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tokens.primary }}></div>
                   <span 
                     className={cn('text-[10px] font-extrabold', !isNarrowPreview && 'lg:text-[11px]')}
                     style={{ color: adaptColorForDarkMode('#111827', isDark, 'text') }}
                   >
-                    {feature.title}
+                    <EditableText 
+                      text={feature.title} 
+                      placeholder="Điểm nổi bật..." 
+                      onSave={(val) => handleUpdateFeatureTitle(index, val)} 
+                      isVisualEditActive={isVisualEditActive} 
+                      tag="span" 
+                    />
                   </span>
                 </div>
               ))}
@@ -751,8 +882,8 @@ export function AboutSectionShared({
           ) : null}
           {visibleFeatures.length > 0 ? (
             <div className="mt-4 space-y-2.5">
-              {visibleFeatures.slice(0, 4).map((feature) => (
-                <div key={feature.title} className="flex items-start gap-2.5">
+              {visibleFeatures.slice(0, 4).map(({ feature, index }) => (
+                <div key={index} className="flex items-start gap-2.5">
                   <span 
                     className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
                     style={{
@@ -766,7 +897,13 @@ export function AboutSectionShared({
                     className={cn('text-xs font-extrabold leading-snug', !isNarrowPreview && 'md:text-[13px]')}
                     style={{ color: adaptColorForDarkMode('#5f4938', isDark, 'text') }}
                   >
-                    {feature.title}
+                    <EditableText 
+                      text={feature.title} 
+                      placeholder="Điểm nổi bật..." 
+                      onSave={(val) => handleUpdateFeatureTitle(index, val)} 
+                      isVisualEditActive={isVisualEditActive} 
+                      tag="span" 
+                    />
                   </span>
                 </div>
               ))}
@@ -789,7 +926,7 @@ export function AboutSectionShared({
             style={{ borderColor: adaptColorForDarkMode('#fff8ed', isDark, 'border') }}
           >
             {galleryImages[0]
-              ? <AboutImage src={galleryImages[0]} alt={resolvedHeading} className="h-full w-full object-cover" context={context} imagePriority={imagePriority} />
+              ? <AboutImage src={galleryImages[0]} alt={heading || title || 'Về chúng tôi'} className="h-full w-full object-cover" context={context} imagePriority={imagePriority} />
               : renderEmptyImage(48)}
           </div>
           <div className={cn('grid grid-cols-2 gap-3', !isNarrowPreview && 'md:grid-cols-1')}>
@@ -798,7 +935,7 @@ export function AboutSectionShared({
               style={{ borderColor: adaptColorForDarkMode('#fff8ed', isDark, 'border') }}
             >
               {galleryImages[1]
-                ? <AboutImage src={galleryImages[1]} alt={`${resolvedHeading} 2`} className="h-full w-full object-cover" context={context} imagePriority={imagePriority} />
+                ? <AboutImage src={galleryImages[1]} alt={`${heading || title || 'Về chúng tôi'} 2`} className="h-full w-full object-cover" context={context} imagePriority={imagePriority} />
                 : renderEmptyImage(36)}
             </div>
             <div 
@@ -806,7 +943,7 @@ export function AboutSectionShared({
               style={{ borderColor: adaptColorForDarkMode('#fff8ed', isDark, 'border') }}
             >
               {galleryImages[2]
-                ? <AboutImage src={galleryImages[2]} alt={`${resolvedHeading} 3`} className="h-full w-full object-cover" context={context} imagePriority={imagePriority} />
+                ? <AboutImage src={galleryImages[2]} alt={`${heading || title || 'Về chúng tôi'} 3`} className="h-full w-full object-cover" context={context} imagePriority={imagePriority} />
                 : renderEmptyImage(36)}
             </div>
           </div>
@@ -822,7 +959,7 @@ export function AboutSectionShared({
           <div className="relative mx-auto text-center">
             <div className={cn('mx-auto mt-2 w-full max-w-[557px] overflow-hidden', !isNarrowPreview && 'lg:mt-[30px]', cornerRadiusClass)}>
               {primaryImage
-                ? <AboutImage src={primaryImage} alt={resolvedHeading} className="h-auto w-full object-cover" context={context} imagePriority={imagePriority} />
+                ? <AboutImage src={primaryImage} alt={heading || title || 'Về chúng tôi'} className="h-auto w-full object-cover" context={context} imagePriority={imagePriority} />
                 : <div className={cn('aspect-[557/476] w-full', cornerRadiusClass)}>{renderEmptyImage(48)}</div>}
             </div>
             <div
@@ -856,14 +993,20 @@ export function AboutSectionShared({
             ) : null}
             {visibleFeatures.length > 0 ? (
               <ul className="mb-6 space-y-4">
-                {visibleFeatures.slice(0, 4).map((feature) => (
-                  <li key={feature.title} className={cn('relative pl-[38px] text-sm font-semibold leading-relaxed', !isNarrowPreview && 'md:text-[15px]')} style={{ color: tokens.primary }}>
+                {visibleFeatures.slice(0, 4).map(({ feature, index }) => (
+                  <li key={index} className={cn('relative pl-[38px] text-sm font-semibold leading-relaxed', !isNarrowPreview && 'md:text-[15px]')} style={{ color: tokens.primary }}>
                     <span className="absolute left-0 top-0 flex h-[27px] w-[27px] items-center justify-center overflow-hidden">
                       {feature.mediaType === 'image' && sanitizeText(feature.image)
                         ? renderFeatureMedia(feature, 'h-[27px] w-[27px]')
                         : renderSolarBadgeIcon()}
                     </span>
-                    {feature.title}
+                    <EditableText 
+                      text={feature.title} 
+                      placeholder="Điểm nổi bật..." 
+                      onSave={(val) => handleUpdateFeatureTitle(index, val)} 
+                      isVisualEditActive={isVisualEditActive} 
+                      tag="span" 
+                    />
                   </li>
                 ))}
               </ul>
@@ -902,7 +1045,7 @@ export function AboutSectionShared({
                 {primaryImage ? (
                   <AboutImage 
                     src={primaryImage} 
-                    alt={resolvedHeading} 
+                    alt={heading || title || 'Về chúng tôi'} 
                     className="w-full h-full object-cover transition-transform duration-300 hover:scale-[1.02]" 
                     context={context} 
                     imagePriority={imagePriority} 
@@ -943,9 +1086,9 @@ export function AboutSectionShared({
 
               {visibleFeatures.length > 0 ? (
                 <div className="grid grid-cols-2 gap-3 tv:gap-5 mb-6 tv:mb-8">
-                  {visibleFeatures.slice(0, 4).map((feature) => (
+                  {visibleFeatures.slice(0, 4).map(({ feature, index }) => (
                     <div 
-                      key={feature.title} 
+                      key={index} 
                       className={cn('flex items-center gap-2 tv:gap-4 p-2 tv:p-3 border transition-colors duration-200 rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.03)]')}
                       style={{
                         backgroundColor: isDarkTheme ? 'rgba(24, 24, 27, 0.4)' : '#ffffff',
@@ -959,7 +1102,13 @@ export function AboutSectionShared({
                         className="font-semibold text-xs tv:text-base leading-tight"
                         style={{ color: isDarkTheme ? '#e4e4e7' : '#27272a' }}
                       >
-                        {feature.title}
+                        <EditableText 
+                          text={feature.title} 
+                          placeholder="Điểm nổi bật..." 
+                          onSave={(val) => handleUpdateFeatureTitle(index, val)} 
+                          isVisualEditActive={isVisualEditActive} 
+                          tag="span" 
+                        />
                       </span>
                     </div>
                   ))}
@@ -1004,22 +1153,24 @@ export function AboutSectionShared({
   const hasContent = resolvedHeading || resolvedDescription || sanitizeText(image) || visibleFeatures.length > 0;
 
   return (
-    <div data-mode={mode} data-brand-info={brandInfo}>
-      {!hasContent
-        ? renderEmpty()
-        : (
-          <>
-            {style === 'classic' && renderClassic()}
-            {style === 'bento' && renderBento()}
-            {style === 'minimal' && renderMinimal()}
-            {style === 'split' && renderSplit()}
-            {style === 'timeline' && renderTimeline()}
-            {style === 'showcase' && renderShowcase()}
-            {style === 'spaCollage' && renderSpaCollage()}
-            {style === 'solarFeature' && renderSolarFeature()}
-            {style === 'kanban' && renderKanban()}
-          </>
-        )}
-    </div>
+    <VisualEditContext.Provider value={{ isVisualEditActive, onSaveButtonText: (val) => handleUpdate('buttonText', val) }}>
+      <div data-mode={mode} data-brand-info={brandInfo}>
+        {!hasContent
+          ? renderEmpty()
+          : (
+            <>
+              {style === 'classic' && renderClassic()}
+              {style === 'bento' && renderBento()}
+              {style === 'minimal' && renderMinimal()}
+              {style === 'split' && renderSplit()}
+              {style === 'timeline' && renderTimeline()}
+              {style === 'showcase' && renderShowcase()}
+              {style === 'spaCollage' && renderSpaCollage()}
+              {style === 'solarFeature' && renderSolarFeature()}
+              {style === 'kanban' && renderKanban()}
+            </>
+          )}
+      </div>
+    </VisualEditContext.Provider>
   );
 }

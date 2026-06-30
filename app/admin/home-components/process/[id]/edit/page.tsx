@@ -343,6 +343,18 @@ export default function ProcessEditPage({
 
   const fontStyle = { '--font-active': `var(${effectiveFont.fontVariable})` } as React.CSSProperties;
 
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const isVisualEditAllowed = systemConfig?.typeVisualEditOverrides?.[COMPONENT_TYPE]?.enabled ?? true;
+
+  const handleStepsChange = (newSteps: ProcessFormStep[]) => {
+    setSteps(
+      newSteps.map((item, idx) => ({
+        ...item,
+        id: steps[idx]?.id ?? item.id,
+      }))
+    );
+  };
+
   const normalizedPreviewSteps = normalizeProcessRenderSteps(serializeProcessFormSteps(steps));
 
   return (
@@ -499,6 +511,11 @@ export default function ProcessEditPage({
               cornerRadius={cornerRadius}
               circularCtaText={circularCtaText}
               circularCtaLink={circularCtaLink}
+              isVisualEditAllowed={isVisualEditAllowed}
+              onTitleChange={setTitle}
+              onSubtitleChange={setSubtitle}
+              onBadgeTextChange={setBadgeText}
+              onItemsChange={handleStepsChange}
             />
           </div>
         </div>

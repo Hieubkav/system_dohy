@@ -1,6 +1,9 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React from 'react';
+
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useBrandColors } from '@/components/site/hooks';
@@ -43,6 +46,11 @@ interface AboutPreviewProps {
   badgeText?: string;
   spacing?: SectionSpacing;
   cornerRadius?: AboutCornerRadius;
+  isVisualEditAllowed?: boolean;
+  onConfigChange?: (config: AboutConfig) => void;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
 }
 
 interface AboutPreviewContentProps {
@@ -66,6 +74,8 @@ interface AboutPreviewContentProps {
   cornerRadius?: AboutCornerRadius;
   device: 'desktop' | 'tablet' | 'mobile';
   homePageBgColor: string;
+  isVisualEditActive?: boolean;
+  onConfigChange?: (config: AboutConfig) => void;
 }
 
 const AboutPreviewContent = ({
@@ -89,6 +99,8 @@ const AboutPreviewContent = ({
   cornerRadius,
   device,
   homePageBgColor,
+  isVisualEditActive = false,
+  onConfigChange,
 }: AboutPreviewContentProps) => {
   const { isDark } = usePreviewDark();
 
@@ -137,6 +149,9 @@ const AboutPreviewContent = ({
               tokens={tokens}
               device={device}
               cornerRadius={cornerRadius ?? config.cornerRadius ?? 'lg'}
+              config={config}
+              isVisualEditActive={isVisualEditActive}
+              onConfigChange={onConfigChange}
             />
           </div>
         </div>
@@ -167,10 +182,22 @@ export const AboutPreview = ({
   badgeText,
   spacing,
   cornerRadius,
+  isVisualEditAllowed = true,
+  onConfigChange,
 }: AboutPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
   const systemColors = useBrandColors();
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
 
   const homePageBgColor = React.useMemo(() => {
     if (!systemConfig?.homePageBackground) {return '#ffffff';}
@@ -206,6 +233,10 @@ export const AboutPreview = ({
     [brandColor, secondary, mode, previewStyle],
   );
 
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
+
   return (
     <>
       <PreviewWrapper
@@ -219,29 +250,37 @@ export const AboutPreview = ({
         deviceWidthClass={deviceWidths[device]}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+      visualEditActive={isVisualEditActive}
+      visualEditAllowed={isVisualEditAllowed}
+      onVisualEditToggle={handleToggleVisualEdit}
       >
-        <AboutPreviewContent
-          config={config}
-          brandColor={brandColor}
-          secondary={secondary}
-          mode={mode}
-          previewStyle={previewStyle}
-          title={title}
-          subtitle={subtitle}
-          badgeText={badgeText}
-          hideHeader={hideHeader}
-          showTitle={showTitle}
-          showSubtitle={showSubtitle}
-          showBadge={showBadge}
-          headerAlign={headerAlign}
-          titleColorPrimary={titleColorPrimary}
-          subtitleAboveTitle={subtitleAboveTitle}
-          uppercaseText={uppercaseText}
-          spacing={spacing}
-          cornerRadius={cornerRadius}
-          device={device}
-          homePageBgColor={homePageBgColor}
-        />
+        <div className="space-y-3">
+
+          <AboutPreviewContent
+            config={config}
+            brandColor={brandColor}
+            secondary={secondary}
+            mode={mode}
+            previewStyle={previewStyle}
+            title={title}
+            subtitle={subtitle}
+            badgeText={badgeText}
+            hideHeader={hideHeader}
+            showTitle={showTitle}
+            showSubtitle={showSubtitle}
+            showBadge={showBadge}
+            headerAlign={headerAlign}
+            titleColorPrimary={titleColorPrimary}
+            subtitleAboveTitle={subtitleAboveTitle}
+            uppercaseText={uppercaseText}
+            spacing={spacing}
+            cornerRadius={cornerRadius}
+            device={device}
+            homePageBgColor={homePageBgColor}
+            isVisualEditActive={isVisualEditActive}
+            onConfigChange={onConfigChange}
+          />
+        </div>
       </PreviewWrapper>
 
       {mode === 'dual' ? (

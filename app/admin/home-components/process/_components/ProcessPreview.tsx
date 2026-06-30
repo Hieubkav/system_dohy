@@ -1,7 +1,10 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 import type { SectionSpacing } from '../../_shared/types/sectionSpacing';
 
 import React from 'react';
+
 import { ProcessSectionShared } from './ProcessSectionShared';
 import { normalizeProcessRenderSteps } from '../_lib/normalize';
 import type { ProcessBrandMode, ProcessCornerRadius, ProcessStyle } from '../_types';
@@ -33,6 +36,11 @@ interface ProcessPreviewProps {
   cornerRadius?: ProcessCornerRadius;
   circularCtaText?: string;
   circularCtaLink?: string;
+  isVisualEditAllowed?: boolean;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
+  onItemsChange?: (value: any[]) => void;
 }
 
 export const ProcessPreview = ({
@@ -60,43 +68,72 @@ export const ProcessPreview = ({
   cornerRadius,
   circularCtaText,
   circularCtaLink,
+  isVisualEditAllowed = true,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
+  onItemsChange,
 }: ProcessPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isVisualEditAllowed) {
+      setVisualEditEnabled(false);
+    }
+  }, [isVisualEditAllowed]);
+
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
+
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
+
   const normalizedSteps = React.useMemo(() => normalizeProcessRenderSteps(steps), [steps]);
 
   return (
-    <ProcessSectionShared
-      steps={normalizedSteps}
-      sectionTitle={title}
-      style={selectedStyle}
-      brandColor={brandColor}
-      secondary={secondary}
-      mode={mode}
-      context="preview"
-      previewDevice={device}
-      setPreviewDevice={setDevice}
-      includePreviewWrapper
-      previewStyle={selectedStyle}
-      onPreviewStyleChange={onStyleChange}
-      hideHeader={hideHeader}
-      showTitle={showTitle}
-      showSubtitle={showSubtitle}
-      subtitle={subtitle}
-      headerAlign={headerAlign}
-      titleColorPrimary={titleColorPrimary}
-      subtitleAboveTitle={subtitleAboveTitle}
-      uppercaseText={uppercaseText}
-      showBadge={showBadge}
-      badgeText={badgeText}
-      fontStyle={fontStyle}
-      fontClassName={fontClassName}
-      desktopColumns={desktopColumns}
-      spacing={spacing}
-      cornerRadius={cornerRadius}
-      circularCtaText={circularCtaText}
-      circularCtaLink={circularCtaLink}
-      isDark={isDark}
-    />
+    <div className="space-y-3">
+
+      <ProcessSectionShared
+        steps={normalizedSteps}
+        sectionTitle={title}
+        style={selectedStyle}
+        brandColor={brandColor}
+        secondary={secondary}
+        mode={mode}
+        context="preview"
+        previewDevice={device}
+        setPreviewDevice={setDevice}
+        includePreviewWrapper
+        previewStyle={selectedStyle}
+        onPreviewStyleChange={onStyleChange}
+        hideHeader={hideHeader}
+        showTitle={showTitle}
+        showSubtitle={showSubtitle}
+        subtitle={subtitle}
+        headerAlign={headerAlign}
+        titleColorPrimary={titleColorPrimary}
+        subtitleAboveTitle={subtitleAboveTitle}
+        uppercaseText={uppercaseText}
+        showBadge={showBadge}
+        badgeText={badgeText}
+        fontStyle={fontStyle}
+        fontClassName={fontClassName}
+        desktopColumns={desktopColumns}
+        spacing={spacing}
+        cornerRadius={cornerRadius}
+        circularCtaText={circularCtaText}
+        circularCtaLink={circularCtaLink}
+        isDark={isDark}
+        visualEditActive={isVisualEditActive}
+        onVisualEditToggle={handleToggleVisualEdit}
+        onTitleChange={onTitleChange}
+        onSubtitleChange={onSubtitleChange}
+        onBadgeTextChange={onBadgeTextChange}
+        onItemsChange={onItemsChange}
+      />
+    </div>
   );
 };

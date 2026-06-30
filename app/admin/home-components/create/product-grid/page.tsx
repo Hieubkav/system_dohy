@@ -19,6 +19,8 @@ import type { ProductGridStyle, ProductGridSelectionMode } from '../../product-g
 
 function ProductGridCreateContent() {
   const COMPONENT_TYPE = 'ProductGrid';
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const isVisualEditAllowed = systemConfig?.typeVisualEditOverrides?.[COMPONENT_TYPE]?.enabled ?? true;
   const { title, setTitle, active, setActive, handleSubmit, isSubmitting } = useComponentForm('Catalog sản phẩm', COMPONENT_TYPE);
   const { customState, effectiveColors, showCustomBlock, setCustomState, systemColors } = useTypeColorOverrideState(COMPONENT_TYPE, { seedCustomFromSettingsWhenTypeEmpty: true });
   const { customState: customFontState, effectiveFont, showCustomBlock: showFontCustomBlock, setCustomState: setCustomFontState } = useTypeFontOverrideState(COMPONENT_TYPE, { seedCustomFromSettingsWhenTypeEmpty: true });
@@ -338,6 +340,10 @@ function ProductGridCreateContent() {
             showAddToCartButton={showAddToCartButton}
             showBuyNowButton={showBuyNowButton}
             cartButtonsLayout={cartButtonsLayout}
+            isVisualEditAllowed={isVisualEditAllowed}
+            onTitleChange={setTitle}
+            onSubtitleChange={setSectionTitle}
+            onBadgeTextChange={setSubTitle}
           />
         </div>
       </div>

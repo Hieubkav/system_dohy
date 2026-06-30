@@ -319,6 +319,13 @@ export default defineSchema({
     // SEO fields
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
+    focusKeyword: v.optional(v.string()),
+    relatedQueries: v.optional(v.array(v.string())),
+    tags: v.optional(v.array(v.string())),
+    faqItems: v.optional(v.array(v.object({
+      question: v.string(),
+      answer: v.string(),
+    }))),
     productType: v.optional(v.union(v.literal("physical"), v.literal("digital"))),
     productTypeId: v.optional(v.id("productTypes")), // Liên kết đến Loại sản phẩm (hệ thống Phân loại mới)
     digitalDeliveryType: v.optional(
@@ -619,6 +626,13 @@ export default defineSchema({
     // SEO fields
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
+    focusKeyword: v.optional(v.string()),
+    relatedQueries: v.optional(v.array(v.string())),
+    tags: v.optional(v.array(v.string())),
+    faqItems: v.optional(v.array(v.object({
+      question: v.string(),
+      answer: v.string(),
+    }))),
   })
     .index("by_slug", ["slug"])
     .index("by_category_status", ["categoryId", "status"])
@@ -742,6 +756,7 @@ export default defineSchema({
     active: v.boolean(),
     depth: v.number(),
     icon: v.optional(v.string()),
+    isSpecial: v.optional(v.boolean()),
     label: v.string(),
     menuId: v.id("menus"),
     openInNewTab: v.optional(v.boolean()),
@@ -764,6 +779,209 @@ export default defineSchema({
   })
     .index("by_active_order", ["active", "order"])
     .index("by_type", ["type"]),
+
+  // 17m. miniApps - Nền tảng app nhỏ, tách khỏi module core
+  miniApps: defineTable({
+    adminEnabled: v.boolean(),
+    config: v.any(),
+    createdAt: v.number(),
+    description: v.string(),
+    enabled: v.boolean(),
+    icon: v.string(),
+    key: v.string(),
+    moduleKey: v.optional(v.string()),
+    name: v.string(),
+    noindex: v.boolean(),
+    order: v.number(),
+    routeMode: v.union(
+      v.literal("none"),
+      v.literal("namespaced"),
+      v.literal("root")
+    ),
+    routeSlug: v.optional(v.string()),
+    siteEnabled: v.boolean(),
+    type: v.string(),
+    updatedAt: v.number(),
+    visibility: v.union(
+      v.literal("private"),
+      v.literal("public")
+    ),
+  })
+    .index("by_key", ["key"])
+    .index("by_type", ["type"])
+    .index("by_route_slug", ["routeSlug"])
+    .index("by_enabled_order", ["enabled", "order"])
+    .index("by_site_enabled_order", ["siteEnabled", "order"]),
+
+  // 17p. Pokemon Champions mini app - isolated ordering app data
+  pokemonChampionsGameItems: defineTable({
+    active: v.boolean(),
+    createdAt: v.number(),
+    description: v.optional(v.string()),
+    icon: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    name: v.string(),
+    order: v.number(),
+    priceLabel: v.optional(v.string()),
+    rarity: v.union(
+      v.literal("common"),
+      v.literal("rare"),
+      v.literal("epic"),
+      v.literal("legendary")
+    ),
+    slug: v.string(),
+    tags: v.optional(v.array(v.string())),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_active_order", ["active", "order"])
+    .index("by_order", ["order"]),
+
+  pokemonChampionsPokemon: defineTable({
+    active: v.boolean(),
+    bestItemId: v.optional(v.id("pokemonChampionsGameItems")),
+    createdAt: v.number(),
+    dexNumber: v.number(),
+    formName: v.optional(v.string()),
+    imageUrl: v.string(),
+    name: v.string(),
+    notes: v.optional(v.string()),
+    order: v.number(),
+    primaryType: v.string(),
+    recommendedItemIds: v.optional(v.array(v.id("pokemonChampionsGameItems"))),
+    secondaryType: v.optional(v.string()),
+    traits: v.array(v.string()),
+    updatedAt: v.number(),
+  })
+    .index("by_active_order", ["active", "order"])
+    .index("by_best_item", ["bestItemId"])
+    .index("by_dex", ["dexNumber"])
+    .index("by_order", ["order"])
+    .index("by_primaryType_active_order", ["primaryType", "active", "order"]),
+
+  pokemonChampionsTypes: defineTable({
+    createdAt: v.number(),
+    imageUrl: v.optional(v.string()),
+    name: v.string(),
+    slug: v.string(),
+    updatedAt: v.number(),
+  })
+    .index("by_slug", ["slug"]),
+
+  pokemonChampionsCustomers: defineTable({
+    contactHandle: v.string(),
+    contactType: v.union(
+      v.literal("discord"),
+      v.literal("whatsapp"),
+      v.literal("instagram"),
+      v.literal("zalo"),
+      v.literal("phone"),
+      v.literal("other")
+    ),
+    createdAt: v.number(),
+    email: v.optional(v.string()),
+    name: v.string(),
+    note: v.optional(v.string()),
+    orderCount: v.number(),
+    status: v.union(v.literal("active"), v.literal("blocked")),
+    updatedAt: v.number(),
+  })
+    .index("by_contactHandle", ["contactHandle"])
+    .index("by_contactType", ["contactType"])
+    .index("by_status_updatedAt", ["status", "updatedAt"])
+    .index("by_updatedAt", ["updatedAt"]),
+
+  pokemonChampionsOrders: defineTable({
+    contactHandle: v.string(),
+    contactType: v.union(
+      v.literal("discord"),
+      v.literal("whatsapp"),
+      v.literal("instagram"),
+      v.literal("zalo"),
+      v.literal("phone"),
+      v.literal("other")
+    ),
+    createdAt: v.number(),
+    customerId: v.id("pokemonChampionsCustomers"),
+    customerName: v.string(),
+    gameItemId: v.optional(v.id("pokemonChampionsGameItems")),
+    note: v.optional(v.string()),
+    orderNumber: v.string(),
+    pokemonId: v.optional(v.id("pokemonChampionsPokemon")),
+    quantity: v.number(),
+    status: v.union(
+      v.literal("new"),
+      v.literal("contacted"),
+      v.literal("confirmed"),
+      v.literal("fulfilled"),
+      v.literal("cancelled")
+    ),
+    updatedAt: v.number(),
+  })
+    .index("by_createdAt", ["createdAt"])
+    .index("by_customer", ["customerId"])
+    .index("by_gameItem", ["gameItemId"])
+    .index("by_orderNumber", ["orderNumber"])
+    .index("by_pokemon", ["pokemonId"])
+    .index("by_status_createdAt", ["status", "createdAt"]),
+
+  pokemonChampionsSettings: defineTable({
+    announcement: v.optional(v.string()),
+    createdAt: v.number(),
+    discordUrl: v.optional(v.string()),
+    heroSubtitle: v.string(),
+    heroTitle: v.string(),
+    instagramUrl: v.optional(v.string()),
+    key: v.string(),
+    orderInstructions: v.string(),
+    shopStatus: v.union(v.literal("open"), v.literal("paused")),
+    themeColor: v.string(),
+    updatedAt: v.number(),
+    whatsappUrl: v.optional(v.string()),
+  }).index("by_key", ["key"]),
+
+  pokemonChampionsTeams: defineTable({
+    active: v.boolean(),
+    createdAt: v.number(),
+    description: v.optional(v.string()),
+    name: v.string(),
+    slots: v.array(
+      v.object({
+        pokemonId: v.id("pokemonChampionsPokemon"),
+        gameItemId: v.optional(v.id("pokemonChampionsGameItems")),
+      })
+    ),
+    order: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_active_order", ["active", "order"])
+    .index("by_order", ["order"]),
+
+  // 17q. miniGames - isolated HTML mini game portal
+  miniGames: defineTable({
+    active: v.boolean(),
+    config: v.object({
+      source: v.string(),
+      js: v.optional(v.string()),
+      css: v.optional(v.string()),
+      allowScripts: v.optional(v.boolean()),
+      allowForms: v.optional(v.boolean()),
+      allowPopups: v.optional(v.boolean()),
+    }),
+    order: v.number(),
+    title: v.string(),
+    slug: v.string(),
+    category: v.string(),
+    desc: v.optional(v.string()),
+    image: v.optional(v.string()),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_active_order", ["active", "order"]),
+
+  miniGameStats: defineTable({
+    key: v.string(),
+    count: v.number(),
+  }).index("by_key", ["key"]),
 
   // 17a. homeComponentSnapshots - Snapshot bộ homepage để tái sử dụng liên dự án
   homeComponentSnapshots: defineTable({
@@ -1186,6 +1404,13 @@ export default defineSchema({
     // SEO fields
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
+    focusKeyword: v.optional(v.string()),
+    relatedQueries: v.optional(v.array(v.string())),
+    tags: v.optional(v.array(v.string())),
+    faqItems: v.optional(v.array(v.object({
+      question: v.string(),
+      answer: v.string(),
+    }))),
   })
     .index("by_slug", ["slug"])
     .index("by_category_status", ["categoryId", "status"])
@@ -1259,6 +1484,13 @@ export default defineSchema({
     featured: v.optional(v.boolean()),
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
+    focusKeyword: v.optional(v.string()),
+    relatedQueries: v.optional(v.array(v.string())),
+    tags: v.optional(v.array(v.string())),
+    faqItems: v.optional(v.array(v.object({
+      question: v.string(),
+      answer: v.string(),
+    }))),
   })
     .index("by_slug", ["slug"])
     .index("by_category_status", ["categoryId", "status"])
@@ -1345,6 +1577,13 @@ export default defineSchema({
     lessonCount: v.number(),
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
+    focusKeyword: v.optional(v.string()),
+    relatedQueries: v.optional(v.array(v.string())),
+    tags: v.optional(v.array(v.string())),
+    faqItems: v.optional(v.array(v.object({
+      question: v.string(),
+      answer: v.string(),
+    }))),
   })
     .index("by_slug", ["slug"])
     .index("by_category_status", ["categoryId", "status"])
@@ -1494,6 +1733,13 @@ export default defineSchema({
     featured: v.optional(v.boolean()),
     metaTitle: v.optional(v.string()),
     metaDescription: v.optional(v.string()),
+    focusKeyword: v.optional(v.string()),
+    relatedQueries: v.optional(v.array(v.string())),
+    tags: v.optional(v.array(v.string())),
+    faqItems: v.optional(v.array(v.object({
+      question: v.string(),
+      answer: v.string(),
+    }))),
   })
     .index("by_slug", ["slug"])
     .index("by_category_status", ["categoryId", "status"])
@@ -1810,5 +2056,46 @@ export default defineSchema({
     .index("by_filter", ["filterId"])
     .index("by_resource_filter", ["resourceId", "filterId"])
     .index("by_resource_value", ["resourceId", "valueId"]),
+
+  // ============================================================
+  // CATALOGS
+  // ============================================================
+  catalogs: defineTable({
+    title: v.string(),
+    slug: v.string(),
+    description: v.optional(v.string()),
+
+    // PDF Storage (kế thừa từ Ca-Mau-DST-Digital-Library)
+    pdfStorageId: v.id("_storage"),
+    category: v.optional(v.string()),
+    pageImages: v.optional(v.array(
+      v.union(v.id("_storage"), v.null())
+    )),
+    totalPages: v.optional(v.number()),
+
+    // Display
+    thumbnail: v.optional(v.string()),
+    thumbnailStorageId: v.optional(v.union(v.id("_storage"), v.null())),
+
+    // Standard content module fields
+    status: v.union(
+      v.literal("Published"),
+      v.literal("Draft"),
+      v.literal("Archived")
+    ),
+    views: v.number(),
+    publishedAt: v.optional(v.number()),
+    order: v.number(),
+    featured: v.optional(v.boolean()),
+
+    // SEO
+    metaTitle: v.optional(v.string()),
+    metaDescription: v.optional(v.string()),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_status_order", ["status", "order"])
+    .index("by_status_publishedAt", ["status", "publishedAt"])
+    .index("by_status_featured", ["status", "featured"])
+    .searchIndex("search_title", { filterFields: ["status"], searchField: "title" }),
 });
 

@@ -224,6 +224,9 @@ export default function GalleryCreatePage() {
         fullWidthDesktop={fullWidthDesktop}
         desktopColumns={desktopColumns}
         cornerRadius={cornerRadius}
+        onTitleChange={setTitle}
+        onSubtitleChange={headerState.setSubtitle}
+        onBadgeTextChange={headerState.setBadgeText}
       />
 
       <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">

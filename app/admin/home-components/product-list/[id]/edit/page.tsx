@@ -64,6 +64,8 @@ export default function ProductListEditPage({
   const { customState: customFontState, effectiveFont, initialCustom: initialFontCustom, setCustomState: setCustomFontState, setInitialCustom: setInitialFontCustom, showCustomBlock: showFontCustomBlock } = useTypeFontOverrideState(COMPONENT_TYPE);
   const setTypeColorOverride = useMutation(api.homeComponentSystemConfig.setTypeColorOverride);
   const setTypeFontOverride = useMutation(api.homeComponentSystemConfig.setTypeFontOverride);
+  const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
+  const isVisualEditAllowed = systemConfig?.typeVisualEditOverrides?.[COMPONENT_TYPE]?.enabled ?? true;
   const liveComponent = useQuery(api.homeComponents.getById, snapshotComponent ? 'skip' : { id: id as Id<'homeComponents'> });
   const component = snapshotComponent ?? liveComponent;
   const updateMutation = useMutation(api.homeComponents.update);
@@ -602,7 +604,7 @@ export default function ProductListEditPage({
                         price: !hasBasePrice && saleMode === 'cart' ? undefined : priceDisplay.label,
                         priceValue: resolvedProduct.price,
                         originalPrice: priceDisplay.comparePrice
-                          ? getHomeComponentPriceLabel({ saleMode: 'cart', price: priceDisplay.comparePrice }).label
+                           ? getHomeComponentPriceLabel({ saleMode: 'cart', price: priceDisplay.comparePrice }).label
                           : undefined,
                         salePriceValue: resolvedProduct.salePrice,
                       };
@@ -652,6 +654,10 @@ export default function ProductListEditPage({
               showAddToCartButton={productListConfig.showAddToCartButton ?? true}
               showBuyNowButton={productListConfig.showBuyNowButton ?? true}
               cartButtonsLayout={productListConfig.cartButtonsLayout ?? 'stack'}
+              isVisualEditAllowed={isVisualEditAllowed}
+              onTitleChange={setTitle}
+              onSubtitleChange={setHeaderSubtitle}
+              onBadgeTextChange={setBadgeText}
             />
           </div>
         </div>

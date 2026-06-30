@@ -4,6 +4,7 @@ import React from 'react';
 import { Play, Video as VideoIcon } from 'lucide-react';
 import { cn } from '@/app/admin/components/ui';
 import { SectionHeader } from '../../_shared/components/SectionHeader';
+import { EditablePreviewText } from '../../_shared/components/EditablePreviewText';
 import { getPreviewAwareClass } from '../../_shared/lib/previewResponsive';
 import { getSectionSpacingClassName, normalizeSectionSpacing, type SectionSpacing } from '../../_shared/types/sectionSpacing';
 import type { VideoColorTokens } from '../_lib/colors';
@@ -34,6 +35,11 @@ interface VideoSectionSharedProps {
   showBadge?: boolean;
   badgeText?: string;
   spacing?: SectionSpacing;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
+  visualEditEnabled?: boolean;
+  onConfigChange?: (config: VideoConfig) => void;
 }
 
 const isExternalUrl = (url: string) => /^https?:\/\//i.test(url);
@@ -229,6 +235,11 @@ export function VideoSectionShared({
   showBadge: showBadgeProp,
   badgeText: badgeTextProp,
   spacing: spacingProp,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
+  visualEditEnabled = false,
+  onConfigChange,
 }: VideoSectionSharedProps) {
   const [isPlaying, setIsPlaying] = React.useState(false);
 
@@ -247,6 +258,7 @@ export function VideoSectionShared({
   const description = toText(config.description);
   const _badge = toText(config.badge);
   const buttonText = toText(config.buttonText);
+  const isVisualEditActive = context === 'preview' && visualEditEnabled && Boolean(onConfigChange);
   const buttonLink = toSafeHref(config.buttonLink);
   const safeVideoUrl = toText(config.videoUrl);
   const info = getVideoInfo(safeVideoUrl);
@@ -283,17 +295,22 @@ export function VideoSectionShared({
       subtitleAboveTitle={subtitleAboveTitle}
       uppercaseText={uppercaseText}
       brandColor={brandColor ?? tokens.primary}
+      onTitleChange={onTitleChange}
+      onSubtitleChange={onSubtitleChange}
+      onBadgeTextChange={onBadgeTextChange}
+      visualEditEnabled={visualEditEnabled}
     />
   );
 
   // renderBadge removed — badge handled by sharedHeader
 
   const renderButton = (compact = false) => (
-    buttonText ? (
+    buttonText || isVisualEditActive ? (
       <a
         href={buttonLink}
         target={isExternalUrl(buttonLink) ? '_blank' : undefined}
         rel={isExternalUrl(buttonLink) ? 'noopener noreferrer' : undefined}
+        onClick={isVisualEditActive ? (event) => { event.preventDefault(); } : undefined}
         className={cn(
           'inline-flex items-center justify-center rounded-lg font-semibold transition-colors',
           compact ? 'px-4 py-2 text-xs' : 'px-5 py-2.5 text-sm',
@@ -310,7 +327,12 @@ export function VideoSectionShared({
           e.currentTarget.style.backgroundColor = tokens.ctaBackground;
         }}
       >
-        {buttonText}
+        <EditablePreviewText
+          active={isVisualEditActive}
+          value={buttonText}
+          fallback="Nút CTA"
+          onChange={(value) => onConfigChange?.({ ...config, buttonText: value })}
+        />
       </a>
     ) : null
   );

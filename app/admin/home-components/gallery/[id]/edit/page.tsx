@@ -539,6 +539,9 @@ export default function GalleryEditPage({
               fullWidthDesktop={fullWidthDesktop}
               desktopColumns={desktopColumns}
               cornerRadius={cornerRadius}
+              onTitleChange={setTitle}
+              onSubtitleChange={setSubtitle}
+              onBadgeTextChange={setBadgeText}
             />
           </div>
         </div>

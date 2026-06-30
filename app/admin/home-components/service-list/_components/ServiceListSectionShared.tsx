@@ -57,6 +57,10 @@ interface ServiceListSectionSharedProps {
   cardRadius?: ServiceListCardRadius;
   desktopColumns?: ServiceListDesktopColumns;
   imagePriorityCount?: number;
+  visualEditEnabled?: boolean;
+  onTitleChange?: (val: string) => void;
+  onSubtitleChange?: (val: string) => void;
+  onBadgeTextChange?: (val: string) => void;
 }
 
 const stripHtml = (value?: string) => {
@@ -183,6 +187,10 @@ export function ServiceListSectionShared({
   cardRadius = DEFAULT_SERVICE_LIST_CARD_RADIUS,
   desktopColumns = DEFAULT_SERVICE_LIST_DESKTOP_COLUMNS,
   imagePriorityCount = 0,
+  visualEditEnabled = false,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
 }: ServiceListSectionSharedProps) {
   const isPreview = context === 'preview';
   const isMobilePreview = isPreview && device === 'mobile';
@@ -341,6 +349,10 @@ export function ServiceListSectionShared({
           uppercaseText={uppercaseText}
           brandColor={tokens.primary}
           className="mb-0"
+          visualEditEnabled={visualEditEnabled}
+          onTitleChange={onTitleChange}
+          onSubtitleChange={onSubtitleChange}
+          onBadgeTextChange={onBadgeTextChange}
         />
         {shouldShowViewAll && headerAlign !== 'center' && (
           <div className={cn('mt-3 flex', flexAlignClass)}>

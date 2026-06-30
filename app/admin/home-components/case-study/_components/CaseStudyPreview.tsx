@@ -1,4 +1,6 @@
 'use client';
+import { usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
+
 
 import React from 'react';
 import { Image as ImageIcon } from 'lucide-react';
@@ -40,6 +42,10 @@ interface CaseStudyPreviewProps {
   spacing?: CaseStudySpacing;
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
+  onTitleChange?: (value: string) => void;
+  onSubtitleChange?: (value: string) => void;
+  onBadgeTextChange?: (value: string) => void;
+  onProjectsChange?: (projects: CaseStudyProject[]) => void;
 }
 
 const getImageSizeInfo = (count: number, style: CaseStudyStyle) => {
@@ -92,11 +98,22 @@ export const CaseStudyPreview = ({
   spacing = DEFAULT_CASE_STUDY_SPACING,
   fontStyle,
   fontClassName,
+  onTitleChange,
+  onSubtitleChange,
+  onBadgeTextChange,
+  onProjectsChange,
 }: CaseStudyPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
+  const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
   const previewStyle = selectedStyle ?? 'grid';
   const setPreviewStyle = (value: string) => onStyleChange?.(value as CaseStudyStyle);
+  const isVisualEditAllowed = Boolean(onProjectsChange || onTitleChange || onSubtitleChange || onBadgeTextChange);
+  const visualEditContext = usePreviewVisualEdit();
+  const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);
+  const handleToggleVisualEdit = () => {
+    setVisualEditEnabled((prev) => !prev);
+  };
 
   const colors = React.useMemo(
     () => adaptTokensForDarkMode(getCaseStudyColors(brandColor, secondary, mode), isDark),
@@ -116,6 +133,9 @@ export const CaseStudyPreview = ({
         info={getImageSizeInfo(projects.length, previewStyle)}
         fontStyle={fontStyle}
         fontClassName={fontClassName}
+        visualEditActive={isVisualEditActive}
+        visualEditAllowed={isVisualEditAllowed}
+        onVisualEditToggle={handleToggleVisualEdit}
       >
         <BrowserFrame url="yoursite.com/projects">
           <CaseStudySectionShared
@@ -139,6 +159,15 @@ export const CaseStudyPreview = ({
             cornerRadius={cornerRadius}
             desktopColumns={desktopColumns}
             spacing={spacing}
+            visualEditEnabled={isVisualEditActive}
+            onTitleChange={onTitleChange}
+            onSubtitleChange={onSubtitleChange}
+            onBadgeTextChange={onBadgeTextChange}
+            onProjectTextChange={(id, field, value) => {
+              onProjectsChange?.(projects.map((project) => (
+                project.id === id ? { ...project, [field]: value } : project
+              )));
+            }}
           />
         </BrowserFrame>
 

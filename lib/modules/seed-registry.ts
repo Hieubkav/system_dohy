@@ -80,12 +80,6 @@ export const SEED_MODULE_METADATA: Record<string, SeedModuleMetadata> = {
     description: 'Sections trang chủ',
     name: 'Homepage',
   },
-  kanban: {
-    category: 'system',
-    defaultQuantity: 1,
-    description: 'Bảng Kanban quản lý công việc nội bộ',
-    name: 'Kanban Board',
-  },
   media: {
     category: 'content',
     defaultQuantity: 20,
@@ -97,6 +91,12 @@ export const SEED_MODULE_METADATA: Record<string, SeedModuleMetadata> = {
     defaultQuantity: 3,
     description: 'Menu điều hướng',
     name: 'Menus',
+  },
+  miniApps: {
+    category: 'system',
+    defaultQuantity: 1,
+    description: 'Nền tảng Mini App và Kanban độc lập',
+    name: 'Mini Apps',
   },
   notifications: {
     category: 'marketing',

@@ -18,6 +18,14 @@ import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/c
 import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
 import { CategoryTagsInput } from '@/app/admin/components/AdditionalCategoriesSelect';
 import { HeadlineGeneratorWidget } from '@/app/admin/components/HeadlineGeneratorWidget';
+import {
+  PostAdvancedSeoFields,
+  PostFormTabs,
+  type PostFaqItem,
+  type PostFormTab,
+  normalizePostFaqItems,
+  normalizePostStringList,
+} from '../../components/PostAdvancedSeoFields';
 
 const MODULE_KEY = 'posts';
 
@@ -54,6 +62,10 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
   const [excerpt, setExcerpt] = useState('');
   const [metaTitle, setMetaTitle] = useState('');
   const [metaDescription, setMetaDescription] = useState('');
+  const [focusKeyword, setFocusKeyword] = useState('');
+  const [postTags, setPostTags] = useState<string[]>([]);
+  const [relatedQueries, setRelatedQueries] = useState<string[]>([]);
+  const [faqItems, setFaqItems] = useState<PostFaqItem[]>([]);
   const [thumbnail, setThumbnail] = useState<string | undefined>();
   const [thumbnailStorageId, setThumbnailStorageId] = useState<Id<'_storage'> | undefined>();
   const [categoryId, setCategoryId] = useState('');
@@ -66,9 +78,12 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('saved');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editorResetKey, setEditorResetKey] = useState(0);
+  const [activeTab, setActiveTab] = useState<PostFormTab>('content');
 
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isSnapshotReady, setIsSnapshotReady] = useState(false);
+  const [snapshotVersion, setSnapshotVersion] = useState(0);
+
   const selectedCategorySlug = useMemo(
     () => categoriesData?.find((category) => category._id === categoryId)?.slug,
     [categoriesData, categoryId]
@@ -81,8 +96,12 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
     markdownRender: string;
     htmlRender: string;
     excerpt: string;
+    faqItems: PostFaqItem[];
+    focusKeyword: string;
     metaTitle: string;
     metaDescription: string;
+    relatedQueries: string[];
+    tags: string[];
     thumbnail: string;
     thumbnailStorageId?: Id<'_storage'> | null;
     categoryId: string;
@@ -102,6 +121,10 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
   const hasMarkdownRender = enabledFields.has('markdownRender');
   const hasHtmlRender = enabledFields.has('htmlRender');
   const showAdvancedRenderCard = hasMarkdownRender || hasHtmlRender;
+  const showAdvancedSeoFields = enabledFields.has('focusKeyword')
+    || enabledFields.has('tags')
+    || enabledFields.has('relatedQueries')
+    || enabledFields.has('faqItems');
   const schedulingFeature = useQuery(api.admin.modules.getModuleFeature, { featureKey: 'enableScheduling', moduleKey: MODULE_KEY });
   const schedulingEnabled = enabledFields.has('publish_date') && (schedulingFeature?.enabled ?? false);
   const multiCategoryEnabled = Boolean(settingsData?.find(s => s.settingKey === 'enableMultipleCategories')?.value);
@@ -121,20 +144,41 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
     markdownRender: markdownRender.trim(),
     htmlRender: htmlRender.trim(),
     excerpt: excerpt.trim(),
+    faqItems: normalizePostFaqItems(faqItems),
+    focusKeyword: focusKeyword.trim(),
     metaDescription: metaDescription.trim(),
     metaTitle: metaTitle.trim(),
+    relatedQueries: normalizePostStringList(relatedQueries),
     slug: slug.trim(),
     status,
+    tags: normalizePostStringList(postTags),
     publishedAt: resolvedPublishedAt,
     thumbnail: thumbnail ?? '',
     title: title.trim(),
     thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
-  }), [authorName, categoryId, additionalCategoryIds, normalizedContent, renderType, markdownRender, htmlRender, excerpt, metaDescription, metaTitle, slug, status, resolvedPublishedAt, thumbnail, title, thumbnailStorageId]);
+  }), [authorName, categoryId, additionalCategoryIds, normalizedContent, renderType, markdownRender, htmlRender, excerpt, faqItems, focusKeyword, metaDescription, metaTitle, relatedQueries, slug, status, postTags, resolvedPublishedAt, thumbnail, title, thumbnailStorageId]);
+
+  const aiImportCurrentData = useMemo<AiEntityImportPayload>(() => ({
+    authorName: authorName.trim(),
+    content: normalizedContent,
+    excerpt: excerpt.trim(),
+    faqItems: normalizePostFaqItems(faqItems),
+    focusKeyword: focusKeyword.trim(),
+    htmlRender: htmlRender.trim(),
+    markdownRender: markdownRender.trim(),
+    metaDescription: metaDescription.trim(),
+    metaTitle: metaTitle.trim(),
+    relatedQueries: normalizePostStringList(relatedQueries),
+    slug: slug.trim(),
+    tags: normalizePostStringList(postTags),
+    thumbnail: thumbnail ?? '',
+    title: title.trim(),
+  }), [authorName, normalizedContent, excerpt, faqItems, focusKeyword, htmlRender, markdownRender, metaDescription, metaTitle, relatedQueries, slug, postTags, thumbnail, title]);
 
   const hasChanges = useMemo(() => {
     if (!isSnapshotReady || !initialSnapshotRef.current) {return false;}
     return JSON.stringify(initialSnapshotRef.current) !== JSON.stringify(currentSnapshot);
-  }, [currentSnapshot, isSnapshotReady]);
+  }, [currentSnapshot, isSnapshotReady, snapshotVersion]);
 
   useEffect(() => {
     if (saveStatus === 'saving') {return;}
@@ -197,6 +241,10 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
     setExcerpt(item.excerpt || item.description || truncateText(stripHtml(nextContent), 180));
     setMetaTitle(item.metaTitle || truncateText(nextTitle, 60));
     setMetaDescription(item.metaDescription || truncateText(stripHtml(item.excerpt || nextContent), 160));
+    if (item.focusKeyword) {setFocusKeyword(item.focusKeyword);}
+    if (item.tags?.length) {setPostTags(normalizePostStringList(item.tags));}
+    if (item.relatedQueries?.length) {setRelatedQueries(normalizePostStringList(item.relatedQueries));}
+    if (item.faqItems?.length) {setFaqItems(normalizePostFaqItems(item.faqItems));}
     if (item.thumbnail) {
       setThumbnail(item.thumbnail);
       setThumbnailStorageId(undefined);
@@ -221,6 +269,10 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
       setExcerpt(postData.excerpt ?? '');
       setMetaTitle(postData.metaTitle ?? '');
       setMetaDescription(postData.metaDescription ?? '');
+      setFocusKeyword(postData.focusKeyword ?? '');
+      setPostTags(normalizePostStringList(postData.tags ?? []));
+      setRelatedQueries(normalizePostStringList(postData.relatedQueries ?? []));
+      setFaqItems(normalizePostFaqItems(postData.faqItems ?? []));
       setThumbnail(postData.thumbnail);
       setThumbnailStorageId((postData as { thumbnailStorageId?: Id<'_storage'> }).thumbnailStorageId);
       setCategoryId(postData.categoryId);
@@ -242,6 +294,7 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
     if (isDataLoaded && !isSnapshotReady) {
       initialSnapshotRef.current = currentSnapshot;
       setIsSnapshotReady(true);
+      setSnapshotVersion((prev) => prev + 1);
     }
   }, [isDataLoaded, isSnapshotReady, currentSnapshot]);
 
@@ -267,6 +320,9 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
       const resolvedMetaDescriptionValue = enabledFields.has('metaDescription')
         ? (metaDescription.trim() || resolvedMetaDescription || '')
         : metaDescription.trim();
+      const normalizedPostTags = enabledFields.has('tags') ? normalizePostStringList(postTags) : [];
+      const normalizedRelatedQueries = enabledFields.has('relatedQueries') ? normalizePostStringList(relatedQueries) : [];
+      const normalizedFaqItems = enabledFields.has('faqItems') ? normalizePostFaqItems(faqItems) : [];
       await updatePost({
         authorName: enabledFields.has('author_name') ? authorName.trim() || undefined : undefined,
         categoryId: categoryId as Id<"postCategories">,
@@ -279,16 +335,20 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
         htmlRender: htmlRender.trim() || undefined,
         excerpt: excerpt.trim() || undefined,
         id: id as Id<"posts">,
+        ...(enabledFields.has('faqItems') ? { faqItems: normalizedFaqItems.length > 0 ? normalizedFaqItems : undefined } : {}),
+        ...(enabledFields.has('focusKeyword') ? { focusKeyword: focusKeyword.trim() || undefined } : {}),
         metaDescription: enabledFields.has('metaDescription')
           ? (resolvedMetaDescriptionValue || undefined)
           : undefined,
         metaTitle: enabledFields.has('metaTitle')
           ? (resolvedMetaTitleValue || undefined)
           : undefined,
+        ...(enabledFields.has('relatedQueries') ? { relatedQueries: normalizedRelatedQueries.length > 0 ? normalizedRelatedQueries : undefined } : {}),
         publishImmediately: status === 'Published' ? publishImmediately : undefined,
         publishedAt: status === 'Published' ? resolvedPublishedAt : undefined,
         slug: slug.trim(),
         status,
+        ...(enabledFields.has('tags') ? { tags: normalizedPostTags.length > 0 ? normalizedPostTags : undefined } : {}),
         thumbnail: thumbnail ?? '',
         thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
         title: title.trim(),
@@ -313,6 +373,7 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
         setMetaDescription(resolvedMetaDescriptionValue);
       }
       initialSnapshotRef.current = persistedSnapshot;
+      setSnapshotVersion((prev) => prev + 1);
       setSaveStatus('saved');
       toast.success("Cập nhật bài viết thành công");
     } catch (error) {
@@ -350,6 +411,9 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          <PostFormTabs activeTab={activeTab} onChange={setActiveTab} />
+          {activeTab === 'content' ? (
+            <>
           <Card>
             <CardContent className="p-6 space-y-4">
               {/* Title - always shown (system field) */}
@@ -468,6 +532,29 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
                     {metaDescription.trim() || excerpt || 'Mô tả ngắn sẽ hiển thị tại đây.'}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+            </>
+          ) : showAdvancedSeoFields ? (
+            <PostAdvancedSeoFields
+              faqItems={faqItems}
+              focusKeyword={focusKeyword}
+              onFaqItemsChange={setFaqItems}
+              onFocusKeywordChange={setFocusKeyword}
+              onRelatedQueriesChange={setRelatedQueries}
+              onTagsChange={setPostTags}
+              relatedQueries={relatedQueries}
+              showFaqItems={enabledFields.has('faqItems')}
+              showFocusKeyword={enabledFields.has('focusKeyword')}
+              showRelatedQueries={enabledFields.has('relatedQueries')}
+              showTags={enabledFields.has('tags')}
+              tags={postTags}
+            />
+          ) : (
+            <Card>
+              <CardContent className="py-8 text-center text-sm text-slate-500">
+                SEO nâng cao đang tắt trong cấu hình module Posts.
               </CardContent>
             </Card>
           )}
@@ -591,7 +678,7 @@ export default function PostEditPage({ params }: { params: Promise<{ id: string 
         align="end"
       >
         <>
-          <AiEntityImportDialog kind="post" enabledFields={enabledFields} onApply={handleApplyAiPost} />
+          <AiEntityImportDialog kind="post" currentData={aiImportCurrentData} enabledFields={enabledFields} onApply={handleApplyAiPost} />
           <Button
             type="button"
             variant="outline"

@@ -212,6 +212,7 @@ export function HeaderSearchAutocomplete({
           }
         }}
         placeholder={placeholder ?? 'Tìm kiếm...'}
+        aria-label={placeholder ?? 'Tìm kiếm'}
         disabled={disabled}
         className={cn('w-full', inputClassName)}
         style={inputStyle}
@@ -239,6 +240,7 @@ export function HeaderSearchAutocomplete({
         <button
           type="button"
           onClick={() => handleSubmit()}
+          aria-label="Tìm kiếm"
           className={buttonClassName}
           style={{ backgroundColor: tokens.searchButtonBg, color: tokens.searchButtonText }}
         >

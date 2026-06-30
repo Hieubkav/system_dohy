@@ -5,6 +5,11 @@ import { Bot, Check, Copy, FileText, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import {
+  buildAiFillMissingPrompt,
+  buildAiFillMissingSample,
+  mergeAiMissingFields,
+} from '@/lib/ai-import/fill-missing';
 import { AiDirectGeneratePanel } from './AiDirectGenerateButton';
 import {
   Button,
@@ -33,6 +38,10 @@ export type AiEntityImportPayload = {
   htmlRender?: string;
   metaTitle?: string;
   metaDescription?: string;
+  focusKeyword?: string;
+  relatedQueries?: string[];
+  tags?: string[];
+  faqItems?: Array<{ question: string; answer: string }>;
   image?: string;
   thumbnail?: string;
   price?: number;
@@ -81,7 +90,7 @@ const ENTITY_COPY: Record<AiEntityImportKind, {
     "htmlRender": "<h2>Tổng quan giá kệ góc liên hoàn inox 304</h2><p>Giá kệ góc liên hoàn inox 304 là giải pháp lưu trữ cho khoang góc tủ bếp, nơi thường khó thao tác và dễ bị bỏ trống. Sản phẩm phù hợp với gia đình muốn sắp xếp xoong nồi, chén đĩa hoặc đồ dùng bếp theo cách gọn hơn mà vẫn dễ lấy khi nấu nướng.</p><h3>Điểm nổi bật khi sử dụng</h3><ul><li>Tận dụng tốt khu vực góc tủ, giảm lãng phí không gian lưu trữ.</li><li>Thiết kế kéo mở giúp quan sát và lấy vật dụng thuận tiện hơn so với để đồ sâu trong góc tủ.</li><li>Chất liệu inox 304 phù hợp môi trường bếp ẩm, dễ lau chùi và hạn chế bám mùi.</li></ul><h3>Ứng dụng và thông số cần kiểm tra</h3><p>Trước khi chọn mua, nên kiểm tra kích thước khoang tủ, hướng mở cánh, tải trọng sử dụng và kiểu ray trượt đi kèm. Nếu dùng cho nồi lớn hoặc vật nặng, hãy đối chiếu tải trọng theo thông tin nhà cung cấp.</p><h3>Phù hợp với ai?</h3><p>Sản phẩm phù hợp với căn bếp có tủ chữ L, tủ góc hoặc gia đình cần tăng không gian lưu trữ nhưng không muốn thay đổi toàn bộ hệ tủ.</p><h3>Lưu ý khi chọn mua</h3><ul><li>Đo đúng chiều rộng, chiều sâu và chiều cao khoang tủ trước khi đặt hàng.</li><li>Kiểm tra hướng mở trái/phải để tránh lắp sai cấu hình.</li><li>Hỏi rõ phụ kiện đi kèm, chính sách lắp đặt và điều kiện bảo hành nếu có.</li></ul>",
     "metaTitle": "Giá kệ góc liên hoàn inox 304",
     "metaDescription": "Giá kệ góc inox 304 bền đẹp, tối ưu góc tủ và phù hợp nội thất bếp cao cấp.",
-    "image": "https://example.com/product.jpg",
+    "image": "",
     "price": 3500000,
     "salePrice": 4200000,
     "stock": 10
@@ -102,7 +111,7 @@ const ENTITY_COPY: Record<AiEntityImportKind, {
     "htmlRender": "<h2>Tư vấn thiết kế tủ bếp giải quyết vấn đề gì?</h2><p>Dịch vụ giúp gia chủ xác định bố cục, vật liệu và công năng tủ bếp trước khi thi công, giảm rủi ro phát sinh do đo đạc hoặc chọn sai phụ kiện.</p><h3>Quy trình tư vấn</h3><ol><li>Trao đổi nhu cầu sử dụng và ngân sách dự kiến.</li><li>Khảo sát kích thước, thói quen nấu nướng và điểm bất tiện hiện tại.</li><li>Đề xuất phương án bố trí, vật liệu và phụ kiện phù hợp.</li></ol>",
     "metaTitle": "Tư vấn thiết kế tủ bếp chuyên nghiệp",
     "metaDescription": "Dịch vụ tư vấn thiết kế tủ bếp tối ưu công năng, thẩm mỹ và ngân sách.",
-    "thumbnail": "https://example.com/service.jpg",
+    "thumbnail": "",
     "price": 500000,
     "duration": "60 phút"
   }
@@ -122,7 +131,7 @@ const ENTITY_COPY: Record<AiEntityImportKind, {
     "htmlRender": "<h2>Khóa học Next.js thực chiến giúp bạn làm được gì?</h2><p>Khóa học tập trung vào cách xây dựng website bán hàng có cấu trúc rõ ràng, tối ưu trải nghiệm người dùng và dễ mở rộng khi dữ liệu, sản phẩm hoặc nội dung tăng lên.</p><h3>Bạn sẽ học theo lộ trình nào?</h3><ol><li>Nắm kiến trúc dự án Next.js và cách chia route, component, data flow.</li><li>Xây dựng trang danh sách, chi tiết sản phẩm, giỏ hàng và nội dung SEO.</li><li>Tối ưu form, trạng thái tải, xử lý lỗi và trải nghiệm mobile.</li></ol><h3>Khóa học phù hợp với ai?</h3><p>Phù hợp với developer đã biết React cơ bản, chủ shop có đội kỹ thuật nội bộ hoặc freelancer muốn nâng cấp năng lực làm web thương mại.</p>",
     "metaTitle": "Khóa học Next.js thực chiến",
     "metaDescription": "Học Next.js qua dự án website bán hàng thực tế, có lộ trình rõ và bài học dễ áp dụng.",
-    "thumbnail": "https://example.com/course.jpg",
+    "thumbnail": "",
     "pricingType": "paid",
     "price": 2500000,
     "comparePriceAmount": 3500000,
@@ -147,7 +156,24 @@ const ENTITY_COPY: Record<AiEntityImportKind, {
     "content": "<h2>Vì sao phụ kiện tủ bếp quan trọng?</h2><p>Phụ kiện tốt giúp tối ưu lưu trữ, tăng độ bền và cải thiện trải nghiệm sử dụng.</p><h2>Tiêu chí nên kiểm tra</h2><ul><li><strong>Chất liệu:</strong> ưu tiên inox 304 hoặc ray trượt chịu tải tốt.</li><li><strong>Kích thước:</strong> đo đúng khoang tủ trước khi chọn.</li><li><strong>Thói quen dùng:</strong> chọn phụ kiện theo vật dụng dùng hằng ngày.</li></ul>",
     "metaTitle": "Cách chọn phụ kiện tủ bếp bền đẹp",
     "metaDescription": "Hướng dẫn chọn phụ kiện tủ bếp theo chất liệu, tải trọng và nhu cầu sử dụng thực tế.",
-    "thumbnail": "https://example.com/post.jpg",
+    "focusKeyword": "phụ kiện tủ bếp bền đẹp",
+    "relatedQueries": ["chọn phụ kiện tủ bếp", "phụ kiện tủ bếp loại nào tốt", "kinh nghiệm mua phụ kiện tủ bếp", "phụ kiện tủ bếp inox 304", "phụ kiện tủ bếp cho căn hộ"],
+    "tags": ["phụ kiện tủ bếp", "tủ bếp", "inox 304", "thiết kế bếp", "kinh nghiệm chọn mua"],
+    "faqItems": [
+      {
+        "question": "Nên ưu tiên tiêu chí nào khi chọn phụ kiện tủ bếp?",
+        "answer": "Nên kiểm tra chất liệu, tải trọng, kích thước khoang tủ và thói quen sử dụng thực tế trước khi chọn."
+      },
+      {
+        "question": "Phụ kiện tủ bếp inox 304 có phù hợp môi trường bếp ẩm không?",
+        "answer": "Inox 304 thường phù hợp hơn trong môi trường bếp ẩm vì dễ vệ sinh và hạn chế gỉ sét, nhưng vẫn nên kiểm tra thông tin vật liệu từ nhà cung cấp."
+      },
+      {
+        "question": "Cần đo gì trước khi mua phụ kiện tủ bếp?",
+        "answer": "Nên đo chiều rộng, chiều sâu, chiều cao khoang tủ, hướng mở cánh và đối chiếu tải trọng dự kiến để tránh chọn sai kích thước."
+      }
+    ],
+    "thumbnail": "",
     "authorName": "Biên tập viên"
   }
 }`,
@@ -165,7 +191,7 @@ const FIELD_SPECS: Record<AiEntityImportKind, Record<string, string>> = {
     htmlRender: '"htmlRender": "string bắt buộc nếu field này có trong schema; HTML semantic đầy đủ tương đương content, không className/style/script"',
     metaTitle: '"metaTitle": "string <= 60 ký tự, có keyword chính + lợi ích mua hàng, không clickbait"',
     metaDescription: '"metaDescription": "string <= 160 ký tự, nêu sản phẩm + lợi ích cụ thể + lý do click"',
-    image: '"image": "URL http/https hoặc path bắt đầu /, optional, không dùng base64"',
+    image: '"image": "để chuỗi rỗng; admin sẽ tự upload/chọn ảnh sau, không sinh URL ảnh ngoài"',
     price: '"price": "number optional, giá bán thực tế"',
     salePrice: '"salePrice": "number optional, giá so sánh nếu có, phải lớn hơn price"',
     stock: '"stock": "number optional, tồn kho"',
@@ -179,7 +205,7 @@ const FIELD_SPECS: Record<AiEntityImportKind, Record<string, string>> = {
     htmlRender: '"htmlRender": "string bắt buộc nếu field này có trong schema; HTML semantic đầy đủ tương đương content, không className/style/script"',
     metaTitle: '"metaTitle": "string <= 60 ký tự, có keyword dịch vụ + lợi ích chính"',
     metaDescription: '"metaDescription": "string <= 160 ký tự, có vấn đề khách gặp + lợi ích + đối tượng phù hợp"',
-    thumbnail: '"thumbnail": "URL http/https hoặc path bắt đầu /, optional, không dùng base64"',
+    thumbnail: '"thumbnail": "để chuỗi rỗng; admin sẽ tự upload/chọn ảnh sau, không sinh URL ảnh ngoài"',
     price: '"price": "number optional, giá tham khảo nếu phù hợp"',
     duration: '"duration": "string optional, ví dụ 60 phút / 2-3 ngày / Theo dự án"',
   },
@@ -192,7 +218,7 @@ const FIELD_SPECS: Record<AiEntityImportKind, Record<string, string>> = {
     htmlRender: '"htmlRender": "string bắt buộc nếu field này có trong schema; HTML semantic đầy đủ tương đương content, không className/style/script"',
     metaTitle: '"metaTitle": "string <= 60 ký tự, có keyword khóa học + lợi ích chính"',
     metaDescription: '"metaDescription": "string <= 160 ký tự, nêu kỹ năng học được + đối tượng phù hợp + lý do click"',
-    thumbnail: '"thumbnail": "URL http/https hoặc path bắt đầu /, optional, không dùng base64"',
+    thumbnail: '"thumbnail": "để chuỗi rỗng; admin sẽ tự upload/chọn ảnh sau, không sinh URL ảnh ngoài"',
     pricingType: '"pricingType": "free | paid | contact"',
     price: '"price": "number optional, giá bán khi pricingType là paid"',
     comparePriceAmount: '"comparePriceAmount": "number optional, giá gốc để hiển thị gạch ngang nếu có, phải lớn hơn price"',
@@ -212,7 +238,11 @@ const FIELD_SPECS: Record<AiEntityImportKind, Record<string, string>> = {
     htmlRender: '"htmlRender": "string bắt buộc nếu field này có trong schema; HTML semantic đầy đủ tương đương content, không được ngắn hơn/khác ý"',
     metaTitle: '"metaTitle": "string <= 60 ký tự, có keyword chính + lợi ích đọc, không clickbait"',
     metaDescription: '"metaDescription": "string <= 160 ký tự, nêu insight cụ thể + lý do click, không mơ hồ"',
-    thumbnail: '"thumbnail": "URL http/https hoặc path bắt đầu /, optional, không dùng base64"',
+    focusKeyword: '"focusKeyword": "string bắt buộc, từ khóa chính Google Search mà bài cần thỏa intent; không để rỗng"',
+    relatedQueries: '"relatedQueries": "mảng string bắt buộc, 5-8 cách người dùng có thể gõ trên Google, gồm tên ngắn, cụm đồng nghĩa, câu hỏi liên quan; không để rỗng"',
+    tags: '"tags": "mảng string bắt buộc, 5-8 tag ngắn, tự nhiên, không nhồi keyword; không để rỗng"',
+    faqItems: '"faqItems": "mảng bắt buộc gồm 3-6 object, mỗi object dùng đúng key { question: string, answer: string }; không được dùng chuỗi, không dùng q/a, không để ít hơn 3 item"',
+    thumbnail: '"thumbnail": "để chuỗi rỗng; admin sẽ tự upload/chọn ảnh sau, không sinh URL ảnh ngoài"',
     authorName: '"authorName": "string optional"',
   },
 };
@@ -220,7 +250,7 @@ const FIELD_SPECS: Record<AiEntityImportKind, Record<string, string>> = {
 const CORE_FIELDS: Record<AiEntityImportKind, string[]> = {
   product: ['name', 'slug', 'price'],
   service: ['title', 'slug', 'content'],
-  post: ['title', 'slug', 'content'],
+  post: ['title', 'slug', 'content', 'focusKeyword', 'relatedQueries', 'tags', 'faqItems'],
   course: ['title', 'slug', 'content', 'pricingType'],
 };
 
@@ -243,6 +273,10 @@ const OPTIONAL_FIELD_MAP: Record<AiEntityImportKind, Record<string, string[]>> =
     markdownRender: ['markdownRender'],
     metaTitle: ['metaTitle'],
     metaDescription: ['metaDescription'],
+    focusKeyword: ['focusKeyword'],
+    relatedQueries: ['relatedQueries'],
+    tags: ['tags'],
+    faqItems: ['faqItems'],
     thumbnail: ['thumbnail'],
     price: ['price'],
     duration: ['duration'],
@@ -315,6 +349,11 @@ const KIND_GUIDE: Record<AiEntityImportKind, string> = {
 - Trước khi viết, tự xác định focus keyword, search intent, người đọc mục tiêu và góc nhìn chính; thể hiện tự nhiên trong title, mở bài, heading và meta.
 - Bài phải có insight cụ thể, ví dụ thực tế, tiêu chí chọn, lỗi thường gặp, checklist/steps/bảng so sánh khi phù hợp; tránh câu rỗng như "rất quan trọng" nếu không giải thích rõ.
 - E-E-A-T an toàn: nêu điều kiện áp dụng, trade-off, lưu ý kiểm chứng; không bịa số liệu, nghiên cứu, chứng nhận, thương hiệu, case study hoặc cam kết nếu input không cung cấp.
+- BẮT BUỘC sinh đủ 4 field nâng cao: focusKeyword, relatedQueries, tags, faqItems. Không được bỏ field, không để mảng rỗng, không đổi tên field sang snake_case.
+- relatedQueries phải có ít nhất 5 mục là câu/cụm người dùng thật có thể gõ trên Google; faqItems phải có ít nhất 3 câu hỏi bám đúng intent bài.
+- Tự kiểm tra trước khi trả JSON: "faqItems" phải là array có tối thiểu 3 object; mỗi object bắt buộc có đúng 2 key "question" và "answer" đều không rỗng. Nếu đang có dưới 3 FAQ thì tự sinh thêm cho đủ trước khi xuất.
+- Không được chỉ viết FAQ trong content; FAQ phải nằm riêng trong field "faqItems" để vượt validation và tạo FAQ schema.
+- Các field nâng cao phải khớp tự nhiên với nội dung, không nhồi từ khóa.
 - content là nguồn chính để admin editor hiển thị và chỉnh sửa; luôn sinh content đầy đủ, không chỉ sinh htmlRender.
 - Cấu trúc nên gồm: mở bài nêu vấn đề, H2/H3 theo luận điểm rõ, phần tiêu chí/checklist/lỗi thường gặp, kết luận có CTA mềm.
 - Nếu schema có markdownRender, bắt buộc sinh markdownRender đầy đủ tương đương content.
@@ -406,7 +445,7 @@ const buildSample = (
     content: "<h2>Tổng quan giá kệ góc liên hoàn inox 304</h2><p>Giá kệ góc liên hoàn inox 304 là giải pháp lưu trữ cho khoang góc tủ bếp, nơi thường khó thao tác và dễ bị bỏ trống. Sản phẩm phù hợp với gia đình muốn sắp xếp xoong nồi, chén đĩa hoặc đồ dùng bếp theo cách gọn hơn mà vẫn dễ lấy khi nấu nướng.</p><h3>Điểm nổi bật khi sử dụng</h3><ul><li>Tận dụng tốt khu vực góc tủ, giảm lãng phí không gian lưu trữ.</li><li>Thiết kế kéo mở giúp quan sát và lấy vật dụng thuận tiện hơn so với để đồ sâu trong góc tủ.</li><li>Chất liệu inox 304 phù hợp môi trường bếp ẩm, dễ lau chùi và hạn chế bám mùi.</li></ul><h3>Ứng dụng và thông số cần kiểm tra</h3><p>Trước khi chọn mua, nên kiểm tra kích thước khoang tủ, hướng mở cánh, tải trọng sử dụng và kiểu ray trượt đi kèm. Nếu dùng cho nồi lớn hoặc vật nặng, hãy đối chiếu tải trọng theo thông tin nhà cung cấp.</p><h3>Phù hợp với ai?</h3><p>Sản phẩm phù hợp với căn bếp có tủ chữ L, tủ góc hoặc gia đình cần tăng không gian lưu trữ nhưng không muốn thay đổi toàn bộ hệ tủ.</p><h3>Lưu ý khi chọn mua</h3><ul><li>Đo đúng chiều rộng, chiều sâu và chiều cao khoang tủ trước khi đặt hàng.</li><li>Kiểm tra hướng mở trái/phải để tránh lắp sai cấu hình.</li><li>Hỏi rõ phụ kiện đi kèm, chính sách lắp đặt và điều kiện bảo hành nếu có.</li></ul>",
     metaTitle: "Giá kệ góc liên hoàn inox 304",
     metaDescription: "Giá kệ góc inox 304 bền đẹp, tối ưu góc tủ và phù hợp nội thất bếp cao cấp.",
-    image: "https://example.com/product.jpg",
+    image: "",
     price: 3500000,
     salePrice: 4200000,
     stock: 10
@@ -552,6 +591,7 @@ Output rule:
 - Không dùng markdown fence.
 - Không giải thích ngoài JSON.
 - Không tạo field ngoài schema.
+- Không sinh URL ảnh ngoài. Nếu schema có "image" hoặc "thumbnail" thì luôn trả chuỗi rỗng để admin tự upload/chọn ảnh hợp lệ.
 - Nếu schema có "content", field này là nội dung chính; tuyệt đối không chỉ trả về "htmlRender" hoặc "markdownRender".
 - Nếu thiếu dữ liệu đầu vào, tự suy luận hợp lý nhưng không bịa claim nhạy cảm/chứng nhận.
 
@@ -603,18 +643,113 @@ const parseBoolean = (value: unknown) => {
   return undefined;
 };
 
-const isValidImageUrl = (value: string) => {
-  if (!value) { return true; }
-  if (value.startsWith('/')) { return true; }
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
+const parseStringArray = (value: unknown, limit = 20) => {
+  const rawItems = Array.isArray(value)
+    ? value
+    : (typeof value === 'string' ? value.split(',') : []);
+  const seen = new Set<string>();
+  const items: string[] = [];
+
+  rawItems.forEach((raw) => {
+    const item = trimText(raw, 120);
+    const key = item.toLowerCase();
+    if (!item || seen.has(key) || items.length >= limit) {return;}
+    seen.add(key);
+    items.push(item);
+  });
+
+  return items;
 };
 
-const parseAiEntity = (raw: string, kind: AiEntityImportKind): ParseResult => {
+const mergeStringArrays = (values: unknown[], limit = 20) => parseStringArray(values.flatMap((value) => (
+  Array.isArray(value) ? value : [value]
+)), limit);
+
+const parseFaqItems = (value: unknown, limit = 10) => {
+  const items = Array.isArray(value)
+    ? value
+    : (typeof value === 'object' && value !== null
+        ? ('question' in value || 'q' in value || 'answer' in value || 'a' in value
+            ? [value]
+            : Object.entries(value).map(([question, answer]) => ({question, answer})))
+        : []);
+  return items
+    .map((item) => {
+      if (Array.isArray(item)) {
+        return {
+          answer: trimText(item[1], 1000),
+          question: trimText(item[0], 240),
+        };
+      }
+      if (typeof item !== 'object' || item === null) {
+        return {answer: '', question: ''};
+      }
+      const faq = item as Record<string, unknown>;
+      return {
+        answer: trimText(faq.answer ?? faq.a ?? faq.response ?? faq.reply ?? faq.answerText ?? faq.cauTraLoi ?? faq['trả lời'], 1000),
+        question: trimText(faq.question ?? faq.q ?? faq.title ?? faq.questionText ?? faq.cauHoi ?? faq['câu hỏi'], 240),
+      };
+    })
+    .filter((item) => item.question && item.answer)
+    .slice(0, limit);
+};
+
+const stripHtml = (value: unknown, maxLength = 280) => trimText(value, maxLength * 4)
+  .replaceAll(/<[^>]+>/g, ' ')
+  .replaceAll(/\s+/g, ' ')
+  .trim()
+  .slice(0, maxLength);
+
+const completePostFaqItems = ({
+  content,
+  excerpt,
+  focusKeyword,
+  items,
+  title,
+}: {
+  content?: unknown;
+  excerpt?: unknown;
+  focusKeyword: string;
+  items: Array<{ question: string; answer: string }>;
+  title: string;
+}) => {
+  const subject = focusKeyword || title || 'chủ đề này';
+  const summary = stripHtml(excerpt || content, 220);
+  const completed = [...items];
+  const seen = new Set(completed.map((item) => item.question.toLowerCase()));
+  const addItem = (question: string, answer: string) => {
+    const normalizedQuestion = question.toLowerCase();
+    if (!question || !answer || seen.has(normalizedQuestion) || completed.length >= 6) {return;}
+    seen.add(normalizedQuestion);
+    completed.push({answer, question});
+  };
+
+  addItem(
+    `${subject} là gì?`,
+    summary || `Bài viết giải thích ${subject} theo hướng dễ hiểu, có ngữ cảnh và tiêu chí áp dụng thực tế.`
+  );
+  addItem(
+    `Ai nên quan tâm đến ${subject}?`,
+    `Nội dung phù hợp với người đang tìm hiểu ${subject} và cần thêm tiêu chí để ra quyết định đúng hơn.`
+  );
+  addItem(
+    `Cần lưu ý gì khi áp dụng thông tin về ${subject}?`,
+    `Nên đối chiếu với nhu cầu thực tế, điều kiện sử dụng và thông tin từ đơn vị cung cấp trước khi quyết định.`
+  );
+
+  return completed;
+};
+
+const pickRecordValue = (record: Record<string, unknown>, keys: string[]) => {
+  for (const key of keys) {
+    if (record[key] !== undefined) {
+      return record[key];
+    }
+  }
+  return undefined;
+};
+
+const parseAiEntity = (raw: string, kind: AiEntityImportKind, fallbackItem?: AiEntityImportPayload): ParseResult => {
   const config = ENTITY_COPY[kind];
   let parsed: unknown;
 
@@ -633,16 +768,13 @@ const parseAiEntity = (raw: string, kind: AiEntityImportKind): ParseResult => {
   }
 
   const record = source as Record<string, unknown>;
-  const title = trimText(record.title ?? record.name, 140);
+  const title = trimText(record.title ?? record.name ?? fallbackItem?.title ?? fallbackItem?.name, 140);
   const errors: string[] = [];
   if (!title) {
     errors.push(kind === 'product' ? 'Thiếu name sản phẩm.' : 'Thiếu title.');
   }
 
-  const image = trimText(record.image ?? record.thumbnail, 500);
-  if (!isValidImageUrl(image)) {
-    errors.push('Ảnh phải là URL http/https hoặc path bắt đầu bằng /.');
-  }
+  const image = '';
 
   // parse combos
   let combos: any[] | undefined = undefined;
@@ -713,6 +845,70 @@ const parseAiEntity = (raw: string, kind: AiEntityImportKind): ParseResult => {
     });
   }
 
+  const focusKeywordValue = pickRecordValue(record, [
+    'focusKeyword',
+    'focus_keyword',
+    'primaryKeyword',
+    'primary_keyword',
+    'mainKeyword',
+    'main_keyword',
+    'keyword',
+    'keywords',
+  ]);
+  const relatedQueriesValue = pickRecordValue(record, [
+    'relatedQueries',
+    'related_queries',
+    'searchQueries',
+    'search_queries',
+    'peopleAlsoSearch',
+    'people_also_search',
+    'queryVariants',
+    'query_variants',
+  ]);
+  const tagsValue = pickRecordValue(record, ['tags', 'tagList', 'tag_list']);
+  const faqItemsValue = pickRecordValue(record, ['faqItems', 'faq_items', 'faqs', 'faq', 'questions']);
+  const parsedTags = parseStringArray(tagsValue ?? fallbackItem?.tags, 20);
+  const parsedRelatedQueries = parseStringArray(relatedQueriesValue ?? fallbackItem?.relatedQueries, 20);
+  const parsedFaqItems = parseFaqItems(faqItemsValue ?? fallbackItem?.faqItems);
+  const resolvedFocusKeyword = trimText(focusKeywordValue, 120) || parsedTags[0] || title;
+  const resolvedRelatedQueries = kind === 'post'
+    ? mergeStringArrays([
+        parsedRelatedQueries,
+        resolvedFocusKeyword,
+        title,
+        resolvedFocusKeyword ? `cách ${resolvedFocusKeyword}` : '',
+        resolvedFocusKeyword ? `${resolvedFocusKeyword} là gì` : '',
+        resolvedFocusKeyword ? `kinh nghiệm ${resolvedFocusKeyword}` : '',
+      ], 20)
+    : parsedRelatedQueries;
+  const resolvedTags = kind === 'post'
+    ? mergeStringArrays([parsedTags, resolvedFocusKeyword, title, resolvedRelatedQueries.slice(0, 2)], 20)
+    : parsedTags;
+  const resolvedFaqItems = kind === 'post'
+    ? completePostFaqItems({
+        content: record.content ?? record.markdownRender ?? record.htmlRender,
+        excerpt: record.excerpt ?? record.description,
+        focusKeyword: resolvedFocusKeyword,
+        items: parsedFaqItems,
+        title,
+      })
+    : parsedFaqItems;
+
+  if (kind === 'post') {
+    if (!resolvedFocusKeyword) {
+      errors.push('Thiếu focusKeyword cho SEO nâng cao.');
+    }
+    if (resolvedRelatedQueries.length < 5) {
+      errors.push('relatedQueries phải có ít nhất 5 cách khách có thể gõ trên Google.');
+    }
+    if (resolvedTags.length < 3) {
+      errors.push('tags phải có ít nhất 3 tag.');
+    }
+    if (resolvedFaqItems.length < 3) {
+      errors.push('faqItems phải có ít nhất 3 câu hỏi/câu trả lời.');
+    }
+  }
+
   const item: AiEntityImportPayload = {
     authorName: trimText(record.authorName, 120),
     comparePriceAmount: parseNumber(record.comparePriceAmount),
@@ -721,7 +917,9 @@ const parseAiEntity = (raw: string, kind: AiEntityImportKind): ParseResult => {
     duration: trimText(record.duration, 80),
     durationText: trimText(record.durationText, 80),
     excerpt: trimText(record.excerpt, 300),
+    faqItems: resolvedFaqItems,
     featured: parseBoolean(record.featured),
+    focusKeyword: resolvedFocusKeyword,
     htmlRender: trimText(record.htmlRender, 40_000),
     image,
     instructorName: trimText(record.instructorName, 120),
@@ -736,10 +934,12 @@ const parseAiEntity = (raw: string, kind: AiEntityImportKind): ParseResult => {
     price: parseNumber(record.price),
     priceNote: trimText(record.priceNote, 120),
     pricingType: trimText(record.pricingType, 40),
+    relatedQueries: resolvedRelatedQueries,
     salePrice: parseNumber(record.salePrice),
     sku: kind === 'product' ? undefined : trimText(record.sku, 80),
     slug: trimText(record.slug, 160),
     stock: parseNumber(record.stock),
+    tags: resolvedTags,
     thumbnail: image,
     title: kind !== 'product' ? title : undefined,
     combos,
@@ -753,6 +953,7 @@ const parseAiEntity = (raw: string, kind: AiEntityImportKind): ParseResult => {
 
 export function AiEntityImportDialog({
   buttonClassName,
+  currentData,
   enabledFields,
   kind,
   onApply,
@@ -764,6 +965,7 @@ export function AiEntityImportDialog({
   buttonClassName?: string;
   enabledFields?: Iterable<string>;
   kind: AiEntityImportKind;
+  currentData?: AiEntityImportPayload;
   onApply: (item: AiEntityImportPayload) => void;
   enableProductTypes?: boolean;
   enableCombos?: boolean;
@@ -775,6 +977,7 @@ export function AiEntityImportDialog({
   const [lastCopied, setLastCopied] = useState<'prompt' | 'sample' | null>(null);
 
   // Trạng thái toggles mới
+  const [fillMissingOnly, setFillMissingOnly] = useState(false);
   const [suggestCombos, setSuggestCombos] = useState(false);
   const [includeAttributes, setIncludeAttributes] = useState(false);
 
@@ -793,15 +996,32 @@ export function AiEntityImportDialog({
   const copy = ENTITY_COPY[kind];
   const enabledFieldList = useMemo(() => enabledFields ? Array.from(enabledFields).sort() : undefined, [enabledFields]);
   
-  const prompt = useMemo(() => {
+  const basePrompt = useMemo(() => {
     return buildPrompt(kind, enabledFieldList, suggestCombos, includeAttributes, formConfig);
   }, [enabledFieldList, kind, suggestCombos, includeAttributes, formConfig]);
 
-  const sample = useMemo(() => {
+  const prompt = useMemo(() => {
+    if (!fillMissingOnly) {return basePrompt;}
+    return buildAiFillMissingPrompt(basePrompt, currentData ?? {}, {
+      contextLabel: `Dữ liệu ${kind === 'product' ? 'sản phẩm' : kind === 'service' ? 'dịch vụ' : kind === 'course' ? 'khóa học' : 'bài viết'} hiện có trong form`,
+      rootKey: copy.rootKey,
+    });
+  }, [basePrompt, copy.rootKey, currentData, fillMissingOnly, kind]);
+
+  const baseSample = useMemo(() => {
     return buildSample(kind, suggestCombos, includeAttributes, formConfig);
   }, [kind, suggestCombos, includeAttributes, formConfig]);
 
-  const result = useMemo(() => parseAiEntity(rawInput, kind), [kind, rawInput]);
+  const sample = useMemo(() => {
+    if (!fillMissingOnly) {return baseSample;}
+    return buildAiFillMissingSample(baseSample, currentData ?? {}, copy.rootKey);
+  }, [baseSample, copy.rootKey, currentData, fillMissingOnly]);
+
+  const result = useMemo(() => parseAiEntity(
+    rawInput,
+    kind,
+    fillMissingOnly ? currentData : undefined
+  ), [currentData, fillMissingOnly, kind, rawInput]);
   const canApply = rawInput.trim().length > 0 && Boolean(result.item) && result.errors.length === 0;
 
   const copyText = async (value: string, type: 'prompt' | 'sample') => {
@@ -934,8 +1154,12 @@ export function AiEntityImportDialog({
       ])),
     };
     
-    onApply(finalItem);
-    toast.success('Đã áp dụng nội dung AI và thuộc tính mới vào form');
+    const appliedItem = fillMissingOnly
+      ? mergeAiMissingFields(currentData ?? {}, finalItem, { appendArrayItems: true }) as AiEntityImportPayload
+      : finalItem;
+
+    onApply(appliedItem);
+    toast.success(fillMissingOnly ? 'Đã áp dụng phần còn thiếu vào form' : 'Đã áp dụng nội dung AI và thuộc tính mới vào form');
     setOpen(false);
     setRawInput('');
     setCreatedTermIds([]);
@@ -956,9 +1180,16 @@ export function AiEntityImportDialog({
           </DialogHeader>
 
           {/* Khối toggles tùy chọn AI */}
-          {kind === 'product' && (enableCombos || (enableProductTypes && formConfig && formConfig.groups && formConfig.groups.length > 0)) && (
-            <div className="flex flex-wrap gap-4 items-center p-3 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/30 text-xs">
+          <div className="flex flex-wrap gap-4 items-center p-3 rounded-lg border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/30 text-xs">
               <span className="font-semibold text-slate-700 dark:text-slate-300">Tùy chọn Prompt AI:</span>
+
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <Checkbox
+                  checked={fillMissingOnly}
+                  onCheckedChange={(checked) => setFillMissingOnly(checked)}
+                />
+                <span className="font-medium text-slate-600 dark:text-slate-400">Chỉ tạo phần còn thiếu</span>
+              </label>
               
               {enableCombos && (
                 <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -979,8 +1210,7 @@ export function AiEntityImportDialog({
                   <span className="font-medium text-slate-600 dark:text-slate-400">Điền thuộc tính lọc</span>
                 </label>
               )}
-            </div>
-          )}
+          </div>
 
           <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="space-y-3">
@@ -1017,9 +1247,13 @@ export function AiEntityImportDialog({
               <div className="space-y-2">
                 <Label>Dán kết quả AI</Label>
                 <AiDirectGeneratePanel
+                  allowEmptyBrief={fillMissingOnly}
                   prompt={prompt}
                   sessionId={`admin-entity-import:${kind}`}
                   onGenerated={setRawInput}
+                  description={fillMissingOnly
+                    ? 'Đang bật chế độ chỉ tạo phần còn thiếu: ChatJPT sẽ bám dữ liệu đã nhập và chỉ điền field còn trống.'
+                    : undefined}
                   placeholder={
                     kind === 'post'
                       ? 'Ví dụ: Viết bài “Cách chọn phụ kiện tủ bếp bền đẹp”, nhắm keyword phụ kiện tủ bếp, giọng tư vấn chuyên gia, có checklist chọn mua.'
