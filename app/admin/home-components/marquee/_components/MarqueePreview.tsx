@@ -30,7 +30,7 @@ const MARQUEE_STYLES: Array<{ id: MarqueeStyle; label: string }> = [
 ];
 
 export const MarqueePreview = ({
-  items,
+  items = [],
   brandColor,
   secondary,
   mode = 'dual',
@@ -61,7 +61,7 @@ export const MarqueePreview = ({
   onBadgeTextChange,
   onItemsChange,
 }: {
-  items: MarqueeItem[];
+  items?: MarqueeItem[];
   brandColor: string;
   secondary: string;
   mode?: MarqueeBrandMode;
@@ -96,7 +96,7 @@ export const MarqueePreview = ({
   const { isDark } = usePreviewDark();
   const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
   const previewStyle = selectedStyle ?? 'ribbon';
-  const itemCount = items.length;
+  const itemCount = items?.length ?? 0;
   const isVisualEditAllowed = Boolean(onItemsChange || onTitleChange || onSubtitleChange || onBadgeTextChange);
   const visualEditContext = usePreviewVisualEdit();
   const isVisualEditActive = isVisualEditAllowed && (visualEditContext.active || visualEditEnabled);

@@ -122,7 +122,7 @@ export const PartnersGlassLogoCloudShared = ({
       <div className="overflow-hidden" ref={emblaRef}>
         <div className="ml-0 flex px-3 sm:px-4">
           {items.map((item, index) => {
-            const key = item.id ?? item.link ?? item.url ?? index;
+            const key = (item.id !== undefined && item.id !== null && item.id !== '') ? item.id : (item.link || item.url || index);
             const label = item.name || 'Hình ảnh';
             const filterStyle = getFilterStyle(resolvedLogoColorIntensity);
             

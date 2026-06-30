@@ -11,7 +11,7 @@ import { getSpeedDuration } from '../_lib/constants';
 import type { PreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 
 interface MarqueeSectionSharedProps {
-  items: MarqueeItem[];
+  items?: MarqueeItem[];
   style: MarqueeStyle;
   direction: MarqueeDirection;
   speed: MarqueeSpeed;
@@ -386,7 +386,7 @@ function EditableMarqueeList({
 // ── Main Section ─────────────────────────────────────────────────
 export function MarqueeSectionShared(props: MarqueeSectionSharedProps) {
   const {
-    items, style, direction, speed, pauseOnHover, scale,
+    items = [], style, direction, speed, pauseOnHover, scale,
     tokens, title, subtitle, uppercase,
     hideHeader, showTitle, showSubtitle, headerAlign, titleColorPrimary,
     subtitleAboveTitle, uppercaseText, showBadge, badgeText,
