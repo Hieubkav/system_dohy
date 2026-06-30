@@ -18,6 +18,7 @@ import { stripHtml, truncateText } from '@/lib/seo';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Label, cn, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/app/admin/components/ui';
 import { CopyableInput } from '@/app/admin/components/CopyTextButton';
+import { AdvancedSeoFields, SeoFormTabs, normalizeSeoFaqItems, type SeoFaqItem, type SeoFormTab } from '@/app/admin/components/AdvancedSeoFields';
 
 const MODULE_KEY = 'resources';
 
@@ -89,6 +90,11 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
   const [isGrantingAccess, setIsGrantingAccess] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('saved');
   const [snapshotVersion, setSnapshotVersion] = useState(0);
+  const [seoTab, setSeoTab] = useState<SeoFormTab>('content');
+  const [focusKeyword, setFocusKeyword] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [relatedQueries, setRelatedQueries] = useState<string[]>([]);
+  const [faqItems, setFaqItems] = useState<SeoFaqItem[]>([]);
 
   const initialSnapshotRef = useRef<{
     title: string;
@@ -114,6 +120,10 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
     metaTitle: string;
     metaDescription: string;
     selectedValueIds: Id<'resourceFilterValues'>[];
+    focusKeyword: string;
+    tags: string[];
+    relatedQueries: string[];
+    faqItems: SeoFaqItem[];
   } | null>(null);
 
   const enabledFields = useMemo(() => new Set(fieldsData?.map((field) => field.fieldKey) ?? []), [fieldsData]);
@@ -122,6 +132,10 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
   const hasMarkdownRender = enabledFields.has('markdownRender');
   const hasHtmlRender = enabledFields.has('htmlRender');
   const showAdvancedRender = hasMarkdownRender || hasHtmlRender;
+  const showAdvancedSeoFields = enabledFields.has('focusKeyword')
+    || enabledFields.has('tags')
+    || enabledFields.has('relatedQueries')
+    || enabledFields.has('faqItems');
   const showGallery = enabledFields.has('images');
   const activeAccessCustomerIds = useMemo(
     () => new Set(resourceCustomers?.filter((item) => item.status === 'active').map((item) => item.customerId) ?? []),
@@ -156,11 +170,15 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
     metaTitle: metaTitle.trim(),
     metaDescription: metaDescription.trim(),
     selectedValueIds,
+    focusKeyword: focusKeyword.trim(),
+    tags: [...tags].sort(),
+    relatedQueries: [...relatedQueries].sort(),
+    faqItems: normalizeSeoFaqItems(faqItems),
   }), [title, slug, content, excerpt, categoryId, additionalCategoryIds,
     thumbnail, thumbnailStorageId, galleryItems, downloadUrl, status,
     pricingType, priceAmount, comparePriceAmount, priceNote, isPriceVisible,
     featured, renderType, markdownRender, htmlRender, metaTitle, metaDescription,
-    selectedValueIds]);
+    selectedValueIds, focusKeyword, tags, relatedQueries, faqItems]);
 
   const hasChanges = useMemo(() => {
     if (!initialized || !initialSnapshotRef.current) { return false; }
@@ -202,6 +220,16 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
     setHtmlRender(resourceData.htmlRender ?? '');
     setMetaTitle(resourceData.metaTitle ?? '');
     setMetaDescription(resourceData.metaDescription ?? '');
+
+    const loadedTags = resourceData.tags ?? [];
+    const loadedRelatedQueries = resourceData.relatedQueries ?? [];
+    const loadedFaqItems = normalizeSeoFaqItems(resourceData.faqItems ?? []);
+
+    setFocusKeyword(resourceData.focusKeyword ?? '');
+    setTags(loadedTags);
+    setRelatedQueries(loadedRelatedQueries);
+    setFaqItems(loadedFaqItems);
+
     setSelectedValueIds(assignedFilters.map((item) => item._id));
     setEditorResetKey((prev) => prev + 1);
     initialSnapshotRef.current = {
@@ -228,6 +256,10 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
       metaTitle: (resourceData.metaTitle ?? '').trim(),
       metaDescription: (resourceData.metaDescription ?? '').trim(),
       selectedValueIds: assignedFilters.map((item) => item._id),
+      focusKeyword: resourceData.focusKeyword ?? '',
+      tags: [...loadedTags].sort(),
+      relatedQueries: [...loadedRelatedQueries].sort(),
+      faqItems: loadedFaqItems,
     };
     setSnapshotVersion((prev) => prev + 1);
     setInitialized(true);
@@ -270,6 +302,10 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
         markdownRender: hasMarkdownRender ? (markdownRender.trim() || undefined) : undefined,
         metaDescription: enabledFields.has('metaDescription') ? (metaDescription.trim() || resolvedMetaDescription || undefined) : undefined,
         metaTitle: enabledFields.has('metaTitle') ? (metaTitle.trim() || resolvedMetaTitle || undefined) : undefined,
+        focusKeyword: enabledFields.has('focusKeyword') ? (focusKeyword.trim() || undefined) : undefined,
+        relatedQueries: enabledFields.has('relatedQueries') ? relatedQueries : undefined,
+        tags: enabledFields.has('tags') ? tags : undefined,
+        faqItems: enabledFields.has('faqItems') ? normalizeSeoFaqItems(faqItems) : undefined,
         priceAmount: pricingType === 'paid' ? priceAmount : undefined,
         priceNote: priceNote.trim() || undefined,
         pricingType,
@@ -405,104 +441,131 @@ export default function ResourceEditPage({ params }: { params: Promise<{ id: str
         {activeTab === 'general' && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
-              <Card>
-                <CardContent className="space-y-4 p-6">
-                  <div className="space-y-2">
-                    <Label>Tiêu đề <span className="text-red-500">*</span></Label>
-                    <CopyableInput value={title} onChange={handleTitleChange} required placeholder="Nhập tiêu đề tài nguyên..." copyLabel="tiêu đề" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Slug</Label>
-                    <Input value={slug} onChange={(e) => { setSlug(e.target.value); }} className="font-mono text-sm" />
-                    <p className="text-xs text-slate-500">Đường dẫn: {frontendHref}</p>
-                  </div>
-                  {enabledFields.has('excerpt') && (
-                    <div className="space-y-2">
-                      <Label>Mô tả ngắn</Label>
-                      <Input value={excerpt} onChange={(e) => { setExcerpt(e.target.value); }} />
-                    </div>
+              <SeoFormTabs activeTab={seoTab} onChange={setSeoTab} />
+
+              {seoTab === 'content' ? (
+                <>
+                  <Card>
+                    <CardContent className="space-y-4 p-6">
+                      <div className="space-y-2">
+                        <Label>Tiêu đề <span className="text-red-500">*</span></Label>
+                        <CopyableInput value={title} onChange={handleTitleChange} required placeholder="Nhập tiêu đề tài nguyên..." copyLabel="tiêu đề" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Slug</Label>
+                        <Input value={slug} onChange={(e) => { setSlug(e.target.value); }} className="font-mono text-sm" />
+                        <p className="text-xs text-slate-500">Đường dẫn: {frontendHref}</p>
+                      </div>
+                      {enabledFields.has('excerpt') && (
+                        <div className="space-y-2">
+                          <Label>Mô tả ngắn</Label>
+                          <Input value={excerpt} onChange={(e) => { setExcerpt(e.target.value); }} />
+                        </div>
+                      )}
+                      <div className="space-y-2">
+                        <Label>Nội dung</Label>
+                        <LexicalEditor onChange={setContent} initialContent={content} resetKey={editorResetKey} />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {showAdvancedRender && (
+                    <Card>
+                      <CardHeader><CardTitle className="text-base">Nội dung nâng cao</CardTitle></CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Kiểu render</Label>
+                          <select value={renderType} onChange={(e) => { setRenderType(e.target.value as RenderType); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
+                            <option value="content">Lexical</option>
+                            {hasMarkdownRender && <option value="markdown">Markdown</option>}
+                            {hasHtmlRender && <option value="html">HTML</option>}
+                          </select>
+                        </div>
+                        {hasMarkdownRender && (
+                          <div className="space-y-2">
+                            <Label>Nội dung Markdown</Label>
+                            <textarea value={markdownRender} onChange={(e) => { setMarkdownRender(e.target.value); }} className="min-h-36 w-full rounded-md border border-slate-200 bg-white p-3 text-sm font-mono dark:border-slate-700 dark:bg-slate-800" />
+                          </div>
+                        )}
+                        {hasHtmlRender && (
+                          <div className="space-y-2">
+                            <Label>Nội dung HTML</Label>
+                            <textarea value={htmlRender} onChange={(e) => { setHtmlRender(e.target.value); }} className="min-h-36 w-full rounded-md border border-slate-200 bg-white p-3 text-sm font-mono dark:border-slate-700 dark:bg-slate-800" />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   )}
-                  <div className="space-y-2">
-                    <Label>Nội dung</Label>
-                    <LexicalEditor onChange={setContent} initialContent={content} resetKey={editorResetKey} />
-                  </div>
-                </CardContent>
-              </Card>
 
-              {showAdvancedRender && (
-                <Card>
-                  <CardHeader><CardTitle className="text-base">Nội dung nâng cao</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Kiểu render</Label>
-                      <select value={renderType} onChange={(e) => { setRenderType(e.target.value as RenderType); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
-                        <option value="content">Lexical</option>
-                        {hasMarkdownRender && <option value="markdown">Markdown</option>}
-                        {hasHtmlRender && <option value="html">HTML</option>}
-                      </select>
-                    </div>
-                    {hasMarkdownRender && (
-                      <div className="space-y-2">
-                        <Label>Nội dung Markdown</Label>
-                        <textarea value={markdownRender} onChange={(e) => { setMarkdownRender(e.target.value); }} className="min-h-36 w-full rounded-md border border-slate-200 bg-white p-3 text-sm font-mono dark:border-slate-700 dark:bg-slate-800" />
-                      </div>
-                    )}
-                    {hasHtmlRender && (
-                      <div className="space-y-2">
-                        <Label>Nội dung HTML</Label>
-                        <textarea value={htmlRender} onChange={(e) => { setHtmlRender(e.target.value); }} className="min-h-36 w-full rounded-md border border-slate-200 bg-white p-3 text-sm font-mono dark:border-slate-700 dark:bg-slate-800" />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {(enabledFields.has('metaTitle') || enabledFields.has('metaDescription')) && (
-                <Card>
-                  <CardHeader><CardTitle className="text-base">SEO</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    {enabledFields.has('metaTitle') && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label>Meta Title</Label>
-                          <span className={`text-xs ${metaTitle.length > 60 ? 'text-red-500' : 'text-slate-400'}`}>
-                            {metaTitle.length}/60
-                          </span>
+                  {(enabledFields.has('metaTitle') || enabledFields.has('metaDescription')) && (
+                    <Card>
+                      <CardHeader><CardTitle className="text-base">SEO</CardTitle></CardHeader>
+                      <CardContent className="space-y-4">
+                        {enabledFields.has('metaTitle') && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label>Meta Title</Label>
+                              <span className={`text-xs ${metaTitle.length > 60 ? 'text-red-500' : 'text-slate-400'}`}>
+                                {metaTitle.length}/60
+                              </span>
+                            </div>
+                            <Input
+                              value={metaTitle}
+                              onChange={(e) => { setMetaTitle(e.target.value); }}
+                              placeholder="Lấy theo tiêu đề tài nguyên nếu để trống"
+                            />
+                          </div>
+                        )}
+                        {enabledFields.has('metaDescription') && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label>Meta Description</Label>
+                              <span className={`text-xs ${metaDescription.length > 160 ? 'text-red-500' : 'text-slate-400'}`}>
+                                {metaDescription.length}/160
+                              </span>
+                            </div>
+                            <textarea
+                              value={metaDescription}
+                              onChange={(e) => { setMetaDescription(e.target.value); }}
+                              className="w-full min-h-[90px] rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
+                              placeholder="Lấy theo mô tả tài nguyên nếu bạn để trống"
+                            />
+                          </div>
+                        )}
+                        <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm">
+                          <div className="text-blue-600 font-medium truncate">
+                            {metaTitle.trim() || title || 'Tiêu đề tài nguyên'}
+                          </div>
+                          <div className="text-emerald-600 text-xs">
+                            {frontendHref}
+                          </div>
+                          <div className="text-slate-600 text-xs mt-1 line-clamp-2">
+                            {metaDescription.trim() || stripHtml(excerpt || content || '') || 'Mô tả ngắn sẽ hiển thị tại đây.'}
+                          </div>
                         </div>
-                        <Input
-                          value={metaTitle}
-                          onChange={(e) => { setMetaTitle(e.target.value); }}
-                          placeholder="Lấy theo tiêu đề tài nguyên nếu để trống"
-                        />
-                      </div>
-                    )}
-                    {enabledFields.has('metaDescription') && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label>Meta Description</Label>
-                          <span className={`text-xs ${metaDescription.length > 160 ? 'text-red-500' : 'text-slate-400'}`}>
-                            {metaDescription.length}/160
-                          </span>
-                        </div>
-                        <textarea
-                          value={metaDescription}
-                          onChange={(e) => { setMetaDescription(e.target.value); }}
-                          className="w-full min-h-[90px] rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm"
-                          placeholder="Lấy theo mô tả tài nguyên nếu bạn để trống"
-                        />
-                      </div>
-                    )}
-                    <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-3 text-sm">
-                      <div className="text-blue-600 font-medium truncate">
-                        {metaTitle.trim() || title || 'Tiêu đề tài nguyên'}
-                      </div>
-                      <div className="text-emerald-600 text-xs">
-                        {frontendHref}
-                      </div>
-                      <div className="text-slate-600 text-xs mt-1 line-clamp-2">
-                        {metaDescription.trim() || stripHtml(excerpt || content || '') || 'Mô tả ngắn sẽ hiển thị tại đây.'}
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              ) : showAdvancedSeoFields ? (
+                <AdvancedSeoFields
+                  focusKeyword={focusKeyword}
+                  onFocusKeywordChange={setFocusKeyword}
+                  tags={tags}
+                  onTagsChange={setTags}
+                  relatedQueries={relatedQueries}
+                  onRelatedQueriesChange={setRelatedQueries}
+                  faqItems={faqItems}
+                  onFaqItemsChange={setFaqItems}
+                  showFocusKeyword={enabledFields.has('focusKeyword')}
+                  showTags={enabledFields.has('tags')}
+                  showRelatedQueries={enabledFields.has('relatedQueries')}
+                  showFaqItems={enabledFields.has('faqItems')}
+                />
+              ) : (
+                <Card>
+                  <CardContent className="py-8 text-center text-sm text-slate-500">
+                    SEO nâng cao đang tắt trong cấu hình module Resources.
                   </CardContent>
                 </Card>
               )}

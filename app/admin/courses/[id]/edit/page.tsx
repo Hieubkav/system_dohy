@@ -21,6 +21,7 @@ import { ImageUploader } from '@/app/admin/components/ImageUploader';
 import { LexicalEditor } from '@/app/admin/components/LexicalEditor';
 import { CourseCurriculumEditor } from '@/app/admin/courses/components/CourseCurriculumEditor';
 import { CourseStudentsPanel } from '@/app/admin/courses/components/CourseStudentsPanel';
+import { AdvancedSeoFields, SeoFormTabs, normalizeSeoFaqItems, type SeoFaqItem, type SeoFormTab } from '@/app/admin/components/AdvancedSeoFields';
 
 const MODULE_KEY = 'courses';
 
@@ -96,6 +97,11 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
   const [editorResetKey, setEditorResetKey] = useState(0);
   const [activeTab, setActiveTab] = useState<'general' | 'curriculum' | 'students'>('general');
   const [selectedValueIds, setSelectedValueIds] = useState<Id<'courseFilterValues'>[]>([]);
+  const [seoTab, setSeoTab] = useState<SeoFormTab>('content');
+  const [focusKeyword, setFocusKeyword] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [relatedQueries, setRelatedQueries] = useState<string[]>([]);
+  const [faqItems, setFaqItems] = useState<SeoFaqItem[]>([]);
 
   // Curriculum dirty state (từ CourseCurriculumEditor)
   const [curriculumIsDirty, setCurriculumIsDirty] = useState(false);
@@ -133,6 +139,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     metaTitle: string;
     metaDescription: string;
     valueIds: string[];
+    focusKeyword: string;
+    tags: string[];
+    relatedQueries: string[];
+    faqItems: SeoFaqItem[];
   } | null>(null);
 
   const [snapshotVersion, setSnapshotVersion] = useState(0);
@@ -165,6 +175,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
       metaTitle: metaTitle.trim(),
       metaDescription: metaDescription.trim(),
       valueIds: [...selectedValueIds].sort(),
+      focusKeyword: focusKeyword.trim(),
+      tags: [...tags].sort(),
+      relatedQueries: [...relatedQueries].sort(),
+      faqItems: normalizeSeoFaqItems(faqItems),
     };
   }, [
     title,
@@ -193,6 +207,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     metaTitle,
     metaDescription,
     selectedValueIds,
+    focusKeyword,
+    tags,
+    relatedQueries,
+    faqItems,
   ]);
 
   const aiImportCurrentData = useMemo<AiEntityImportPayload>(() => ({
@@ -216,6 +234,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     slug: slug.trim(),
     thumbnail: thumbnail ?? '',
     title: title.trim(),
+    focusKeyword: focusKeyword.trim(),
+    tags,
+    relatedQueries,
+    faqItems,
   }), [
     comparePriceAmount,
     content,
@@ -237,6 +259,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     slug,
     thumbnail,
     title,
+    focusKeyword,
+    tags,
+    relatedQueries,
+    faqItems,
   ]);
 
   const generalHasChanges = useMemo(() => {
@@ -252,6 +278,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
   const hasMarkdownRender = enabledFields.has('markdownRender');
   const hasHtmlRender = enabledFields.has('htmlRender');
   const showAdvancedRender = hasMarkdownRender || hasHtmlRender;
+  const showAdvancedSeoFields = enabledFields.has('focusKeyword')
+    || enabledFields.has('tags')
+    || enabledFields.has('relatedQueries')
+    || enabledFields.has('faqItems');
 
 
 
@@ -284,6 +314,15 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     setMetaTitle(courseData.metaTitle ?? '');
     setMetaDescription(courseData.metaDescription ?? '');
 
+    const loadedTags = courseData.tags ?? [];
+    const loadedRelatedQueries = courseData.relatedQueries ?? [];
+    const loadedFaqItems = normalizeSeoFaqItems(courseData.faqItems ?? []);
+
+    setFocusKeyword(courseData.focusKeyword ?? '');
+    setTags(loadedTags);
+    setRelatedQueries(loadedRelatedQueries);
+    setFaqItems(loadedFaqItems);
+
     const valIds = assignedFilters.map((f) => f._id);
     setSelectedValueIds(valIds);
 
@@ -314,6 +353,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
       metaTitle: (courseData.metaTitle ?? '').trim(),
       metaDescription: (courseData.metaDescription ?? '').trim(),
       valueIds: [...valIds].sort(),
+      focusKeyword: courseData.focusKeyword ?? '',
+      tags: [...loadedTags].sort(),
+      relatedQueries: [...loadedRelatedQueries].sort(),
+      faqItems: loadedFaqItems,
     };
 
     setEditorResetKey((prev) => prev + 1);
@@ -380,6 +423,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
     setIntroVideoType(nextIntroVideoType);
     if (item.introVideoUrl) {setIntroVideoUrl(item.introVideoUrl);}
     if (typeof item.featured === 'boolean') {setFeatured(item.featured);}
+    if (item.focusKeyword) {setFocusKeyword(item.focusKeyword);}
+    if (item.tags) {setTags(item.tags);}
+    if (item.relatedQueries) {setRelatedQueries(item.relatedQueries);}
+    if (item.faqItems) {setFaqItems(normalizeSeoFaqItems(item.faqItems));}
     setEditorResetKey((prev) => prev + 1);
   };
 
@@ -413,6 +460,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
           markdownRender: hasMarkdownRender ? (markdownRender.trim() || undefined) : undefined,
           metaDescription: enabledFields.has('metaDescription') ? (metaDescription.trim() || resolvedMetaDescription || undefined) : undefined,
           metaTitle: enabledFields.has('metaTitle') ? (metaTitle.trim() || resolvedMetaTitle || undefined) : undefined,
+          focusKeyword: enabledFields.has('focusKeyword') ? (focusKeyword.trim() || undefined) : undefined,
+          relatedQueries: enabledFields.has('relatedQueries') ? relatedQueries : undefined,
+          tags: enabledFields.has('tags') ? tags : undefined,
+          faqItems: enabledFields.has('faqItems') ? normalizeSeoFaqItems(faqItems) : undefined,
           priceAmount: pricingType === 'paid' ? priceAmount : undefined,
           priceNote: priceNote.trim() || undefined,
           pricingType,
@@ -453,6 +504,10 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
           metaTitle: metaTitle.trim(),
           metaDescription: metaDescription.trim(),
           valueIds: [...selectedValueIds].sort(),
+          focusKeyword: focusKeyword.trim(),
+          tags: [...tags].sort(),
+          relatedQueries: [...relatedQueries].sort(),
+          faqItems: normalizeSeoFaqItems(faqItems),
         };
         setSnapshotVersion((prev) => prev + 1);
       }
@@ -548,118 +603,145 @@ export default function CourseEditPage({ params }: { params: Promise<{ id: strin
         <div className={activeTab === 'general' ? '' : 'hidden'}>
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
-              <Card>
-                <CardContent className="space-y-4 p-6">
-                  <div className="space-y-2">
-                    <Label>Tiêu đề <span className="text-red-500">*</span></Label>
-                    <CopyableInput value={title} onChange={handleTitleChange} required copyLabel="tiêu đề" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Slug</Label>
-                    <Input value={slug} onChange={(e) => { setSlug(e.target.value); }} className="font-mono text-sm" />
-                  </div>
-                  {enabledFields.has('excerpt') && (
-                    <div className="space-y-2">
-                      <Label>Mô tả ngắn</Label>
-                      <Input value={excerpt} onChange={(e) => { setExcerpt(e.target.value); }} />
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <Label>Nội dung</Label>
-                    <LexicalEditor onChange={setContent} initialContent={content} resetKey={editorResetKey} />
-                  </div>
-                </CardContent>
-              </Card>
+              <SeoFormTabs activeTab={seoTab} onChange={setSeoTab} />
 
-              {showAdvancedRender && (
-                <Card>
-                  <CardHeader><CardTitle className="text-base">Nội dung nâng cao</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Kiểu nội dung</Label>
-                      <select value={renderType} onChange={(e) => { setRenderType(e.target.value as RenderType); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
-                        <option value="content">Nội dung thường</option>
-                        {hasMarkdownRender && <option value="markdown">Markdown</option>}
-                        {hasHtmlRender && <option value="html">HTML</option>}
-                      </select>
-                    </div>
-                    {hasMarkdownRender && (
+              {seoTab === 'content' ? (
+                <>
+                  <Card>
+                    <CardContent className="space-y-4 p-6">
                       <div className="space-y-2">
-                        <Label>Nội dung Markdown</Label>
-                        <textarea value={markdownRender} onChange={(e) => { setMarkdownRender(e.target.value); }} className="min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-sm dark:border-slate-700 dark:bg-slate-800" />
-                      </div>
-                    )}
-                    {hasHtmlRender && (
-                      <div className="space-y-2">
-                        <Label>Nội dung HTML</Label>
-                        <textarea value={htmlRender} onChange={(e) => { setHtmlRender(e.target.value); }} className="min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-sm dark:border-slate-700 dark:bg-slate-800" />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              <Card>
-                <CardHeader><CardTitle className="text-base">Giá khóa học</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Kiểu giá</Label>
-                    <select value={pricingType} onChange={(e) => { setPricingType(e.target.value as PricingType); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
-                      <option value="free">Miễn phí</option>
-                      <option value="paid">Trả phí</option>
-                      <option value="contact">Liên hệ</option>
-                    </select>
-                  </div>
-                  {pricingType === 'paid' && (
-                    <>
-                      <div className="space-y-2">
-                        <Label>Giá bán (VND)</Label>
-                        <Input type="number" value={priceAmount ?? ''} onChange={(e) => { setPriceAmount(e.target.value ? Number(e.target.value) : undefined); }} />
+                        <Label>Tiêu đề <span className="text-red-500">*</span></Label>
+                        <CopyableInput value={title} onChange={handleTitleChange} required copyLabel="tiêu đề" />
                       </div>
                       <div className="space-y-2">
-                        <Label>Giá gốc (VND)</Label>
-                        <Input type="number" value={comparePriceAmount ?? ''} onChange={(e) => { setComparePriceAmount(e.target.value ? Number(e.target.value) : undefined); }} />
+                        <Label>Slug</Label>
+                        <Input value={slug} onChange={(e) => { setSlug(e.target.value); }} className="font-mono text-sm" />
                       </div>
-                    </>
-                  )}
-                  <div className="space-y-2">
-                    <Label>Ghi chú giá</Label>
-                    <Input value={priceNote} onChange={(e) => { setPriceNote(e.target.value); }} />
-                  </div>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={isPriceVisible} onChange={(e) => { setIsPriceVisible(e.target.checked); }} className="h-4 w-4 rounded border-slate-300" />
-                    <span className="text-sm">Hiển thị giá</span>
-                  </label>
-                </CardContent>
-              </Card>
-
-              {(enabledFields.has('metaTitle') || enabledFields.has('metaDescription')) && (
-                <Card>
-                  <CardHeader><CardTitle className="text-base">SEO</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    {enabledFields.has('metaTitle') && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label>Tiêu đề SEO</Label>
-                          <span className={`text-xs ${metaTitle.length > 60 ? 'text-red-500' : 'text-slate-400'}`}>{metaTitle.length}/60</span>
+                      {enabledFields.has('excerpt') && (
+                        <div className="space-y-2">
+                          <Label>Mô tả ngắn</Label>
+                          <Input value={excerpt} onChange={(e) => { setExcerpt(e.target.value); }} />
                         </div>
-                        <Input value={metaTitle} onChange={(e) => { setMetaTitle(e.target.value); }} />
-                      </div>
-                    )}
-                    {enabledFields.has('metaDescription') && (
+                      )}
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label>Mô tả SEO</Label>
-                          <span className={`text-xs ${metaDescription.length > 160 ? 'text-red-500' : 'text-slate-400'}`}>{metaDescription.length}/160</span>
-                        </div>
-                        <textarea value={metaDescription} onChange={(e) => { setMetaDescription(e.target.value); }} className="min-h-[90px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800" />
+                        <Label>Nội dung</Label>
+                        <LexicalEditor onChange={setContent} initialContent={content} resetKey={editorResetKey} />
                       </div>
-                    )}
-                    <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900">
-                      <div className="truncate font-medium text-blue-600">{metaTitle.trim() || title || 'Tên khóa học'}</div>
-                      <div className="text-xs text-emerald-600">/{selectedCategorySlug || 'khoa-hoc'}/{slug || 'khoa-hoc'}</div>
-                      <div className="mt-1 line-clamp-2 text-xs text-slate-600">{metaDescription.trim() || excerpt || 'Mô tả ngắn sẽ hiển thị tại đây.'}</div>
-                    </div>
+                    </CardContent>
+                  </Card>
+
+                  {showAdvancedRender && (
+                    <Card>
+                      <CardHeader><CardTitle className="text-base">Nội dung nâng cao</CardTitle></CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label>Kiểu nội dung</Label>
+                          <select value={renderType} onChange={(e) => { setRenderType(e.target.value as RenderType); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
+                            <option value="content">Nội dung thường</option>
+                            {hasMarkdownRender && <option value="markdown">Markdown</option>}
+                            {hasHtmlRender && <option value="html">HTML</option>}
+                          </select>
+                        </div>
+                        {hasMarkdownRender && (
+                          <div className="space-y-2">
+                            <Label>Nội dung Markdown</Label>
+                            <textarea value={markdownRender} onChange={(e) => { setMarkdownRender(e.target.value); }} className="min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-sm dark:border-slate-700 dark:bg-slate-800" />
+                          </div>
+                        )}
+                        {hasHtmlRender && (
+                          <div className="space-y-2">
+                            <Label>Nội dung HTML</Label>
+                            <textarea value={htmlRender} onChange={(e) => { setHtmlRender(e.target.value); }} className="min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-sm dark:border-slate-700 dark:bg-slate-800" />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <Card>
+                    <CardHeader><CardTitle className="text-base">Giá khóa học</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Kiểu giá</Label>
+                        <select value={pricingType} onChange={(e) => { setPricingType(e.target.value as PricingType); }} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
+                          <option value="free">Miễn phí</option>
+                          <option value="paid">Trả phí</option>
+                          <option value="contact">Liên hệ</option>
+                        </select>
+                      </div>
+                      {pricingType === 'paid' && (
+                        <>
+                          <div className="space-y-2">
+                            <Label>Giá bán (VND)</Label>
+                            <Input type="number" value={priceAmount ?? ''} onChange={(e) => { setPriceAmount(e.target.value ? Number(e.target.value) : undefined); }} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Giá gốc (VND)</Label>
+                            <Input type="number" value={comparePriceAmount ?? ''} onChange={(e) => { setComparePriceAmount(e.target.value ? Number(e.target.value) : undefined); }} />
+                          </div>
+                        </>
+                      )}
+                      <div className="space-y-2">
+                        <Label>Ghi chú giá</Label>
+                        <Input value={priceNote} onChange={(e) => { setPriceNote(e.target.value); }} />
+                      </div>
+                      <label className="flex items-center gap-2">
+                        <input type="checkbox" checked={isPriceVisible} onChange={(e) => { setIsPriceVisible(e.target.checked); }} className="h-4 w-4 rounded border-slate-300" />
+                        <span className="text-sm">Hiển thị giá</span>
+                      </label>
+                    </CardContent>
+                  </Card>
+
+                  {(enabledFields.has('metaTitle') || enabledFields.has('metaDescription')) && (
+                    <Card>
+                      <CardHeader><CardTitle className="text-base">SEO</CardTitle></CardHeader>
+                      <CardContent className="space-y-4">
+                        {enabledFields.has('metaTitle') && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label>Tiêu đề SEO</Label>
+                              <span className={`text-xs ${metaTitle.length > 60 ? 'text-red-500' : 'text-slate-400'}`}>{metaTitle.length}/60</span>
+                            </div>
+                            <Input value={metaTitle} onChange={(e) => { setMetaTitle(e.target.value); }} />
+                          </div>
+                        )}
+                        {enabledFields.has('metaDescription') && (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label>Mô tả SEO</Label>
+                              <span className={`text-xs ${metaDescription.length > 160 ? 'text-red-500' : 'text-slate-400'}`}>{metaDescription.length}/160</span>
+                            </div>
+                            <textarea value={metaDescription} onChange={(e) => { setMetaDescription(e.target.value); }} className="min-h-[90px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800" />
+                          </div>
+                        )}
+                        <div className="rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900">
+                          <div className="truncate font-medium text-blue-600">{metaTitle.trim() || title || 'Tên khóa học'}</div>
+                          <div className="text-xs text-emerald-600">/{selectedCategorySlug || 'khoa-hoc'}/{slug || 'khoa-hoc'}</div>
+                          <div className="mt-1 line-clamp-2 text-xs text-slate-600">{metaDescription.trim() || excerpt || 'Mô tả ngắn sẽ hiển thị tại đây.'}</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              ) : showAdvancedSeoFields ? (
+                <AdvancedSeoFields
+                  focusKeyword={focusKeyword}
+                  onFocusKeywordChange={setFocusKeyword}
+                  tags={tags}
+                  onTagsChange={setTags}
+                  relatedQueries={relatedQueries}
+                  onRelatedQueriesChange={setRelatedQueries}
+                  faqItems={faqItems}
+                  onFaqItemsChange={setFaqItems}
+                  showFocusKeyword={enabledFields.has('focusKeyword')}
+                  showTags={enabledFields.has('tags')}
+                  showRelatedQueries={enabledFields.has('relatedQueries')}
+                  showFaqItems={enabledFields.has('faqItems')}
+                />
+              ) : (
+                <Card>
+                  <CardContent className="py-8 text-center text-sm text-slate-500">
+                    SEO nâng cao đang tắt trong cấu hình module Courses.
                   </CardContent>
                 </Card>
               )}

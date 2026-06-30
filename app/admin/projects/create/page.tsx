@@ -18,6 +18,7 @@ import { MultiImageUploader } from '../../components/MultiImageUploader';
 import { ModuleGuard } from '../../components/ModuleGuard';
 import { CategoryTagsInput } from '@/app/admin/components/AdditionalCategoriesSelect';
 import { QuickCreateProjectCategoryModal } from '@/app/admin/components/QuickCreateProjectCategoryModal';
+import { AdvancedSeoFields, SeoFormTabs, normalizeSeoFaqItems, type SeoFaqItem, type SeoFormTab } from '@/app/admin/components/AdvancedSeoFields';
 
 const MODULE_KEY = 'projects';
 
@@ -81,6 +82,12 @@ function ProjectCreateContent() {
   const [status, setStatus] = useState<ProjectStatus>('Draft');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editorResetKey, _setEditorResetKey] = useState(0);
+  const [seoTab, setSeoTab] = useState<SeoFormTab>('content');
+  const [focusKeyword, setFocusKeyword] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [relatedQueries, setRelatedQueries] = useState<string[]>([]);
+  const [faqItems, setFaqItems] = useState<SeoFaqItem[]>([]);
 
   useEffect(() => {
     const defaultStatus = settingsData?.find((setting) => setting.settingKey === 'defaultStatus')?.value;
@@ -101,6 +108,10 @@ function ProjectCreateContent() {
   const showAdvancedRenderCard = hasMarkdownRender || hasHtmlRender;
   const showIntroVideo = enabledFields.has('introVideoUrl') || enabledFields.has('introVideoType');
   const showGallery = enabledFields.has('images');
+  const showAdvancedSeoFields = enabledFields.has('focusKeyword')
+    || enabledFields.has('tags')
+    || enabledFields.has('relatedQueries')
+    || enabledFields.has('faqItems');
 
   const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
@@ -135,6 +146,10 @@ function ProjectCreateContent() {
         markdownRender: hasMarkdownRender ? (markdownRender.trim() || undefined) : undefined,
         metaDescription: enabledFields.has('metaDescription') ? (metaDescription.trim() || resolvedMetaDescription || undefined) : undefined,
         metaTitle: enabledFields.has('metaTitle') ? (metaTitle.trim() || resolvedMetaTitle || undefined) : undefined,
+        focusKeyword: enabledFields.has('focusKeyword') ? (focusKeyword.trim() || undefined) : undefined,
+        relatedQueries: enabledFields.has('relatedQueries') ? relatedQueries : undefined,
+        tags: enabledFields.has('tags') ? tags : undefined,
+        faqItems: enabledFields.has('faqItems') ? normalizeSeoFaqItems(faqItems) : undefined,
         projectUrl: enabledFields.has('projectUrl') ? (projectUrl.trim() || undefined) : undefined,
         renderType,
         slug: slug.trim() || generateSlug(title.trim()),
@@ -174,73 +189,100 @@ function ProjectCreateContent() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
-            <Card>
-              <CardContent className="space-y-4 p-6">
-                <div className="space-y-2">
-                  <Label>Tiêu đề <span className="text-red-500">*</span></Label>
-                  <CopyableInput value={title} onChange={handleTitleChange} required placeholder="Nhập tiêu đề dự án..." copyLabel="tiêu đề" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Slug</Label>
-                  <Input value={slug} onChange={(event) => setSlug(event.target.value)} className="font-mono text-sm" />
-                </div>
-                {enabledFields.has('excerpt') && (
-                  <div className="space-y-2">
-                    <Label>Mô tả ngắn</Label>
-                    <Input value={excerpt} onChange={(event) => setExcerpt(event.target.value)} placeholder="Tóm tắt dự án..." />
-                  </div>
+            <SeoFormTabs activeTab={seoTab} onChange={setSeoTab} />
+
+            {seoTab === 'content' ? (
+              <>
+                <Card>
+                  <CardContent className="space-y-4 p-6">
+                    <div className="space-y-2">
+                      <Label>Tiêu đề <span className="text-red-500">*</span></Label>
+                      <CopyableInput value={title} onChange={handleTitleChange} required placeholder="Nhập tiêu đề dự án..." copyLabel="tiêu đề" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Slug</Label>
+                      <Input value={slug} onChange={(event) => setSlug(event.target.value)} className="font-mono text-sm" />
+                    </div>
+                    {enabledFields.has('excerpt') && (
+                      <div className="space-y-2">
+                        <Label>Mô tả ngắn</Label>
+                        <Input value={excerpt} onChange={(event) => setExcerpt(event.target.value)} placeholder="Tóm tắt dự án..." />
+                      </div>
+                    )}
+                    <div className="space-y-2">
+                      <Label>Nội dung</Label>
+                      <LexicalEditor onChange={setContent} initialContent={content} resetKey={editorResetKey} />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {showAdvancedRenderCard && (
+                  <Card>
+                    <CardHeader><CardTitle className="text-base">Render nâng cao</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>Kiểu render</Label>
+                        <select value={renderType} onChange={(event) => setRenderType(event.target.value as RenderType)} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
+                          <option value="content">Content</option>
+                          {hasMarkdownRender && <option value="markdown">Markdown</option>}
+                          {hasHtmlRender && <option value="html">HTML</option>}
+                        </select>
+                      </div>
+                      {hasMarkdownRender && (
+                        <div className="space-y-2">
+                          <Label>Markdown render</Label>
+                          <textarea value={markdownRender} onChange={(event) => setMarkdownRender(event.target.value)} className="min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-sm dark:border-slate-700 dark:bg-slate-800" />
+                        </div>
+                      )}
+                      {hasHtmlRender && (
+                        <div className="space-y-2">
+                          <Label>HTML render</Label>
+                          <textarea value={htmlRender} onChange={(event) => setHtmlRender(event.target.value)} className="min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-sm dark:border-slate-700 dark:bg-slate-800" />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 )}
-                <div className="space-y-2">
-                  <Label>Nội dung</Label>
-                  <LexicalEditor onChange={setContent} initialContent={content} />
-                </div>
-              </CardContent>
-            </Card>
 
-            {showAdvancedRenderCard && (
+                {(enabledFields.has('metaTitle') || enabledFields.has('metaDescription')) && (
+                  <Card>
+                    <CardHeader><CardTitle className="text-base">SEO</CardTitle></CardHeader>
+                    <CardContent className="space-y-4">
+                      {enabledFields.has('metaTitle') && (
+                        <div className="space-y-2">
+                          <Label>Meta Title</Label>
+                          <Input value={metaTitle} onChange={(event) => setMetaTitle(event.target.value)} placeholder="Lấy theo tiêu đề nếu để trống" />
+                        </div>
+                      )}
+                      {enabledFields.has('metaDescription') && (
+                        <div className="space-y-2">
+                          <Label>Meta Description</Label>
+                          <textarea value={metaDescription} onChange={(event) => setMetaDescription(event.target.value)} className="min-h-[90px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800" />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            ) : showAdvancedSeoFields ? (
+              <AdvancedSeoFields
+                focusKeyword={focusKeyword}
+                onFocusKeywordChange={setFocusKeyword}
+                tags={tags}
+                onTagsChange={setTags}
+                relatedQueries={relatedQueries}
+                onRelatedQueriesChange={setRelatedQueries}
+                faqItems={faqItems}
+                onFaqItemsChange={setFaqItems}
+                showFocusKeyword={enabledFields.has('focusKeyword')}
+                showTags={enabledFields.has('tags')}
+                showRelatedQueries={enabledFields.has('relatedQueries')}
+                showFaqItems={enabledFields.has('faqItems')}
+              />
+            ) : (
               <Card>
-                <CardHeader><CardTitle className="text-base">Render nâng cao</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Kiểu render</Label>
-                    <select value={renderType} onChange={(event) => setRenderType(event.target.value as RenderType)} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
-                      <option value="content">Content</option>
-                      {hasMarkdownRender && <option value="markdown">Markdown</option>}
-                      {hasHtmlRender && <option value="html">HTML</option>}
-                    </select>
-                  </div>
-                  {hasMarkdownRender && (
-                    <div className="space-y-2">
-                      <Label>Markdown render</Label>
-                      <textarea value={markdownRender} onChange={(event) => setMarkdownRender(event.target.value)} className="min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-sm dark:border-slate-700 dark:bg-slate-800" />
-                    </div>
-                  )}
-                  {hasHtmlRender && (
-                    <div className="space-y-2">
-                      <Label>HTML render</Label>
-                      <textarea value={htmlRender} onChange={(event) => setHtmlRender(event.target.value)} className="min-h-[120px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 font-mono text-sm dark:border-slate-700 dark:bg-slate-800" />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {(enabledFields.has('metaTitle') || enabledFields.has('metaDescription')) && (
-              <Card>
-                <CardHeader><CardTitle className="text-base">SEO</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  {enabledFields.has('metaTitle') && (
-                    <div className="space-y-2">
-                      <Label>Meta Title</Label>
-                      <Input value={metaTitle} onChange={(event) => setMetaTitle(event.target.value)} placeholder="Lấy theo tiêu đề nếu để trống" />
-                    </div>
-                  )}
-                  {enabledFields.has('metaDescription') && (
-                    <div className="space-y-2">
-                      <Label>Meta Description</Label>
-                      <textarea value={metaDescription} onChange={(event) => setMetaDescription(event.target.value)} className="min-h-[90px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800" />
-                    </div>
-                  )}
+                <CardContent className="py-8 text-center text-sm text-slate-500">
+                  SEO nâng cao đang tắt trong cấu hình module Projects.
                 </CardContent>
               </Card>
             )}

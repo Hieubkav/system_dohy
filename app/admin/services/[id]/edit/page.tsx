@@ -24,6 +24,7 @@ import {
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
 import { CategoryTagsInput } from '@/app/admin/components/AdditionalCategoriesSelect';
+import { AdvancedSeoFields, SeoFormTabs, normalizeSeoFaqItems, type SeoFaqItem, type SeoFormTab } from '@/app/admin/components/AdvancedSeoFields';
 
 const MODULE_KEY = 'services';
 
@@ -118,6 +119,11 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
   const [editorResetKey, setEditorResetKey] = useState(0);
   const [snapshotVersion, setSnapshotVersion] = useState(0);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [seoTab, setSeoTab] = useState<SeoFormTab>('content');
+  const [focusKeyword, setFocusKeyword] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [relatedQueries, setRelatedQueries] = useState<string[]>([]);
+  const [faqItems, setFaqItems] = useState<SeoFaqItem[]>([]);
   const selectedCategorySlug = useMemo(
     () => categoriesData?.find((category) => category._id === categoryId)?.slug,
     [categoriesData, categoryId]
@@ -147,6 +153,10 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
     thumbnail: string;
     thumbnailStorageId?: Id<'_storage'> | null;
     title: string;
+    focusKeyword: string;
+    tags: string[];
+    relatedQueries: string[];
+    faqItems: SeoFaqItem[];
   } | null>(null);
 
   const enabledFields = useMemo(() => {
@@ -158,6 +168,10 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
   const hasMarkdownRender = enabledFields.has('markdownRender');
   const hasHtmlRender = enabledFields.has('htmlRender');
   const showAdvancedRenderCard = hasMarkdownRender || hasHtmlRender;
+  const showAdvancedSeoFields = enabledFields.has('focusKeyword')
+    || enabledFields.has('tags')
+    || enabledFields.has('relatedQueries')
+    || enabledFields.has('faqItems');
   const normalizedContent = useMemo(() => normalizeRichText(content), [content]);
   const suggestedSlots = useMemo(() => buildAutoSlotsFromWindow({
     startHour: 9,
@@ -214,6 +228,10 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
     }
     if (typeof item.price === 'number') {setPrice(item.price);}
     if (item.duration) {setDuration(item.duration);}
+    if (item.focusKeyword) {setFocusKeyword(item.focusKeyword);}
+    if (item.tags) {setTags(item.tags);}
+    if (item.relatedQueries) {setRelatedQueries(item.relatedQueries);}
+    if (item.faqItems) {setFaqItems(normalizeSeoFaqItems(item.faqItems));}
     setEditorResetKey((prev) => prev + 1);
   };
 
@@ -250,6 +268,10 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
     thumbnail: thumbnail ?? '',
     thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
     title: title.trim(),
+    focusKeyword: focusKeyword.trim(),
+    tags: [...tags].sort(),
+    relatedQueries: [...relatedQueries].sort(),
+    faqItems: normalizeSeoFaqItems(faqItems),
   }), [
     categoryId,
     additionalCategoryIds,
@@ -274,6 +296,10 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
     thumbnail,
     thumbnailStorageId,
     title,
+    focusKeyword,
+    tags,
+    relatedQueries,
+    faqItems,
   ]);
 
   const aiImportCurrentData = useMemo<AiEntityImportPayload>(() => ({
@@ -289,7 +315,11 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
     slug: slug.trim(),
     thumbnail: thumbnail ?? '',
     title: title.trim(),
-  }), [duration, excerpt, featured, htmlRender, markdownRender, metaDescription, metaTitle, normalizedContent, price, slug, thumbnail, title]);
+    focusKeyword: focusKeyword.trim(),
+    tags,
+    relatedQueries,
+    faqItems,
+  }), [duration, excerpt, featured, htmlRender, markdownRender, metaDescription, metaTitle, normalizedContent, price, slug, thumbnail, title, focusKeyword, tags, relatedQueries, faqItems]);
 
   const hasChanges = useMemo(() => {
     if (!isDataLoaded || !initialSnapshotRef.current) {return false;}
@@ -323,6 +353,16 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
       setExcerpt(serviceData.excerpt ?? '');
       setMetaTitle(serviceData.metaTitle ?? '');
       setMetaDescription(serviceData.metaDescription ?? '');
+
+      const loadedTags = serviceData.tags ?? [];
+      const loadedRelatedQueries = serviceData.relatedQueries ?? [];
+      const loadedFaqItems = normalizeSeoFaqItems(serviceData.faqItems ?? []);
+
+      setFocusKeyword(serviceData.focusKeyword ?? '');
+      setTags(loadedTags);
+      setRelatedQueries(loadedRelatedQueries);
+      setFaqItems(loadedFaqItems);
+
       setThumbnail(serviceData.thumbnail);
       setThumbnailStorageId((serviceData as { thumbnailStorageId?: Id<'_storage'> }).thumbnailStorageId);
       setCategoryId(serviceData.categoryId);
@@ -363,6 +403,10 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
           ? ((serviceData as { thumbnailStorageId?: Id<'_storage'> }).thumbnailStorageId ?? null)
           : null,
         title: serviceData.title.trim(),
+        focusKeyword: serviceData.focusKeyword ?? '',
+        tags: [...loadedTags].sort(),
+        relatedQueries: [...loadedRelatedQueries].sort(),
+        faqItems: loadedFaqItems,
       };
       setSnapshotVersion((prev) => prev + 1);
       setIsDataLoaded(true);
@@ -413,6 +457,10 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
         metaTitle: enabledFields.has('metaTitle')
           ? (resolvedMetaTitleValue || undefined)
           : undefined,
+        focusKeyword: enabledFields.has('focusKeyword') ? (focusKeyword.trim() || undefined) : undefined,
+        relatedQueries: enabledFields.has('relatedQueries') ? relatedQueries : undefined,
+        tags: enabledFields.has('tags') ? tags : undefined,
+        faqItems: enabledFields.has('faqItems') ? normalizeSeoFaqItems(faqItems) : undefined,
         price,
         slug: slug.trim(),
         status,
@@ -428,10 +476,13 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
         htmlRender: htmlRender.trim(),
         duration: duration.trim(),
         excerpt: excerpt.trim(),
-        metaDescription: resolvedMetaDescriptionValue,
         metaTitle: resolvedMetaTitleValue,
         thumbnail: thumbnail ?? '',
         thumbnailStorageId: thumbnail ? (thumbnailStorageId ?? null) : null,
+        focusKeyword: focusKeyword.trim(),
+        tags: [...tags].sort(),
+        relatedQueries: [...relatedQueries].sort(),
+        faqItems: normalizeSeoFaqItems(faqItems),
       };
       if (enabledFields.has('metaTitle')) {
         setMetaTitle(resolvedMetaTitleValue);
@@ -483,28 +534,32 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <div className="space-y-2">
-                <Label>Tiêu đề <span className="text-red-500">*</span></Label>
-                <CopyableInput value={title} onChange={handleTitleChange} required copyLabel="tiêu đề" />
-              </div>
-              <div className="space-y-2">
-                <Label>Slug</Label>
-                <Input value={slug} onChange={(e) =>{  setSlug(e.target.value); }} className="font-mono text-sm" />
-              </div>
-              {enabledFields.has('excerpt') && (
-                <div className="space-y-2">
-                  <Label>Mô tả ngắn</Label>
-                  <Input value={excerpt} onChange={(e) =>{  setExcerpt(e.target.value); }} />
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label>Nội dung</Label>
-                <LexicalEditor onChange={setContent} initialContent={content} resetKey={editorResetKey} />
-              </div>
-            </CardContent>
-          </Card>
+          <SeoFormTabs activeTab={seoTab} onChange={setSeoTab} />
+
+          {seoTab === 'content' ? (
+            <>
+              <Card>
+                <CardContent className="p-6 space-y-4">
+                  <div className="space-y-2">
+                    <Label>Tiêu đề <span className="text-red-500">*</span></Label>
+                    <CopyableInput value={title} onChange={handleTitleChange} required copyLabel="tiêu đề" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Slug</Label>
+                    <Input value={slug} onChange={(e) =>{  setSlug(e.target.value); }} className="font-mono text-sm" />
+                  </div>
+                  {enabledFields.has('excerpt') && (
+                    <div className="space-y-2">
+                      <Label>Mô tả ngắn</Label>
+                      <Input value={excerpt} onChange={(e) =>{  setExcerpt(e.target.value); }} />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label>Nội dung</Label>
+                    <LexicalEditor onChange={setContent} initialContent={content} resetKey={editorResetKey} />
+                  </div>
+                </CardContent>
+              </Card>
 
           {isBookingsModuleEnabled && (
             <Card>
@@ -744,7 +799,30 @@ export default function ServiceEditPage({ params }: { params: Promise<{ id: stri
               </CardContent>
             </Card>
           )}
-        </div>
+          </>
+        ) : showAdvancedSeoFields ? (
+          <AdvancedSeoFields
+            focusKeyword={focusKeyword}
+            onFocusKeywordChange={setFocusKeyword}
+            tags={tags}
+            onTagsChange={setTags}
+            relatedQueries={relatedQueries}
+            onRelatedQueriesChange={setRelatedQueries}
+            faqItems={faqItems}
+            onFaqItemsChange={setFaqItems}
+            showFocusKeyword={enabledFields.has('focusKeyword')}
+            showTags={enabledFields.has('tags')}
+            showRelatedQueries={enabledFields.has('relatedQueries')}
+            showFaqItems={enabledFields.has('faqItems')}
+          />
+        ) : (
+          <Card>
+            <CardContent className="py-8 text-center text-sm text-slate-500">
+              SEO nâng cao đang tắt trong cấu hình module Services.
+            </CardContent>
+          </Card>
+        )}
+      </div>
         
         <div className="space-y-6">
           <Card>
