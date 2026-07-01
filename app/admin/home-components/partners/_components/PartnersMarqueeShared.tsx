@@ -46,6 +46,9 @@ export const PartnersMarqueeShared = ({
   onTitleChange,
   onSubtitleChange,
   onBadgeTextChange,
+  showTitle = true,
+  showSubtitle = true,
+  showBadge = true,
 }: {
   items: PartnerMarqueeItem[];
   title?: string;
@@ -67,6 +70,9 @@ export const PartnersMarqueeShared = ({
   onTitleChange?: (value: string) => void;
   onSubtitleChange?: (value: string) => void;
   onBadgeTextChange?: (value: string) => void;
+  showTitle?: boolean;
+  showSubtitle?: boolean;
+  showBadge?: boolean;
 }) => {
   const normalizedItems = React.useMemo(() => normalizeItems(items), [items]);
   const _colors = React.useMemo(() => getPartnersColors(brandColor, secondary, mode), [brandColor, secondary, mode]);
@@ -117,16 +123,17 @@ export const PartnersMarqueeShared = ({
   const resolvedSubtitle = typeof subheading === 'string' ? subheading.trim() : '';
   const resolvedBadgeText = typeof badgeText === 'string' ? badgeText.trim() : '';
 
-  const hasTitle = resolvedTitle.length > 0 || visualEditEnabled;
-  const hasSubtitle = resolvedSubtitle.length > 0 || visualEditEnabled;
-  const hasBadge = resolvedBadgeText.length > 0 || visualEditEnabled;
+  const hasTitle = (showTitle || visualEditEnabled) && (resolvedTitle.length > 0 || visualEditEnabled);
+  const hasSubtitle = (showSubtitle || visualEditEnabled) && (resolvedSubtitle.length > 0 || visualEditEnabled);
+  const hasBadge = (showBadge || visualEditEnabled) && (resolvedBadgeText.length > 0 || visualEditEnabled);
 
   const displayTitle = resolvedTitle || (visualEditEnabled ? 'Nhập tiêu đề...' : '');
   const displaySubtitle = resolvedSubtitle || (visualEditEnabled ? 'Nhập mô tả...' : '');
   const displayBadgeText = resolvedBadgeText || (visualEditEnabled ? 'Nhập badge...' : '');
 
-  // Skip header: chỉ render grid (parent sẽ handle header hoặc không có nội dung header nào hiển thị)
-  if (skipHeader || (!hasTitle && !hasSubtitle && !hasBadge)) {
+  // Skip header: chỉ render grid (nếu skipHeader là true và không ở chế độ visual edit, hoặc không có nội dung header nào hiển thị)
+  const shouldSkipHeader = (skipHeader && !visualEditEnabled) || (!hasTitle && !hasSubtitle && !hasBadge);
+  if (shouldSkipHeader) {
     return (
       <section className={cn('w-full', skipSectionSpacingClassName, className)} style={{ backgroundColor: '#f7f3ee' }}>
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">

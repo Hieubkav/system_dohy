@@ -174,9 +174,12 @@ export const PartnersPreview = ({
         brandColor={brandColor}
         secondary={secondary}
         mode={mode}
-        title={showTitle !== false ? (title ?? 'Đối tác') : undefined}
-        subheading={showSubtitle !== false ? subheading : undefined}
-        badgeText={showBadge !== false ? badgeText : undefined}
+        title={title ?? 'Đối tác'}
+        subheading={subheading}
+        badgeText={badgeText}
+        showTitle={showTitle}
+        showSubtitle={showSubtitle}
+        showBadge={showBadge}
         align={headerAlign ?? align}
         displayMode={displayMode}
         logoSize={logoSize}
