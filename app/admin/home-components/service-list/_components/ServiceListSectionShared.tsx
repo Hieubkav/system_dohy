@@ -61,6 +61,7 @@ interface ServiceListSectionSharedProps {
   onTitleChange?: (val: string) => void;
   onSubtitleChange?: (val: string) => void;
   onBadgeTextChange?: (val: string) => void;
+  onItemChange?: (index: number, updatedItem: Partial<ServiceListPreviewItem>) => void;
 }
 
 const stripHtml = (value?: string) => {
@@ -191,10 +192,12 @@ export function ServiceListSectionShared({
   onTitleChange,
   onSubtitleChange,
   onBadgeTextChange,
+  onItemChange,
 }: ServiceListSectionSharedProps) {
   const isPreview = context === 'preview';
   const isMobilePreview = isPreview && device === 'mobile';
   const isTabletPreview = isPreview && device === 'tablet';
+  const isEditable = visualEditEnabled && onItemChange !== undefined;
 
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
 
@@ -405,21 +408,57 @@ export function ServiceListSectionShared({
     </div>
   );
 
-  const renderCardContent = (item: ServiceListSharedItem) => {
+  const renderCardContent = (item: ServiceListSharedItem, index: number) => {
     const description = stripHtml(item.description);
     return (
       <>
-        <h3 className="font-semibold leading-tight break-words" style={{ color: tokens.titleText }}>
-          {item.name}
+        <h3
+          contentEditable={isEditable}
+          suppressContentEditableWarning={isEditable}
+          onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+          onBlur={isEditable ? (e) => {
+            onItemChange?.(index, { name: e.currentTarget.textContent ?? '' });
+          } : undefined}
+          className={cn(
+            "font-semibold leading-tight break-words",
+            isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+          )}
+          style={{ color: tokens.titleText }}
+        >
+          {item.name || (isEditable ? 'Nhập tên...' : '')}
         </h3>
-        {description ? (
-          <p className="mt-1 text-sm leading-relaxed break-words" style={{ color: tokens.descriptionText }}>
-            {description}
+        {description || isEditable ? (
+          <p
+            contentEditable={isEditable}
+            suppressContentEditableWarning={isEditable}
+            onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+            onBlur={isEditable ? (e) => {
+              onItemChange?.(index, { description: e.currentTarget.textContent ?? '' });
+            } : undefined}
+            className={cn(
+              "mt-1 text-sm leading-relaxed break-words",
+              isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+            )}
+            style={{ color: tokens.descriptionText }}
+          >
+            {description || (isEditable ? 'Nhập mô tả...' : '')}
           </p>
         ) : null}
         <div className="mt-3 flex items-center justify-between gap-2">
-          <span className="text-sm font-semibold" style={{ color: tokens.priceText }}>
-            {formatServicePrice(item.price)}
+          <span
+            contentEditable={isEditable}
+            suppressContentEditableWarning={isEditable}
+            onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+            onBlur={isEditable ? (e) => {
+              onItemChange?.(index, { price: e.currentTarget.textContent ?? '' });
+            } : undefined}
+            className={cn(
+              "text-sm font-semibold",
+              isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+            )}
+            style={{ color: tokens.priceText }}
+          >
+            {isEditable ? (item.price || 'Liên hệ') : formatServicePrice(item.price)}
           </span>
           <ArrowUpRight size={16} style={{ color: tokens.inlineMetaText }} />
         </div>
@@ -470,7 +509,7 @@ export function ServiceListSectionShared({
                   ) : null}
                 </div>
 
-                {renderCardContent(item)}
+                {renderCardContent(item, index)}
               </article>
             ),
           }))}
@@ -518,11 +557,35 @@ export function ServiceListSectionShared({
                     ) : null}
                   </div>
 
-                  <h3 className="text-sm font-semibold leading-tight break-words" style={{ color: tokens.titleText }}>
-                    {item.name}
+                  <h3
+                    contentEditable={isEditable}
+                    suppressContentEditableWarning={isEditable}
+                    onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                    onBlur={isEditable ? (e) => {
+                      onItemChange?.(index, { name: e.currentTarget.textContent ?? '' });
+                    } : undefined}
+                    className={cn(
+                      "text-sm font-semibold leading-tight break-words",
+                      isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                    )}
+                    style={{ color: tokens.titleText }}
+                  >
+                    {item.name || (isEditable ? 'Nhập tên...' : '')}
                   </h3>
-                  <span className="mt-1 block text-xs font-semibold" style={{ color: tokens.priceText }}>
-                    {formatServicePrice(item.price)}
+                  <span
+                    contentEditable={isEditable}
+                    suppressContentEditableWarning={isEditable}
+                    onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                    onBlur={isEditable ? (e) => {
+                      onItemChange?.(index, { price: e.currentTarget.textContent ?? '' });
+                    } : undefined}
+                    className={cn(
+                      "mt-1 block text-xs font-semibold",
+                      isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                    )}
+                    style={{ color: tokens.priceText }}
+                  >
+                    {isEditable ? (item.price || 'Liên hệ') : formatServicePrice(item.price)}
                   </span>
                 </article>
               ),
@@ -597,19 +660,56 @@ export function ServiceListSectionShared({
                     ) : null}
                   </div>
 
-                  <h3 className={cn('font-semibold leading-tight break-words', isFeatured ? 'text-base md:text-lg' : 'text-sm md:text-base')} style={{ color: tokens.titleText }}>
-                    {item.name}
+                  <h3
+                    contentEditable={isEditable}
+                    suppressContentEditableWarning={isEditable}
+                    onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                    onBlur={isEditable ? (e) => {
+                      onItemChange?.(index, { name: e.currentTarget.textContent ?? '' });
+                    } : undefined}
+                    className={cn(
+                      'font-semibold leading-tight break-words',
+                      isFeatured ? 'text-base md:text-lg' : 'text-sm md:text-base',
+                      isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                    )}
+                    style={{ color: tokens.titleText }}
+                  >
+                    {item.name || (isEditable ? 'Nhập tên...' : '')}
                   </h3>
 
-                  {isFeatured && item.description ? (
-                    <p className="mt-1 text-sm leading-relaxed break-words" style={{ color: tokens.descriptionText }}>
-                      {stripHtml(item.description)}
+                  {isFeatured && (item.description || isEditable) ? (
+                    <p
+                      contentEditable={isEditable}
+                      suppressContentEditableWarning={isEditable}
+                      onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                      onBlur={isEditable ? (e) => {
+                        onItemChange?.(index, { description: e.currentTarget.textContent ?? '' });
+                      } : undefined}
+                      className={cn(
+                        "mt-1 text-sm leading-relaxed break-words",
+                        isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                      )}
+                      style={{ color: tokens.descriptionText }}
+                    >
+                      {stripHtml(item.description) || (isEditable ? 'Nhập mô tả...' : '')}
                     </p>
                   ) : null}
 
                   <div className="mt-2 flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold" style={{ color: tokens.priceText }}>
-                      {formatServicePrice(item.price)}
+                    <span
+                      contentEditable={isEditable}
+                      suppressContentEditableWarning={isEditable}
+                      onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                      onBlur={isEditable ? (e) => {
+                        onItemChange?.(index, { price: e.currentTarget.textContent ?? '' });
+                      } : undefined}
+                      className={cn(
+                        "text-sm font-semibold",
+                        isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                      )}
+                      style={{ color: tokens.priceText }}
+                    >
+                      {isEditable ? (item.price || 'Liên hệ') : formatServicePrice(item.price)}
                     </span>
                     <ArrowUpRight size={16} style={{ color: tokens.inlineMetaText }} />
                   </div>
@@ -662,19 +762,55 @@ export function ServiceListSectionShared({
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-sm md:text-base leading-tight break-words" style={{ color: tokens.titleText }}>
-                      {item.name}
+                    <h3
+                      contentEditable={isEditable}
+                      suppressContentEditableWarning={isEditable}
+                      onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                      onBlur={isEditable ? (e) => {
+                        onItemChange?.(index, { name: e.currentTarget.textContent ?? '' });
+                      } : undefined}
+                      className={cn(
+                        "font-semibold text-sm md:text-base leading-tight break-words",
+                        isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                      )}
+                      style={{ color: tokens.titleText }}
+                    >
+                      {item.name || (isEditable ? 'Nhập tên...' : '')}
                     </h3>
 
-                    {item.description ? (
-                      <p className="mt-1 text-xs md:text-sm leading-relaxed break-words" style={{ color: tokens.descriptionText }}>
-                        {stripHtml(item.description)}
+                    {item.description || isEditable ? (
+                      <p
+                        contentEditable={isEditable}
+                        suppressContentEditableWarning={isEditable}
+                        onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                        onBlur={isEditable ? (e) => {
+                          onItemChange?.(index, { description: e.currentTarget.textContent ?? '' });
+                        } : undefined}
+                        className={cn(
+                          "mt-1 text-xs md:text-sm leading-relaxed break-words",
+                          isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                        )}
+                        style={{ color: tokens.descriptionText }}
+                      >
+                        {stripHtml(item.description) || (isEditable ? 'Nhập mô tả...' : '')}
                       </p>
                     ) : null}
 
                     <div className="mt-2 flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold" style={{ color: tokens.priceText }}>
-                        {formatServicePrice(item.price)}
+                      <span
+                        contentEditable={isEditable}
+                        suppressContentEditableWarning={isEditable}
+                        onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                        onBlur={isEditable ? (e) => {
+                          onItemChange?.(index, { price: e.currentTarget.textContent ?? '' });
+                        } : undefined}
+                        className={cn(
+                          "text-sm font-semibold",
+                          isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                        )}
+                        style={{ color: tokens.priceText }}
+                      >
+                        {isEditable ? (item.price || 'Liên hệ') : formatServicePrice(item.price)}
                       </span>
                       <ArrowUpRight size={16} style={{ color: tokens.inlineMetaText }} />
                     </div>
@@ -779,7 +915,7 @@ export function ServiceListSectionShared({
                       ) : null}
                     </div>
 
-                    {renderCardContent(item)}
+                    {renderCardContent(item, index)}
                   </article>
                 ),
               }))}
@@ -833,19 +969,55 @@ export function ServiceListSectionShared({
                   ) : null}
                 </div>
 
-                <h3 className="text-base md:text-lg font-semibold leading-tight break-words" style={{ color: tokens.titleText }}>
-                  {item.name}
+                <h3
+                  contentEditable={isEditable}
+                  suppressContentEditableWarning={isEditable}
+                  onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                  onBlur={isEditable ? (e) => {
+                    onItemChange?.(index, { name: e.currentTarget.textContent ?? '' });
+                  } : undefined}
+                  className={cn(
+                    "text-base md:text-lg font-semibold leading-tight break-words",
+                    isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                  )}
+                  style={{ color: tokens.titleText }}
+                >
+                  {item.name || (isEditable ? 'Nhập tên...' : '')}
                 </h3>
 
-                {item.description ? (
-                  <p className="mt-1 text-sm leading-relaxed break-words" style={{ color: tokens.descriptionText }}>
-                    {stripHtml(item.description)}
+                {item.description || isEditable ? (
+                  <p
+                    contentEditable={isEditable}
+                    suppressContentEditableWarning={isEditable}
+                    onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                    onBlur={isEditable ? (e) => {
+                      onItemChange?.(index, { description: e.currentTarget.textContent ?? '' });
+                    } : undefined}
+                    className={cn(
+                      "mt-1 text-sm leading-relaxed break-words",
+                      isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                    )}
+                    style={{ color: tokens.descriptionText }}
+                  >
+                    {stripHtml(item.description) || (isEditable ? 'Nhập mô tả...' : '')}
                   </p>
                 ) : null}
 
                 <div className="mt-3 flex items-center justify-between gap-2">
-                  <span className="font-semibold" style={{ color: tokens.priceText }}>
-                    {formatServicePrice(item.price)}
+                  <span
+                    contentEditable={isEditable}
+                    suppressContentEditableWarning={isEditable}
+                    onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                    onBlur={isEditable ? (e) => {
+                      onItemChange?.(index, { price: e.currentTarget.textContent ?? '' });
+                    } : undefined}
+                    className={cn(
+                      "font-semibold",
+                      isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                    )}
+                    style={{ color: tokens.priceText }}
+                  >
+                    {isEditable ? (item.price || 'Liên hệ') : formatServicePrice(item.price)}
                   </span>
                   <span className="inline-flex items-center gap-1 text-sm font-medium" style={{ color: tokens.inlineMetaText }}>
                     Chi tiết <ArrowUpRight size={15} />
@@ -872,7 +1044,7 @@ export function ServiceListSectionShared({
             getResponsiveGridClassName(),
           )}
         >
-          {kanbanItems.map((item) => wrapItem({
+          {kanbanItems.map((item, index) => wrapItem({
             item,
             className: 'group block select-none',
             children: (
@@ -934,27 +1106,54 @@ export function ServiceListSectionShared({
 
                 <div className="flex flex-col flex-1">
                   <h3 
-                    className="text-xs font-semibold leading-snug break-words" 
+                    contentEditable={isEditable}
+                    suppressContentEditableWarning={isEditable}
+                    onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                    onBlur={isEditable ? (e) => {
+                      onItemChange?.(index, { name: e.currentTarget.textContent ?? '' });
+                    } : undefined}
+                    className={cn(
+                      "text-xs font-semibold leading-snug break-words",
+                      isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                    )} 
                     style={{ color: isDarkBg ? '#f4f4f5' : '#09090b' }}
                   >
-                    {item.name}
+                    {item.name || (isEditable ? 'Nhập tên...' : '')}
                   </h3>
                   
-                  {item.description ? (
+                  {item.description || isEditable ? (
                     <p 
-                      className="mt-1 text-[11px] leading-relaxed break-words line-clamp-2" 
+                      contentEditable={isEditable}
+                      suppressContentEditableWarning={isEditable}
+                      onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                      onBlur={isEditable ? (e) => {
+                        onItemChange?.(index, { description: e.currentTarget.textContent ?? '' });
+                      } : undefined}
+                      className={cn(
+                        "mt-1 text-[11px] leading-relaxed break-words line-clamp-2",
+                        isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                      )} 
                       style={{ color: isDarkBg ? '#a1a1aa' : '#71717a' }}
                     >
-                      {stripHtml(item.description)}
+                      {stripHtml(item.description) || (isEditable ? 'Nhập mô tả...' : '')}
                     </p>
                   ) : null}
 
                   <div className="mt-auto pt-3 flex items-center justify-between gap-2">
                     <span 
-                      className="text-xs font-semibold" 
+                      contentEditable={isEditable}
+                      suppressContentEditableWarning={isEditable}
+                      onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                      onBlur={isEditable ? (e) => {
+                        onItemChange?.(index, { price: e.currentTarget.textContent ?? '' });
+                      } : undefined}
+                      className={cn(
+                        "text-xs font-semibold",
+                        isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                      )} 
                       style={{ color: tokens.priceText }}
                     >
-                      {formatServicePrice(item.price)}
+                      {isEditable ? (item.price || 'Liên hệ') : formatServicePrice(item.price)}
                     </span>
                     <span 
                       className="inline-flex items-center gap-1 text-[11px] font-medium transition-all opacity-0 group-hover:opacity-100" 
@@ -1062,11 +1261,37 @@ export function ServiceListSectionShared({
                     ) : null}
                   </div>
                   <div className="flex flex-1 flex-col">
-                    <h3 className={cn('mb-2 font-semibold leading-snug break-words', showcaseTitleClassName)} style={{ color: tokens.titleText }}>
-                      {item.name}
+                    <h3
+                      contentEditable={isEditable}
+                      suppressContentEditableWarning={isEditable}
+                      onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                      onBlur={isEditable ? (e) => {
+                        onItemChange?.(index, { name: e.currentTarget.textContent ?? '' });
+                      } : undefined}
+                      className={cn(
+                        'mb-2 font-semibold leading-snug break-words',
+                        showcaseTitleClassName,
+                        isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                      )}
+                      style={{ color: tokens.titleText }}
+                    >
+                      {item.name || (isEditable ? 'Nhập tên...' : '')}
                     </h3>
                     <div className="mt-auto inline-flex items-center gap-1.5 text-[13px]" style={{ color: tokens.priceText }}>
-                      <span className="font-semibold">{formatServicePrice(item.price)}</span>
+                      <span
+                        contentEditable={isEditable}
+                        suppressContentEditableWarning={isEditable}
+                        onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                        onBlur={isEditable ? (e) => {
+                          onItemChange?.(index, { price: e.currentTarget.textContent ?? '' });
+                        } : undefined}
+                        className={cn(
+                          "font-semibold",
+                          isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                        )}
+                      >
+                        {isEditable ? (item.price || 'Liên hệ') : formatServicePrice(item.price)}
+                      </span>
                     </div>
                   </div>
                 </article>

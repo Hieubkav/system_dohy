@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import type { SectionSpacing } from '../types/sectionSpacing';
 
 // Previews imports
@@ -102,6 +104,7 @@ export function LiveComponentPreviewRenderer({
   onConfigChange,
   onTitleChange,
 }: LiveComponentPreviewRendererProps) {
+  const servicesData = useQuery(api.services.listAll, { limit: 100 });
   const { type, title, config = {} } = component;
 
   // Lấy các header config chung từ config
@@ -591,9 +594,51 @@ export function LiveComponentPreviewRenderer({
       );
     }
     case 'ServiceList': {
+      const selectionMode = config.selectionMode || 'auto';
+      const demoServices = (config.demoServices as any[]) || [];
+      const itemCount = Number(config.itemCount) || 6;
+      const selectedServiceIds = (config.selectedServiceIds as string[]) || [];
+
+      const displayItems = (() => {
+        if (selectionMode === 'demo' && demoServices.length > 0) {
+          return demoServices.map((d: any) => ({
+            id: d.id,
+            name: d.name,
+            image: d.image,
+            price: d.price,
+            description: d.description,
+            tag: d.tag
+          }));
+        }
+        if (!servicesData) {
+          return [];
+        }
+        const published = (servicesData as any[]).filter((s: any) => s.status === 'Published');
+        if (selectionMode === 'manual' && selectedServiceIds.length > 0) {
+          const serviceMap = new Map(published.map((s: any) => [s._id, s]));
+          return selectedServiceIds
+            .map(id => serviceMap.get(id as any))
+            .filter((s: any) => s !== undefined && s !== null)
+            .slice(0, itemCount)
+            .map((s: any) => ({
+              description: s.excerpt,
+              id: s._id,
+              image: s.thumbnail,
+              name: s.title,
+              price: s.price ? s.price.toLocaleString('vi-VN') + 'đ' : 'Liên hệ'
+            }));
+        }
+        return published.slice(0, itemCount).map((s: any) => ({
+          description: s.excerpt,
+          id: s._id,
+          image: s.thumbnail,
+          name: s.title,
+          price: s.price ? s.price.toLocaleString('vi-VN') + 'đ' : 'Liên hệ'
+        }));
+      })();
+
       return (
         <ServiceListPreviewAny
-          config={config as any}
           brandColor={brandColor}
           secondary={secondary}
           mode={mode}
@@ -613,11 +658,24 @@ export function LiveComponentPreviewRenderer({
           showBadge={showBadge}
           badgeText={badgeText}
           spacing={spacing}
+          cardRadius={config.cardRadius}
+          desktopColumns={config.desktopColumns}
+          itemCount={itemCount}
+          items={displayItems}
           isVisualEditAllowed={true}
           onConfigChange={onConfigChange}
           onTitleChange={onTitleChange}
           onSubtitleChange={(val: string) => handleHeaderConfigChange('subtitle', val)}
           onBadgeTextChange={(val: string) => handleHeaderConfigChange('badgeText', val)}
+          onItemChange={(index: number, updatedItem: any) => {
+            if (selectionMode === 'demo') {
+              const nextDemo = [...demoServices];
+              if (nextDemo[index]) {
+                nextDemo[index] = { ...nextDemo[index], ...updatedItem };
+                onConfigChange({ ...config, demoServices: nextDemo });
+              }
+            }
+          }}
         />
       );
     }

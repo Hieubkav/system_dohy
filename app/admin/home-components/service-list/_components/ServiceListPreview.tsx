@@ -57,6 +57,7 @@ interface ServiceListPreviewProps {
   onTitleChange?: (val: string) => void;
   onSubtitleChange?: (val: string) => void;
   onBadgeTextChange?: (val: string) => void;
+  onItemChange?: (index: number, updatedItem: Partial<ServiceListPreviewItem>) => void;
 }
 
 const MOCK_SERVICES: ServiceListPreviewItem[] = [
@@ -127,6 +128,7 @@ const ServiceListPreviewInner = ({
   onTitleChange,
   onSubtitleChange,
   onBadgeTextChange,
+  onItemChange,
 }: {
   homePageBgColor: string;
   mode: ServiceListBrandMode;
@@ -153,6 +155,7 @@ const ServiceListPreviewInner = ({
   onTitleChange?: (val: string) => void;
   onSubtitleChange?: (val: string) => void;
   onBadgeTextChange?: (val: string) => void;
+  onItemChange?: (index: number, updatedItem: Partial<ServiceListPreviewItem>) => void;
 }) => {
   const { isDark } = usePreviewDark();
   const adaptedTokens = React.useMemo(() => adaptTokensForDarkMode(validationTokens, isDark), [validationTokens, isDark]);
@@ -185,6 +188,7 @@ const ServiceListPreviewInner = ({
         onTitleChange={onTitleChange}
         onSubtitleChange={onSubtitleChange}
         onBadgeTextChange={onBadgeTextChange}
+        onItemChange={onItemChange}
       />
     </div>
   );
@@ -219,6 +223,7 @@ export const ServiceListPreview = ({
   onTitleChange,
   onSubtitleChange,
   onBadgeTextChange,
+  onItemChange,
 }: ServiceListPreviewProps) => {
   const { device, setDevice } = usePreviewDevice();
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
@@ -259,7 +264,7 @@ export const ServiceListPreview = ({
   const previewStyle = selectedStyle;
   const setPreviewStyle = (value: string) => onStyleChange?.(value as ServiceListStyle);
 
-  const targetCount = Math.max(itemCount, 6);
+  const targetCount = Math.max(Number(itemCount) || 0, 6);
   const displayItems: ServiceListPreviewItem[] = items && items.length > 0
     ? items
     : MOCK_SERVICES.slice(0, targetCount);
@@ -317,6 +322,7 @@ export const ServiceListPreview = ({
               onTitleChange={onTitleChange}
               onSubtitleChange={onSubtitleChange}
               onBadgeTextChange={onBadgeTextChange}
+              onItemChange={onItemChange}
             />
           </BrowserFrame>
         </div>
