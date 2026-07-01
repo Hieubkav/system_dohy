@@ -49,6 +49,7 @@ export const PartnersMarqueeShared = ({
   showTitle = true,
   showSubtitle = true,
   showBadge = true,
+  onItemNameChange,
 }: {
   items: PartnerMarqueeItem[];
   title?: string;
@@ -73,6 +74,7 @@ export const PartnersMarqueeShared = ({
   showTitle?: boolean;
   showSubtitle?: boolean;
   showBadge?: boolean;
+  onItemNameChange?: (index: number, name: string) => void;
 }) => {
   const normalizedItems = React.useMemo(() => normalizeItems(items), [items]);
   const _colors = React.useMemo(() => getPartnersColors(brandColor, secondary, mode), [brandColor, secondary, mode]);
@@ -109,8 +111,24 @@ export const PartnersMarqueeShared = ({
             </div>
             {/* Partner name */}
             {showName && (
-              <span className="w-full truncate text-center text-[11px] font-medium text-slate-500 md:text-xs">
-                {item.name ?? `Đối tác ${index + 1}`}
+              <span
+                contentEditable={visualEditEnabled}
+                suppressContentEditableWarning={visualEditEnabled}
+                onClick={(e) => {
+                  if (visualEditEnabled) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }
+                }}
+                onBlur={visualEditEnabled ? (e) => {
+                  onItemNameChange?.(index, e.currentTarget.textContent ?? '');
+                } : undefined}
+                className={cn(
+                  "w-full truncate text-center text-[11px] font-medium text-slate-500 md:text-xs",
+                  visualEditEnabled && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                )}
+              >
+                {item.name || (visualEditEnabled ? 'Nhập tên...' : `Đối tác ${index + 1}`)}
               </span>
             )}
           </a>
@@ -123,17 +141,16 @@ export const PartnersMarqueeShared = ({
   const resolvedSubtitle = typeof subheading === 'string' ? subheading.trim() : '';
   const resolvedBadgeText = typeof badgeText === 'string' ? badgeText.trim() : '';
 
-  const hasTitle = (showTitle || visualEditEnabled) && (resolvedTitle.length > 0 || visualEditEnabled);
-  const hasSubtitle = (showSubtitle || visualEditEnabled) && (resolvedSubtitle.length > 0 || visualEditEnabled);
-  const hasBadge = (showBadge || visualEditEnabled) && (resolvedBadgeText.length > 0 || visualEditEnabled);
+  const hasTitle = showTitle && (resolvedTitle.length > 0 || visualEditEnabled);
+  const hasSubtitle = showSubtitle && (resolvedSubtitle.length > 0 || visualEditEnabled);
+  const hasBadge = showBadge && (resolvedBadgeText.length > 0 || visualEditEnabled);
 
   const displayTitle = resolvedTitle || (visualEditEnabled ? 'Nhập tiêu đề...' : '');
   const displaySubtitle = resolvedSubtitle || (visualEditEnabled ? 'Nhập mô tả...' : '');
   const displayBadgeText = resolvedBadgeText || (visualEditEnabled ? 'Nhập badge...' : '');
 
-  // Skip header: chỉ render grid (nếu skipHeader là true và không ở chế độ visual edit, hoặc không có nội dung header nào hiển thị)
-  const shouldSkipHeader = (skipHeader && !visualEditEnabled) || (!hasTitle && !hasSubtitle && !hasBadge);
-  if (shouldSkipHeader) {
+  // Skip header: chỉ render grid (nếu skipHeader là true, hoặc không có nội dung header nào hiển thị)
+  if (skipHeader || (!hasTitle && !hasSubtitle && !hasBadge)) {
     return (
       <section className={cn('w-full', skipSectionSpacingClassName, className)} style={{ backgroundColor: '#f7f3ee' }}>
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">

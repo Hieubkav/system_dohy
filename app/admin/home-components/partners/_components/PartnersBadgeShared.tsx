@@ -34,7 +34,8 @@ export const PartnersBadgeShared = ({
   openInNewTab = false,
   skipHeader = false,
   className,
-
+  visualEditEnabled,
+  onItemNameChange,
 }: {
   items: PartnerBadgeItem[];
   brandColor: string;
@@ -54,12 +55,14 @@ export const PartnersBadgeShared = ({
   skipHeader?: boolean;
   variant?: 'preview' | 'site';
   className?: string;
+  visualEditEnabled?: boolean;
+  onItemNameChange?: (index: number, name: string) => void;
 }) => {
   if (items.length === 0) {return null;}
 
   const visibleItems = items.slice(0, maxVisible);
   const colors = React.useMemo(() => getPartnersColors(brandColor, secondary, mode), [brandColor, secondary, mode]);
-  const shouldAnimate = visibleItems.length > 1;
+  const shouldAnimate = visibleItems.length > 1 && !visualEditEnabled;
   const loopCount = shouldAnimate ? 2 : 1;
   const duration = Math.max(12, visibleItems.length * 3);
   const [isPaused, setIsPaused] = React.useState(false);
@@ -133,8 +136,24 @@ export const PartnersBadgeShared = ({
                       : <ImageIcon size={fallbackIconSize} className="text-slate-300" />}
                   </div>
                   {showName && (
-                    <span className="w-full truncate text-center text-xs font-medium text-slate-500 md:text-sm">
-                      {item.name ?? `Đối tác ${idx + 1}`}
+                    <span
+                      contentEditable={visualEditEnabled}
+                      suppressContentEditableWarning={visualEditEnabled}
+                      onClick={(e) => {
+                        if (visualEditEnabled) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }
+                      }}
+                      onBlur={visualEditEnabled ? (e) => {
+                        onItemNameChange?.(idx, e.currentTarget.textContent ?? '');
+                      } : undefined}
+                      className={cn(
+                        "w-full truncate text-center text-xs font-medium text-slate-500 md:text-sm",
+                        visualEditEnabled && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+                      )}
+                    >
+                      {item.name || (visualEditEnabled ? 'Nhập tên...' : `Đối tác ${idx + 1}`)}
                     </span>
                   )}
                 </a>

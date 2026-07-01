@@ -48,12 +48,11 @@ export function SectionHeader({
   const resolvedTitle = typeof title === 'string' ? title.trim() : '';
   const resolvedSubtitle = typeof subtitle === 'string' ? subtitle.trim() : '';
   const resolvedBadgeText = typeof badgeText === 'string' ? badgeText.trim() : '';
-  const hasTitle = (showTitle || effectiveVisualEditEnabled) && (resolvedTitle.length > 0 || effectiveVisualEditEnabled);
-  const hasSubtitle = (showSubtitle || effectiveVisualEditEnabled) && (resolvedSubtitle.length > 0 || effectiveVisualEditEnabled);
-  const hasBadge = (showBadge || effectiveVisualEditEnabled) && (resolvedBadgeText.length > 0 || effectiveVisualEditEnabled);
+  const hasTitle = showTitle && (resolvedTitle.length > 0 || effectiveVisualEditEnabled);
+  const hasSubtitle = showSubtitle && (resolvedSubtitle.length > 0 || effectiveVisualEditEnabled);
+  const hasBadge = showBadge && (resolvedBadgeText.length > 0 || effectiveVisualEditEnabled);
 
-  const shouldHideHeader = (hideHeader && !effectiveVisualEditEnabled) || (!hasTitle && !hasSubtitle && !hasBadge);
-  if (shouldHideHeader) {
+  if (hideHeader || (!hasTitle && !hasSubtitle && !hasBadge)) {
     return null;
   }
 

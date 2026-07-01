@@ -475,6 +475,13 @@ export default function PartnersEditPage({
               onTitleChange={setTitle}
               onSubtitleChange={setSubtitle}
               onBadgeTextChange={setBadgeText}
+              onItemNameChange={(index, nextName) => {
+                const nextItems = [...partnersItems];
+                if (nextItems[index]) {
+                  nextItems[index] = { ...nextItems[index], name: nextName };
+                  setPartnersItems(nextItems);
+                }
+              }}
             />
           </div>
         </div>

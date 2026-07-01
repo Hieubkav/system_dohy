@@ -56,6 +56,7 @@ export const PartnersPreview = ({
   onTitleChange,
   onSubtitleChange,
   onBadgeTextChange,
+  onItemNameChange,
 }: {
   items: PartnerItem[];
   brandColor: string;
@@ -90,6 +91,7 @@ export const PartnersPreview = ({
   onTitleChange?: (value: string) => void;
   onSubtitleChange?: (value: string) => void;
   onBadgeTextChange?: (value: string) => void;
+  onItemNameChange?: (index: number, name: string) => void;
 }) => {
   const { device, setDevice } = usePreviewDevice();
   const { isDark } = usePreviewDark();
@@ -161,6 +163,8 @@ export const PartnersPreview = ({
         )}
         className="dark:bg-slate-900 dark:border-slate-700"
         skipHeader={hasSharedHeaderConfig}
+        visualEditEnabled={isVisualEditActive}
+        onItemNameChange={onItemNameChange}
       />
     );
   };
@@ -195,6 +199,7 @@ export const PartnersPreview = ({
         onTitleChange={onTitleChange}
         onSubtitleChange={onSubtitleChange}
         onBadgeTextChange={onBadgeTextChange}
+        onItemNameChange={onItemNameChange}
       />
     );
   };
@@ -220,6 +225,8 @@ export const PartnersPreview = ({
         )}
         className="dark:bg-slate-900 dark:border-slate-700/40"
         skipHeader={hasSharedHeaderConfig}
+        visualEditEnabled={isVisualEditActive}
+        onItemNameChange={onItemNameChange}
       />
     );
   };
@@ -247,6 +254,8 @@ export const PartnersPreview = ({
           <PreviewImage src={item.url} alt={item.name ?? ''} className={className} />
         )}
         skipHeader={hasSharedHeaderConfig}
+        visualEditEnabled={isVisualEditActive}
+        onItemNameChange={onItemNameChange}
       />
     );
   };
@@ -271,6 +280,8 @@ export const PartnersPreview = ({
       )}
       className="dark:bg-slate-900 dark:border-slate-700/40"
       skipHeader={hasSharedHeaderConfig}
+      visualEditEnabled={isVisualEditActive}
+      onItemNameChange={onItemNameChange}
     />
   );
 
@@ -356,6 +367,8 @@ export const PartnersPreview = ({
         )}
         className="dark:bg-slate-900 dark:border-slate-700/40"
         skipHeader={hasSharedHeaderConfig}
+        visualEditEnabled={isVisualEditActive}
+        onItemNameChange={onItemNameChange}
       />
     );
   };
