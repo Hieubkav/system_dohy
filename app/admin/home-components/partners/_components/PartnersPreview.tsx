@@ -174,9 +174,10 @@ export const PartnersPreview = ({
         brandColor={brandColor}
         secondary={secondary}
         mode={mode}
-        title={title ?? 'Đối tác'}
-        subheading={subheading}
-        align={align}
+        title={showTitle !== false ? (title ?? 'Đối tác') : undefined}
+        subheading={showSubtitle !== false ? subheading : undefined}
+        badgeText={showBadge !== false ? badgeText : undefined}
+        align={headerAlign ?? align}
         displayMode={displayMode}
         logoSize={logoSize}
         spacing={spacing}
@@ -186,7 +187,11 @@ export const PartnersPreview = ({
           <PreviewImage src={item.url} alt={item.name ?? ''} className={className} />
         )}
         className="dark:bg-slate-900 dark:border-slate-700/40"
-        skipHeader={false}
+        skipHeader={hideHeader}
+        visualEditEnabled={isVisualEditActive}
+        onTitleChange={onTitleChange}
+        onSubtitleChange={onSubtitleChange}
+        onBadgeTextChange={onBadgeTextChange}
       />
     );
   };
