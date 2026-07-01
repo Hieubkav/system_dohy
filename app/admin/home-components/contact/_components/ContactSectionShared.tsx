@@ -618,6 +618,8 @@ const renderModern = ({
   mapData,
   sourcePath,
   isPreview,
+  isVisualEditActive,
+  onSaveConfig,
 }: {
   info: ReturnType<typeof getInfo>;
   config: ContactConfigState;
@@ -627,6 +629,8 @@ const renderModern = ({
   mapData?: ContactMapData;
   sourcePath?: string;
   isPreview: boolean;
+  isVisualEditActive: boolean;
+  onSaveConfig?: (config: ContactConfigState) => void;
 }) => {
   const hasForm = Boolean(config.showForm);
   const hasMap = Boolean(config.showMap);
@@ -661,10 +665,36 @@ const renderModern = ({
               borderColor: tokens.sectionBadgeBorder,
             }}
           >
-            {info.texts.badge}
+            <EditableText
+              text={config.texts?.badge ?? ''}
+              placeholder="Badge..."
+              onSave={(val) => {
+                if (onSaveConfig && config) {
+                  onSaveConfig({
+                    ...config,
+                    texts: { ...config.texts, badge: val },
+                  });
+                }
+              }}
+              isVisualEditActive={isVisualEditActive}
+              tag="span"
+            />
           </div>
           <h2 className={cn('font-bold tracking-tight mb-6', currentDevice === 'mobile' ? 'text-xl' : 'text-2xl')} style={{ color: tokens.heading }}>
-            {info.texts.heading}
+            <EditableText
+              text={config.texts?.heading ?? ''}
+              placeholder="Kết nối với chúng tôi..."
+              onSave={(val) => {
+                if (onSaveConfig && config) {
+                  onSaveConfig({
+                    ...config,
+                    texts: { ...config.texts, heading: val },
+                  });
+                }
+              }}
+              isVisualEditActive={isVisualEditActive}
+              tag="span"
+            />
           </h2>
 
           <div className="space-y-5">
@@ -685,8 +715,8 @@ const renderModern = ({
             <ContactInquiryForm
               brandColor={tokens.primary}
               secondaryColor={tokens.secondary}
-              title={info.heading}
-              description={info.description}
+              title={config.formTitle || info.heading}
+              description={config.formDescription || info.description}
               submitLabel={info.submitLabel}
               responseTimeText={info.responseText}
               fields={config.formFields}
@@ -694,6 +724,17 @@ const renderModern = ({
               sourcePath={sourcePath}
               subjectFallback={info.subjectFallback}
               isPreview={isPreview}
+              isVisualEditActive={isVisualEditActive}
+              onTitleChange={(val) => {
+                if (onSaveConfig && config) {
+                  onSaveConfig({ ...config, formTitle: val });
+                }
+              }}
+              onDescriptionChange={(val) => {
+                if (onSaveConfig && config) {
+                  onSaveConfig({ ...config, formDescription: val });
+                }
+              }}
             />
           </div>
         )}
@@ -1218,6 +1259,8 @@ const renderKanban = ({
   mapData,
   sourcePath,
   isPreview,
+  isVisualEditActive,
+  onSaveConfig,
 }: {
   info: ReturnType<typeof getInfo>;
   config: ContactConfigState;
@@ -1227,6 +1270,8 @@ const renderKanban = ({
   mapData?: ContactMapData;
   sourcePath?: string;
   isPreview: boolean;
+  isVisualEditActive: boolean;
+  onSaveConfig?: (config: ContactConfigState) => void;
 }) => {
   const contactItems = getDisplayItems(config, isPreview);
   const hasForm = Boolean(config.showForm);
@@ -1271,7 +1316,20 @@ const renderKanban = ({
         <div className="flex flex-col space-y-3 tv:space-y-6">
           <div className="border-b pb-1.5" style={{ borderColor: tokens.neutralBorder }}>
             <span className="text-[10px] tv:text-sm font-extrabold tracking-[0.15em] uppercase" style={{ color: tokens.labelText }}>
-              {info.texts.badge || 'Thông tin liên hệ'}
+              <EditableText
+                text={config.texts?.badge ?? ''}
+                placeholder="Thông tin liên hệ"
+                onSave={(val) => {
+                  if (onSaveConfig && config) {
+                    onSaveConfig({
+                      ...config,
+                      texts: { ...config.texts, badge: val }
+                    });
+                  }
+                }}
+                isVisualEditActive={isVisualEditActive}
+                tag="span"
+              />
             </span>
           </div>
           <div className="space-y-2 tv:space-y-4 flex-1">
@@ -1323,7 +1381,17 @@ const renderKanban = ({
           <div className="flex flex-col space-y-3 tv:space-y-6">
             <div className="border-b pb-1.5" style={{ borderColor: tokens.neutralBorder }}>
               <span className="text-[10px] tv:text-sm font-extrabold tracking-[0.15em] uppercase" style={{ color: tokens.labelText }}>
-                {info.heading || 'Gửi yêu cầu'}
+                <EditableText
+                  text={config.formTitle ?? ''}
+                  placeholder="Liên hệ với chúng tôi"
+                  onSave={(val) => {
+                    if (onSaveConfig && config) {
+                      onSaveConfig({ ...config, formTitle: val });
+                    }
+                  }}
+                  isVisualEditActive={isVisualEditActive}
+                  tag="span"
+                />
               </span>
             </div>
             <div
@@ -1360,7 +1428,20 @@ const renderKanban = ({
           <div className="flex flex-col space-y-3 tv:space-y-6">
             <div className="border-b pb-1.5" style={{ borderColor: tokens.neutralBorder }}>
               <span className="text-[10px] tv:text-sm font-extrabold tracking-[0.15em] uppercase" style={{ color: tokens.labelText }}>
-                Bản đồ vị trí
+                <EditableText
+                  text={config.texts?.mapTitle ?? ''}
+                  placeholder="Bản đồ vị trí"
+                  onSave={(val) => {
+                    if (onSaveConfig && config) {
+                      onSaveConfig({
+                        ...config,
+                        texts: { ...config.texts, mapTitle: val }
+                      });
+                    }
+                  }}
+                  isVisualEditActive={isVisualEditActive}
+                  tag="span"
+                />
               </span>
             </div>
             <div
@@ -1400,12 +1481,13 @@ export function ContactSectionShared({
   const containerClass = getRootContainerClass(context, currentDevice);
 
   const content = (() => {
+    const isVisualEditActive = isPreview && visualEdit.active;
     if (style === 'kanban') {
-      return renderKanban({ info, config, tokens, currentDevice, activeSocials, mapData, sourcePath, isPreview });
+      return renderKanban({ info, config, tokens, currentDevice, activeSocials, mapData, sourcePath, isPreview, isVisualEditActive, onSaveConfig: onConfigChange });
     }
 
     if (style === 'modern') {
-      return renderModern({ info, config, tokens, currentDevice, activeSocials, mapData, sourcePath, isPreview });
+      return renderModern({ info, config, tokens, currentDevice, activeSocials, mapData, sourcePath, isPreview, isVisualEditActive, onSaveConfig: onConfigChange });
     }
 
     if (style === 'floating') {

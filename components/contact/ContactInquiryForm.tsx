@@ -5,6 +5,7 @@ import { MessageSquare, Send } from 'lucide-react';
 import type { ContactColorTokens } from '@/app/admin/home-components/contact/_lib/colors';
 import { useContactInquiryForm } from './useContactInquiryForm';
 import { useSiteSettings } from '@/components/site/hooks';
+import { cn } from '@/app/admin/components/ui';
 
 type ContactInquiryFormProps = {
   brandColor: string;
@@ -19,6 +20,9 @@ type ContactInquiryFormProps = {
   subjectFallback?: string;
   isPreview?: boolean;
   withContainer?: boolean;
+  isVisualEditActive?: boolean;
+  onTitleChange?: (val: string) => void;
+  onDescriptionChange?: (val: string) => void;
 };
 
 const DEFAULT_FIELDS = ['name', 'email', 'phone', 'subject', 'message'];
@@ -36,6 +40,9 @@ export function ContactInquiryForm({
   subjectFallback,
   isPreview = false,
   withContainer = true,
+  isVisualEditActive = false,
+  onTitleChange,
+  onDescriptionChange,
 }: ContactInquiryFormProps) {
   const { isDark } = useSiteSettings();
   const {
@@ -104,10 +111,34 @@ export function ContactInquiryForm({
       >
       <div className="flex items-center gap-2">
         <MessageSquare size={20} style={{ color: formTokens?.formAccent ?? (isDark ? brandColor : secondaryColor) }} />
-        <div>
-          <h3 className="font-semibold text-base text-slate-900 dark:text-[#f5f5f7]" style={!formTokens ? undefined : { color: formTokens.formTitle }}>{title}</h3>
-          {description && (
-            <p className="text-xs mt-1 text-slate-500 dark:text-[#86868b]" style={!formTokens ? undefined : { color: formTokens.formDescription }}>{description}</p>
+        <div className="min-w-0 flex-1">
+          <h3
+            contentEditable={isVisualEditActive}
+            suppressContentEditableWarning={isVisualEditActive}
+            onBlur={isVisualEditActive ? (e: any) => onTitleChange?.(e.currentTarget.textContent ?? '') : undefined}
+            onClick={(e) => { if (isVisualEditActive) { e.preventDefault(); e.stopPropagation(); } }}
+            className={cn(
+              "font-semibold text-base text-slate-900 dark:text-[#f5f5f7] break-words",
+              isVisualEditActive && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+            )}
+            style={!formTokens ? undefined : { color: formTokens.formTitle }}
+          >
+            {title || (isVisualEditActive ? 'Nhập tiêu đề form...' : '')}
+          </h3>
+          {(description || isVisualEditActive) && (
+            <p
+              contentEditable={isVisualEditActive}
+              suppressContentEditableWarning={isVisualEditActive}
+              onBlur={isVisualEditActive ? (e: any) => onDescriptionChange?.(e.currentTarget.textContent ?? '') : undefined}
+              onClick={(e) => { if (isVisualEditActive) { e.preventDefault(); e.stopPropagation(); } }}
+              className={cn(
+                "text-xs mt-1 text-slate-500 dark:text-[#86868b] break-words",
+                isVisualEditActive && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text"
+              )}
+              style={!formTokens ? undefined : { color: formTokens.formDescription }}
+            >
+              {description || (isVisualEditActive ? 'Nhập mô tả form...' : '')}
+            </p>
           )}
         </div>
       </div>
