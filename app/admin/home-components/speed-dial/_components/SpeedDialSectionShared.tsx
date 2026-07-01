@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { cn } from '../../../components/ui';
 import {
   ArrowUp,
   Calendar,
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 import { BrowserFrame } from '../../_shared/components/BrowserFrame';
 import { ColorInfoPanel } from '../../_shared/components/ColorInfoPanel';
-import { PreviewWrapper } from '../../_shared/components/PreviewWrapper';
+import { PreviewWrapper, usePreviewVisualEdit } from '../../_shared/components/PreviewWrapper';
 import { deviceWidths, type PreviewDevice } from '../../_shared/hooks/usePreviewDevice';
 import {
   getAPCATextColor,
@@ -102,6 +103,8 @@ interface SpeedDialSectionSharedProps {
   enableShadow?: boolean;
   isDark?: boolean;
   enableGlassmorphism?: boolean;
+  visualEditEnabled?: boolean;
+  onActionLabelChange?: (index: number, val: string) => void;
 }
 
 /** Icon dùng PNG logo (fill full nút, không cần bg color) */
@@ -206,6 +209,8 @@ const renderFab = ({
   showBackToTop,
   onBackToTop,
   enableShadow,
+  isVisualEditActive,
+  onActionLabelChange,
 }: {
   actions: SpeedDialRenderableAction[];
   isRight: boolean;
@@ -217,6 +222,8 @@ const renderFab = ({
   showBackToTop: boolean;
   onBackToTop: () => void;
   enableShadow: boolean;
+  isVisualEditActive: boolean;
+  onActionLabelChange?: (index: number, val: string) => void;
 }) => {
   /* Layout 1: tất cả nút hiện luôn, không có toggle */
   const isPrev = context === 'preview';
@@ -250,9 +257,10 @@ const renderFab = ({
       )}
 
       {/* Action buttons */}
-      {actions.map((action) => {
+      {actions.map((action, index) => {
         const bg = resolveActionBgColor(action.bgColor, tokens, 'fab');
         const isImg = isImageBrandIcon(action.icon);
+        const isEditable = isVisualEditActive && onActionLabelChange !== undefined;
 
         return (
           <a
@@ -264,10 +272,25 @@ const renderFab = ({
             {/* Tooltip — hiện khi hover */}
             {action.label && (
               <span
-                className={`absolute ${isRight ? 'right-full mr-2.5' : 'left-full ml-2.5'} top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-medium rounded-[5px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none`}
+                className={cn(
+                  `absolute ${isRight ? 'right-full mr-2.5' : 'left-full ml-2.5'} top-1/2 -translate-y-1/2 px-2.5 py-1 text-[11px] font-medium rounded-[5px] whitespace-nowrap transition-opacity duration-200`,
+                  isEditable ? 'pointer-events-auto opacity-100' : 'opacity-0 group-hover:opacity-100 pointer-events-none'
+                )}
                 style={{ backgroundColor: tokens.tooltipBg, color: tokens.tooltipText }}
               >
-                {action.label}
+                <span
+                  contentEditable={isEditable}
+                  suppressContentEditableWarning={isEditable}
+                  onBlur={isEditable ? (e) => {
+                    onActionLabelChange?.(index, e.currentTarget.textContent ?? '');
+                  } : undefined}
+                  onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                  className={cn(
+                    isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text px-1"
+                  )}
+                >
+                  {action.label}
+                </span>
               </span>
             )}
             {/* Button circle */}
@@ -398,6 +421,8 @@ const renderPills = ({
   onBackToTop,
   enableShadow,
   glassStyle,
+  isVisualEditActive,
+  onActionLabelChange,
 }: {
   actions: SpeedDialRenderableAction[];
   isRight: boolean;
@@ -410,6 +435,8 @@ const renderPills = ({
   onBackToTop: () => void;
   enableShadow: boolean;
   glassStyle?: React.CSSProperties;
+  isVisualEditActive: boolean;
+  onActionLabelChange?: (index: number, val: string) => void;
 }) => {
   /* Layout 3: card trắng popup + toggle cam + back-to-top (giống dola-construction) */
   const isPrev = context === 'preview';
@@ -443,6 +470,7 @@ const renderPills = ({
             const bg = resolveActionBgColor(action.bgColor, tokens, 'pills');
             const text = getAPCATextColor(bg, 14, 600);
             const isImg = isImageBrandIcon(action.icon);
+            const isEditable = isVisualEditActive && onActionLabelChange !== undefined;
 
             return (
               <a
@@ -463,7 +491,19 @@ const renderPills = ({
                 </span>
                 {action.label && (
                   <span className={`${isPrev ? 'text-[9px]' : 'text-sm'} font-medium truncate`} style={{ color: tokens.bodyText }}>
-                    {action.label}
+                    <span
+                      contentEditable={isEditable}
+                      suppressContentEditableWarning={isEditable}
+                      onBlur={isEditable ? (e) => {
+                        onActionLabelChange?.(idx, e.currentTarget.textContent ?? '');
+                      } : undefined}
+                      onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                      className={cn(
+                        isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text px-1"
+                      )}
+                    >
+                      {action.label}
+                    </span>
                   </span>
                 )}
               </a>
@@ -617,6 +657,8 @@ const renderDock = ({
   isOpen: _isOpen,
   onToggle: _onToggle,
   enableShadow,
+  isVisualEditActive,
+  onActionLabelChange,
 }: {
   actions: SpeedDialRenderableAction[];
   isRight: boolean;
@@ -629,6 +671,8 @@ const renderDock = ({
   showBackToTop: boolean;
   onBackToTop: () => void;
   enableShadow: boolean;
+  isVisualEditActive: boolean;
+  onActionLabelChange?: (index: number, val: string) => void;
 }) => {
   /* Layout 5: Desktop = thanh dọc icon-only, Mobile = bottom nav ngang (bean-construction) */
   const bg = tokens.mainButtonBg;
@@ -655,7 +699,7 @@ const renderDock = ({
       role="group"
       aria-label={groupLabel}
     >
-      {actions.map((action) => (
+      {actions.map((action, index) => (
         <a
           key={action.key}
           {...getLinkProps(action.url)}
@@ -668,7 +712,19 @@ const renderDock = ({
           </span>
           {action.label && (
             <span className="text-center leading-tight" style={{ fontSize: isPrev ? '7px' : '11px', fontWeight: 600, color: textColor }}>
-              {action.label}
+              <span
+                contentEditable={isVisualEditActive && onActionLabelChange !== undefined}
+                suppressContentEditableWarning={isVisualEditActive && onActionLabelChange !== undefined}
+                onBlur={isVisualEditActive && onActionLabelChange !== undefined ? (e) => {
+                  onActionLabelChange?.(index, e.currentTarget.textContent ?? '');
+                } : undefined}
+                onClick={(e) => { if (isVisualEditActive && onActionLabelChange !== undefined) { e.preventDefault(); e.stopPropagation(); } }}
+                className={cn(
+                  isVisualEditActive && onActionLabelChange !== undefined && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text px-1"
+                )}
+              >
+                {action.label}
+              </span>
             </span>
           )}
         </a>
@@ -728,7 +784,7 @@ const renderDock = ({
           style={{ backgroundColor: bg, borderRadius, width: `${barWidth}px`, boxShadow: enableShadow ? '0 10px 30px rgba(15,23,42,0.22)' : undefined }}
         >
           <span style={waveTopStyle} aria-hidden="true" />
-          {actions.map((action) => (
+          {actions.map((action, index) => (
             <a
               key={action.key}
               {...getLinkProps(action.url)}
@@ -741,7 +797,19 @@ const renderDock = ({
               </span>
               {action.label && (
                 <span className="text-center leading-tight" style={{ fontSize: '10px', fontWeight: 600, color: textColor }}>
-                  {action.label}
+                  <span
+                    contentEditable={isVisualEditActive && onActionLabelChange !== undefined}
+                    suppressContentEditableWarning={isVisualEditActive && onActionLabelChange !== undefined}
+                    onBlur={isVisualEditActive && onActionLabelChange !== undefined ? (e) => {
+                      onActionLabelChange?.(index, e.currentTarget.textContent ?? '');
+                    } : undefined}
+                    onClick={(e) => { if (isVisualEditActive && onActionLabelChange !== undefined) { e.preventDefault(); e.stopPropagation(); } }}
+                    className={cn(
+                      isVisualEditActive && onActionLabelChange !== undefined && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text px-1"
+                    )}
+                  >
+                    {action.label}
+                  </span>
                 </span>
               )}
             </a>
@@ -761,6 +829,8 @@ const renderBuilderBar = ({
   groupLabel,
   previewDevice,
   enableShadow,
+  isVisualEditActive,
+  onActionLabelChange,
 }: {
   actions: SpeedDialRenderableAction[];
   isRight: boolean;
@@ -773,6 +843,8 @@ const renderBuilderBar = ({
   showBackToTop: boolean;
   onBackToTop: () => void;
   enableShadow: boolean;
+  isVisualEditActive: boolean;
+  onActionLabelChange?: (index: number, val: string) => void;
 }) => {
   const isPrev = context === 'preview';
   const bg = tokens.actionStyleBg['builder-bar'];
@@ -788,7 +860,7 @@ const renderBuilderBar = ({
       style={{ backgroundColor: bg, boxShadow: enableShadow ? '0 -10px 30px rgba(15,23,42,0.18)' : undefined }}
       aria-label={groupLabel}
     >
-      {actions.map((action) => (
+      {actions.map((action, index) => (
         <a
           key={action.key}
           {...getLinkProps(action.url)}
@@ -801,7 +873,19 @@ const renderBuilderBar = ({
           </span>
           {action.label && (
             <span className="max-w-[54px] break-words text-center text-[6px] font-bold leading-none">
-              {action.label}
+              <span
+                contentEditable={isVisualEditActive && onActionLabelChange !== undefined}
+                suppressContentEditableWarning={isVisualEditActive && onActionLabelChange !== undefined}
+                onBlur={isVisualEditActive && onActionLabelChange !== undefined ? (e) => {
+                  onActionLabelChange?.(index, e.currentTarget.textContent ?? '');
+                } : undefined}
+                onClick={(e) => { if (isVisualEditActive && onActionLabelChange !== undefined) { e.preventDefault(); e.stopPropagation(); } }}
+                className={cn(
+                  isVisualEditActive && onActionLabelChange !== undefined && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text px-1"
+                )}
+              >
+                {action.label}
+              </span>
             </span>
           )}
         </a>
@@ -824,6 +908,7 @@ const renderBuilderBar = ({
         <ul className={`flex list-none flex-col overflow-hidden rounded-[10px] p-0 ${shadowClass(enableShadow, 'shadow-[0_6px_18px_rgba(0,0,0,0.25)]')}`}>
           {actions.map((action, index) => {
             const isLast = index === actions.length - 1;
+            const isEditable = isVisualEditActive && onActionLabelChange !== undefined;
 
             return (
               <li key={action.key} className="relative">
@@ -838,7 +923,19 @@ const renderBuilderBar = ({
                   </span>
                   {action.label && (
                     <span className="mt-1 max-w-full break-words text-[6px] font-bold leading-none">
-                      {action.label}
+                      <span
+                        contentEditable={isEditable}
+                        suppressContentEditableWarning={isEditable}
+                        onBlur={isEditable ? (e) => {
+                          onActionLabelChange?.(index, e.currentTarget.textContent ?? '');
+                        } : undefined}
+                        onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                        className={cn(
+                          isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text px-1"
+                        )}
+                      >
+                        {action.label}
+                      </span>
                     </span>
                   )}
                 </a>
@@ -870,6 +967,8 @@ const renderMinimal = ({
   onBackToTop,
   enableShadow,
   glassStyle,
+  isVisualEditActive,
+  onActionLabelChange,
 }: {
   actions: SpeedDialRenderableAction[];
   isRight: boolean;
@@ -882,6 +981,8 @@ const renderMinimal = ({
   onBackToTop: () => void;
   enableShadow: boolean;
   glassStyle?: React.CSSProperties;
+  isVisualEditActive: boolean;
+  onActionLabelChange?: (index: number, val: string) => void;
 }) => {
   /* Layout 6: bean-spa style — toggle tròn + pulse, popup card trắng */
   const isPrev = context === 'preview';
@@ -927,6 +1028,7 @@ const renderMinimal = ({
             {actions.map((action, i) => {
               const bg = resolveActionBgColor(action.bgColor, tokens, 'minimal');
               const text = getAPCATextColor(bg, 14, 600);
+              const isEditable = isVisualEditActive && onActionLabelChange !== undefined;
               return (
                 <a
                   key={action.key}
@@ -946,7 +1048,19 @@ const renderMinimal = ({
                   </span>
                   <div className="flex flex-col min-w-0">
                     <span className={`font-semibold truncate ${isPrev ? 'text-[7px]' : 'text-[13px]'}`} style={{ color: tokens.bodyText }}>
-                      {action.label || action.icon}
+                      <span
+                        contentEditable={isEditable}
+                        suppressContentEditableWarning={isEditable}
+                        onBlur={isEditable ? (e) => {
+                          onActionLabelChange?.(i, e.currentTarget.textContent ?? '');
+                        } : undefined}
+                        onClick={(e) => { if (isEditable) { e.preventDefault(); e.stopPropagation(); } }}
+                        className={cn(
+                          isEditable && "outline-dashed outline-1 outline-blue-500 hover:bg-blue-50/50 cursor-text select-text px-1"
+                        )}
+                      >
+                        {action.label || action.icon}
+                      </span>
                     </span>
                     {action.url && (
                       <span className={`truncate ${isPrev ? 'text-[6px]' : 'text-[11px]'}`} style={{ color: tokens.mutedText }}>
@@ -1005,6 +1119,8 @@ const SpeedDialSectionContent = ({
   enableGlassmorphism,
   isDark,
   previewDevice,
+  isVisualEditActive,
+  onActionLabelChange,
 }: {
   actions: SpeedDialRenderableAction[];
   style: SpeedDialStyle;
@@ -1020,6 +1136,8 @@ const SpeedDialSectionContent = ({
   enableGlassmorphism?: boolean;
   isDark?: boolean;
   previewDevice: PreviewDevice;
+  isVisualEditActive: boolean;
+  onActionLabelChange?: (index: number, val: string) => void;
 }) => {
   const isRight = position !== 'bottom-left';
 
@@ -1045,13 +1163,13 @@ const SpeedDialSectionContent = ({
 
   const floating = (
     <>
-      {style === 'fab' && renderFab({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow })}
+      {style === 'fab' && renderFab({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, isVisualEditActive, onActionLabelChange })}
       {style === 'sidebar' && renderSidebar({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, glassStyle })}
-      {style === 'pills' && renderPills({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, glassStyle })}
+      {style === 'pills' && renderPills({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, glassStyle, isVisualEditActive, onActionLabelChange })}
       {style === 'stack' && renderStack({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, glassStyle })}
-      {style === 'dock' && renderDock({ actions, isRight, tokens, context, groupLabel, previewDevice, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow })}
-      {style === 'minimal' && renderMinimal({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, glassStyle })}
-      {style === 'builder-bar' && renderBuilderBar({ actions, isRight, tokens, context, groupLabel, previewDevice, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow })}
+      {style === 'dock' && renderDock({ actions, isRight, tokens, context, groupLabel, previewDevice, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, isVisualEditActive, onActionLabelChange })}
+      {style === 'minimal' && renderMinimal({ actions, isRight, tokens, context, groupLabel, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, glassStyle, isVisualEditActive, onActionLabelChange })}
+      {style === 'builder-bar' && renderBuilderBar({ actions, isRight, tokens, context, groupLabel, previewDevice, isOpen, onToggle, showBackToTop, onBackToTop, enableShadow, isVisualEditActive, onActionLabelChange })}
     </>
   );
 
@@ -1085,6 +1203,8 @@ export function SpeedDialSectionShared({
   enableShadow = true,
   isDark,
   enableGlassmorphism = false,
+  visualEditEnabled,
+  onActionLabelChange,
 }: SpeedDialSectionSharedProps) {
   const selectedStyle = previewStyle ?? style;
   const normalizedActions = React.useMemo(() => normalizeSpeedDialActions(actions), [actions]);
@@ -1138,12 +1258,15 @@ export function SpeedDialSectionShared({
         enableGlassmorphism={enableGlassmorphism}
         isDark={isDark}
         previewDevice={previewDevice}
+        isVisualEditActive={visualEditEnabled ?? false}
+        onActionLabelChange={onActionLabelChange}
       />
     );
   }
 
   const info = getStyleInfo(selectedStyle, normalizedActions.length, mode, context, previewDevice);
   const PreviewContent = ({ isDark = false }: { isDark?: boolean }) => {
+    const visualEdit = usePreviewVisualEdit();
     const previewTokens = getSpeedDialThemeTokens({
       primary: brandColor,
       secondary,
@@ -1168,6 +1291,8 @@ export function SpeedDialSectionShared({
           enableGlassmorphism={enableGlassmorphism}
           isDark={isDark}
           previewDevice={previewDevice}
+          isVisualEditActive={visualEdit.active}
+          onActionLabelChange={onActionLabelChange}
         />
       </BrowserFrame>
     );

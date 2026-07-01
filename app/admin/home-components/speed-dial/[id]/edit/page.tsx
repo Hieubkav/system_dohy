@@ -376,6 +376,12 @@ export default function SpeedDialEditPage({
               defaultOpen={defaultOpen}
               enableShadow={enableShadow}
               enableGlassmorphism={enableGlassmorphism}
+              onActionLabelChange={(index, val) => {
+                const nextActions = actions.map((act, idx) =>
+                  idx === index ? { ...act, label: val } : act
+                );
+                setActions(nextActions);
+              }}
             />
           </div>
         </div>

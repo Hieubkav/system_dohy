@@ -19,6 +19,8 @@ interface SpeedDialPreviewProps {
   defaultOpen: boolean;
   enableShadow?: boolean;
   enableGlassmorphism?: boolean;
+  visualEditEnabled?: boolean;
+  onActionLabelChange?: (index: number, val: string) => void;
 }
 
 export function SpeedDialPreview({
@@ -34,6 +36,8 @@ export function SpeedDialPreview({
   defaultOpen,
   enableShadow = true,
   enableGlassmorphism = false,
+  visualEditEnabled,
+  onActionLabelChange,
 }: SpeedDialPreviewProps) {
   const { device, setDevice } = usePreviewDevice();
   const styleForRender = selectedStyle ?? style;
@@ -56,6 +60,8 @@ export function SpeedDialPreview({
       defaultOpen={defaultOpen}
       enableShadow={enableShadow}
       enableGlassmorphism={enableGlassmorphism}
+      visualEditEnabled={visualEditEnabled}
+      onActionLabelChange={onActionLabelChange}
     />
   );
 }
