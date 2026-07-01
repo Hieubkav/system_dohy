@@ -300,6 +300,21 @@ export const FooterPreview = ({
       }
     };
 
+    const handleUpdateLinkLabel = (colId: number | string, linkIdx: number, val: string) => {
+      if (onConfigChange) {
+        const nextColumns = columns.map((col) => {
+          if (col.id === colId) {
+            const nextLinks = col.links.map((link, idx) =>
+              idx === linkIdx ? { ...link, label: val } : link
+            );
+            return { ...col, links: nextLinks };
+          }
+          return col;
+        });
+        onConfigChange({ ...config, columns: nextColumns });
+      }
+    };
+
     const preview = () => {
       // Style 1: Classic — Clean Minimalist
       if (previewStyle === 'classic') {
@@ -341,7 +356,17 @@ export const FooterPreview = ({
                       </h3>
                       <ul className="space-y-1.5">
                         {col.links.map((link, lIdx) => (
-                          <li key={lIdx}><span className="text-xs break-words" style={{ color: colors.link }}>{link.label}</span></li>
+                          <li key={lIdx}>
+                            <EditableText
+                              tag="span"
+                              text={link.label}
+                              placeholder="Menu item"
+                              onSave={(val) => handleUpdateLinkLabel(col.id, lIdx, val)}
+                              isVisualEditActive={isVisualEditActive}
+                              className="text-xs break-words"
+                              style={{ color: colors.link }}
+                            />
+                          </li>
                         ))}
                       </ul>
                     </div>
@@ -445,7 +470,17 @@ export const FooterPreview = ({
                       </h3>
                       <ul className="space-y-1.5">
                         {col.links.map((link, lIdx) => (
-                          <li key={lIdx}><span className="text-xs break-words" style={{ color: colors.link }}>{link.label}</span></li>
+                          <li key={lIdx}>
+                            <EditableText
+                              tag="span"
+                              text={link.label}
+                              placeholder="Menu item"
+                              onSave={(val) => handleUpdateLinkLabel(col.id, lIdx, val)}
+                              isVisualEditActive={isVisualEditActive}
+                              className="text-xs break-words"
+                              style={{ color: colors.link }}
+                            />
+                          </li>
                         ))}
                       </ul>
                     </div>
@@ -533,7 +568,17 @@ export const FooterPreview = ({
                     </h4>
                     <ul className="space-y-1">
                       {col.links.map((link, lIdx) => (
-                        <li key={lIdx}><span className="text-xs break-words" style={{ color: colors.link }}>{link.label}</span></li>
+                        <li key={lIdx}>
+                          <EditableText
+                            tag="span"
+                            text={link.label}
+                            placeholder="Menu item"
+                            onSave={(val) => handleUpdateLinkLabel(col.id, lIdx, val)}
+                            isVisualEditActive={isVisualEditActive}
+                            className="text-xs break-words"
+                            style={{ color: colors.link }}
+                          />
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -618,7 +663,17 @@ export const FooterPreview = ({
                       </h3>
                       <ul className="space-y-1.5">
                         {col.links.map((link, lIdx) => (
-                          <li key={lIdx}><span className="text-xs break-words" style={{ color: colors.link }}>{link.label}</span></li>
+                          <li key={lIdx}>
+                            <EditableText
+                              tag="span"
+                              text={link.label}
+                              placeholder="Menu item"
+                              onSave={(val) => handleUpdateLinkLabel(col.id, lIdx, val)}
+                              isVisualEditActive={isVisualEditActive}
+                              className="text-xs break-words"
+                              style={{ color: colors.link }}
+                            />
+                          </li>
                         ))}
                       </ul>
                     </div>
@@ -701,7 +756,17 @@ export const FooterPreview = ({
                     </h3>
                     <ul className="space-y-1.5">
                       {col.links.map((link, lIdx) => (
-                        <li key={lIdx}><span className="text-xs break-words" style={{ color: colors.magazineLink }}>{link.label}</span></li>
+                        <li key={lIdx}>
+                          <EditableText
+                            tag="span"
+                            text={link.label}
+                            placeholder="Menu item"
+                            onSave={(val) => handleUpdateLinkLabel(col.id, lIdx, val)}
+                            isVisualEditActive={isVisualEditActive}
+                            className="text-xs break-words"
+                            style={{ color: colors.magazineLink }}
+                          />
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -795,7 +860,17 @@ export const FooterPreview = ({
                       </h3>
                       <ul className="space-y-1">
                         {col.links.map((link, lIdx) => (
-                          <li key={lIdx}><span className="text-xs opacity-75 break-words" style={{ color: colors.stackedTextOnBg }}>{link.label}</span></li>
+                          <li key={lIdx}>
+                            <EditableText
+                              tag="span"
+                              text={link.label}
+                              placeholder="Menu item"
+                              onSave={(val) => handleUpdateLinkLabel(col.id, lIdx, val)}
+                              isVisualEditActive={isVisualEditActive}
+                              className="text-xs opacity-75 break-words"
+                              style={{ color: colors.stackedTextOnBg }}
+                            />
+                          </li>
                         ))}
                       </ul>
                     </div>
