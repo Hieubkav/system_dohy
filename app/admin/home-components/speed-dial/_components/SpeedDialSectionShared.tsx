@@ -1309,6 +1309,7 @@ export function SpeedDialSectionShared({
         styles={SPEED_DIAL_STYLES}
         info={info}
         deviceWidthClass={deviceWidths[previewDevice]}
+        visualEditAllowed={true}
       >
         <PreviewContent />
       </PreviewWrapper>
