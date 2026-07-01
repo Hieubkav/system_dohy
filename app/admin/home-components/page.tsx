@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronDown, Copy, Edit, Grid, GripVertical, History, Layers, Loader2, MousePointer2, PanelBottom, PanelTop, Plus, Search, Settings2, Trash2, Wand2, X, Monitor, Smartphone, Tablet, Sun, Moon, ChevronLeft } from 'lucide-react';
 
 import { toast } from 'sonner';
@@ -260,7 +261,11 @@ function HomeComponentsPage() {
   const duplicateMutation = useMutation(api.homeComponents.duplicate);
   const wizardSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'homepage', settingKey: 'enableSmartWizard' });
   const legacySnapshotQuickCreateSetting = useQuery(api.admin.modules.getModuleSetting, { moduleKey: 'homepage', settingKey: 'enableLegacySnapshotQuickCreate' });
-  const [activeTab, setActiveTab] = useState<PageTab>('components');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const isLiveParam = searchParams.get('live') === 'true';
+  const [localActiveTab, setLocalActiveTab] = useState<PageTab>('components');
+  const activeTab = isLiveParam ? 'live-editor' : localActiveTab;
   const systemColors = useBrandColors();
   const systemConfig = useQuery(api.homeComponentSystemConfig.getConfig);
   const [liveComponents, setLiveComponents] = useState<any[]>([]);
@@ -379,11 +384,11 @@ function HomeComponentsPage() {
       if (confirm('Bạn có thay đổi chưa lưu. Thoát và hủy các thay đổi này?')) {
         setLiveComponents([]);
         setHasChanges(false);
-        setActiveTab('components');
+        router.push('/admin/home-components');
       }
     } else {
       setLiveComponents([]);
-      setActiveTab('components');
+      router.push('/admin/home-components');
     }
   };
 
@@ -770,7 +775,9 @@ function HomeComponentsPage() {
           <Button
             className="gap-2 text-blue-600 border-blue-200 bg-blue-50/50 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-900 dark:bg-blue-950/20 dark:hover:bg-blue-950/40"
             variant="outline"
-            onClick={() => setActiveTab('live-editor')}
+            onClick={() => {
+              router.push('/admin/home-components?live=true');
+            }}
             disabled={!components || components.length === 0}
           >
             <MousePointer2 size={16} />
@@ -794,7 +801,12 @@ function HomeComponentsPage() {
             <button
               key={tab.key}
               type="button"
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => {
+                setLocalActiveTab(tab.key);
+                if (isLiveParam) {
+                  router.push('/admin/home-components');
+                }
+              }}
               className={cn(
                 'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 isActive
