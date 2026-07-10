@@ -25,6 +25,7 @@ import {
   TableCell,
 } from '@/app/admin/components/ui';
 import { CustomHomeRuntimeSection } from '@/components/site/home/sections/CustomHomeRuntimeSection';
+import { DEFAULT_MINI_GAMES } from './defaultMiniGames';
 
 type MiniGameMiniAppProps = {
   appConfig?: Record<string, unknown>;
@@ -152,9 +153,12 @@ export function MiniGameMiniApp({
 
   // Map dữ liệu game đầy đủ
   const games = React.useMemo(() => {
-    const rawGames = isAdminMode
+    const dbGames = isAdminMode
       ? (allGames ?? []).filter((g) => g.active)
       : (activeGamesQuery ?? []);
+    const rawGames = isAdminMode
+      ? dbGames
+      : dbGames.length > 0 ? dbGames : DEFAULT_MINI_GAMES;
 
     const sortedGames = [...rawGames].sort((a, b) => a.order - b.order);
 
