@@ -37,7 +37,7 @@ export const ProductCategoriesPreview = ({
   mode,
   selectedStyle, 
   onStyleChange,
-  categoriesData,
+  categoriesData = [],
   fontStyle,
   fontClassName,
   selectionMode = 'real',
@@ -54,7 +54,7 @@ export const ProductCategoriesPreview = ({
   mode: ProductCategoriesBrandMode;
   selectedStyle?: ProductCategoriesStyle;
   onStyleChange?: (style: ProductCategoriesStyle) => void;
-  categoriesData: CategoryData[];
+  categoriesData?: CategoryData[];
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
   selectionMode?: ProductCategoriesSelectionMode;

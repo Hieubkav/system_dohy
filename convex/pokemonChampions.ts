@@ -36,6 +36,40 @@ const orderStatusValidator = v.union(
 
 const shopStatusValidator = v.union(v.literal("open"), v.literal("paused"));
 
+const orderSourceValidator = v.union(
+  v.literal("pokemon-card"),
+  v.literal("quick-order"),
+  v.literal("promo-banner"),
+  v.literal("premium-pass")
+);
+
+const promoCodeValidator = v.literal("FIRST_ORDER_FREE_POKEMON");
+const offerSlugValidator = v.literal("premium-pass-starter");
+
+const promoBannerValidator = v.object({
+  badge: v.optional(v.string()),
+  body: v.string(),
+  campaignCode: promoCodeValidator,
+  ctaText: v.string(),
+  enabled: v.boolean(),
+  terms: v.optional(v.string()),
+  title: v.string(),
+});
+
+const premiumPassValidator = v.object({
+  benefits: v.object({
+    storageDuration: v.literal("permanent"),
+    storageSlots: v.number(),
+    teammateTickets: v.number(),
+    trainingTickets: v.number(),
+  }),
+  ctaText: v.string(),
+  enabled: v.boolean(),
+  priceLabel: v.optional(v.string()),
+  subtitle: v.optional(v.string()),
+  title: v.string(),
+});
+
 const gameItemDoc = v.object({
   _creationTime: v.number(),
   _id: v.id("pokemonChampionsGameItems"),
@@ -76,6 +110,7 @@ const customerDoc = v.object({
   _creationTime: v.number(),
   _id: v.id("pokemonChampionsCustomers"),
   contactHandle: v.string(),
+  contactKey: v.optional(v.string()),
   contactType: contactTypeValidator,
   createdAt: v.number(),
   email: v.optional(v.string()),
@@ -96,9 +131,15 @@ const orderDoc = v.object({
   customerName: v.string(),
   gameItemId: v.optional(v.id("pokemonChampionsGameItems")),
   note: v.optional(v.string()),
+  offerSlug: v.optional(offerSlugValidator),
+  offerSnapshot: v.optional(v.any()),
   orderNumber: v.string(),
   pokemonId: v.optional(v.id("pokemonChampionsPokemon")),
+  promoCode: v.optional(promoCodeValidator),
+  promoEligible: v.optional(v.boolean()),
+  promoSnapshot: v.optional(v.any()),
   quantity: v.number(),
+  source: v.optional(orderSourceValidator),
   status: orderStatusValidator,
   updatedAt: v.number(),
 });
@@ -114,6 +155,8 @@ const settingsDoc = v.object({
   instagramUrl: v.optional(v.string()),
   key: v.string(),
   orderInstructions: v.string(),
+  premiumPass: v.optional(premiumPassValidator),
+  promoBanner: v.optional(promoBannerValidator),
   shopStatus: shopStatusValidator,
   themeColor: v.string(),
   updatedAt: v.number(),
@@ -149,6 +192,30 @@ const DEFAULT_ITEMS = [
   { name: "Battle Ready Pack", slug: "battle-ready-pack", rarity: "legendary", priceLabel: "Contact", tags: ["bundle"], icon: "Shield", description: "Recommended all-in-one prep pack for tournament teams." },
 ] as const;
 
+const DEFAULT_PROMO_BANNER = {
+  badge: "Launch promo",
+  body: "Đặt Pokémon Champions hôm nay, đơn đầu tiên được tặng thêm 1 Pokémon theo danh sách áp dụng. Admin sẽ xác nhận qua Discord, Instagram hoặc WhatsApp.",
+  campaignCode: "FIRST_ORDER_FREE_POKEMON",
+  ctaText: "Nhận ưu đãi",
+  enabled: true,
+  terms: "Áp dụng theo contact đầu tiên, số lượng có hạn, admin xác nhận trước khi giao.",
+  title: "Đơn đầu tiên tặng 1 Pokémon miễn phí",
+} as const;
+
+const DEFAULT_PREMIUM_PASS = {
+  benefits: {
+    storageDuration: "permanent",
+    storageSlots: 50,
+    teammateTickets: 30,
+    trainingTickets: 50,
+  },
+  ctaText: "Đăng ký Starter Pack",
+  enabled: true,
+  priceLabel: "Liên hệ",
+  subtitle: "Gói mở rộng cho người mới build team nhanh.",
+  title: "Premium Pass Starter Pack",
+} as const;
+
 function limitOf(value?: number) {
   return Math.max(1, Math.min(value ?? 100, MAX_LIST_LIMIT));
 }
@@ -163,6 +230,14 @@ function normalizeSlug(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .replace(/-{2,}/g, "-");
+}
+
+function normalizeContactHandle(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, "");
+}
+
+function getContactKey(contactType: string, contactHandle: string) {
+  return `${contactType}:${normalizeContactHandle(contactHandle)}`;
 }
 
 function getPokemonSourceSlug(value?: string) {
@@ -407,6 +482,8 @@ export const ensureDefaults = mutation({
         instagramUrl: "",
         key: DEFAULT_KEY,
         orderInstructions: "After submitting, our admin will contact you through your preferred channel to confirm availability and delivery details.",
+        premiumPass: DEFAULT_PREMIUM_PASS,
+        promoBanner: DEFAULT_PROMO_BANNER,
         shopStatus: "open",
         themeColor: "#ef4444",
         updatedAt: now,
@@ -450,6 +527,8 @@ export const updateSettings = mutation({
     heroTitle: v.optional(v.string()),
     instagramUrl: v.optional(v.string()),
     orderInstructions: v.optional(v.string()),
+    premiumPass: v.optional(premiumPassValidator),
+    promoBanner: v.optional(promoBannerValidator),
     shopStatus: v.optional(shopStatusValidator),
     themeColor: v.optional(v.string()),
     whatsappUrl: v.optional(v.string()),
@@ -466,6 +545,8 @@ export const updateSettings = mutation({
         instagramUrl: args.instagramUrl,
         key: DEFAULT_KEY,
         orderInstructions: args.orderInstructions ?? "Submit an order and we will contact you to confirm.",
+        premiumPass: args.premiumPass ?? DEFAULT_PREMIUM_PASS,
+        promoBanner: args.promoBanner ?? DEFAULT_PROMO_BANNER,
         shopStatus: args.shopStatus ?? "open",
         themeColor: args.themeColor ?? "#ef4444",
         updatedAt: Date.now(),
@@ -793,8 +874,11 @@ export const createOrder = mutation({
     customerName: v.string(),
     gameItemId: v.optional(v.id("pokemonChampionsGameItems")),
     note: v.optional(v.string()),
+    offerSlug: v.optional(offerSlugValidator),
     pokemonId: v.optional(v.id("pokemonChampionsPokemon")),
+    promoCode: v.optional(promoCodeValidator),
     quantity: v.optional(v.number()),
+    source: v.optional(orderSourceValidator),
   },
   handler: async (ctx, args) => {
     const settings = await getSettingsDoc(ctx);
@@ -805,6 +889,7 @@ export const createOrder = mutation({
     const now = Date.now();
     const customerName = args.customerName.trim();
     const contactHandle = args.contactHandle.trim();
+    const contactKey = getContactKey(args.contactType, contactHandle);
     if (!customerName || !contactHandle) {
       throw new ConvexError({ code: "INVALID_ORDER", message: "Please enter your name and contact." });
     }
@@ -824,16 +909,24 @@ export const createOrder = mutation({
 
     let customer = await ctx.db
       .query("pokemonChampionsCustomers")
+      .withIndex("by_contactKey", (q) => q.eq("contactKey", contactKey))
+      .first();
+    if (!customer) {
+      customer = await ctx.db
+      .query("pokemonChampionsCustomers")
       .withIndex("by_contactHandle", (q) => q.eq("contactHandle", contactHandle))
       .first();
+    }
 
     if (customer?.status === "blocked") {
       throw new ConvexError({ code: "CUSTOMER_BLOCKED", message: "This contact is blocked." });
     }
 
+    const isFirstOrder = !customer || customer.orderCount === 0;
     if (!customer) {
       const customerId = await ctx.db.insert("pokemonChampionsCustomers", {
         contactHandle,
+        contactKey,
         contactType: args.contactType,
         createdAt: now,
         name: customerName,
@@ -845,6 +938,7 @@ export const createOrder = mutation({
     } else {
       await ctx.db.patch(customer._id, {
         contactType: args.contactType,
+        contactKey,
         name: customerName,
         updatedAt: now,
       });
@@ -862,9 +956,15 @@ export const createOrder = mutation({
       customerName,
       gameItemId: args.gameItemId,
       note: args.note,
+      offerSlug: args.offerSlug,
+      offerSnapshot: args.offerSlug === "premium-pass-starter" ? settings?.premiumPass ?? DEFAULT_PREMIUM_PASS : undefined,
       orderNumber: `PC-${now.toString(36).toUpperCase()}`,
       pokemonId: args.pokemonId,
+      promoCode: args.promoCode,
+      promoEligible: args.promoCode === "FIRST_ORDER_FREE_POKEMON" ? isFirstOrder : undefined,
+      promoSnapshot: args.promoCode === "FIRST_ORDER_FREE_POKEMON" ? settings?.promoBanner ?? DEFAULT_PROMO_BANNER : undefined,
       quantity: Math.max(1, Math.min(args.quantity ?? 1, 99)),
+      source: args.source ?? (args.pokemonId ? "pokemon-card" : "quick-order"),
       status: "new",
       updatedAt: now,
     });

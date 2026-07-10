@@ -39,8 +39,9 @@ export const generateMetadata = (): Promise<Metadata> => {
         social,
       }),
       icons: {
-        icon: `/api/favicon?v=${encodeURIComponent(site.site_favicon || '')}`,
-        apple: `/api/favicon?v=${encodeURIComponent(site.site_favicon || '')}`,
+        apple: '/favicon.ico',
+        icon: '/favicon.ico',
+        shortcut: '/favicon.ico',
       },
       manifest: '/manifest.webmanifest',
     };

@@ -1448,6 +1448,11 @@ function SettingsContent({ section }: { section: SettingsSection }) {
               smartLogoCrop={false}
             />
             {isFaviconField && (
+              <p className="text-xs leading-5 text-slate-500">
+                Khuyến nghị dùng icon vuông, gọn, ít chữ (tối thiểu 48x48, tốt nhất 512x512 PNG/SVG) để hiển thị rõ trên Google Search. Tránh dùng logo dài hoặc nhiều chi tiết.
+              </p>
+            )}
+            {isFaviconField && (
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"

@@ -546,6 +546,10 @@ function ProductCreateContent() {
     }
     setMetaTitle(item.metaTitle || truncateText(nextName, 60));
     setMetaDescription(item.metaDescription || truncateText(stripHtml(nextDescription), 160));
+    if (item.focusKeyword) {setFocusKeyword(item.focusKeyword);}
+    if (item.tags?.length) {setTags(normalizeSeoStringList(item.tags));}
+    if (item.relatedQueries?.length) {setRelatedQueries(normalizeSeoStringList(item.relatedQueries));}
+    if (item.faqItems?.length) {setFaqItems(normalizeSeoFaqItems(item.faqItems));}
     if (item.image) {
       setImage(item.image);
       setImageStorageId(undefined);

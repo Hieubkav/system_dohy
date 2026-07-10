@@ -37,6 +37,7 @@ import type * as homeComponentSystemConfig from "../homeComponentSystemConfig.js
 import type * as homeComponents from "../homeComponents.js";
 import type * as homepageSnapshots from "../homepageSnapshots.js";
 import type * as homepageWizard from "../homepageWizard.js";
+import type * as http from "../http.js";
 import type * as ia from "../ia.js";
 import type * as kanban from "../kanban.js";
 import type * as landingPages from "../landingPages.js";
@@ -111,6 +112,7 @@ import type * as snapshotCategories from "../snapshotCategories.js";
 import type * as storage from "../storage.js";
 import type * as subscriptions from "../subscriptions.js";
 import type * as systemIntegrations from "../systemIntegrations.js";
+import type * as telegramBot from "../telegramBot.js";
 import type * as trustPages from "../trustPages.js";
 import type * as usageStats from "../usageStats.js";
 import type * as users from "../users.js";
@@ -152,6 +154,7 @@ declare const fullApi: ApiFromModules<{
   homeComponents: typeof homeComponents;
   homepageSnapshots: typeof homepageSnapshots;
   homepageWizard: typeof homepageWizard;
+  http: typeof http;
   ia: typeof ia;
   kanban: typeof kanban;
   landingPages: typeof landingPages;
@@ -226,6 +229,7 @@ declare const fullApi: ApiFromModules<{
   storage: typeof storage;
   subscriptions: typeof subscriptions;
   systemIntegrations: typeof systemIntegrations;
+  telegramBot: typeof telegramBot;
   trustPages: typeof trustPages;
   usageStats: typeof usageStats;
   users: typeof users;

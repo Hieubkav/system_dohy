@@ -34,6 +34,7 @@ const SiteImage = ({ src, alt = '', width = 1200, height = 800, sizes = '100vw',
       mode="hero"
       src={src}
       {...rest}
+      unoptimized={rest.unoptimized ?? true}
       loading={resolvedLoading}
       fetchPriority={fetchPriority}
       alt={alt}
@@ -53,7 +54,7 @@ const isLikelyVisibleSlide = (index: number, currentIndex: number, total: number
 
 const getBlurImageUrl = (imageUrl?: string | null): string => {
   if (!imageUrl) {return '';}
-  return `/_next/image?url=${encodeURIComponent(imageUrl)}&w=16&q=10`;
+  return imageUrl;
 };
 
 const HeroRuntimeVideo = ({ src, className }: { src: string; className: string }) => {

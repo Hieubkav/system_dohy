@@ -19,7 +19,8 @@ import { MultiImageUploader } from '../../../components/MultiImageUploader';
 import { ModuleGuard } from '../../../components/ModuleGuard';
 import { CategoryTagsInput } from '@/app/admin/components/AdditionalCategoriesSelect';
 import { QuickCreateProjectCategoryModal } from '@/app/admin/components/QuickCreateProjectCategoryModal';
-import { AdvancedSeoFields, SeoFormTabs, normalizeSeoFaqItems, type SeoFaqItem, type SeoFormTab } from '@/app/admin/components/AdvancedSeoFields';
+import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
+import { AdvancedSeoFields, SeoFormTabs, normalizeSeoFaqItems, normalizeSeoStringList, type SeoFaqItem, type SeoFormTab } from '@/app/admin/components/AdvancedSeoFields';
 
 const MODULE_KEY = 'projects';
 
@@ -111,6 +112,27 @@ function ProjectEditContent({ params }: { params: Promise<{ id: string }> }) {
     || enabledFields.has('relatedQueries')
     || enabledFields.has('faqItems');
 
+  const aiImportCurrentData = useMemo<AiEntityImportPayload>(() => ({
+    clientName: clientName.trim(),
+    content: content.trim(),
+    excerpt: excerpt.trim(),
+    faqItems: normalizeSeoFaqItems(faqItems),
+    featured,
+    focusKeyword: focusKeyword.trim(),
+    htmlRender: htmlRender.trim(),
+    introVideoType,
+    introVideoUrl: introVideoUrl.trim(),
+    markdownRender: markdownRender.trim(),
+    metaDescription: metaDescription.trim(),
+    metaTitle: metaTitle.trim(),
+    projectUrl: projectUrl.trim(),
+    relatedQueries: normalizeSeoStringList(relatedQueries),
+    slug: slug.trim(),
+    tags: normalizeSeoStringList(tags),
+    thumbnail: thumbnail ?? '',
+    title: title.trim(),
+  }), [clientName, content, excerpt, faqItems, featured, focusKeyword, htmlRender, introVideoType, introVideoUrl, markdownRender, metaDescription, metaTitle, projectUrl, relatedQueries, slug, tags, thumbnail, title]);
+
   useEffect(() => {
     if (!projectData || initialized) {return;}
     setTitle(projectData.title);
@@ -160,6 +182,48 @@ function ProjectEditContent({ params }: { params: Promise<{ id: string }> }) {
     const value = event.target.value;
     setTitle(value);
     setSlug(generateSlug(value));
+  };
+
+  const handleApplyAiProject = (item: AiEntityImportPayload) => {
+    const nextTitle = item.title?.trim() || item.name?.trim() || '';
+    if (!nextTitle) {return;}
+
+    setTitle(nextTitle);
+    setSlug(item.slug?.trim() || generateSlug(nextTitle));
+    const nextContent = item.content || item.description || item.excerpt || item.htmlRender || item.markdownRender || '';
+    setContent(nextContent);
+    if (item.content) {
+      setRenderType('content');
+      setHtmlRender(item.htmlRender || '');
+      setMarkdownRender(item.markdownRender || '');
+    } else if (item.htmlRender) {
+      setRenderType('html');
+      setHtmlRender(item.htmlRender);
+      setMarkdownRender(item.markdownRender || '');
+    } else if (item.markdownRender) {
+      setRenderType('markdown');
+      setMarkdownRender(item.markdownRender);
+      setHtmlRender('');
+    }
+    setExcerpt(item.excerpt || item.description || truncateText(stripHtml(nextContent), 180));
+    setMetaTitle(item.metaTitle || truncateText(nextTitle, 60));
+    setMetaDescription(item.metaDescription || truncateText(stripHtml(item.excerpt || nextContent), 160));
+    if (item.thumbnail) {
+      setThumbnail(item.thumbnail);
+      setThumbnailStorageId(undefined);
+    }
+    if (item.clientName) {setClientName(item.clientName);}
+    if (item.projectUrl) {setProjectUrl(item.projectUrl);}
+    if (item.introVideoType === 'none' || item.introVideoType === 'youtube' || item.introVideoType === 'drive' || item.introVideoType === 'external') {
+      setIntroVideoType(item.introVideoType);
+    }
+    if (item.introVideoUrl) {setIntroVideoUrl(item.introVideoUrl);}
+    if (typeof item.featured === 'boolean') {setFeatured(item.featured);}
+    if (item.focusKeyword) {setFocusKeyword(item.focusKeyword);}
+    if (item.tags?.length) {setTags(normalizeSeoStringList(item.tags));}
+    if (item.relatedQueries?.length) {setRelatedQueries(normalizeSeoStringList(item.relatedQueries));}
+    if (item.faqItems?.length) {setFaqItems(normalizeSeoFaqItems(item.faqItems));}
+    setEditorResetKey((prev) => prev + 1);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -493,6 +557,7 @@ function ProjectEditContent({ params }: { params: Promise<{ id: string }> }) {
 
         <div className="flex justify-end gap-2 border-t border-slate-100 bg-white py-4 dark:border-slate-800 dark:bg-slate-950">
           <Button type="button" variant="ghost" onClick={() => router.push('/admin/projects')}>Hủy</Button>
+          <AiEntityImportDialog kind="project" currentData={aiImportCurrentData} enabledFields={enabledFields} onApply={handleApplyAiProject} />
           <Button type="submit" disabled={isSubmitting || !title.trim() || !categoryId} className="bg-teal-600 hover:bg-teal-500">
             {isSubmitting && <Loader2 size={16} className="mr-2 animate-spin" />}
             Lưu thay đổi

@@ -18,7 +18,8 @@ import { stripHtml, truncateText } from '@/lib/seo';
 import { HomeComponentStickyFooter } from '@/app/admin/home-components/_shared/components/HomeComponentStickyFooter';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '../../components/ui';
 import { CopyableInput } from '../../components/CopyTextButton';
-import { AdvancedSeoFields, SeoFormTabs, normalizeSeoFaqItems, type SeoFaqItem, type SeoFormTab } from '@/app/admin/components/AdvancedSeoFields';
+import { AiEntityImportDialog, type AiEntityImportPayload } from '@/app/admin/components/AiEntityImportDialog';
+import { AdvancedSeoFields, SeoFormTabs, normalizeSeoFaqItems, normalizeSeoStringList, type SeoFaqItem, type SeoFormTab } from '@/app/admin/components/AdvancedSeoFields';
 
 const MODULE_KEY = 'resources';
 
@@ -67,7 +68,7 @@ export default function ResourceCreatePage() {
   const [metaDescription, setMetaDescription] = useState('');
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editorResetKey, _setEditorResetKey] = useState(0);
+  const [editorResetKey, setEditorResetKey] = useState(0);
   const [selectedValueIds, setSelectedValueIds] = useState<Id<'resourceFilterValues'>[]>([]);
   const [seoTab, setSeoTab] = useState<SeoFormTab>('content');
   const [focusKeyword, setFocusKeyword] = useState('');
@@ -87,6 +88,29 @@ export default function ResourceCreatePage() {
     || enabledFields.has('faqItems');
   const showGallery = enabledFields.has('images');
 
+  const aiImportCurrentData = useMemo<AiEntityImportPayload>(() => ({
+    comparePriceAmount,
+    content: content.trim(),
+    downloadUrl: downloadUrl.trim(),
+    excerpt: excerpt.trim(),
+    faqItems: normalizeSeoFaqItems(faqItems),
+    featured,
+    focusKeyword: focusKeyword.trim(),
+    htmlRender: htmlRender.trim(),
+    isPriceVisible,
+    markdownRender: markdownRender.trim(),
+    metaDescription: metaDescription.trim(),
+    metaTitle: metaTitle.trim(),
+    price: priceAmount,
+    priceNote: priceNote.trim(),
+    pricingType,
+    relatedQueries: normalizeSeoStringList(relatedQueries),
+    slug: slug.trim(),
+    tags: normalizeSeoStringList(tags),
+    thumbnail: thumbnail ?? '',
+    title: title.trim(),
+  }), [comparePriceAmount, content, downloadUrl, excerpt, faqItems, featured, focusKeyword, htmlRender, isPriceVisible, markdownRender, metaDescription, metaTitle, priceAmount, priceNote, pricingType, relatedQueries, slug, tags, thumbnail, title]);
+
   useEffect(() => {
     if (!settingsData) {return;}
     const defaultStatus = settingsData.find((setting) => setting.settingKey === 'defaultStatus')?.value;
@@ -101,6 +125,50 @@ export default function ResourceCreatePage() {
     const value = event.target.value;
     setTitle(value);
     setSlug(generateSlug(value));
+  };
+
+  const handleApplyAiResource = (item: AiEntityImportPayload) => {
+    const nextTitle = item.title?.trim() || item.name?.trim() || '';
+    if (!nextTitle) {return;}
+
+    setTitle(nextTitle);
+    setSlug(item.slug?.trim() || generateSlug(nextTitle));
+    const nextContent = item.content || item.description || item.excerpt || item.htmlRender || item.markdownRender || '';
+    setContent(nextContent);
+    if (item.content) {
+      setRenderType('content');
+      setHtmlRender(item.htmlRender || '');
+      setMarkdownRender(item.markdownRender || '');
+    } else if (item.htmlRender) {
+      setRenderType('html');
+      setHtmlRender(item.htmlRender);
+      setMarkdownRender(item.markdownRender || '');
+    } else if (item.markdownRender) {
+      setRenderType('markdown');
+      setMarkdownRender(item.markdownRender);
+      setHtmlRender('');
+    }
+    setExcerpt(item.excerpt || item.description || truncateText(stripHtml(nextContent), 180));
+    setMetaTitle(item.metaTitle || truncateText(nextTitle, 60));
+    setMetaDescription(item.metaDescription || truncateText(stripHtml(item.excerpt || nextContent), 160));
+    if (item.thumbnail) {
+      setThumbnail(item.thumbnail);
+      setThumbnailStorageId(undefined);
+    }
+    if (typeof item.downloadUrl === 'string') {setDownloadUrl(item.downloadUrl);}
+    if (item.pricingType === 'free' || item.pricingType === 'paid' || item.pricingType === 'contact') {
+      setPricingType(item.pricingType);
+    }
+    if (typeof item.price === 'number') {setPriceAmount(item.price);}
+    if (typeof item.comparePriceAmount === 'number') {setComparePriceAmount(item.comparePriceAmount);}
+    if (item.priceNote) {setPriceNote(item.priceNote);}
+    if (typeof item.isPriceVisible === 'boolean') {setIsPriceVisible(item.isPriceVisible);}
+    if (typeof item.featured === 'boolean') {setFeatured(item.featured);}
+    if (item.focusKeyword) {setFocusKeyword(item.focusKeyword);}
+    if (item.tags?.length) {setTags(normalizeSeoStringList(item.tags));}
+    if (item.relatedQueries?.length) {setRelatedQueries(normalizeSeoStringList(item.relatedQueries));}
+    if (item.faqItems?.length) {setFaqItems(normalizeSeoFaqItems(item.faqItems));}
+    setEditorResetKey((prev) => prev + 1);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -456,15 +524,30 @@ export default function ResourceCreatePage() {
         <HomeComponentStickyFooter
           hasChanges={true}
           isSubmitting={isSubmitting}
-          onCancel={() => router.push('/admin/resources')}
-          onClickSave={() => {
-            const form = document.querySelector('form');
-            form?.requestSubmit();
-          }}
           submitLabel="Tạo tài nguyên"
           submittingLabel="Đang tạo..."
           submitType="button"
-        />
+        >
+          <div className="flex items-center gap-3">
+            <Button type="button" variant="ghost" onClick={() => router.push('/admin/resources')} disabled={isSubmitting}>
+              Hủy bỏ
+            </Button>
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <AiEntityImportDialog kind="resource" currentData={aiImportCurrentData} enabledFields={enabledFields} onApply={handleApplyAiResource} />
+            <Button
+              type="button"
+              variant="accent"
+              disabled={isSubmitting}
+              onClick={() => {
+                const form = document.querySelector('form');
+                form?.requestSubmit();
+              }}
+            >
+              {isSubmitting ? 'Đang tạo...' : 'Tạo tài nguyên'}
+            </Button>
+          </div>
+        </HomeComponentStickyFooter>
       </form>
     </>
   );

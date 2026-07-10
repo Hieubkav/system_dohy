@@ -273,6 +273,19 @@ export const ensureDefaults = mutation({
           };
         }
       }
+      if (definition.key === "telegram-bot" && existing.config && typeof existing.config === "object" && !Array.isArray(existing.config)) {
+        const config = existing.config as Record<string, unknown>;
+        const missingKeys = Object.keys(definition.config).filter((key) => !Object.prototype.hasOwnProperty.call(config, key));
+        if (missingKeys.length > 0) {
+          patch.config = {
+            ...definition.config,
+            ...config,
+          };
+        }
+      }
+      if (definition.key === "telegram-bot" && existing.description !== definition.description) {
+        patch.description = definition.description;
+      }
       if (definition.key === "pokemon-champions" && existing.description !== definition.description) {
         patch.description = definition.description;
       }

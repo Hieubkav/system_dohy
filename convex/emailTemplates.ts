@@ -251,9 +251,24 @@ export function getPokemonChampionsOrderShopTemplate(
   siteUrl: string,
   _brandName: string = "YourBrand"
 ): string {
+  const campaignOrder = order as typeof order & {
+    offerSlug?: string;
+    promoCode?: string;
+    promoEligible?: boolean;
+    source?: string;
+  };
   const pokemonName = pokemon ? escapeHtml(pokemon.name) : "Không chọn";
   const gameItemName = gameItem ? escapeHtml(gameItem.name) : "Không chọn";
   const adminUrl = `${formatSiteUrl(siteUrl)}/admin/mini-apps/pokemon-champions`;
+  const campaignLine = campaignOrder.source
+    ? `<p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Nguồn:</strong> ${escapeHtml(campaignOrder.source)}</p>`
+    : "";
+  const promoLine = campaignOrder.promoCode
+    ? `<p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Promo:</strong> ${escapeHtml(campaignOrder.promoCode)} (${campaignOrder.promoEligible ? "đủ điều kiện đơn đầu" : "không phải đơn đầu"})</p>`
+    : "";
+  const offerLine = campaignOrder.offerSlug
+    ? `<p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Offer:</strong> ${escapeHtml(campaignOrder.offerSlug)}</p>`
+    : "";
 
   return `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
@@ -275,6 +290,9 @@ export function getPokemonChampionsOrderShopTemplate(
         <p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Pokémon:</strong> ${pokemonName}</p>
         <p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Item:</strong> ${gameItemName}</p>
         <p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Số lượng:</strong> ${order.quantity}</p>
+        ${campaignLine}
+        ${promoLine}
+        ${offerLine}
         <p style="color: #334155; font-size: 14px; margin: 4px 0; line-height: 1.5;"><strong>Trạng thái:</strong> New</p>
       </div>
 

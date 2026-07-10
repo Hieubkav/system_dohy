@@ -85,6 +85,7 @@ export const ClientsPreview = ({
   onSubtitleChange,
   onBadgeTextChange,
 }: ClientsPreviewProps) => {
+  const safeItems = Array.isArray(items) ? items : [];
   const [visualEditEnabled, setVisualEditEnabled] = React.useState(false);
   React.useEffect(() => {
     if (!isVisualEditAllowed) {
@@ -108,7 +109,7 @@ export const ClientsPreview = ({
   }), [brandColor, secondary, mode, selectedStyle]);
   const tokens = React.useMemo(() => adaptTokensForDarkMode(validation.tokens, isDark), [validation.tokens, isDark]);
 
-  const info = getImageInfoText(selectedStyle, items.length);
+  const info = getImageInfoText(selectedStyle, safeItems.length);
   const resolvedTitle = typeof title === 'string' ? title.trim() : '';
   const previewSubtitle = (subtitle ?? '').trim();
   const previewBadgeText = (badgeText ?? '').trim();
@@ -133,7 +134,7 @@ export const ClientsPreview = ({
         <div className="space-y-3">
 
           <BrowserFrame>
-            {items.length === 0 ? (
+            {safeItems.length === 0 ? (
               <section className="px-4 py-8" style={{ backgroundColor: tokens.neutralSurface }}>
                 <div className="flex flex-col items-center justify-center h-40">
                   <div className="w-14 h-14 rounded-full flex items-center justify-center mb-3" style={{ backgroundColor: tokens.placeholderIconBackground }}>
@@ -148,7 +149,7 @@ export const ClientsPreview = ({
                 context="preview"
                 title={resolvedTitle}
                 style={selectedStyle}
-                items={items}
+                items={safeItems}
                 tokens={tokens}
                 device={device}
                 hideHeader={hideHeader}

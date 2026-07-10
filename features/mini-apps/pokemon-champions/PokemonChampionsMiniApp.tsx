@@ -27,6 +27,48 @@ type Order = Doc<'pokemonChampionsOrders'>;
 type MiniAppConfig = Record<string, unknown>;
 type AdminSection = 'data' | 'settings' | 'home';
 type DataSection = 'pokemon' | 'items' | 'tiers' | 'teams' | 'types' | 'orders' | 'customers';
+type OrderSource = 'pokemon-card' | 'quick-order' | 'promo-banner' | 'premium-pass';
+type PromoCode = 'FIRST_ORDER_FREE_POKEMON';
+type OfferSlug = 'premium-pass-starter';
+type PromoBannerConfig = {
+  badge?: string;
+  body: string;
+  campaignCode: PromoCode;
+  ctaText: string;
+  enabled: boolean;
+  terms?: string;
+  title: string;
+};
+type PremiumPassConfig = {
+  benefits: {
+    storageDuration: 'permanent';
+    storageSlots: number;
+    teammateTickets: number;
+    trainingTickets: number;
+  };
+  ctaText: string;
+  enabled: boolean;
+  priceLabel?: string;
+  subtitle?: string;
+  title: string;
+};
+type PokemonSettings = Doc<'pokemonChampionsSettings'> & {
+  premiumPass?: PremiumPassConfig;
+  promoBanner?: PromoBannerConfig;
+};
+type CampaignOrderContext = {
+  offerSlug?: OfferSlug;
+  promoCode?: PromoCode;
+  source: OrderSource;
+};
+type CampaignOrder = Order & {
+  offerSlug?: OfferSlug;
+  offerSnapshot?: PremiumPassConfig;
+  promoCode?: PromoCode;
+  promoEligible?: boolean;
+  promoSnapshot?: PromoBannerConfig;
+  source?: OrderSource;
+};
 
 type PokemonChampionsMiniAppProps = {
   appConfig?: MiniAppConfig;
@@ -39,6 +81,38 @@ type PokemonChampionsMiniAppProps = {
 const CONTACT_OPTIONS = ['discord', 'whatsapp', 'instagram', 'zalo', 'phone', 'other'] as const;
 const ORDER_STATUSES = ['new', 'contacted', 'confirmed', 'fulfilled', 'cancelled'] as const;
 const POKEMON_TYPES = ['All', 'Normal', 'Fire', 'Water', 'Grass', 'Electric', 'Ice', 'Fighting', 'Poison', 'Ground', 'Flying', 'Psychic', 'Bug', 'Rock', 'Ghost', 'Dragon', 'Dark', 'Steel', 'Fairy'];
+
+const DEFAULT_PROMO_BANNER: PromoBannerConfig = {
+  badge: 'Launch promo',
+  body: 'Đặt Pokémon Champions hôm nay, đơn đầu tiên được tặng thêm 1 Pokémon theo danh sách áp dụng. Admin sẽ xác nhận qua Discord, Instagram hoặc WhatsApp.',
+  campaignCode: 'FIRST_ORDER_FREE_POKEMON',
+  ctaText: 'Nhận ưu đãi',
+  enabled: true,
+  terms: 'Áp dụng theo contact đầu tiên, số lượng có hạn, admin xác nhận trước khi giao.',
+  title: 'Đơn đầu tiên tặng 1 Pokémon miễn phí',
+};
+
+const DEFAULT_PREMIUM_PASS: PremiumPassConfig = {
+  benefits: {
+    storageDuration: 'permanent',
+    storageSlots: 50,
+    teammateTickets: 30,
+    trainingTickets: 50,
+  },
+  ctaText: 'Đăng ký Starter Pack',
+  enabled: true,
+  priceLabel: 'Liên hệ',
+  subtitle: 'Gói mở rộng cho người mới build team nhanh.',
+  title: 'Premium Pass Starter Pack',
+};
+
+function getPromoBanner(settingsDoc?: PokemonSettings | null) {
+  return settingsDoc?.promoBanner ?? DEFAULT_PROMO_BANNER;
+}
+
+function getPremiumPass(settingsDoc?: PokemonSettings | null) {
+  return settingsDoc?.premiumPass ?? DEFAULT_PREMIUM_PASS;
+}
 
 const emptyPokemonDraft = {
   active: true,
@@ -190,6 +264,7 @@ export function PokemonChampionsMiniApp({
           </div>
           <div className="flex max-w-full gap-2 overflow-x-auto rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
             <TopTabButton active={adminSection === 'data'} icon={Box} label="Dữ liệu CRUD" onClick={() => setAdminSection('data')} />
+            <TopTabButton active={adminSection === 'settings'} icon={Sparkles} label="Campaign/Offers" onClick={() => setAdminSection('settings')} />
             <TopTabButton active={adminSection === 'home'} icon={Sparkles} label="Home-component" onClick={() => setAdminSection('home')} />
           </div>
         </div>
@@ -226,6 +301,7 @@ export function PokemonChampionsMiniApp({
         {adminSection === 'data' && dataSection === 'types' && <TypesCrud dbTypes={dbTypes} />}
         {adminSection === 'data' && dataSection === 'orders' && <OrdersPanel gameItems={gameItems} orders={orders ?? []} pokemon={pokemon} />}
         {adminSection === 'data' && dataSection === 'customers' && <CustomersPanel customers={customers ?? []} />}
+        {adminSection === 'settings' && <CampaignSettingsPanel settingsDoc={settingsDoc as PokemonSettings | null} />}
         {adminSection === 'home' && (
           <HomeComponentPanel
             appConfig={appConfig ?? {}}
@@ -275,14 +351,14 @@ function TopTabButton({ active, icon: Icon, label, onClick, subtle = false }: { 
 function PokemonChampionsPublic({
   gameItems,
   pokemon,
-  settingsDoc: _settingsDoc,
+  settingsDoc,
   standalone,
   appConfig,
   dbTypes,
 }: {
   gameItems: GameItem[];
   pokemon: Pokemon[];
-  settingsDoc: Doc<'pokemonChampionsSettings'> | null;
+  settingsDoc: PokemonSettings | null;
   standalone?: boolean;
   appConfig?: MiniAppConfig;
   dbTypes: PokemonType[];
@@ -292,6 +368,7 @@ function PokemonChampionsPublic({
   const [selectedPokemon, setSelectedPokemon] = useState<Pokemon | null>(null);
   const [selectedItemId, setSelectedItemId] = useState('');
   const [isQuickOrderOpen, setIsQuickOrderOpen] = useState(false);
+  const [orderContext, setOrderContext] = useState<CampaignOrderContext>({ source: 'quick-order' });
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const itemsById = useMemo(() => new Map(gameItems.map((item) => [item._id, item])), [gameItems]);
 
@@ -306,6 +383,8 @@ function PokemonChampionsPublic({
 
   const cardRadiusClass = cornerRadius === 'none' ? 'rounded-none' : cornerRadius === 'sm' ? 'rounded-xl' : 'rounded-3xl';
   const thumbRadiusClass = cornerRadius === 'none' ? 'rounded-none' : cornerRadius === 'sm' ? 'rounded-lg' : 'rounded-2xl';
+  const promoBanner = getPromoBanner(settingsDoc);
+  const premiumPass = getPremiumPass(settingsDoc);
 
   const filteredPokemon = useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -337,8 +416,11 @@ function PokemonChampionsPublic({
                 Pokémon Champions
               </Badge>
               <h1 className={cn('text-4xl font-black tracking-tight sm:text-5xl', isDark ? 'text-white' : 'text-slate-900')}>
-                Pokémon Champions order desk
+                {settingsDoc?.heroTitle ?? 'Pokémon Champions order desk'}
               </h1>
+              <p className={cn('mt-4 max-w-2xl text-base', isDark ? 'text-white/70' : 'text-slate-600')}>
+                {settingsDoc?.heroSubtitle ?? 'Browse available Pokémon, match them with the best in-game items, and send an order request.'}
+              </p>
             </div>
           </div>
         </div>
@@ -369,13 +451,16 @@ function PokemonChampionsPublic({
               <div>
                 <h4 className="text-sm font-bold uppercase tracking-wider" style={{ color: primaryColor }}>ANNOUNCEMENT</h4>
                 <p className={cn('text-sm mt-0.5 font-medium', isDark ? 'text-white/80' : 'text-slate-600')}>
-                  The shop is currently open for orders! Submit a quick order request to get support from our admin.
+                  {settingsDoc?.announcement ?? 'The shop is currently open for orders! Submit a quick order request to get support from our admin.'}
                 </p>
               </div>
             </div>
             <button
               type="button"
-              onClick={() => setIsQuickOrderOpen(true)}
+              onClick={() => {
+                setOrderContext({ source: 'quick-order' });
+                setIsQuickOrderOpen(true);
+              }}
               className="w-full shrink-0 rounded-xl px-6 py-2.5 text-sm font-bold text-white transition hover:scale-[1.02] active:scale-[0.98] md:w-auto"
               style={{
                 backgroundColor: primaryColor,
@@ -385,6 +470,30 @@ function PokemonChampionsPublic({
               Quick Order
             </button>
           </div>
+        <div className="mb-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          {promoBanner.enabled && (
+            <CampaignPromoCard
+              promo={promoBanner}
+              isDark={isDark}
+              brandColor={primaryColor}
+              onClick={() => {
+                setOrderContext({ promoCode: 'FIRST_ORDER_FREE_POKEMON', source: 'promo-banner' });
+                setIsQuickOrderOpen(true);
+              }}
+            />
+          )}
+          {premiumPass.enabled && (
+            <PremiumPassCard
+              premiumPass={premiumPass}
+              isDark={isDark}
+              brandColor={secondaryColor}
+              onClick={() => {
+                setOrderContext({ offerSlug: 'premium-pass-starter', source: 'premium-pass' });
+                setIsQuickOrderOpen(true);
+              }}
+            />
+          )}
+        </div>
         <div className={cn('mb-5 flex flex-col gap-3 rounded-2xl border p-3 sm:flex-row', isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white shadow-sm')}>
           <div className="relative flex-1">
             <Search className={cn('absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2', isDark ? 'text-white/40' : 'text-slate-400')} />
@@ -604,11 +713,79 @@ function PokemonChampionsPublic({
       <QuickOrderDialog
         isOpen={isQuickOrderOpen}
         onClose={() => setIsQuickOrderOpen(false)}
+          orderContext={orderContext}
+          orderInstructions={settingsDoc?.orderInstructions}
         isDark={isDark}
         brandColor={primaryColor}
         cornerRadius={cornerRadius}
       />
     </main>
+  );
+}
+
+function CampaignPromoCard({
+  brandColor,
+  isDark,
+  onClick,
+  promo,
+}: {
+  brandColor: string;
+  isDark: boolean;
+  onClick: () => void;
+  promo: PromoBannerConfig;
+}) {
+  return (
+    <div className={cn('rounded-3xl border p-5 shadow-sm', isDark ? 'border-white/10 bg-white/[0.06] text-white' : 'border-slate-200 bg-white text-slate-900')}>
+      <div className="mb-3 inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider text-white" style={{ backgroundColor: brandColor }}>
+        {promo.badge || 'Launch promo'}
+      </div>
+      <h3 className="text-2xl font-black tracking-tight">{promo.title}</h3>
+      <p className={cn('mt-2 text-sm leading-relaxed', isDark ? 'text-white/70' : 'text-slate-600')}>{promo.body}</p>
+      {promo.terms && <p className={cn('mt-3 text-xs', isDark ? 'text-white/45' : 'text-slate-500')}>{promo.terms}</p>}
+      <button type="button" onClick={onClick} className="mt-4 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition hover:scale-[1.02]" style={{ backgroundColor: brandColor }}>
+        {promo.ctaText}
+      </button>
+    </div>
+  );
+}
+
+function PremiumPassCard({
+  brandColor,
+  isDark,
+  onClick,
+  premiumPass,
+}: {
+  brandColor: string;
+  isDark: boolean;
+  onClick: () => void;
+  premiumPass: PremiumPassConfig;
+}) {
+  const benefits = [
+    `+${premiumPass.benefits.storageSlots} slot lưu Pokémon vĩnh viễn`,
+    `${premiumPass.benefits.teammateTickets} vé nhận Pokémon`,
+    `${premiumPass.benefits.trainingTickets} vé train`,
+  ];
+  return (
+    <div className={cn('rounded-3xl border p-5 shadow-sm', isDark ? 'border-white/10 bg-black/20 text-white' : 'border-slate-200 bg-white text-slate-900')}>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider text-white" style={{ backgroundColor: brandColor }}>
+          Premium Pass
+        </div>
+        {premiumPass.priceLabel && <span className={cn('text-sm font-bold', isDark ? 'text-white/70' : 'text-slate-600')}>{premiumPass.priceLabel}</span>}
+      </div>
+      <h3 className="text-2xl font-black tracking-tight">{premiumPass.title}</h3>
+      {premiumPass.subtitle && <p className={cn('mt-2 text-sm', isDark ? 'text-white/70' : 'text-slate-600')}>{premiumPass.subtitle}</p>}
+      <div className="mt-4 grid gap-2">
+        {benefits.map((benefit) => (
+          <div key={benefit} className={cn('rounded-xl border px-3 py-2 text-sm font-semibold', isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-50')}>
+            {benefit}
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={onClick} className="mt-4 w-full rounded-xl px-5 py-2.5 text-sm font-bold text-white transition hover:scale-[1.02]" style={{ backgroundColor: brandColor }}>
+        {premiumPass.ctaText}
+      </button>
+    </div>
   );
 }
 
@@ -635,6 +812,7 @@ function OrderDialog({ gameItems, initialItemId, pokemon, onClose }: { gameItems
         note,
         pokemonId: pokemon._id,
         quantity: 1,
+        source: 'pokemon-card',
       });
       toast.success('Order request sent. We will contact you soon.');
       onClose();
@@ -1985,6 +2163,116 @@ function PokemonCrud({ gameItems, pokemon }: { gameItems: GameItem[]; pokemon: P
   );
 }
 
+function CampaignSettingsPanel({ settingsDoc }: { settingsDoc: PokemonSettings | null }) {
+  const updateSettings = useMutation(api.pokemonChampions.updateSettings);
+  const [heroTitle, setHeroTitle] = useState(settingsDoc?.heroTitle ?? 'Pokémon Champions order desk');
+  const [heroSubtitle, setHeroSubtitle] = useState(settingsDoc?.heroSubtitle ?? 'Browse available Pokémon, match them with the best in-game items, and send an order request.');
+  const [announcement, setAnnouncement] = useState(settingsDoc?.announcement ?? 'The shop is currently open for orders! Submit a quick order request to get support from our admin.');
+  const [orderInstructions, setOrderInstructions] = useState(settingsDoc?.orderInstructions ?? 'After submitting, our admin will contact you through your preferred channel to confirm availability and delivery details.');
+  const [shopStatus, setShopStatus] = useState<PokemonSettings['shopStatus']>(settingsDoc?.shopStatus ?? 'open');
+  const [promo, setPromo] = useState<PromoBannerConfig>(getPromoBanner(settingsDoc));
+  const [pass, setPass] = useState<PremiumPassConfig>(getPremiumPass(settingsDoc));
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setHeroTitle(settingsDoc?.heroTitle ?? 'Pokémon Champions order desk');
+    setHeroSubtitle(settingsDoc?.heroSubtitle ?? 'Browse available Pokémon, match them with the best in-game items, and send an order request.');
+    setAnnouncement(settingsDoc?.announcement ?? 'The shop is currently open for orders! Submit a quick order request to get support from our admin.');
+    setOrderInstructions(settingsDoc?.orderInstructions ?? 'After submitting, our admin will contact you through your preferred channel to confirm availability and delivery details.');
+    setShopStatus(settingsDoc?.shopStatus ?? 'open');
+    setPromo(getPromoBanner(settingsDoc));
+    setPass(getPremiumPass(settingsDoc));
+  }, [settingsDoc]);
+
+  const save = async () => {
+    setIsSaving(true);
+    try {
+      await updateSettings({
+        announcement,
+        heroSubtitle,
+        heroTitle,
+        orderInstructions,
+        premiumPass: pass,
+        promoBanner: promo,
+        shopStatus,
+      });
+      toast.success('Đã lưu Campaign/Offers.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Không thể lưu Campaign/Offers.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader title="Campaign/Offers" />
+      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+        <Card>
+          <CardContent className="space-y-5 pt-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Hero title"><Input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} /></Field>
+              <Field label="Shop status">
+                <select value={shopStatus} onChange={(e) => setShopStatus(e.target.value as PokemonSettings['shopStatus'])} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+                  <option value="open">Open</option>
+                  <option value="paused">Paused</option>
+                </select>
+              </Field>
+            </div>
+            <Field label="Hero subtitle"><Input value={heroSubtitle} onChange={(e) => setHeroSubtitle(e.target.value)} /></Field>
+            <Field label="Announcement"><Input value={announcement} onChange={(e) => setAnnouncement(e.target.value)} /></Field>
+            <Field label="Order instructions"><Input value={orderInstructions} onChange={(e) => setOrderInstructions(e.target.value)} /></Field>
+
+            <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+              <label className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                <input type="checkbox" checked={promo.enabled} onChange={(e) => setPromo({ ...promo, enabled: e.target.checked })} />
+                Bật banner đơn đầu tiên
+              </label>
+              <div className="grid gap-3 md:grid-cols-2">
+                <Field label="Badge"><Input value={promo.badge ?? ''} onChange={(e) => setPromo({ ...promo, badge: e.target.value })} /></Field>
+                <Field label="CTA"><Input value={promo.ctaText} onChange={(e) => setPromo({ ...promo, ctaText: e.target.value })} /></Field>
+                <div className="md:col-span-2"><Field label="Title"><Input value={promo.title} onChange={(e) => setPromo({ ...promo, title: e.target.value })} /></Field></div>
+                <div className="md:col-span-2"><Field label="Body"><Input value={promo.body} onChange={(e) => setPromo({ ...promo, body: e.target.value })} /></Field></div>
+                <div className="md:col-span-2"><Field label="Terms"><Input value={promo.terms ?? ''} onChange={(e) => setPromo({ ...promo, terms: e.target.value })} /></Field></div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+              <label className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                <input type="checkbox" checked={pass.enabled} onChange={(e) => setPass({ ...pass, enabled: e.target.checked })} />
+                Bật Premium Pass Starter Pack
+              </label>
+              <div className="grid gap-3 md:grid-cols-2">
+                <Field label="Title"><Input value={pass.title} onChange={(e) => setPass({ ...pass, title: e.target.value })} /></Field>
+                <Field label="Price label"><Input value={pass.priceLabel ?? ''} onChange={(e) => setPass({ ...pass, priceLabel: e.target.value })} /></Field>
+                <Field label="CTA"><Input value={pass.ctaText} onChange={(e) => setPass({ ...pass, ctaText: e.target.value })} /></Field>
+                <Field label="Subtitle"><Input value={pass.subtitle ?? ''} onChange={(e) => setPass({ ...pass, subtitle: e.target.value })} /></Field>
+                <Field label="Storage slots"><Input type="number" min={1} value={pass.benefits.storageSlots} onChange={(e) => setPass({ ...pass, benefits: { ...pass.benefits, storageSlots: Number(e.target.value) } })} /></Field>
+                <Field label="Teammate tickets"><Input type="number" min={0} value={pass.benefits.teammateTickets} onChange={(e) => setPass({ ...pass, benefits: { ...pass.benefits, teammateTickets: Number(e.target.value) } })} /></Field>
+                <Field label="Training tickets"><Input type="number" min={0} value={pass.benefits.trainingTickets} onChange={(e) => setPass({ ...pass, benefits: { ...pass.benefits, trainingTickets: Number(e.target.value) } })} /></Field>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button type="button" onClick={save} disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Lưu Campaign/Offers
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-4 pt-6">
+            <SectionHeader title="Preview ads block" />
+            <CampaignPromoCard promo={promo} isDark={false} brandColor="#ef4444" onClick={() => undefined} />
+            <PremiumPassCard premiumPass={pass} isDark={false} brandColor="#ef4444" onClick={() => undefined} />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 function GameItemCrud({ gameItems }: { gameItems: GameItem[] }) {
   const saveGameItem = useMutation(api.pokemonChampions.saveGameItem);
   const removeGameItem = useMutation(api.pokemonChampions.removeGameItem);
@@ -2267,7 +2555,9 @@ function OrdersPanel({ gameItems, orders, pokemon }: { gameItems: GameItem[]; or
       </div>
 
       <div className="space-y-3">
-        {paginatedOrders.map((order) => (
+        {paginatedOrders.map((order) => {
+          const campaignOrder = order as CampaignOrder;
+          return (
           <Card key={order._id}>
             <CardContent className="grid gap-3 p-4 lg:grid-cols-[1fr_220px_auto] lg:items-center">
               <div>
@@ -2275,6 +2565,13 @@ function OrdersPanel({ gameItems, orders, pokemon }: { gameItems: GameItem[]; or
                 <div className="text-sm text-slate-500">
                   {pokemonMap.get(order.pokemonId as Id<'pokemonChampionsPokemon'>)?.name ?? 'Advice needed'} · {itemMap.get(order.gameItemId as Id<'pokemonChampionsGameItems'>)?.name ?? 'No item selected'}
                 </div>
+                {campaignOrder.source && (
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                    <Badge variant="secondary">Source: {campaignOrder.source}</Badge>
+                    {campaignOrder.promoCode && <Badge variant={campaignOrder.promoEligible ? 'success' : 'secondary'}>{campaignOrder.promoEligible ? 'First order eligible' : 'Not first order'}</Badge>}
+                    {campaignOrder.offerSlug && <Badge variant="secondary">Premium Pass Starter</Badge>}
+                  </div>
+                )}
                 <div className="mt-1 text-xs text-slate-400">{order.contactType}: {order.contactHandle}</div>
                 {order.note && <p className="mt-2 text-sm text-slate-500">{order.note}</p>}
               </div>
@@ -2298,7 +2595,8 @@ function OrdersPanel({ gameItems, orders, pokemon }: { gameItems: GameItem[]; or
               </Button>
             </CardContent>
           </Card>
-        ))}
+        );
+        })}
         {filteredOrders.length === 0 && <EmptyState text="No matching orders." />}
       </div>
 
@@ -2527,7 +2825,7 @@ function HomeComponentPanel({
   appId,
   gameItems,
   pokemon,
-  settingsDoc: _settingsDoc,
+  settingsDoc,
   teams,
   dbTypes,
 }: {
@@ -2636,6 +2934,7 @@ function HomeComponentPanel({
       <PokemonHomePreview
         gameItems={gameItems}
         pokemon={pokemon}
+        settingsDoc={settingsDoc as PokemonSettings | null}
         teams={teams}
         dbTypes={dbTypes}
         styleName={style}
@@ -2651,6 +2950,7 @@ function HomeComponentPanel({
 function PokemonHomePreview({
   gameItems,
   pokemon,
+  settingsDoc,
   teams,
   dbTypes,
   styleName,
@@ -2661,6 +2961,7 @@ function PokemonHomePreview({
 }: {
   gameItems: GameItem[];
   pokemon: Pokemon[];
+  settingsDoc: PokemonSettings | null;
   teams: Team[];
   dbTypes: PokemonType[];
   styleName: string;
@@ -2672,11 +2973,14 @@ function PokemonHomePreview({
   const itemMap = useMemo(() => new Map(gameItems.map((item) => [item._id, item])), [gameItems]);
   const { isDark } = usePreviewDark();
   const [isQuickOrderOpen, setIsQuickOrderOpen] = useState(false);
+  const [orderContext, setOrderContext] = useState<CampaignOrderContext>({ source: 'quick-order' });
   const [selectedItemForModal, setSelectedItemForModal] = useState<GameItem | null>(null);
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const brandColors = useBrandColors();
   const primaryColor = brandColors.primary;
   const secondaryColor = brandColors.secondary || '#facc15';
+  const promoBanner = getPromoBanner(settingsDoc);
+  const premiumPass = getPremiumPass(settingsDoc);
 
   const previewStyles = [
     { id: 'grid', label: 'Grid Standard' },
@@ -2820,13 +3124,16 @@ function PokemonHomePreview({
                 <div>
                   <h4 className="text-sm font-bold uppercase tracking-wider" style={{ color: primaryColor }}>ANNOUNCEMENT</h4>
                   <p className={cn('text-sm mt-0.5 font-medium', isDark ? 'text-white/80' : 'text-slate-600')}>
-                    Shop hiện đang mở cửa nhận đơn hàng! Hãy gửi thông tin đặt hàng nhanh để được admin hỗ trợ kịp thời.
+                    {settingsDoc?.announcement ?? 'Shop hiện đang mở cửa nhận đơn hàng! Hãy gửi thông tin đặt hàng nhanh để được admin hỗ trợ kịp thời.'}
                   </p>
                 </div>
               </div>
               <button
                 type="button"
-                onClick={() => setIsQuickOrderOpen(true)}
+                onClick={() => {
+                  setOrderContext({ source: 'quick-order' });
+                  setIsQuickOrderOpen(true);
+                }}
                 className="w-full shrink-0 rounded-xl px-6 py-2.5 text-sm font-bold text-white transition hover:scale-[1.02] active:scale-[0.98] md:w-auto"
                 style={{
                   backgroundColor: primaryColor,
@@ -2835,6 +3142,31 @@ function PokemonHomePreview({
               >
                 Đặt hàng ngay
               </button>
+            </div>
+
+            <div className="mb-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+              {promoBanner.enabled && (
+                <CampaignPromoCard
+                  promo={promoBanner}
+                  isDark={isDark}
+                  brandColor={primaryColor}
+                  onClick={() => {
+                    setOrderContext({ promoCode: 'FIRST_ORDER_FREE_POKEMON', source: 'promo-banner' });
+                    setIsQuickOrderOpen(true);
+                  }}
+                />
+              )}
+              {premiumPass.enabled && (
+                <PremiumPassCard
+                  premiumPass={premiumPass}
+                  isDark={isDark}
+                  brandColor={secondaryColor}
+                  onClick={() => {
+                    setOrderContext({ offerSlug: 'premium-pass-starter', source: 'premium-pass' });
+                    setIsQuickOrderOpen(true);
+                  }}
+                />
+              )}
             </div>
 
             {/* Tab Navigation */}
@@ -3361,6 +3693,8 @@ function PokemonHomePreview({
       <QuickOrderDialog
         isOpen={isQuickOrderOpen}
         onClose={() => setIsQuickOrderOpen(false)}
+        orderContext={orderContext}
+        orderInstructions={settingsDoc?.orderInstructions}
         isDark={isDark}
         brandColor={primaryColor}
         cornerRadius={cornerRadius}
@@ -3404,12 +3738,16 @@ function EmptyState({ text }: { text: string }) {
 function QuickOrderDialog({
   isOpen,
   onClose,
+  orderContext,
+  orderInstructions,
   isDark,
   brandColor,
   cornerRadius,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  orderContext?: CampaignOrderContext;
+  orderInstructions?: string;
   isDark: boolean;
   brandColor: string;
   cornerRadius: string;
@@ -3451,7 +3789,14 @@ function QuickOrderDialog({
         customerName: customerName.trim(),
         contactHandle: contactHandle.trim(),
         contactType: contactType as any,
-        note: 'Quick order from home page',
+        note: orderContext?.source === 'promo-banner'
+          ? 'Promo banner order: first order free Pokémon'
+          : orderContext?.source === 'premium-pass'
+            ? 'Premium Pass Starter Pack order'
+            : 'Quick order from home page',
+        offerSlug: orderContext?.offerSlug,
+        promoCode: orderContext?.promoCode,
+        source: orderContext?.source ?? 'quick-order',
       });
       setIsSuccess(true);
       setCustomerName('');
@@ -3601,7 +3946,7 @@ function QuickOrderDialog({
                 )}
               >
                 <span className="font-bold block mb-0.5" style={{ color: brandColor }}>Instructions:</span>
-                After submitting, our admin will contact you through the channel you provided as soon as possible to confirm availability and delivery details.
+                {orderInstructions ?? 'After submitting, our admin will contact you through the channel you provided as soon as possible to confirm availability and delivery details.'}
               </div>
 
               <button

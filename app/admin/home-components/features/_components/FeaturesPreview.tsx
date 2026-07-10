@@ -60,7 +60,7 @@ interface FeaturesPreviewProps {
 }
 
 export function FeaturesPreview({
-  items,
+  items = [],
   brandColor,
   secondary,
   mode,

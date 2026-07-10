@@ -9,6 +9,7 @@ import { AdminModulesProvider } from './context/AdminModulesContext';
 import { SidebarProvider } from './context/SidebarContext';
 import { AdminAuthProvider } from './auth/context';
 import { AdminAuthGuard } from './auth/AdminAuthGuard';
+import { AdminPermissionGuard } from './auth/AdminPermissionGuard';
 
 function AdminLayoutContent({
   children,
@@ -48,7 +49,9 @@ function AdminLayoutContent({
           />
 
           <main className="flex-1 p-4 lg:p-8 overflow-x-hidden w-full max-w-[1600px] mx-auto">
-            {children}
+            <AdminPermissionGuard>
+              {children}
+            </AdminPermissionGuard>
           </main>
         </div>
       </SidebarProvider>

@@ -105,7 +105,16 @@ export function LiveComponentPreviewRenderer({
   onTitleChange,
 }: LiveComponentPreviewRendererProps) {
   const servicesData = useQuery(api.services.listAll, { limit: 100 });
+  const productCategoriesData = useQuery(api.productCategories.listActive);
   const { type, title, config = {} } = component;
+  const categoryProductsSections = Array.isArray(config.sections) ? config.sections : [];
+  const categoryProductIds = categoryProductsSections
+    .map((section: any) => section.categoryId)
+    .filter(Boolean);
+  const categoryProductsData = useQuery(
+    api.products.listProductsForCategories,
+    categoryProductIds.length > 0 ? { categoryIds: categoryProductIds as any } : 'skip'
+  );
 
   // Lấy các header config chung từ config
   const hideHeader = config.hideHeader ?? false;
@@ -501,9 +510,11 @@ export function LiveComponentPreviewRenderer({
       );
     }
     case 'Pricing': {
+      const plans = (config.plans as any[]) || [];
       return (
         <PricingPreviewAny
           config={config as any}
+          plans={plans}
           brandColor={brandColor}
           secondary={secondary}
           mode={mode}
@@ -742,9 +753,11 @@ export function LiveComponentPreviewRenderer({
       );
     }
     case 'CaseStudy': {
+      const projects = (config.projects as any[]) || [];
       return (
         <CaseStudyPreviewAny
           config={config as any}
+          projects={projects}
           brandColor={brandColor}
           secondary={secondary}
           mode={mode}
@@ -812,8 +825,11 @@ export function LiveComponentPreviewRenderer({
           mode={mode}
           selectedStyle={config.style}
           onStyleChange={(style: any) => onConfigChange({ ...config, style })}
+          categoriesData={productCategoriesData ?? []}
           fontStyle={fontStyle}
           fontClassName={fontClassName}
+          selectionMode={config.selectionMode}
+          demoCategories={config.demoCategories}
           title={title}
           hideHeader={hideHeader}
           showTitle={showTitle}
@@ -843,6 +859,8 @@ export function LiveComponentPreviewRenderer({
           mode={mode}
           selectedStyle={config.style}
           onStyleChange={(style: any) => onConfigChange({ ...config, style })}
+          categoriesData={productCategoriesData ?? []}
+          productsData={categoryProductsData ?? []}
           fontStyle={fontStyle}
           fontClassName={fontClassName}
           title={title}
@@ -900,9 +918,11 @@ export function LiveComponentPreviewRenderer({
       );
     }
     case 'Features': {
+      const items = (config.items as any[]) || [];
       return (
         <FeaturesPreviewAny
           config={config as any}
+          items={items}
           brandColor={brandColor}
           secondary={secondary}
           mode={mode}
@@ -968,9 +988,11 @@ export function LiveComponentPreviewRenderer({
       );
     }
     case 'Clients': {
+      const items = (config.items as any[]) || [];
       return (
         <ClientsPreviewAny
           config={config as any}
+          items={items}
           brandColor={brandColor}
           secondary={secondary}
           mode={mode}
@@ -990,6 +1012,7 @@ export function LiveComponentPreviewRenderer({
           showBadge={showBadge}
           badgeText={badgeText}
           spacing={spacing}
+          cornerRadius={cornerRadius}
           isVisualEditAllowed={true}
           onConfigChange={onConfigChange}
           onTitleChange={onTitleChange}

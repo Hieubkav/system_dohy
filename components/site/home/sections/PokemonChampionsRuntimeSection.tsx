@@ -23,6 +23,69 @@ type PokemonChampionsRuntimeSectionProps = {
   isDark?: boolean;
 };
 
+type OrderSource = 'pokemon-card' | 'quick-order' | 'promo-banner' | 'premium-pass';
+type PromoCode = 'FIRST_ORDER_FREE_POKEMON';
+type OfferSlug = 'premium-pass-starter';
+type PromoBannerConfig = {
+  badge?: string;
+  body: string;
+  campaignCode: PromoCode;
+  ctaText: string;
+  enabled: boolean;
+  terms?: string;
+  title: string;
+};
+type PremiumPassConfig = {
+  benefits: {
+    storageDuration: 'permanent';
+    storageSlots: number;
+    teammateTickets: number;
+    trainingTickets: number;
+  };
+  ctaText: string;
+  enabled: boolean;
+  priceLabel?: string;
+  subtitle?: string;
+  title: string;
+};
+type CampaignOrderContext = {
+  offerSlug?: OfferSlug;
+  promoCode?: PromoCode;
+  source: OrderSource;
+};
+
+const DEFAULT_PROMO_BANNER: PromoBannerConfig = {
+  badge: 'Launch promo',
+  body: 'Đặt Pokémon Champions hôm nay, đơn đầu tiên được tặng thêm 1 Pokémon theo danh sách áp dụng. Admin sẽ xác nhận qua Discord, Instagram hoặc WhatsApp.',
+  campaignCode: 'FIRST_ORDER_FREE_POKEMON',
+  ctaText: 'Nhận ưu đãi',
+  enabled: true,
+  terms: 'Áp dụng theo contact đầu tiên, số lượng có hạn, admin xác nhận trước khi giao.',
+  title: 'Đơn đầu tiên tặng 1 Pokémon miễn phí',
+};
+
+const DEFAULT_PREMIUM_PASS: PremiumPassConfig = {
+  benefits: {
+    storageDuration: 'permanent',
+    storageSlots: 50,
+    teammateTickets: 30,
+    trainingTickets: 50,
+  },
+  ctaText: 'Đăng ký Starter Pack',
+  enabled: true,
+  priceLabel: 'Liên hệ',
+  subtitle: 'Gói mở rộng cho người mới build team nhanh.',
+  title: 'Premium Pass Starter Pack',
+};
+
+function getPromoBanner(settingsDoc: any): PromoBannerConfig {
+  return settingsDoc?.promoBanner ?? DEFAULT_PROMO_BANNER;
+}
+
+function getPremiumPass(settingsDoc: any): PremiumPassConfig {
+  return settingsDoc?.premiumPass ?? DEFAULT_PREMIUM_PASS;
+}
+
 function getPokemonDisplayName(p: any) {
   if (!p || !p.name) return '';
   const fullName = p.name;
@@ -306,6 +369,7 @@ export function PokemonChampionsRuntimeSection({
 
   const itemMap = useMemo(() => new Map((gameItems ?? []).map((item) => [item._id, item])), [gameItems]);
   const [isQuickOrderOpen, setIsQuickOrderOpen] = useState(false);
+  const [orderContext, setOrderContext] = useState<CampaignOrderContext>({ source: 'quick-order' });
   const [selectedItemForModal, setSelectedItemForModal] = useState<any>(null);
 
   const [activeTab, setActiveTab] = useState<'tier-list' | 'team' | 'pokemon' | 'game-item'>('tier-list');
@@ -315,6 +379,8 @@ export function PokemonChampionsRuntimeSection({
   const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [openTiers, setOpenTiers] = useState<Set<string> | null>(null);
+  const promoBanner = getPromoBanner(settingsDoc);
+  const premiumPass = getPremiumPass(settingsDoc);
 
   useEffect(() => {
     if (didEnsureDefaults.current || pokemon === undefined || gameItems === undefined || settingsDoc === undefined) {
@@ -431,13 +497,16 @@ export function PokemonChampionsRuntimeSection({
             <div>
               <h4 className="text-sm font-bold uppercase tracking-wider" style={{ color: brandColor }}>ANNOUNCEMENT</h4>
               <p className={cn('text-sm mt-0.5 font-medium', isDark ? 'text-white/80' : 'text-slate-600')}>
-                The shop is currently open for orders! Submit a quick order request to get support from our admin.
+                {settingsDoc?.announcement ?? 'The shop is currently open for orders! Submit a quick order request to get support from our admin.'}
               </p>
             </div>
           </div>
           <button
             type="button"
-            onClick={() => setIsQuickOrderOpen(true)}
+              onClick={() => {
+                setOrderContext({ source: 'quick-order' });
+                setIsQuickOrderOpen(true);
+              }}
             className="w-full shrink-0 rounded-xl px-6 py-2.5 text-sm font-bold text-white transition hover:scale-[1.02] active:scale-[0.98] md:w-auto"
             style={{
               backgroundColor: brandColor,
@@ -446,6 +515,30 @@ export function PokemonChampionsRuntimeSection({
           >
             Quick Order
           </button>
+        </div>
+        <div className="mb-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+          {promoBanner.enabled && (
+            <CampaignPromoCard
+              promo={promoBanner}
+              isDark={isDark}
+              brandColor={brandColor}
+              onClick={() => {
+                setOrderContext({ promoCode: 'FIRST_ORDER_FREE_POKEMON', source: 'promo-banner' });
+                setIsQuickOrderOpen(true);
+              }}
+            />
+          )}
+          {premiumPass.enabled && (
+            <PremiumPassCard
+              premiumPass={premiumPass}
+              isDark={isDark}
+              brandColor={secondary || brandColor}
+              onClick={() => {
+                setOrderContext({ offerSlug: 'premium-pass-starter', source: 'premium-pass' });
+                setIsQuickOrderOpen(true);
+              }}
+            />
+          )}
         </div>
 
         <div className="mb-8 flex justify-center border-b border-slate-200 dark:border-slate-800 overflow-x-auto overflow-y-hidden">
@@ -963,6 +1056,8 @@ export function PokemonChampionsRuntimeSection({
       <QuickOrderDialog
         isOpen={isQuickOrderOpen}
         onClose={() => setIsQuickOrderOpen(false)}
+        orderContext={orderContext}
+        orderInstructions={settingsDoc?.orderInstructions}
         isDark={isDark}
         brandColor={brandColor}
         cornerRadius={cornerRadius}
@@ -978,15 +1073,85 @@ export function PokemonChampionsRuntimeSection({
   );
 }
 
+function CampaignPromoCard({
+  brandColor,
+  isDark,
+  onClick,
+  promo,
+}: {
+  brandColor: string;
+  isDark: boolean;
+  onClick: () => void;
+  promo: PromoBannerConfig;
+}) {
+  return (
+    <div className={cn('rounded-3xl border p-5 shadow-sm', isDark ? 'border-white/10 bg-white/[0.06] text-white' : 'border-slate-200 bg-white text-slate-900')}>
+      <div className="mb-3 inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider text-white" style={{ backgroundColor: brandColor }}>
+        {promo.badge || 'Launch promo'}
+      </div>
+      <h3 className="text-2xl font-black tracking-tight">{promo.title}</h3>
+      <p className={cn('mt-2 text-sm leading-relaxed', isDark ? 'text-white/70' : 'text-slate-600')}>{promo.body}</p>
+      {promo.terms && <p className={cn('mt-3 text-xs', isDark ? 'text-white/45' : 'text-slate-500')}>{promo.terms}</p>}
+      <button type="button" onClick={onClick} className="mt-4 rounded-xl px-5 py-2.5 text-sm font-bold text-white transition hover:scale-[1.02]" style={{ backgroundColor: brandColor }}>
+        {promo.ctaText}
+      </button>
+    </div>
+  );
+}
+
+function PremiumPassCard({
+  brandColor,
+  isDark,
+  onClick,
+  premiumPass,
+}: {
+  brandColor: string;
+  isDark: boolean;
+  onClick: () => void;
+  premiumPass: PremiumPassConfig;
+}) {
+  const benefits = [
+    `+${premiumPass.benefits.storageSlots} slot lưu Pokémon vĩnh viễn`,
+    `${premiumPass.benefits.teammateTickets} vé nhận Pokémon`,
+    `${premiumPass.benefits.trainingTickets} vé train`,
+  ];
+  return (
+    <div className={cn('rounded-3xl border p-5 shadow-sm', isDark ? 'border-white/10 bg-black/20 text-white' : 'border-slate-200 bg-white text-slate-900')}>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="inline-flex rounded-full px-3 py-1 text-xs font-black uppercase tracking-wider text-white" style={{ backgroundColor: brandColor }}>
+          Premium Pass
+        </div>
+        {premiumPass.priceLabel && <span className={cn('text-sm font-bold', isDark ? 'text-white/70' : 'text-slate-600')}>{premiumPass.priceLabel}</span>}
+      </div>
+      <h3 className="text-2xl font-black tracking-tight">{premiumPass.title}</h3>
+      {premiumPass.subtitle && <p className={cn('mt-2 text-sm', isDark ? 'text-white/70' : 'text-slate-600')}>{premiumPass.subtitle}</p>}
+      <div className="mt-4 grid gap-2">
+        {benefits.map((benefit) => (
+          <div key={benefit} className={cn('rounded-xl border px-3 py-2 text-sm font-semibold', isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-50')}>
+            {benefit}
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={onClick} className="mt-4 w-full rounded-xl px-5 py-2.5 text-sm font-bold text-white transition hover:scale-[1.02]" style={{ backgroundColor: brandColor }}>
+        {premiumPass.ctaText}
+      </button>
+    </div>
+  );
+}
+
 function QuickOrderDialog({
   isOpen,
   onClose,
+  orderContext,
+  orderInstructions,
   isDark,
   brandColor,
   cornerRadius,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  orderContext?: CampaignOrderContext;
+  orderInstructions?: string;
   isDark: boolean;
   brandColor: string;
   cornerRadius: string;
@@ -1030,7 +1195,14 @@ function QuickOrderDialog({
         customerName: customerName.trim(),
         contactHandle: contactHandle.trim(),
         contactType: contactType as any,
-        note: 'Quick order from home page',
+        note: orderContext?.source === 'promo-banner'
+          ? 'Promo banner order: first order free Pokémon'
+          : orderContext?.source === 'premium-pass'
+            ? 'Premium Pass Starter Pack order'
+            : 'Quick order from home page',
+        offerSlug: orderContext?.offerSlug,
+        promoCode: orderContext?.promoCode,
+        source: orderContext?.source ?? 'quick-order',
       });
       setIsSuccess(true);
       setCustomerName('');
@@ -1181,7 +1353,7 @@ function QuickOrderDialog({
                 )}
               >
                 <span className="font-bold block mb-0.5" style={{ color: brandColor }}>Instructions:</span>
-                After submitting, our admin will contact you through the channel you provided as soon as possible to confirm availability and delivery details.
+                {orderInstructions ?? 'After submitting, our admin will contact you through the channel you provided as soon as possible to confirm availability and delivery details.'}
               </div>
 
               {errorMsg && (

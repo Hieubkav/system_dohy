@@ -76,7 +76,7 @@ const getImageSizeInfo = (count: number, style: CaseStudyStyle) => {
 };
 
 export const CaseStudyPreview = ({
-  projects,
+  projects = [],
   brandColor,
   secondary,
   mode = 'dual',

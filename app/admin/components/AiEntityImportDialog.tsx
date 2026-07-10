@@ -24,7 +24,7 @@ import {
   Checkbox,
 } from './ui';
 
-export type AiEntityImportKind = 'product' | 'service' | 'post' | 'course';
+export type AiEntityImportKind = 'product' | 'service' | 'post' | 'course' | 'project' | 'resource';
 
 export type AiEntityImportPayload = {
   name?: string;
@@ -50,8 +50,11 @@ export type AiEntityImportPayload = {
   duration?: string;
   durationText?: string;
   authorName?: string;
+  clientName?: string;
+  downloadUrl?: string;
   instructorName?: string;
   level?: string;
+  projectUrl?: string;
   pricingType?: string;
   priceNote?: string;
   comparePriceAmount?: number;
@@ -111,6 +114,23 @@ const ENTITY_COPY: Record<AiEntityImportKind, {
     "htmlRender": "<h2>Tư vấn thiết kế tủ bếp giải quyết vấn đề gì?</h2><p>Dịch vụ giúp gia chủ xác định bố cục, vật liệu và công năng tủ bếp trước khi thi công, giảm rủi ro phát sinh do đo đạc hoặc chọn sai phụ kiện.</p><h3>Quy trình tư vấn</h3><ol><li>Trao đổi nhu cầu sử dụng và ngân sách dự kiến.</li><li>Khảo sát kích thước, thói quen nấu nướng và điểm bất tiện hiện tại.</li><li>Đề xuất phương án bố trí, vật liệu và phụ kiện phù hợp.</li></ol>",
     "metaTitle": "Tư vấn thiết kế tủ bếp chuyên nghiệp",
     "metaDescription": "Dịch vụ tư vấn thiết kế tủ bếp tối ưu công năng, thẩm mỹ và ngân sách.",
+    "focusKeyword": "tư vấn thiết kế tủ bếp",
+    "relatedQueries": ["tư vấn thiết kế tủ bếp", "thiết kế tủ bếp theo không gian", "dịch vụ tư vấn tủ bếp", "kinh nghiệm làm tủ bếp", "tư vấn phụ kiện tủ bếp"],
+    "tags": ["thiết kế tủ bếp", "tư vấn nội thất", "phụ kiện tủ bếp", "khảo sát bếp", "tối ưu công năng"],
+    "faqItems": [
+      {
+        "question": "Dịch vụ tư vấn thiết kế tủ bếp phù hợp với ai?",
+        "answer": "Dịch vụ phù hợp với gia chủ đang chuẩn bị làm mới hoặc cải tạo bếp và muốn xác định bố cục, vật liệu, phụ kiện trước khi thi công."
+      },
+      {
+        "question": "Cần chuẩn bị gì trước buổi tư vấn?",
+        "answer": "Nên chuẩn bị kích thước khu vực bếp, hình ảnh hiện trạng, nhu cầu lưu trữ và ngân sách dự kiến để phương án tư vấn sát thực tế hơn."
+      },
+      {
+        "question": "Tư vấn có thay thế bản vẽ thi công không?",
+        "answer": "Tư vấn giúp xác định hướng bố trí và tiêu chí lựa chọn, còn bản vẽ thi công chi tiết cần được thực hiện theo quy trình thiết kế/kỹ thuật riêng."
+      }
+    ],
     "thumbnail": "",
     "price": 500000,
     "duration": "60 phút"
@@ -131,6 +151,23 @@ const ENTITY_COPY: Record<AiEntityImportKind, {
     "htmlRender": "<h2>Khóa học Next.js thực chiến giúp bạn làm được gì?</h2><p>Khóa học tập trung vào cách xây dựng website bán hàng có cấu trúc rõ ràng, tối ưu trải nghiệm người dùng và dễ mở rộng khi dữ liệu, sản phẩm hoặc nội dung tăng lên.</p><h3>Bạn sẽ học theo lộ trình nào?</h3><ol><li>Nắm kiến trúc dự án Next.js và cách chia route, component, data flow.</li><li>Xây dựng trang danh sách, chi tiết sản phẩm, giỏ hàng và nội dung SEO.</li><li>Tối ưu form, trạng thái tải, xử lý lỗi và trải nghiệm mobile.</li></ol><h3>Khóa học phù hợp với ai?</h3><p>Phù hợp với developer đã biết React cơ bản, chủ shop có đội kỹ thuật nội bộ hoặc freelancer muốn nâng cấp năng lực làm web thương mại.</p>",
     "metaTitle": "Khóa học Next.js thực chiến",
     "metaDescription": "Học Next.js qua dự án website bán hàng thực tế, có lộ trình rõ và bài học dễ áp dụng.",
+    "focusKeyword": "khóa học Next.js thực chiến",
+    "relatedQueries": ["khóa học Next.js thực chiến", "học Next.js làm website bán hàng", "lộ trình học Next.js", "Next.js cho React developer", "khóa học xây dựng website ecommerce"],
+    "tags": ["Next.js", "React", "website bán hàng", "frontend", "fullstack"],
+    "faqItems": [
+      {
+        "question": "Khóa học Next.js thực chiến phù hợp với ai?",
+        "answer": "Khóa học phù hợp với người đã biết React cơ bản và muốn xây dựng website bán hàng có thể triển khai thực tế."
+      },
+      {
+        "question": "Có cần kinh nghiệm backend trước khi học không?",
+        "answer": "Không bắt buộc, nhưng người học nên hiểu cơ bản về API, dữ liệu và luồng xử lý form để tiếp thu nhanh hơn."
+      },
+      {
+        "question": "Học xong có thể làm được gì?",
+        "answer": "Người học có thể xây dựng các trang chính của website bán hàng, xử lý form, tối ưu trải nghiệm và triển khai dự án theo cấu trúc rõ ràng."
+      }
+    ],
     "thumbnail": "",
     "pricingType": "paid",
     "price": 2500000,
@@ -178,7 +215,94 @@ const ENTITY_COPY: Record<AiEntityImportKind, {
   }
 }`,
   },
+  project: {
+    rootKey: 'project',
+    title: 'Nhập dự án bằng AI',
+    description: 'Copy prompt, nhờ AI tạo JSON dự án, dán kết quả để preview rồi áp dụng vào form.',
+    sample: `{
+  "project": {
+    "title": "Thiết kế website bán hàng rượu vang cao cấp",
+    "slug": "thiet-ke-website-ban-hang-ruou-vang-cao-cap",
+    "excerpt": "Case study xây dựng website bán hàng rượu vang với danh mục rõ ràng, nội dung SEO và trải nghiệm mua hàng tối ưu.",
+    "content": "<h2>Tổng quan dự án</h2><p>Dự án tập trung xây dựng website bán hàng rượu vang có cấu trúc danh mục dễ tìm, trang chi tiết sản phẩm rõ thông tin và nội dung hỗ trợ SEO dài hạn.</p><h3>Vấn đề cần giải quyết</h3><ul><li>Danh mục sản phẩm khó tìm kiếm theo nhu cầu mua hàng.</li><li>Trang sản phẩm thiếu nội dung tư vấn và thông tin ra quyết định.</li><li>Trải nghiệm mobile cần gọn hơn để tăng chuyển đổi.</li></ul><h3>Giải pháp triển khai</h3><p>Hệ thống được thiết kế lại với cấu trúc danh mục, nội dung sản phẩm, bộ lọc và luồng mua hàng phù hợp hành vi khách hàng.</p>",
+    "metaTitle": "Website bán hàng rượu vang cao cấp",
+    "metaDescription": "Case study thiết kế website rượu vang với danh mục, nội dung SEO và trải nghiệm mua hàng tối ưu.",
+    "focusKeyword": "website bán hàng rượu vang",
+    "relatedQueries": ["website bán hàng rượu vang", "thiết kế web rượu vang", "case study ecommerce rượu vang", "website bán hàng cao cấp", "tối ưu trải nghiệm mua rượu vang"],
+    "tags": ["website bán hàng", "rượu vang", "ecommerce", "case study", "SEO sản phẩm"],
+    "faqItems": [
+      {
+        "question": "Dự án website bán hàng rượu vang tập trung vào mục tiêu gì?",
+        "answer": "Dự án tập trung cải thiện cấu trúc danh mục, nội dung sản phẩm và trải nghiệm mua hàng để khách dễ tìm, dễ hiểu và dễ ra quyết định hơn."
+      },
+      {
+        "question": "Điểm khó của website rượu vang là gì?",
+        "answer": "Điểm khó là phải trình bày rõ xuất xứ, giống nho, hương vị, dịp dùng và gợi ý lựa chọn mà không làm giao diện trở nên rối."
+      },
+      {
+        "question": "Case study này phù hợp để tham khảo khi nào?",
+        "answer": "Phù hợp khi cần xây dựng hoặc cải thiện website ecommerce cho sản phẩm cao cấp, có nhiều tiêu chí lựa chọn và cần nội dung tư vấn."
+      }
+    ],
+    "thumbnail": "",
+    "clientName": "Thien Kim Wine",
+    "projectUrl": "https://example.com",
+    "introVideoType": "none",
+    "introVideoUrl": "",
+    "featured": true
+  }
+}`,
+  },
+  resource: {
+    rootKey: 'resource',
+    title: 'Nhập tài nguyên bằng AI',
+    description: 'Copy prompt, nhờ AI tạo JSON tài nguyên, dán kết quả để preview rồi áp dụng vào form.',
+    sample: `{
+  "resource": {
+    "title": "Checklist chọn rượu vang làm quà biếu",
+    "slug": "checklist-chon-ruou-vang-lam-qua-bieu",
+    "excerpt": "Tài nguyên tải xuống giúp khách chọn rượu vang làm quà theo dịp tặng, ngân sách và khẩu vị người nhận.",
+    "content": "<h2>Checklist chọn rượu vang làm quà biếu</h2><p>Tài nguyên này giúp người mua rà nhanh các tiêu chí quan trọng trước khi chọn rượu vang làm quà.</p><h3>Nội dung chính</h3><ul><li>Xác định dịp tặng và mức ngân sách phù hợp.</li><li>Chọn phong cách vang theo khẩu vị người nhận.</li><li>Kiểm tra bao bì, tem nhãn và điều kiện bảo quản.</li></ul>",
+    "downloadUrl": "",
+    "metaTitle": "Checklist chọn rượu vang làm quà",
+    "metaDescription": "Tải checklist chọn rượu vang làm quà theo dịp tặng, ngân sách và khẩu vị người nhận.",
+    "focusKeyword": "checklist chọn rượu vang làm quà",
+    "relatedQueries": ["checklist chọn rượu vang làm quà", "cách chọn rượu vang làm quà biếu", "rượu vang tặng khách hàng", "chọn vang theo ngân sách", "quà biếu rượu vang sang trọng"],
+    "tags": ["rượu vang", "quà biếu", "checklist", "chọn rượu vang", "tài nguyên tải xuống"],
+    "faqItems": [
+      {
+        "question": "Checklist này giúp gì khi chọn rượu vang làm quà?",
+        "answer": "Checklist giúp người mua rà nhanh dịp tặng, ngân sách, khẩu vị người nhận, bao bì và các lưu ý bảo quản trước khi quyết định."
+      },
+      {
+        "question": "Tài nguyên này phù hợp với ai?",
+        "answer": "Phù hợp với cá nhân hoặc doanh nghiệp cần chọn rượu vang làm quà biếu nhưng chưa chắc nên ưu tiên tiêu chí nào."
+      },
+      {
+        "question": "Có thể dùng checklist cho nhiều dịp tặng không?",
+        "answer": "Có, checklist có thể áp dụng cho quà tết, quà đối tác, quà sinh nhật hoặc các dịp cần món quà trang trọng."
+      }
+    ],
+    "thumbnail": "",
+    "pricingType": "free",
+    "price": 0,
+    "comparePriceAmount": 0,
+    "priceNote": "Tải miễn phí",
+    "isPriceVisible": true,
+    "featured": false
+  }
+}`,
+  },
 };
+
+const ADVANCED_SEO_FIELD_KEYS = ['focusKeyword', 'tags', 'relatedQueries', 'faqItems'] as const;
+
+const ADVANCED_SEO_FIELD_SPECS = {
+  focusKeyword: '"focusKeyword": "string, từ khóa chính mà nội dung cần thỏa intent tìm kiếm; không để rỗng nếu field này có trong schema"',
+  relatedQueries: '"relatedQueries": "mảng string, 5-8 cách người dùng thật có thể gõ trên Google, gồm cụm đồng nghĩa/câu hỏi liên quan; không nhồi keyword"',
+  tags: '"tags": "mảng string, 5-8 tag ngắn, tự nhiên, phân loại nội dung/sản phẩm/dịch vụ; không nhồi keyword"',
+  faqItems: '"faqItems": "mảng gồm 3-6 object, mỗi object dùng đúng key { question: string, answer: string }; câu hỏi bám intent và trả lời ngắn gọn"',
+} satisfies Record<(typeof ADVANCED_SEO_FIELD_KEYS)[number], string>;
 
 const FIELD_SPECS: Record<AiEntityImportKind, Record<string, string>> = {
   product: {
@@ -195,6 +319,7 @@ const FIELD_SPECS: Record<AiEntityImportKind, Record<string, string>> = {
     price: '"price": "number optional, giá bán thực tế"',
     salePrice: '"salePrice": "number optional, giá so sánh nếu có, phải lớn hơn price"',
     stock: '"stock": "number optional, tồn kho"',
+    ...ADVANCED_SEO_FIELD_SPECS,
   },
   service: {
     title: '"title": "string bắt buộc, tên dịch vụ rõ ngành + lợi ích"',
@@ -208,6 +333,7 @@ const FIELD_SPECS: Record<AiEntityImportKind, Record<string, string>> = {
     thumbnail: '"thumbnail": "để chuỗi rỗng; admin sẽ tự upload/chọn ảnh sau, không sinh URL ảnh ngoài"',
     price: '"price": "number optional, giá tham khảo nếu phù hợp"',
     duration: '"duration": "string optional, ví dụ 60 phút / 2-3 ngày / Theo dự án"',
+    ...ADVANCED_SEO_FIELD_SPECS,
   },
   course: {
     title: '"title": "string bắt buộc, tên khóa học rõ kỹ năng/lộ trình + kết quả học được"',
@@ -228,6 +354,7 @@ const FIELD_SPECS: Record<AiEntityImportKind, Record<string, string>> = {
     durationText: '"durationText": "string optional, thời lượng hiển thị, ví dụ 12 giờ học / 6 tuần"',
     introVideoType: '"introVideoType": "none | youtube | drive | external"',
     introVideoUrl: '"introVideoUrl": "URL video giới thiệu optional, chỉ dùng khi introVideoType khác none"',
+    ...ADVANCED_SEO_FIELD_SPECS,
   },
   post: {
     title: '"title": "string bắt buộc, cụ thể, có góc nhìn rõ, không chung chung"',
@@ -245,13 +372,51 @@ const FIELD_SPECS: Record<AiEntityImportKind, Record<string, string>> = {
     thumbnail: '"thumbnail": "để chuỗi rỗng; admin sẽ tự upload/chọn ảnh sau, không sinh URL ảnh ngoài"',
     authorName: '"authorName": "string optional"',
   },
+  project: {
+    title: '"title": "string bắt buộc, tên dự án/case study rõ ngành + kết quả nổi bật"',
+    slug: '"slug": "string optional, lowercase-kebab-case không dấu"',
+    excerpt: '"excerpt": "string, 120-220 ký tự, tóm tắt bối cảnh dự án, giải pháp và kết quả chính"',
+    content: '"content": "string bắt buộc nếu field này có trong schema; nội dung case study đầy đủ, có bối cảnh, vấn đề, giải pháp, kết quả, bài học"',
+    markdownRender: '"markdownRender": "string bắt buộc nếu field này có trong schema; markdown đầy đủ tương đương content"',
+    htmlRender: '"htmlRender": "string bắt buộc nếu field này có trong schema; HTML semantic đầy đủ tương đương content, không className/style/script"',
+    metaTitle: '"metaTitle": "string <= 60 ký tự, có keyword dự án/case study + lợi ích chính"',
+    metaDescription: '"metaDescription": "string <= 160 ký tự, nêu dự án + giải pháp + lý do click"',
+    thumbnail: '"thumbnail": "để chuỗi rỗng; admin sẽ tự upload/chọn ảnh sau, không sinh URL ảnh ngoài"',
+    clientName: '"clientName": "string optional, tên khách hàng/đơn vị nếu input có; không bịa nếu không có dữ liệu"',
+    projectUrl: '"projectUrl": "URL dự án optional, chỉ sinh nếu input đã cung cấp URL thật"',
+    introVideoType: '"introVideoType": "none | youtube | drive | external"',
+    introVideoUrl: '"introVideoUrl": "URL video giới thiệu optional, chỉ dùng khi introVideoType khác none"',
+    featured: '"featured": "boolean optional, true nếu đây là dự án tiêu biểu"',
+    ...ADVANCED_SEO_FIELD_SPECS,
+  },
+  resource: {
+    title: '"title": "string bắt buộc, tên tài nguyên rõ chủ đề + lợi ích tải xuống"',
+    slug: '"slug": "string optional, lowercase-kebab-case không dấu"',
+    excerpt: '"excerpt": "string, 120-220 ký tự, nói rõ tài nguyên giúp ai và dùng để làm gì"',
+    content: '"content": "string bắt buộc nếu field này có trong schema; mô tả tài nguyên, nội dung bên trong, ai phù hợp, cách sử dụng"',
+    markdownRender: '"markdownRender": "string bắt buộc nếu field này có trong schema; markdown đầy đủ tương đương content"',
+    htmlRender: '"htmlRender": "string bắt buộc nếu field này có trong schema; HTML semantic đầy đủ tương đương content, không className/style/script"',
+    downloadUrl: '"downloadUrl": "URL tải xuống; nếu chưa có link thật thì để chuỗi rỗng để admin nhập sau, không bịa URL"',
+    metaTitle: '"metaTitle": "string <= 60 ký tự, có keyword tài nguyên + lợi ích tải xuống"',
+    metaDescription: '"metaDescription": "string <= 160 ký tự, nêu tài nguyên + lợi ích + lý do click/tải"',
+    thumbnail: '"thumbnail": "để chuỗi rỗng; admin sẽ tự upload/chọn ảnh sau, không sinh URL ảnh ngoài"',
+    pricingType: '"pricingType": "free | paid | contact"',
+    price: '"price": "number optional, giá bán khi pricingType là paid"',
+    comparePriceAmount: '"comparePriceAmount": "number optional, giá gốc để hiển thị gạch ngang nếu có, phải lớn hơn price"',
+    priceNote: '"priceNote": "string optional, ví dụ Tải miễn phí / Tải trọn đời / Liên hệ để nhận"',
+    isPriceVisible: '"isPriceVisible": "boolean optional, true nếu muốn hiển thị giá ngoài site"',
+    featured: '"featured": "boolean optional, true nếu đây là tài nguyên nổi bật"',
+    ...ADVANCED_SEO_FIELD_SPECS,
+  },
 };
 
 const CORE_FIELDS: Record<AiEntityImportKind, string[]> = {
   product: ['name', 'slug', 'price'],
   service: ['title', 'slug', 'content'],
-  post: ['title', 'slug', 'content', 'focusKeyword', 'relatedQueries', 'tags', 'faqItems'],
+  post: ['title', 'slug', 'content'],
   course: ['title', 'slug', 'content', 'pricingType'],
+  project: ['title', 'slug', 'content'],
+  resource: ['title', 'slug', 'content', 'downloadUrl', 'pricingType'],
 };
 
 const OPTIONAL_FIELD_MAP: Record<AiEntityImportKind, Record<string, string[]>> = {
@@ -265,6 +430,10 @@ const OPTIONAL_FIELD_MAP: Record<AiEntityImportKind, Record<string, string[]>> =
     images: ['image'],
     salePrice: ['salePrice'],
     stock: ['stock'],
+    focusKeyword: ['focusKeyword'],
+    relatedQueries: ['relatedQueries'],
+    tags: ['tags'],
+    faqItems: ['faqItems'],
   },
   service: {
     content: ['content'],
@@ -298,6 +467,10 @@ const OPTIONAL_FIELD_MAP: Record<AiEntityImportKind, Record<string, string[]>> =
     durationText: ['durationText'],
     introVideoType: ['introVideoType'],
     introVideoUrl: ['introVideoUrl'],
+    focusKeyword: ['focusKeyword'],
+    relatedQueries: ['relatedQueries'],
+    tags: ['tags'],
+    faqItems: ['faqItems'],
   },
   post: {
     content: ['content'],
@@ -309,6 +482,48 @@ const OPTIONAL_FIELD_MAP: Record<AiEntityImportKind, Record<string, string[]>> =
     thumbnail: ['thumbnail'],
     author_name: ['authorName'],
     authorName: ['authorName'],
+    focusKeyword: ['focusKeyword'],
+    relatedQueries: ['relatedQueries'],
+    tags: ['tags'],
+    faqItems: ['faqItems'],
+  },
+  project: {
+    content: ['content'],
+    excerpt: ['excerpt'],
+    htmlRender: ['htmlRender'],
+    markdownRender: ['markdownRender'],
+    metaTitle: ['metaTitle'],
+    metaDescription: ['metaDescription'],
+    thumbnail: ['thumbnail'],
+    clientName: ['clientName'],
+    projectUrl: ['projectUrl'],
+    introVideoType: ['introVideoType'],
+    introVideoUrl: ['introVideoUrl'],
+    featured: ['featured'],
+    focusKeyword: ['focusKeyword'],
+    relatedQueries: ['relatedQueries'],
+    tags: ['tags'],
+    faqItems: ['faqItems'],
+  },
+  resource: {
+    content: ['content'],
+    excerpt: ['excerpt'],
+    htmlRender: ['htmlRender'],
+    markdownRender: ['markdownRender'],
+    metaTitle: ['metaTitle'],
+    metaDescription: ['metaDescription'],
+    thumbnail: ['thumbnail'],
+    downloadUrl: ['downloadUrl'],
+    pricingType: ['pricingType'],
+    priceAmount: ['price'],
+    comparePriceAmount: ['comparePriceAmount'],
+    priceNote: ['priceNote'],
+    isPriceVisible: ['isPriceVisible'],
+    featured: ['featured'],
+    focusKeyword: ['focusKeyword'],
+    relatedQueries: ['relatedQueries'],
+    tags: ['tags'],
+    faqItems: ['faqItems'],
   },
 };
 
@@ -349,16 +564,48 @@ const KIND_GUIDE: Record<AiEntityImportKind, string> = {
 - Trước khi viết, tự xác định focus keyword, search intent, người đọc mục tiêu và góc nhìn chính; thể hiện tự nhiên trong title, mở bài, heading và meta.
 - Bài phải có insight cụ thể, ví dụ thực tế, tiêu chí chọn, lỗi thường gặp, checklist/steps/bảng so sánh khi phù hợp; tránh câu rỗng như "rất quan trọng" nếu không giải thích rõ.
 - E-E-A-T an toàn: nêu điều kiện áp dụng, trade-off, lưu ý kiểm chứng; không bịa số liệu, nghiên cứu, chứng nhận, thương hiệu, case study hoặc cam kết nếu input không cung cấp.
-- BẮT BUỘC sinh đủ 4 field nâng cao: focusKeyword, relatedQueries, tags, faqItems. Không được bỏ field, không để mảng rỗng, không đổi tên field sang snake_case.
-- relatedQueries phải có ít nhất 5 mục là câu/cụm người dùng thật có thể gõ trên Google; faqItems phải có ít nhất 3 câu hỏi bám đúng intent bài.
-- Tự kiểm tra trước khi trả JSON: "faqItems" phải là array có tối thiểu 3 object; mỗi object bắt buộc có đúng 2 key "question" và "answer" đều không rỗng. Nếu đang có dưới 3 FAQ thì tự sinh thêm cho đủ trước khi xuất.
-- Không được chỉ viết FAQ trong content; FAQ phải nằm riêng trong field "faqItems" để vượt validation và tạo FAQ schema.
+- Nếu schema có field SEO nâng cao nào thì phải sinh field đó, không đổi tên field sang snake_case.
+- Nếu schema có relatedQueries thì sinh ít nhất 5 mục là câu/cụm người dùng thật có thể gõ trên Google; nếu schema có faqItems thì sinh ít nhất 3 câu hỏi bám đúng intent bài.
+- Nếu schema có faqItems, tự kiểm tra trước khi trả JSON: "faqItems" phải là array có tối thiểu 3 object; mỗi object bắt buộc có đúng 2 key "question" và "answer" đều không rỗng. Nếu đang có dưới 3 FAQ thì tự sinh thêm cho đủ trước khi xuất.
+- Nếu schema có faqItems, không được chỉ viết FAQ trong content; FAQ phải nằm riêng trong field "faqItems" để vượt validation và tạo FAQ schema.
 - Các field nâng cao phải khớp tự nhiên với nội dung, không nhồi từ khóa.
 - content là nguồn chính để admin editor hiển thị và chỉnh sửa; luôn sinh content đầy đủ, không chỉ sinh htmlRender.
 - Cấu trúc nên gồm: mở bài nêu vấn đề, H2/H3 theo luận điểm rõ, phần tiêu chí/checklist/lỗi thường gặp, kết luận có CTA mềm.
 - Nếu schema có markdownRender, bắt buộc sinh markdownRender đầy đủ tương đương content.
 - Nếu schema có htmlRender, bắt buộc sinh htmlRender đầy đủ tương đương content bằng HTML semantic sạch.
 - Nếu đồng thời có content, markdownRender và htmlRender, ba field phải cùng ý, cùng cấu trúc chính, không mâu thuẫn.`,
+  project: `Riêng dự án:
+- Viết theo dạng case study: bối cảnh, vấn đề, giải pháp, phần đã triển khai, kết quả/giá trị và bài học thực tế.
+- Không bịa tên khách hàng, số liệu tăng trưởng, giải thưởng, chứng chỉ hoặc URL dự án nếu input không cung cấp.
+- Nếu có clientName/projectUrl/introVideoUrl trong schema nhưng input không có dữ liệu thật, để trống thay vì bịa.
+- Cấu trúc nên có: H2 tổng quan, H3 bối cảnh, H3 thách thức, H3 giải pháp, H3 kết quả, H3 bài học/đề xuất.`,
+  resource: `Riêng tài nguyên:
+- Viết theo intent tải xuống: tài nguyên này giúp ai, giải quyết nhu cầu gì, bên trong có gì, cách dùng ra sao.
+- Không bịa URL tải xuống. Nếu chưa có link thật, để downloadUrl là chuỗi rỗng để admin nhập sau.
+- Nếu pricingType là paid mà không có giá thật, ưu tiên pricingType "free" hoặc "contact" tùy ngữ cảnh input.
+- Cấu trúc nên có: H2 giới thiệu tài nguyên, H3 nội dung bên trong, H3 ai phù hợp, H3 cách sử dụng, H3 lưu ý trước khi tải.`,
+};
+
+const getKindLabel = (kind: AiEntityImportKind) => {
+  switch (kind) {
+    case 'product': return 'sản phẩm';
+    case 'service': return 'dịch vụ';
+    case 'course': return 'khóa học';
+    case 'post': return 'bài viết';
+    case 'project': return 'dự án';
+    case 'resource': return 'tài nguyên';
+  }
+};
+
+const getKindTaskLabel = (kind: AiEntityImportKind) => {
+  switch (kind) {
+    case 'product': return 'SẢN PHẨM';
+    case 'service': return 'DỊCH VỤ';
+    case 'course': return 'KHÓA HỌC';
+    case 'post': return 'BÀI VIẾT';
+    case 'project': return 'DỰ ÁN';
+    case 'resource': return 'TÀI NGUYÊN';
+  }
 };
 
 const buildFormatRules = (kind: AiEntityImportKind, enabledFields?: string[]) => {
@@ -369,7 +616,7 @@ const buildFormatRules = (kind: AiEntityImportKind, enabledFields?: string[]) =>
   const hasHtml = allowAllOptional || enabled.has('htmlRender');
   if (!hasContent && !hasMarkdown && !hasHtml) {return '';}
 
-  const label = kind === 'product' ? 'sản phẩm' : kind === 'service' ? 'dịch vụ' : kind === 'course' ? 'khóa học' : 'bài viết';
+  const label = getKindLabel(kind);
   const lines = [
     `Format rule riêng cho ${label}:`,
   ];
@@ -391,7 +638,7 @@ const buildFormatRules = (kind: AiEntityImportKind, enabledFields?: string[]) =>
   return lines.join('\n');
 };
 
-const buildSchema = (
+const getSchemaFieldNames = (
   kind: AiEntityImportKind,
   enabledFields?: string[],
   suggestCombos?: boolean,
@@ -406,6 +653,27 @@ const buildSchema = (
       schemaFields.forEach((field) => fieldNames.add(field));
     }
   });
+
+  if (kind === 'product' && suggestCombos) {
+    fieldNames.add('combos');
+  }
+
+  if (kind === 'product' && includeAttributes) {
+    fieldNames.add('attributeTermIds');
+    fieldNames.add('newAttributes');
+    fieldNames.add('attributeRangeValues');
+  }
+
+  return fieldNames;
+};
+
+const buildSchema = (
+  kind: AiEntityImportKind,
+  enabledFields?: string[],
+  suggestCombos?: boolean,
+  includeAttributes?: boolean
+) => {
+  const fieldNames = getSchemaFieldNames(kind, enabledFields, suggestCombos, includeAttributes);
 
   const lines = Array.from(fieldNames)
     .filter((field) => FIELD_SPECS[kind][field])
@@ -430,12 +698,26 @@ ${lines.join(',\n')}
 
 const buildSample = (
   kind: AiEntityImportKind,
+  enabledFields?: string[],
   suggestCombos?: boolean,
   includeAttributes?: boolean,
   formConfig?: any
 ) => {
+  const filterToSchema = (rootKey: string, item: Record<string, unknown>) => {
+    const allowedFields = getSchemaFieldNames(kind, enabledFields, suggestCombos, includeAttributes);
+    const filtered = Object.fromEntries(
+      Object.entries(item).filter(([key]) => allowedFields.has(key))
+    );
+    return JSON.stringify({ [rootKey]: filtered }, null, 2);
+  };
+
   if (kind !== 'product') {
-    return ENTITY_COPY[kind].sample;
+    try {
+      const parsed = JSON.parse(ENTITY_COPY[kind].sample) as Record<string, Record<string, unknown>>;
+      return filterToSchema(ENTITY_COPY[kind].rootKey, parsed[ENTITY_COPY[kind].rootKey] ?? {});
+    } catch {
+      return ENTITY_COPY[kind].sample;
+    }
   }
 
   const baseProduct: any = {
@@ -445,6 +727,23 @@ const buildSample = (
     content: "<h2>Tổng quan giá kệ góc liên hoàn inox 304</h2><p>Giá kệ góc liên hoàn inox 304 là giải pháp lưu trữ cho khoang góc tủ bếp, nơi thường khó thao tác và dễ bị bỏ trống. Sản phẩm phù hợp với gia đình muốn sắp xếp xoong nồi, chén đĩa hoặc đồ dùng bếp theo cách gọn hơn mà vẫn dễ lấy khi nấu nướng.</p><h3>Điểm nổi bật khi sử dụng</h3><ul><li>Tận dụng tốt khu vực góc tủ, giảm lãng phí không gian lưu trữ.</li><li>Thiết kế kéo mở giúp quan sát và lấy vật dụng thuận tiện hơn so với để đồ sâu trong góc tủ.</li><li>Chất liệu inox 304 phù hợp môi trường bếp ẩm, dễ lau chùi và hạn chế bám mùi.</li></ul><h3>Ứng dụng và thông số cần kiểm tra</h3><p>Trước khi chọn mua, nên kiểm tra kích thước khoang tủ, hướng mở cánh, tải trọng sử dụng và kiểu ray trượt đi kèm. Nếu dùng cho nồi lớn hoặc vật nặng, hãy đối chiếu tải trọng theo thông tin nhà cung cấp.</p><h3>Phù hợp với ai?</h3><p>Sản phẩm phù hợp với căn bếp có tủ chữ L, tủ góc hoặc gia đình cần tăng không gian lưu trữ nhưng không muốn thay đổi toàn bộ hệ tủ.</p><h3>Lưu ý khi chọn mua</h3><ul><li>Đo đúng chiều rộng, chiều sâu và chiều cao khoang tủ trước khi đặt hàng.</li><li>Kiểm tra hướng mở trái/phải để tránh lắp sai cấu hình.</li><li>Hỏi rõ phụ kiện đi kèm, chính sách lắp đặt và điều kiện bảo hành nếu có.</li></ul>",
     metaTitle: "Giá kệ góc liên hoàn inox 304",
     metaDescription: "Giá kệ góc inox 304 bền đẹp, tối ưu góc tủ và phù hợp nội thất bếp cao cấp.",
+    focusKeyword: "giá kệ góc liên hoàn inox 304",
+    relatedQueries: ["giá kệ góc liên hoàn inox 304", "kệ góc tủ bếp inox 304", "phụ kiện góc tủ bếp", "giá kệ góc liên hoàn loại nào tốt", "kệ góc tủ bếp cho căn hộ"],
+    tags: ["kệ góc tủ bếp", "inox 304", "phụ kiện tủ bếp", "tối ưu lưu trữ", "nội thất bếp"],
+    faqItems: [
+      {
+        question: "Giá kệ góc liên hoàn inox 304 phù hợp với loại tủ bếp nào?",
+        answer: "Sản phẩm phù hợp với tủ bếp có khoang góc, đặc biệt là tủ chữ L hoặc các căn bếp cần tận dụng không gian lưu trữ khó thao tác."
+      },
+      {
+        question: "Cần đo gì trước khi lắp kệ góc liên hoàn?",
+        answer: "Nên đo chiều rộng, chiều sâu, chiều cao khoang tủ, hướng mở cánh và đối chiếu tải trọng dự kiến với thông tin nhà cung cấp."
+      },
+      {
+        question: "Inox 304 có lợi ích gì trong môi trường bếp?",
+        answer: "Inox 304 thường phù hợp với môi trường bếp ẩm vì dễ vệ sinh và hạn chế gỉ sét, nhưng vẫn nên kiểm tra vật liệu thực tế trước khi mua."
+      }
+    ],
     image: "",
     price: 3500000,
     salePrice: 4200000,
@@ -485,7 +784,7 @@ const buildSample = (
     }
   }
 
-  return JSON.stringify({ product: baseProduct }, null, 2);
+  return filterToSchema('product', baseProduct);
 };
 
 const buildPrompt = (
@@ -580,7 +879,7 @@ Riêng về Thuộc tính phân loại & bộ lọc:
 
   return `Bạn là senior Vietnamese SEO & conversion copywriter cho website thương mại/dịch vụ/blog.
 
-Nhiệm vụ: tạo nội dung ${kind === 'product' ? 'SẢN PHẨM' : kind === 'service' ? 'DỊCH VỤ' : kind === 'course' ? 'KHÓA HỌC' : 'BÀI VIẾT'} bằng tiếng Việt, có thể dùng ngay sau khi dán vào admin.
+Nhiệm vụ: tạo nội dung ${getKindTaskLabel(kind)} bằng tiếng Việt, có thể dùng ngay sau khi dán vào admin.
 
 ${enabledLine}
 ${comboPrompt}
@@ -749,8 +1048,15 @@ const pickRecordValue = (record: Record<string, unknown>, keys: string[]) => {
   return undefined;
 };
 
-const parseAiEntity = (raw: string, kind: AiEntityImportKind, fallbackItem?: AiEntityImportPayload): ParseResult => {
+const parseAiEntity = (
+  raw: string,
+  kind: AiEntityImportKind,
+  fallbackItem?: AiEntityImportPayload,
+  enabledFields?: Iterable<string>
+): ParseResult => {
   const config = ENTITY_COPY[kind];
+  const enabledFieldSet = enabledFields ? new Set(enabledFields) : undefined;
+  const isFieldEnabled = (field: string) => enabledFieldSet === undefined || enabledFieldSet.has(field);
   let parsed: unknown;
 
   try {
@@ -867,11 +1173,13 @@ const parseAiEntity = (raw: string, kind: AiEntityImportKind, fallbackItem?: AiE
   ]);
   const tagsValue = pickRecordValue(record, ['tags', 'tagList', 'tag_list']);
   const faqItemsValue = pickRecordValue(record, ['faqItems', 'faq_items', 'faqs', 'faq', 'questions']);
-  const parsedTags = parseStringArray(tagsValue ?? fallbackItem?.tags, 20);
-  const parsedRelatedQueries = parseStringArray(relatedQueriesValue ?? fallbackItem?.relatedQueries, 20);
-  const parsedFaqItems = parseFaqItems(faqItemsValue ?? fallbackItem?.faqItems);
-  const resolvedFocusKeyword = trimText(focusKeywordValue, 120) || parsedTags[0] || title;
-  const resolvedRelatedQueries = kind === 'post'
+  const parsedTags = isFieldEnabled('tags') ? parseStringArray(tagsValue ?? fallbackItem?.tags, 20) : [];
+  const parsedRelatedQueries = isFieldEnabled('relatedQueries') ? parseStringArray(relatedQueriesValue ?? fallbackItem?.relatedQueries, 20) : [];
+  const parsedFaqItems = isFieldEnabled('faqItems') ? parseFaqItems(faqItemsValue ?? fallbackItem?.faqItems) : [];
+  const resolvedFocusKeyword = isFieldEnabled('focusKeyword')
+    ? trimText(focusKeywordValue ?? fallbackItem?.focusKeyword, 120) || parsedTags[0] || title
+    : '';
+  const resolvedRelatedQueries = kind === 'post' && isFieldEnabled('relatedQueries')
     ? mergeStringArrays([
         parsedRelatedQueries,
         resolvedFocusKeyword,
@@ -881,10 +1189,10 @@ const parseAiEntity = (raw: string, kind: AiEntityImportKind, fallbackItem?: AiE
         resolvedFocusKeyword ? `kinh nghiệm ${resolvedFocusKeyword}` : '',
       ], 20)
     : parsedRelatedQueries;
-  const resolvedTags = kind === 'post'
+  const resolvedTags = kind === 'post' && isFieldEnabled('tags')
     ? mergeStringArrays([parsedTags, resolvedFocusKeyword, title, resolvedRelatedQueries.slice(0, 2)], 20)
     : parsedTags;
-  const resolvedFaqItems = kind === 'post'
+  const resolvedFaqItems = kind === 'post' && isFieldEnabled('faqItems')
     ? completePostFaqItems({
         content: record.content ?? record.markdownRender ?? record.htmlRender,
         excerpt: record.excerpt ?? record.description,
@@ -895,31 +1203,33 @@ const parseAiEntity = (raw: string, kind: AiEntityImportKind, fallbackItem?: AiE
     : parsedFaqItems;
 
   if (kind === 'post') {
-    if (!resolvedFocusKeyword) {
+    if (isFieldEnabled('focusKeyword') && !resolvedFocusKeyword) {
       errors.push('Thiếu focusKeyword cho SEO nâng cao.');
     }
-    if (resolvedRelatedQueries.length < 5) {
+    if (isFieldEnabled('relatedQueries') && resolvedRelatedQueries.length < 5) {
       errors.push('relatedQueries phải có ít nhất 5 cách khách có thể gõ trên Google.');
     }
-    if (resolvedTags.length < 3) {
+    if (isFieldEnabled('tags') && resolvedTags.length < 3) {
       errors.push('tags phải có ít nhất 3 tag.');
     }
-    if (resolvedFaqItems.length < 3) {
+    if (isFieldEnabled('faqItems') && resolvedFaqItems.length < 3) {
       errors.push('faqItems phải có ít nhất 3 câu hỏi/câu trả lời.');
     }
   }
 
   const item: AiEntityImportPayload = {
     authorName: trimText(record.authorName, 120),
+    clientName: trimText(record.clientName, 120),
     comparePriceAmount: parseNumber(record.comparePriceAmount),
     content: trimText(record.content, 20_000),
     description: trimText(record.description, 2_000),
+    downloadUrl: trimText(record.downloadUrl, 500),
     duration: trimText(record.duration, 80),
     durationText: trimText(record.durationText, 80),
     excerpt: trimText(record.excerpt, 300),
-    faqItems: resolvedFaqItems,
+    faqItems: isFieldEnabled('faqItems') ? resolvedFaqItems : undefined,
     featured: parseBoolean(record.featured),
-    focusKeyword: resolvedFocusKeyword,
+    focusKeyword: isFieldEnabled('focusKeyword') ? resolvedFocusKeyword : undefined,
     htmlRender: trimText(record.htmlRender, 40_000),
     image,
     instructorName: trimText(record.instructorName, 120),
@@ -933,13 +1243,14 @@ const parseAiEntity = (raw: string, kind: AiEntityImportKind, fallbackItem?: AiE
     name: kind === 'product' ? title : undefined,
     price: parseNumber(record.price),
     priceNote: trimText(record.priceNote, 120),
+    projectUrl: trimText(record.projectUrl, 500),
     pricingType: trimText(record.pricingType, 40),
-    relatedQueries: resolvedRelatedQueries,
+    relatedQueries: isFieldEnabled('relatedQueries') ? resolvedRelatedQueries : undefined,
     salePrice: parseNumber(record.salePrice),
     sku: kind === 'product' ? undefined : trimText(record.sku, 80),
     slug: trimText(record.slug, 160),
     stock: parseNumber(record.stock),
-    tags: resolvedTags,
+    tags: isFieldEnabled('tags') ? resolvedTags : undefined,
     thumbnail: image,
     title: kind !== 'product' ? title : undefined,
     combos,
@@ -1003,14 +1314,14 @@ export function AiEntityImportDialog({
   const prompt = useMemo(() => {
     if (!fillMissingOnly) {return basePrompt;}
     return buildAiFillMissingPrompt(basePrompt, currentData ?? {}, {
-      contextLabel: `Dữ liệu ${kind === 'product' ? 'sản phẩm' : kind === 'service' ? 'dịch vụ' : kind === 'course' ? 'khóa học' : 'bài viết'} hiện có trong form`,
+      contextLabel: `Dữ liệu ${getKindLabel(kind)} hiện có trong form`,
       rootKey: copy.rootKey,
     });
   }, [basePrompt, copy.rootKey, currentData, fillMissingOnly, kind]);
 
   const baseSample = useMemo(() => {
-    return buildSample(kind, suggestCombos, includeAttributes, formConfig);
-  }, [kind, suggestCombos, includeAttributes, formConfig]);
+    return buildSample(kind, enabledFieldList, suggestCombos, includeAttributes, formConfig);
+  }, [kind, enabledFieldList, suggestCombos, includeAttributes, formConfig]);
 
   const sample = useMemo(() => {
     if (!fillMissingOnly) {return baseSample;}
@@ -1020,8 +1331,9 @@ export function AiEntityImportDialog({
   const result = useMemo(() => parseAiEntity(
     rawInput,
     kind,
-    fillMissingOnly ? currentData : undefined
-  ), [currentData, fillMissingOnly, kind, rawInput]);
+    fillMissingOnly ? currentData : undefined,
+    enabledFieldList
+  ), [currentData, enabledFieldList, fillMissingOnly, kind, rawInput]);
   const canApply = rawInput.trim().length > 0 && Boolean(result.item) && result.errors.length === 0;
 
   const copyText = async (value: string, type: 'prompt' | 'sample') => {
@@ -1261,7 +1573,11 @@ export function AiEntityImportDialog({
                         ? 'Ví dụ: Tạo sản phẩm “Giá kệ góc liên hoàn inox 304”, nêu chất liệu, công dụng, đối tượng phù hợp, giá tham khảo nếu có.'
                         : kind === 'service'
                           ? 'Ví dụ: Tạo dịch vụ “Tư vấn thiết kế tủ bếp”, nêu vấn đề khách gặp, quy trình, đầu ra, CTA liên hệ.'
-                          : 'Ví dụ: Tạo khóa học “Next.js thực chiến”, nêu đối tượng học, lộ trình, kết quả đạt được và giá nếu có.'
+                        : kind === 'course'
+                          ? 'Ví dụ: Tạo khóa học “Next.js thực chiến”, nêu đối tượng học, lộ trình, kết quả đạt được và giá nếu có.'
+                          : kind === 'project'
+                            ? 'Ví dụ: Tạo case study “Thiết kế website bán hàng rượu vang”, có bối cảnh, giải pháp, kết quả và meta SEO.'
+                            : 'Ví dụ: Tạo tài nguyên “Checklist chọn rượu vang làm quà”, nêu nội dung bên trong, cách dùng và meta SEO.'
                   }
                 />
                 <textarea

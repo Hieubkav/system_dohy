@@ -60,7 +60,7 @@ interface PricingPreviewProps {
 
 export function PricingPreview({
   title = 'Bảng giá',
-  plans,
+  plans = [],
   config,
   brandColor,
   secondary,

@@ -110,6 +110,9 @@ export const resolveSeoImage = (params: {
   if (params.seo.seo_og_image) {
     return params.seo.seo_og_image;
   }
+  if (params.site.site_logo) {
+    return params.site.site_logo;
+  }
   return '';
 };
 

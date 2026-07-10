@@ -45,8 +45,8 @@ interface CategoryProductsPreviewProps {
   mode: CategoryProductsBrandMode;
   selectedStyle: CategoryProductsStyle;
   onStyleChange: (style: CategoryProductsStyle) => void;
-  categoriesData: { _id: string; name: string; slug?: string; image?: string }[];
-  productsData: CategoryProductsProduct[];
+  categoriesData?: { _id: string; name: string; slug?: string; image?: string }[];
+  productsData?: CategoryProductsProduct[];
   fontStyle?: React.CSSProperties;
   fontClassName?: string;
   title?: string;
@@ -61,8 +61,8 @@ export const CategoryProductsPreview = ({
   mode,
   selectedStyle,
   onStyleChange, 
-  categoriesData,
-  productsData,
+  categoriesData = [],
+  productsData = [],
   fontStyle,
   fontClassName,
   title = 'Sản phẩm theo danh mục',
@@ -155,7 +155,7 @@ export const CategoryProductsPreview = ({
         }));
     }
 
-    return config.sections
+    return (config.sections ?? [])
       .map((section) => {
         const category = categoriesData.find(c => c._id === section.categoryId);
         if (!category) {return null;}
@@ -175,6 +175,11 @@ export const CategoryProductsPreview = ({
         products: CategoryProductsProduct[];
       })[];
   }, [categoriesData, config.demoSections, config.sections, config.selectionMode, productsData]);
+
+  const getSectionKey = (section: typeof resolvedSections[number], index: number) => {
+    const sectionId = section.categoryId || section.category._id || section.id;
+    return `${sectionId ?? 'section'}-${index}`;
+  };
 
   const getGridCols = () => getCategoryProductsPreviewGridClassName(config.columnsDesktop, device);
 
@@ -326,8 +331,8 @@ export const CategoryProductsPreview = ({
           <EmptyState message="Chưa chọn danh mục nào" />
         </div>
       ) : (
-        resolvedSections.map((section) => (
-          <section key={section.id} className="px-4">
+        resolvedSections.map((section, sectionIndex) => (
+          <section key={getSectionKey(section, sectionIndex)} className="px-4">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2
@@ -515,8 +520,8 @@ export const CategoryProductsPreview = ({
           <EmptyState message="Chưa chọn danh mục nào" />
         </div>
       ) : (
-        resolvedSections.map((section) => (
-          <CarouselSection key={section.id} section={section} />
+        resolvedSections.map((section, sectionIndex) => (
+          <CarouselSection key={getSectionKey(section, sectionIndex)} section={section} />
         ))
       )}
     </div>
@@ -530,8 +535,8 @@ export const CategoryProductsPreview = ({
           <EmptyState message="Chưa chọn danh mục nào" />
         </div>
       ) : (
-        resolvedSections.map((section) => (
-          <section key={section.id} className="px-4">
+        resolvedSections.map((section, sectionIndex) => (
+          <section key={getSectionKey(section, sectionIndex)} className="px-4">
             <div className="max-w-7xl mx-auto">
               <div
                 className={cn('overflow-hidden', cardRadiusClassName)}
@@ -601,12 +606,12 @@ export const CategoryProductsPreview = ({
           <EmptyState message="Chưa chọn danh mục nào" />
         </div>
       ) : (
-        resolvedSections.map((section) => {
+        resolvedSections.map((section, sectionIndex) => {
           const featured = section.products[0];
           const others = section.products.slice(1, 5);
 
           return (
-            <section key={section.id} className="px-4">
+            <section key={getSectionKey(section, sectionIndex)} className="px-4">
               <div className="max-w-7xl mx-auto">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
@@ -766,12 +771,12 @@ export const CategoryProductsPreview = ({
           <EmptyState message="Chưa chọn danh mục nào" />
         </div>
       ) : (
-        resolvedSections.map((section) => {
+        resolvedSections.map((section, sectionIndex) => {
           const featured = section.products[0];
           const gridItems = section.products.slice(1, 5);
 
           return (
-            <section key={section.id} className="px-4">
+            <section key={getSectionKey(section, sectionIndex)} className="px-4">
               <div className="max-w-7xl mx-auto">
                 <div className="flex items-end justify-between mb-6 pb-4 border-b-2" style={{ borderColor: colors.neutralBorder }}>
                   <div>
@@ -977,8 +982,8 @@ export const CategoryProductsPreview = ({
           <EmptyState message="Chưa chọn danh mục nào" />
         </div>
       ) : (
-        resolvedSections.map((section) => (
-          <section key={section.id}>
+        resolvedSections.map((section, sectionIndex) => (
+          <section key={getSectionKey(section, sectionIndex)}>
             <div className="max-w-7xl mx-auto px-4">
               <div className="flex items-end justify-between mb-8">
                 <div>
@@ -1144,12 +1149,12 @@ export const CategoryProductsPreview = ({
         <EmptyState message="Chưa chọn danh mục nào" />
       ) : (
         <div className="mx-auto flex w-full max-w-[1152px] flex-col gap-6">
-          {resolvedSections.map((section) => {
+          {resolvedSections.map((section, sectionIndex) => {
             const productGridClassName = cn(getGridCols(), 'gap-2 md:gap-3');
 
             return (
             <section
-              key={section.id}
+              key={getSectionKey(section, sectionIndex)}
               className={cn('border bg-white', cardRadiusClassName)}
               style={{ borderColor: colors.cardBorder }}
             >

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AdminImage as Image } from '@/app/admin/components/AdminImage';
 import { usePathname, useRouter } from 'next/navigation';
@@ -42,10 +42,14 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   pathname,
   isModuleEnabled
 }) => {
+  const { hasPermission } = useAdminAuth();
   const filteredSubItems = useMemo(() => {
     if (!subItems) {return [];}
-    return subItems.filter((sub) => (sub.visible ?? true) && (!sub.moduleKey || isModuleEnabled(sub.moduleKey)));
-  }, [subItems, isModuleEnabled]);
+    return subItems.filter((sub) =>
+      (sub.visible ?? true) &&
+      (!sub.moduleKey || (isModuleEnabled(sub.moduleKey) && hasPermission(sub.moduleKey, 'view')))
+    );
+  }, [hasPermission, subItems, isModuleEnabled]);
 
   const hasSub = filteredSubItems.length > 0;
 
@@ -140,7 +144,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
   const pathname = usePathname();
   const router = useRouter();
   const { isModuleEnabled, isLoading } = useAdminModules();
-  const { logout, user } = useAdminAuth();
+  const { hasPermission, isPermissionLoading, logout, user } = useAdminAuth();
   const productSettings = useQuery(api.admin.modules.listModuleSettings, { moduleKey: 'products' });
   const userFeatures = useQuery(api.admin.modules.listModuleFeatures, { moduleKey: 'users' });
   const siteSettings = useQuery(api.settings.getMultiple, { keys: ['site_logo', 'site_name'] });
@@ -205,30 +209,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
     }
   };
 
-  const showAnalyticsSection = isModuleEnabled('analytics');
+  const canViewModule = useCallback((moduleKey: string) =>
+    isModuleEnabled(moduleKey) && hasPermission(moduleKey, 'view'),
+  [hasPermission, isModuleEnabled]);
+
+  const showAnalyticsSection = canViewModule('analytics');
   // Posts section: chỉ hiện khi posts bật (comments bài viết phụ thuộc vào posts)
-  const showPostsSection = isModuleEnabled('posts');
+  const showPostsSection = canViewModule('posts');
   // Comments trong posts section chỉ hiện khi cả posts VÀ comments đều bật
-  const showPostComments = isModuleEnabled('posts') && isModuleEnabled('comments');
+  const showPostComments = canViewModule('posts') && canViewModule('comments');
   // Services section
-  const showCoursesSection = isModuleEnabled('courses');
-  const showResourcesSection = isModuleEnabled('resources');
-  const showProjectsSection = isModuleEnabled('projects');
-  const showCatalogsSection = isModuleEnabled('catalogs');
-  const showServicesSection = isModuleEnabled('services');
-  const showBookingsSection = isModuleEnabled('bookings');
-  const showCommerceSection = isModuleEnabled('products') || isModuleEnabled('customers') || isModuleEnabled('orders') || isModuleEnabled('wishlist');
+  const showCoursesSection = canViewModule('courses');
+  const showResourcesSection = canViewModule('resources');
+  const showProjectsSection = canViewModule('projects');
+  const showCatalogsSection = canViewModule('catalogs');
+  const showServicesSection = canViewModule('services');
+  const showBookingsSection = canViewModule('bookings');
+  const showCommerceSection = canViewModule('products') || canViewModule('customers') || canViewModule('orders') || canViewModule('cart') || canViewModule('wishlist');
   // Product reviews chỉ hiện khi products VÀ comments đều bật  
-  const showProductReviews = isModuleEnabled('products') && isModuleEnabled('comments');
-  const showMediaSection = isModuleEnabled('media');
-  const showUsersSection = isModuleEnabled('users') || isModuleEnabled('roles');
-  const showWebsiteSection = isModuleEnabled('menus') || isModuleEnabled('homepage') || isModuleEnabled('settings');
-  const showMiniAppsSection = isModuleEnabled('miniApps') && (miniAppsAdminFeature?.enabled ?? true);
-  const showSubscriptionsSection = isModuleEnabled('subscriptions');
-  const showSettingsSection = isModuleEnabled('settings');
-  const showContactInboxSection = isModuleEnabled('contactInbox');
-  const showNotificationsSection = isModuleEnabled('notifications');
-  const showPromotionsSection = isModuleEnabled('promotions');
+  const showProductReviews = canViewModule('products') && canViewModule('comments');
+  const showMediaSection = canViewModule('media');
+  const showUsersSection = canViewModule('users') || canViewModule('roles');
+  const showWebsiteSection = canViewModule('menus') || canViewModule('homepage') || canViewModule('settings');
+  const showMiniAppsSection = canViewModule('miniApps') && (miniAppsAdminFeature?.enabled ?? true);
+  const showSubscriptionsSection = canViewModule('subscriptions');
+  const showSettingsSection = canViewModule('settings');
+  const showContactInboxSection = canViewModule('contactInbox');
+  const showNotificationsSection = canViewModule('notifications');
+  const showPromotionsSection = canViewModule('promotions');
   const variantEnabled = Boolean(productSettings?.find(setting => setting.settingKey === 'variantEnabled')?.value);
   const productTypesEnabled = Boolean(productSettings?.find(setting => setting.settingKey === 'enableProductTypes')?.value);
 
@@ -342,7 +350,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
           </button>
         </div>
 
-        {isLoading ? (
+        {isLoading || isPermissionLoading ? (
           <div className="flex-1 flex items-center justify-center">
             <Loader2 size={24} className="animate-spin text-slate-400" />
           </div>
@@ -384,7 +392,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
                   subItems={[
                     { href: '/admin/posts', label: 'Tất cả bài viết', moduleKey: 'posts' },
                     { href: '/admin/post-categories', label: 'Danh mục bài viết', moduleKey: 'posts' },
-                    ...(showPostComments ? [{ href: '/admin/comments', label: 'Bình luận' }] : []),
+                    ...(showPostComments ? [{ href: '/admin/comments', label: 'Bình luận', moduleKey: 'comments' }] : []),
                   ]}
                 />
               </div>
@@ -525,7 +533,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileMenuOpen, setMobileMenuO
                     { href: '/admin/orders', label: 'Đơn hàng', moduleKey: 'orders' },
                     { href: '/admin/cart', label: 'Giỏ hàng', moduleKey: 'cart' },
                     { href: '/admin/wishlist', label: 'Wishlist', moduleKey: 'wishlist' },
-                    ...(showProductReviews ? [{ href: '/admin/reviews', label: 'Đánh giá sản phẩm' }] : []),
+                    ...(showProductReviews ? [{ href: '/admin/reviews', label: 'Đánh giá sản phẩm', moduleKey: 'comments' }] : []),
                     { href: '/admin/customers', label: 'Khách hàng', moduleKey: 'customers' },
                   ]}
                 />
