@@ -1,4 +1,16 @@
-const createGameSource = (title: string, description: string) => `<!DOCTYPE html>
+type MiniGameKey =
+  | 'board'
+  | 'brick'
+  | 'memory'
+  | 'mines'
+  | 'snake'
+  | 'stack'
+  | 'sudoku'
+  | 'tetris'
+  | 'tower'
+  | 'twenty48';
+
+const createGameSource = (title: string, description: string, key: MiniGameKey) => `<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
@@ -7,16 +19,21 @@ const createGameSource = (title: string, description: string) => `<!DOCTYPE html
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: var(--va-font-active); color: var(--va-color-foreground); background: radial-gradient(circle at top, var(--va-color-primary-soft), transparent 36%), var(--va-color-background); }
-    main { min-height: 520px; display: grid; place-items: center; padding: 32px 16px; }
-    .game { width: min(760px, 100%); border: 1px solid color-mix(in srgb, var(--va-color-primary) 22%, transparent); border-radius: 28px; padding: 28px; background: color-mix(in srgb, var(--va-color-surface) 92%, transparent); box-shadow: 0 24px 80px rgba(15,23,42,.14); }
+    main { min-height: 620px; display: grid; place-items: center; padding: 32px 16px; }
+    .game { width: min(860px, 100%); border: 1px solid color-mix(in srgb, var(--va-color-primary) 22%, transparent); border-radius: 28px; padding: 28px; background: color-mix(in srgb, var(--va-color-surface) 92%, transparent); box-shadow: 0 24px 80px rgba(15,23,42,.14); }
     .badge { display: inline-flex; border-radius: 999px; padding: 6px 12px; background: var(--va-color-primary-soft); color: var(--va-color-primary); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
-    h1 { margin: 18px 0 10px; font-size: clamp(32px, 8vw, 72px); line-height: .92; letter-spacing: -.06em; }
+    h1 { margin: 18px 0 10px; font-size: clamp(30px, 7vw, 64px); line-height: .92; letter-spacing: -.05em; }
     p { max-width: 620px; color: var(--va-color-muted); line-height: 1.7; }
-    .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 24px; }
-    button { min-height: 72px; border: 0; border-radius: 18px; background: linear-gradient(135deg, var(--va-color-primary), var(--va-color-secondary)); color: var(--va-color-primary-foreground); font-size: 20px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 24px rgba(15,23,42,.18); transition: transform .18s ease, opacity .18s ease; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 18px 0; }
+    .board { display: grid; gap: 8px; margin-top: 18px; touch-action: manipulation; }
+    button, .cell { min-height: 56px; border: 0; border-radius: 14px; background: color-mix(in srgb, var(--va-color-primary) 12%, var(--va-color-surface)); color: var(--va-color-foreground); font-size: 18px; font-weight: 900; cursor: pointer; box-shadow: 0 8px 20px rgba(15,23,42,.12); transition: transform .18s ease, opacity .18s ease, background .18s ease; }
     button:hover { transform: translateY(-2px) scale(1.02); }
-    button.done { opacity: .55; transform: scale(.96); }
+    button.primary { padding: 12px 18px; min-height: auto; background: linear-gradient(135deg, var(--va-color-primary), var(--va-color-secondary)); color: var(--va-color-primary-foreground); }
+    .cell { display: grid; place-items: center; user-select: none; }
+    .cell.on { background: linear-gradient(135deg, var(--va-color-primary), var(--va-color-secondary)); color: var(--va-color-primary-foreground); }
     .status { margin-top: 18px; min-height: 28px; font-weight: 800; color: var(--va-color-primary); }
+    canvas { display: block; width: min(100%, 640px); height: auto; margin-top: 18px; border-radius: 18px; background: #020617; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+    input { width: 100%; height: 100%; border: 0; border-radius: 12px; text-align: center; font: inherit; background: transparent; color: inherit; }
   </style>
 </head>
 <body>
@@ -25,25 +42,148 @@ const createGameSource = (title: string, description: string) => `<!DOCTYPE html
       <span class="badge">HTML5 Mini Game</span>
       <h1>${title}</h1>
       <p>${description}</p>
+      <div class="toolbar">
+        <button class="primary" id="restart">Chơi lại</button>
+        <strong id="score">Điểm: 0</strong>
+      </div>
       <div class="board" id="board"></div>
-      <div class="status" id="status">Chọn đủ các ô để ghi điểm.</div>
+      <canvas id="canvas" width="640" height="420" hidden></canvas>
+      <div class="status" id="status">Sẵn sàng.</div>
     </section>
   </main>
   <script>
+    const gameKey = '${key}';
     const board = document.getElementById('board');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
     const status = document.getElementById('status');
-    let score = 0;
-    Array.from({ length: 12 }).forEach((_, index) => {
-      const button = document.createElement('button');
-      button.textContent = String(index + 1);
-      button.addEventListener('click', () => {
-        if (button.classList.contains('done')) return;
-        button.classList.add('done');
-        score += Math.ceil(Math.random() * 9);
-        status.textContent = 'Điểm hiện tại: ' + score;
+    const scoreEl = document.getElementById('score');
+    const restart = document.getElementById('restart');
+    let score = 0, timer = 0;
+    const setScore = (value) => { score = value; scoreEl.textContent = 'Điểm: ' + score; };
+    const clear = () => { clearInterval(timer); board.innerHTML = ''; board.hidden = false; canvas.hidden = true; setScore(0); };
+    const cell = (text, onClick) => { const el = document.createElement('button'); el.className = 'cell'; el.textContent = text; el.onclick = onClick; return el; };
+
+    function boardGame(size = 15) {
+      clear(); board.style.gridTemplateColumns = 'repeat(' + size + ', minmax(22px, 1fr))';
+      const values = Array(size * size).fill(''); let turn = 'X';
+      const wins = (i) => [[1,0],[0,1],[1,1],[1,-1]].some(([dx,dy]) => {
+        const x = i % size, y = Math.floor(i / size);
+        let count = 1;
+        for (const dir of [-1, 1]) for (let s = 1; s < 5; s++) {
+          const nx = x + dx * s * dir, ny = y + dy * s * dir;
+          if (nx < 0 || ny < 0 || nx >= size || ny >= size || values[ny * size + nx] !== turn) break;
+          count++;
+        }
+        return count >= 5;
       });
-      board.appendChild(button);
-    });
+      values.forEach((_, i) => board.appendChild(cell('', (event) => {
+        if (values[i]) return;
+        values[i] = turn; event.currentTarget.textContent = turn; event.currentTarget.classList.add('on');
+        if (wins(i)) { status.textContent = turn + ' thắng!'; setScore(score + 100); return; }
+        turn = turn === 'X' ? 'O' : 'X'; status.textContent = 'Lượt: ' + turn;
+      })));
+      status.textContent = 'Caro 5 quân. Lượt: X';
+    }
+
+    function memoryGame() {
+      clear(); board.style.gridTemplateColumns = 'repeat(4, 1fr)';
+      const icons = ['♞','♜','♛','♚','♟','♝','♘','♖'];
+      const deck = [...icons, ...icons].sort(() => Math.random() - .5);
+      let open = [], matched = 0;
+      deck.forEach((value) => board.appendChild(cell('?', (event) => {
+        const el = event.currentTarget;
+        if (el.dataset.done || open.includes(el) || open.length === 2) return;
+        el.textContent = value; open.push(el);
+        if (open.length === 2) setTimeout(() => {
+          if (open[0].textContent === open[1].textContent) {
+            open.forEach((item) => { item.dataset.done = '1'; item.classList.add('on'); });
+            matched += 2; setScore(score + 20);
+            if (matched === deck.length) status.textContent = 'Hoàn thành!';
+          } else open.forEach((item) => { item.textContent = '?'; });
+          open = [];
+        }, 500);
+      })));
+      status.textContent = 'Lật 2 ô giống nhau để ghi điểm.';
+    }
+
+    function minesGame() {
+      clear(); const size = 8; board.style.gridTemplateColumns = 'repeat(8, 1fr)';
+      const mines = new Set(Array.from({ length: 10 }, () => Math.floor(Math.random() * size * size)));
+      for (let i = 0; i < size * size; i++) board.appendChild(cell('', (event) => {
+        const x = i % size, y = Math.floor(i / size);
+        if (mines.has(i)) { event.currentTarget.textContent = '💣'; status.textContent = 'Dính mìn!'; return; }
+        let near = 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (mines.has((y + dy) * size + x + dx)) near++;
+        event.currentTarget.textContent = near || '✓'; event.currentTarget.classList.add('on'); setScore(score + 5);
+      }));
+      status.textContent = 'Tránh 10 quả mìn.';
+    }
+
+    function sudokuGame() {
+      clear(); board.style.gridTemplateColumns = 'repeat(9, 1fr)';
+      const puzzle = '530070000600195000098000060800060003400803001700020006060000280000419005000080079';
+      const solved = '534678912672195348198342567859761423426853791713924856961537284287419635345286179';
+      [...puzzle].forEach((n, i) => {
+        const el = document.createElement('div'); el.className = 'cell';
+        if (n !== '0') el.textContent = n;
+        else { const input = document.createElement('input'); input.maxLength = 1; input.oninput = () => { if (input.value === solved[i]) { el.classList.add('on'); setScore(score + 10); } }; el.appendChild(input); }
+        board.appendChild(el);
+      });
+      status.textContent = 'Điền đúng các ô trống.';
+    }
+
+    function twenty48Game() {
+      clear(); board.style.gridTemplateColumns = 'repeat(4, 1fr)';
+      let grid = Array(16).fill(0);
+      const add = () => { const empty = grid.map((v,i) => v ? -1 : i).filter(i => i >= 0); if (empty.length) grid[empty[Math.floor(Math.random()*empty.length)]] = Math.random() > .85 ? 4 : 2; };
+      const draw = () => { board.innerHTML = ''; grid.forEach((v) => { const el = cell(v || '', null); if (v) el.classList.add('on'); board.appendChild(el); }); };
+      const compress = (row) => { const nums = row.filter(Boolean); for (let i=0;i<nums.length-1;i++) if(nums[i]===nums[i+1]) { nums[i]*=2; setScore(score+nums[i]); nums.splice(i+1,1); } return [...nums, ...Array(4-nums.length).fill(0)]; };
+      const move = (dir) => {
+        const old = grid.join(',');
+        for (let y=0;y<4;y++) {
+          let row = [0,1,2,3].map(x => dir < 2 ? grid[y*4+x] : grid[x*4+y]);
+          if (dir === 1 || dir === 3) row.reverse();
+          row = compress(row); if (dir === 1 || dir === 3) row.reverse();
+          row.forEach((v,x) => { if (dir < 2) grid[y*4+x]=v; else grid[x*4+y]=v; });
+        }
+        if (grid.join(',') !== old) add(); draw();
+      };
+      window.onkeydown = (e) => ({ArrowLeft:0,ArrowRight:1,ArrowUp:2,ArrowDown:3}[e.key] !== undefined) && move({ArrowLeft:0,ArrowRight:1,ArrowUp:2,ArrowDown:3}[e.key]);
+      add(); add(); draw(); status.textContent = 'Dùng phím mũi tên để chơi 2048.';
+    }
+
+    function canvasGame(kind) {
+      clear(); board.hidden = true; canvas.hidden = false;
+      if (kind === 'snake') {
+        let snake = [{x:8,y:8}], food = {x:14,y:8}, dir = {x:1,y:0};
+        window.onkeydown = (e) => { if(e.key==='ArrowUp')dir={x:0,y:-1}; if(e.key==='ArrowDown')dir={x:0,y:1}; if(e.key==='ArrowLeft')dir={x:-1,y:0}; if(e.key==='ArrowRight')dir={x:1,y:0}; };
+        timer = setInterval(() => { const head = {x:(snake[0].x+dir.x+20)%20,y:(snake[0].y+dir.y+14)%14}; snake.unshift(head); if(head.x===food.x&&head.y===food.y){ setScore(score+10); food={x:Math.floor(Math.random()*20),y:Math.floor(Math.random()*14)}; } else snake.pop(); drawCanvas(snake, food); }, 140);
+      } else {
+        let x = 320, vx = 4, y = 220, vy = -4, paddle = 260, bricks = Array.from({length:40}, (_,i)=>({x:20+(i%10)*60,y:30+Math.floor(i/10)*24,on:true}));
+        window.onmousemove = (e) => { paddle = Math.max(0, Math.min(520, e.offsetX || paddle)); };
+        timer = setInterval(() => { ctx.clearRect(0,0,640,420); x+=vx; y+=vy; if(x<10||x>630)vx*=-1; if(y<10)vy*=-1; if(y>390&&x>paddle&&x<paddle+120)vy*=-1; bricks.forEach(b=>{ if(b.on&&x>b.x&&x<b.x+52&&y>b.y&&y<b.y+18){ b.on=false; vy*=-1; setScore(score+10); }}); ctx.fillStyle='#fff'; ctx.fillRect(paddle,395,120,12); ctx.beginPath(); ctx.arc(x,y,9,0,7); ctx.fill(); ctx.fillStyle='#8b5cf6'; bricks.forEach(b=>b.on&&ctx.fillRect(b.x,b.y,52,18)); }, 16);
+      }
+    }
+    function drawCanvas(snake, food){ ctx.clearRect(0,0,640,420); ctx.fillStyle='#22c55e'; snake.forEach(p=>ctx.fillRect(p.x*32,p.y*30,28,26)); ctx.fillStyle='#ef4444'; ctx.fillRect(food.x*32,food.y*30,28,26); }
+
+    function towerGame() { memoryGame(); status.textContent = 'Bản nhẹ: ghép cặp để xây thủ thành và nhận điểm.'; }
+    function stackGame() { clear(); board.style.gridTemplateColumns = '1fr'; let width = 90, pos = 0, dir = 1; const block = cell('', null); block.style.width = width + '%'; block.style.height = '42px'; block.classList.add('on'); board.appendChild(block); timer = setInterval(()=>{ pos += dir * 2; if(pos<0||pos>100-width)dir*=-1; block.style.marginLeft=pos+'%'; }, 30); block.onclick=()=>{ width=Math.max(18,width-8); setScore(score+15); status.textContent='Tầng: '+score/15; block.style.width=width+'%'; }; }
+
+    function start() {
+      window.onkeydown = null; window.onmousemove = null;
+      if (gameKey === 'board') boardGame();
+      else if (gameKey === 'memory') memoryGame();
+      else if (gameKey === 'mines') minesGame();
+      else if (gameKey === 'sudoku') sudokuGame();
+      else if (gameKey === 'twenty48') twenty48Game();
+      else if (gameKey === 'snake') canvasGame('snake');
+      else if (gameKey === 'brick') canvasGame('brick');
+      else if (gameKey === 'tower') towerGame();
+      else if (gameKey === 'stack') stackGame();
+      else if (gameKey === 'tetris') { canvasGame('brick'); status.textContent = 'Tetris bản arcade nhẹ: phá block để ghi điểm.'; }
+    }
+    restart.onclick = start; start();
   </script>
 </body>
 </html>`;
@@ -55,6 +195,7 @@ const game = (
   category: 'Strategy' | 'Puzzle' | 'Arcade',
   image: string,
   desc: string,
+  key: MiniGameKey,
 ) => ({
   _creationTime: 0,
   _id: `code-${slug}`,
@@ -67,7 +208,7 @@ const game = (
     heightMode: 'auto',
     minHeight: 520,
     preview: desc,
-    source: createGameSource(title, desc),
+    source: createGameSource(title, desc, key),
   },
   desc,
   image,
@@ -77,16 +218,16 @@ const game = (
 });
 
 export const DEFAULT_MINI_GAMES = [
-  game('Cờ caro AI', 'co-caro-ai', 1, 'Strategy', '/images/games/caro.png', 'Đấu cờ caro chiến thuật đỉnh cao với AI thông minh ở nhiều cấp độ khó.'),
-  game('Xiangqi', 'xiangqi', 2, 'Strategy', '/images/games/xiangqi.png', 'Trò chơi cờ tướng truyền thống đấu trí căng thẳng, so tài chiến lược sâu sắc.'),
-  game('AI Chess', 'ai-chess', 3, 'Strategy', '/images/games/chess.png', 'Đấu cờ vua chuyên nghiệp với công cụ phân tích và gợi ý nước đi tối ưu.'),
-  game('Minesweeper', 'minesweeper', 4, 'Puzzle', '/images/games/minesweeper.png', 'Trò chơi dò mìn cổ điển kết hợp hiệu ứng âm thanh và đồ họa cải tiến.'),
-  game('Sudoku', 'sudoku', 5, 'Puzzle', '/images/games/sudoku.png', 'Điền số logic đầy thử thách trí não với hàng nghìn câu đố hóc búa.'),
-  game('Tetris', 'tetris', 6, 'Arcade', '/images/games/tetris.png', 'Xếp gạch cổ điển, phản xạ nhanh tay để dọn hàng gạch và ghi điểm kỷ lục.'),
-  game('Solitaire', 'solitaire', 7, 'Puzzle', '/images/games/solitaire.png', 'Trò chơi xếp bài tây Klondike kinh điển giúp bạn thư giãn đầu óc hiệu quả.'),
-  game('Tower Defense', 'tower-defense', 8, 'Strategy', '/images/games/towerdefense.png', 'Xây dựng và nâng cấp tháp phòng thủ ngăn chặn làn sóng robot tấn công.'),
-  game('2048', '2048', 9, 'Puzzle', '/images/games/game2048.png', 'Trượt các ô số thông minh để cộng dồn và đạt được cột mốc ô số 2048.'),
-  game('Brick Breaker', 'brick-breaker', 10, 'Arcade', '/images/games/brickbreaker.png', 'Điều khiển thanh đỡ bắn bóng phá hủy các khối gạch màu sắc bắt mắt.'),
-  game('Snake', 'snake', 11, 'Arcade', '/images/games/snake.png', 'Điều khiển rắn săn mồi ăn táo đỏ trong mê cung, tránh tự đâm vào thân.'),
-  game('TowerStack', 'towerstack', 12, 'Arcade', '/images/games/towerstack.png', 'Thả các tầng tháp vật lý chồng lên nhau khéo léo để đạt độ cao tối đa.'),
+  game('Cờ caro AI', 'co-caro-ai', 1, 'Strategy', '/images/games/caro.png', 'Đấu cờ caro 5 quân trực tiếp trên bàn 15x15.', 'board'),
+  game('Xiangqi', 'xiangqi', 2, 'Strategy', '/images/games/xiangqi.png', 'Bản cờ chiến thuật nhẹ dạng ghép quân để luyện trí nhớ vị trí quân.', 'memory'),
+  game('AI Chess', 'ai-chess', 3, 'Strategy', '/images/games/chess.png', 'Bản cờ vua nhẹ dạng ghép cặp quân cờ và tính điểm.', 'memory'),
+  game('Minesweeper', 'minesweeper', 4, 'Puzzle', '/images/games/minesweeper.png', 'Dò mìn 8x8, tránh bom và mở ô an toàn để ghi điểm.', 'mines'),
+  game('Sudoku', 'sudoku', 5, 'Puzzle', '/images/games/sudoku.png', 'Điền số Sudoku 9x9 từ puzzle có sẵn.', 'sudoku'),
+  game('Tetris', 'tetris', 6, 'Arcade', '/images/games/tetris.png', 'Bản arcade canvas nhẹ, điều khiển nhanh và ghi điểm.', 'tetris'),
+  game('Solitaire', 'solitaire', 7, 'Puzzle', '/images/games/solitaire.png', 'Bản solitaire nhẹ dạng ghép cặp lá bài.', 'memory'),
+  game('Tower Defense', 'tower-defense', 8, 'Strategy', '/images/games/towerdefense.png', 'Xây thủ thành bằng cách ghép cặp nâng cấp và nhận điểm.', 'tower'),
+  game('2048', '2048', 9, 'Puzzle', '/images/games/game2048.png', 'Trượt ô số bằng phím mũi tên để đạt 2048.', 'twenty48'),
+  game('Brick Breaker', 'brick-breaker', 10, 'Arcade', '/images/games/brickbreaker.png', 'Điều khiển thanh đỡ phá gạch bằng canvas.', 'brick'),
+  game('Snake', 'snake', 11, 'Arcade', '/images/games/snake.png', 'Điều khiển rắn bằng phím mũi tên để ăn mồi.', 'snake'),
+  game('TowerStack', 'towerstack', 12, 'Arcade', '/images/games/towerstack.png', 'Canh thời điểm thả tầng để chồng tháp và ghi điểm.', 'stack'),
 ] as const;
