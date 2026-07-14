@@ -20,6 +20,8 @@ import { ProductSupplementalContentManager } from './ProductSupplementalContentM
 import { ShopConfigAdminContainer } from '@/components/modules/orders/ShopConfigAdminContainer';
 import { getEmailConfigurationStatus } from '@/lib/email-config-status';
 import { FONT_REGISTRY, resolveFontVariable } from '@/lib/fonts/registry';
+import { getImageDimensionsFromUrl } from '@/lib/image/uploadPipeline';
+import { isAspectRatioMatch } from '@/lib/products/image-aspect-ratio';
 import {
   DEFAULT_PRODUCT_CONTACT_SALE_LINK_TYPE,
   PRODUCT_CONTACT_SALE_CUSTOM_URL_KEY,
@@ -32,6 +34,7 @@ import {
 
 type SettingsSection = 'site' | 'contact' | 'seo' | 'advanced';
 type SettingsFormValue = string | boolean;
+type FaviconCheckStatus = 'empty' | 'checking' | 'valid' | 'invalid-aspect' | 'invalid-size' | 'unavailable';
 type SeoTab = 'basic' | 'brand';
 type AdvancedTab = 'product-placeholder' | 'product-frame' | 'watermark' | 'header' | 'product-supplemental' | 'shop-config' | 'contact-link' | 'email-config';
 const ADVANCED_TAB_ORDER: AdvancedTab[] = ['product-placeholder', 'product-frame', 'watermark', 'header', 'product-supplemental', 'shop-config', 'contact-link', 'email-config'];
@@ -58,6 +61,7 @@ type SettingsToSave = {
 };
 
 const MODULE_KEY = 'settings';
+const FAVICON_DIMENSION = 512;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const SECTION_LABELS: Record<SettingsSection, string> = {
@@ -323,7 +327,12 @@ function SettingsContent({ section }: { section: SettingsSection }) {
   const [activeDrag, setActiveDrag] = useState<'image-move' | 'image-resize' | 'text-move' | null>(null);
   const [testEmail, setTestEmail] = useState('');
   const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
+  const [faviconCheckStatus, setFaviconCheckStatus] = useState<FaviconCheckStatus>('empty');
   const previewCanvasRef = React.useRef<HTMLDivElement>(null);
+
+  const faviconUrl = typeof form.site_favicon === 'string' ? form.site_favicon.trim() : '';
+  const initialFaviconUrl = typeof initialForm.site_favicon === 'string' ? initialForm.site_favicon.trim() : '';
+  const isLegacyFavicon = Boolean(faviconUrl) && faviconUrl === initialFaviconUrl;
 
   // Queries
   const settingsData = useQuery(api.settings.listAll);
@@ -640,6 +649,38 @@ function SettingsContent({ section }: { section: SettingsSection }) {
   }, [settingsData]);
 
   useEffect(() => {
+    let isActive = true;
+    if (!faviconUrl) {
+      setFaviconCheckStatus('empty');
+      return () => {
+        isActive = false;
+      };
+    }
+
+    setFaviconCheckStatus('checking');
+    void getImageDimensionsFromUrl(faviconUrl)
+      .then((dimensions) => {
+        if (!isActive) {return;}
+        if (!isAspectRatioMatch(dimensions, 'square')) {
+          setFaviconCheckStatus('invalid-aspect');
+        } else if (dimensions.width !== FAVICON_DIMENSION || dimensions.height !== FAVICON_DIMENSION) {
+          setFaviconCheckStatus('invalid-size');
+        } else {
+          setFaviconCheckStatus('valid');
+        }
+      })
+      .catch(() => {
+        if (isActive) {
+          setFaviconCheckStatus('unavailable');
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [faviconUrl]);
+
+  useEffect(() => {
     if (!settingsData || hasCleanedSeoFields) {return;}
     const hasRemoved = settingsData.some(setting => REMOVED_SEO_KEYS.has(setting.key));
     if (!hasRemoved) {
@@ -874,6 +915,29 @@ function SettingsContent({ section }: { section: SettingsSection }) {
     return true;
   };
 
+  const validateFavicon = async (): Promise<boolean> => {
+    if (!faviconUrl) {
+      return true;
+    }
+
+    try {
+      const dimensions = await getImageDimensionsFromUrl(faviconUrl);
+      if (!isAspectRatioMatch(dimensions, 'square')) {
+        toast.error('Favicon phải là ảnh vuông tỷ lệ 1:1. Hãy dùng Cắt để chỉnh lại ảnh.');
+        return false;
+      }
+      if (dimensions.width !== FAVICON_DIMENSION || dimensions.height !== FAVICON_DIMENSION) {
+        toast.error(`Favicon phải có kích thước đúng ${FAVICON_DIMENSION}x${FAVICON_DIMENSION}px.`);
+        return false;
+      }
+    } catch {
+      toast.error('Không thể kiểm tra kích thước favicon hiện tại.');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleTabChange = (nextTab: AdvancedTab) => {
     if (isShopConfigTab && shopConfigDirty) {
       if (window.confirm('Bạn có thay đổi chưa lưu trong Cấu hình cửa hàng. Nếu chuyển tab, các thay đổi này sẽ bị mất. Bạn có chắc chắn muốn chuyển không?')) {
@@ -893,7 +957,7 @@ function SettingsContent({ section }: { section: SettingsSection }) {
       return;
     }
  
-    if (!validateForm()) {return;}
+    if (!validateForm() || !(await validateFavicon())) {return;}
  
     setIsSaving(true);
     try {
@@ -1427,11 +1491,29 @@ function SettingsContent({ section }: { section: SettingsSection }) {
         const isProductPlaceholderField = key === 'product_image_placeholder';
         const isSeoImageField = key === 'seo_og_image';
         const logoValue = typeof form.site_logo === 'string' ? form.site_logo : '';
-        const handleUseLogo = (targetKey: 'site_favicon' | 'product_image_placeholder' | 'seo_og_image') => {
+        const handleUseLogo = async (targetKey: 'site_favicon' | 'product_image_placeholder' | 'seo_og_image') => {
           if (!logoValue) {
             toast.error('Chưa có logo để dùng.');
             return;
           }
+
+          if (targetKey === 'site_favicon') {
+            try {
+              const dimensions = await getImageDimensionsFromUrl(logoValue);
+              if (!isAspectRatioMatch(dimensions, 'square')) {
+                toast.error('Logo hiện tại là logo ngang. Hãy upload hoặc crop một icon vuông riêng cho favicon.');
+                return;
+              }
+              if (dimensions.width !== FAVICON_DIMENSION || dimensions.height !== FAVICON_DIMENSION) {
+                toast.error(`Logo hiện tại chưa đúng ${FAVICON_DIMENSION}x${FAVICON_DIMENSION}px. Hãy upload hoặc crop lại favicon.`);
+                return;
+              }
+            } catch {
+              toast.error('Không thể kiểm tra kích thước logo hiện tại.');
+              return;
+            }
+          }
+
           updateImageField(targetKey, logoValue, mediaStorageIds.site_logo ?? null);
           toast.success(targetKey === 'site_favicon' ? 'Đã dùng logo làm favicon.' : targetKey === 'product_image_placeholder' ? 'Đã dùng logo làm placeholder sản phẩm.' : 'Đã dùng logo làm OG Image.');
         };
@@ -1445,12 +1527,29 @@ function SettingsContent({ section }: { section: SettingsSection }) {
               onChange={(url, storageId) =>{  updateImageField(key, url, storageId); }}
               folder="settings"
               previewSize={key.includes('favicon') ? 'sm' : 'md'}
+              cropAspectRatio={isFaviconField ? 'square' : undefined}
+              targetDimension={isFaviconField ? FAVICON_DIMENSION : undefined}
               smartLogoCrop={false}
             />
             {isFaviconField && (
               <p className="text-xs leading-5 text-slate-500">
-                Khuyến nghị dùng icon vuông, gọn, ít chữ (tối thiểu 48x48, tốt nhất 512x512 PNG/SVG) để hiển thị rõ trên Google Search. Tránh dùng logo dài hoặc nhiều chi tiết.
+                Favicon sẽ được cắt về tỷ lệ vuông 1:1 và xuất đúng 512×512px để hiển thị ổn định trên trình duyệt và Google Search.
               </p>
+            )}
+            {isFaviconField && (faviconCheckStatus === 'invalid-aspect' || faviconCheckStatus === 'invalid-size' || faviconCheckStatus === 'unavailable') && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200"
+              >
+                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                <span>
+                  {faviconCheckStatus === 'invalid-aspect'
+                    ? `${isLegacyFavicon ? 'Favicon legacy hiện tại' : 'Favicon hiện tại'} không hợp lệ vì chưa vuông 1:1. Hãy dùng Cắt hoặc upload icon vuông rồi lưu lại.`
+                    : faviconCheckStatus === 'invalid-size'
+                      ? `${isLegacyFavicon ? 'Favicon legacy hiện tại' : 'Favicon hiện tại'} chưa đúng kích thước 512×512px. Hãy dùng Cắt hoặc upload lại rồi lưu.`
+                      : 'Không thể kiểm tra favicon hiện tại. URL legacy có thể đã hỏng; hãy upload lại icon vuông 512×512px.'}
+                </span>
+              </div>
             )}
             {isFaviconField && (
               <div className="flex flex-wrap gap-2">
@@ -1458,7 +1557,7 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleUseLogo('site_favicon')}
+                  onClick={() => { void handleUseLogo('site_favicon'); }}
                 >
                   Dùng logo hiện tại
                 </Button>
@@ -1478,7 +1577,9 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleUseLogo('product_image_placeholder')}
+                  onClick={() => {
+                    void handleUseLogo('product_image_placeholder');
+                  }}
                   disabled={!logoValue}
                 >
                   Dùng logo hiện tại
@@ -1499,7 +1600,9 @@ function SettingsContent({ section }: { section: SettingsSection }) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => handleUseLogo('seo_og_image')}
+                  onClick={() => {
+                    void handleUseLogo('seo_og_image');
+                  }}
                   disabled={!logoValue}
                 >
                   Dùng logo hiện tại

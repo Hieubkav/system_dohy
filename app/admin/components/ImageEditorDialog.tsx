@@ -18,6 +18,7 @@ import { Button, cn } from './ui';
 import { toast } from 'sonner';
 import { startRemoveBg, type RemoveBgHandle, type RemoveBgMode } from '@/lib/image/removeBgWorker';
 import { detectSmartLogoCropBox } from '@/lib/image/logoSmartCrop';
+import { getImageDimensionsFromUrl } from '@/lib/image/uploadPipeline';
 import {
   getProductImageAspectRatioLabel,
   getProductImageAspectRatioValue,
@@ -109,6 +110,13 @@ type EditorTab = 'crop' | 'removebg' | 'addbg' | 'compress';
 type CropRatio = {
   label: string;
   value: number | undefined;
+};
+
+type ImageMeta = {
+  height: number;
+  size: number;
+  type: string;
+  width: number;
 };
 
 const CROP_RATIOS: CropRatio[] = [
@@ -254,33 +262,50 @@ export function ImageEditorDialog({
   const [isApplying, setIsApplying] = useState(false);
 
   // Metadata of the image being displayed
-  const [imageMeta, setImageMeta] = useState<{ size: number; type: string } | null>(null);
+  const [imageMeta, setImageMeta] = useState<ImageMeta | null>(null);
 
   // Fetch metadata of original image
   useEffect(() => {
     let isMounted = true;
-    if (!imageUrl) return;
+    let blobUrl: string | null = null;
+    setImageMeta(null);
+    if (!imageUrl) return () => {
+      isMounted = false;
+    };
 
     fetchImageAsBlob(imageUrl)
       .then((blob) => {
-        if (isMounted) {
+        blobUrl = URL.createObjectURL(blob);
+        return getImageDimensionsFromUrl(blobUrl).then((dimensions) => {
+          if (!isMounted) return;
           setImageMeta({
+            height: dimensions.height,
             size: blob.size,
             type: blob.type,
+            width: dimensions.width,
           });
-        }
+        });
       })
       .catch((err) => {
         console.error('[ImageEditor] Failed to fetch image metadata:', err);
+      })
+      .finally(() => {
+        if (blobUrl) {
+          URL.revokeObjectURL(blobUrl);
+          blobUrl = null;
+        }
       });
 
     return () => {
       isMounted = false;
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
     };
   }, [imageUrl]);
 
   const currentMeta = ((activeTab === 'removebg' || activeTab === 'compress') && removedBgBlob)
-    ? { size: removedBgBlob.size, type: removedBgBlob.type }
+    ? { height: imageMeta?.height ?? 0, size: removedBgBlob.size, type: removedBgBlob.type, width: imageMeta?.width ?? 0 }
     : imageMeta;
 
   const renderImageMetaInfo = () => {
@@ -289,6 +314,8 @@ export function ImageEditorDialog({
       <div className="mt-2 text-center">
         <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-full border border-slate-200/60 dark:border-slate-700/60 inline-flex items-center gap-1.5 shadow-sm">
           <span>Định dạng: <strong className="text-slate-700 dark:text-slate-200">{getExtensionFromMime(currentMeta.type)}</strong></span>
+          <span className="text-slate-300 dark:text-slate-700">|</span>
+          <span>Kích thước: <strong className="text-slate-700 dark:text-slate-200">{currentMeta.width > 0 && currentMeta.height > 0 ? `${currentMeta.width} × ${currentMeta.height} px` : '—'}</strong></span>
           <span className="text-slate-300 dark:text-slate-700">|</span>
           <span>Dung lượng: <strong className="text-slate-700 dark:text-slate-200">{formatBytes(currentMeta.size)}</strong></span>
         </span>
