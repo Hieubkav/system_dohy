@@ -39,11 +39,15 @@ export function PublicImage({ alt = '', mode: _mode, ...props }: PublicImageProp
     return null;
   }
 
+  const isVietQr = typeof resolvedSrc === 'string' && resolvedSrc.includes('vietqr.io');
+  const unoptimized = rest.unoptimized ?? (isVietQr ? true : undefined);
+
   return (
     <NextImage
       alt={alt}
       src={resolvedSrc}
       {...rest}
+      {...(unoptimized !== undefined ? { unoptimized } : {})}
     />
   );
 }

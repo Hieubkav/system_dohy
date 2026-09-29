@@ -72,6 +72,14 @@ const nextConfig: NextConfig = {
         hostname: 'i.pravatar.cc',
         protocol: 'https',
       },
+      {
+        hostname: 'img.vietqr.io',
+        protocol: 'https',
+      },
+      {
+        hostname: 'cdn.vietqr.io',
+        protocol: 'https',
+      },
     ],
   },
 };

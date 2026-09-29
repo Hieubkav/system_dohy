@@ -455,6 +455,7 @@ function ThankYouContent() {
                 alt="VietQR thanh toán"
                 width={220}
                 height={220}
+                unoptimized
                 style={{ objectFit: 'contain', width: '100%', height: '100%' }}
               />
             </div>

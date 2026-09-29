@@ -83,7 +83,7 @@ const findBrandTextColor = (
     }
   }
 
-  return best ? best.color : preferredText;
+  return best ? best.color : getAPCATextColor(background, fontSize, fontWeight);
 };
 
 export type CheckoutColorMode = 'single' | 'dual';

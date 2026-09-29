@@ -132,6 +132,7 @@ function PaymentReminder({
                   alt="QR thanh toán"
                   width={116}
                   height={116}
+                  unoptimized
                   className="h-full w-full object-contain"
                 />
               </div>
